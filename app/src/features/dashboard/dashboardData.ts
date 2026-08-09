@@ -35,9 +35,10 @@ export interface DashboardKpis {
     /** PLAN §7.5 — parked, one-weight tickets. Counted across all days, not just today: an open ticket from yesterday is still waiting. */
     waitingCount: number;
     avgNetKgPerTicket: number;
+    /** The mock's "Charge collected" KPI — real now (engines/billing), though still the flat per-ticket rate, not a per-vehicle-type/material one. */
+    chargeToday: number;
 }
 
-/** No billing/rate engine yet (app/README.md known gap) — "Charge collected" from the mock's KPI row is left out rather than shown as a fabricated number. */
 export const computeDashboardKpis = (rows: TicketRow[], referenceIso: string): DashboardKpis => {
     const today = rows.filter((row) => !row.isCancelled && isSameDay(row.at, referenceIso));
     const completedToday = today.filter((row) => row.netKg !== null);
@@ -49,5 +50,6 @@ export const computeDashboardKpis = (rows: TicketRow[], referenceIso: string): D
         avgNetKgPerTicket: completedToday.length
             ? (netTonnesToday * 1000) / completedToday.length
             : 0,
+        chargeToday: completedToday.reduce((sum, row) => sum + (row.charge ?? 0), 0),
     };
 };

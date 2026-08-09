@@ -1,4 +1,4 @@
-import { formatWeightKg } from "@constants/numberFormat";
+import { formatMoney, formatWeightKg } from "@constants/numberFormat";
 
 import type { SlipData } from "./types";
 
@@ -17,6 +17,10 @@ export interface SlipInput {
     operator: string;
     /** The ticket's `PrintCount` *before* this print — 0 means this is the first (ORIGINAL). */
     printCount: number;
+    /** `engines/billing`'s `computeCharge` — `null` until both weights are in. */
+    charge: number | null;
+    /** Settings' `Formats.AmountDp`. */
+    amountDp: 0 | 2;
 }
 
 const weightOrDash = (kg: number | null): string => (kg === null ? "—" : formatWeightKg(kg));
@@ -38,9 +42,7 @@ export const buildSlipData = (input: SlipInput): SlipData => ({
     NetKg: weightOrDash(input.netKg),
     TareAt: stampOrDash(input.tareAt),
     GrossAt: stampOrDash(input.grossAt),
-    // No rate/charge engine yet (app/README.md known gap) — always "—",
-    // same fallback the mock itself uses when `c.charge` is unset.
-    Charge: "—",
+    Charge: input.charge === null ? "—" : formatMoney(input.charge, input.amountDp),
     Operator: input.operator,
     Copy: input.printCount >= 1 ? `DUPLICATE COPY ${input.printCount + 1}` : "",
 });

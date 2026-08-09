@@ -160,13 +160,32 @@ on Reports and Dashboard).
     `@media print` rule, then commits the existing `PrintCount` increment. Deliberately drops the
     mock's "Verify: babuscale.app/v/…" footer line — that URL doesn't resolve to anything (no QR
     verification hosting — see Known gap), and a dead link on an actual printed business document
-    would be worse than the mock's own fake demo copy. Charge always reads "—": there's still no
-    rate/charge engine. ✅ Verified: all three papers render real ticket data correctly (weights,
-    timestamps, operator, ticket number, ORIGINAL/DUPLICATE COPY labelling) in-browser. `window
-.print()` itself opens a real, OS-native modal print dialog — by design impossible to drive
-    through headless browser automation (the same category of gap as "no real Tauri GUI window in
-    this environment" elsewhere in this project's history), so that one click wasn't exercised
-    end-to-end here; the composition it prints was.
+    would be worse than the mock's own fake demo copy. Charge read "—" at the time this item
+    landed — item 20 below made it real. ✅ Verified: all three papers render real ticket data
+    correctly (weights, timestamps, operator, ticket number, ORIGINAL/DUPLICATE COPY labelling)
+    in-browser. `window.print()` itself opens a real, OS-native modal print dialog — by design
+    impossible to drive through headless browser automation (the same category of gap as "no real
+    Tauri GUI window in this environment" elsewhere in this project's history), so that one click
+    wasn't exercised end-to-end here; the composition it prints was.
+20. **Real billing.** `src/engines/billing/` — `computeCharge(isComplete)` is the mock's own
+    actual runtime formula (`RATE.tareCharge + RATE.grossCharge`, ₹100 + ₹150 flat per completed
+    ticket), not the vehicle-type-driven formula its schema field _describes_ but the mock itself
+    never evaluates — `null` until both weights are in, mirroring `netKg`'s own null-until-complete
+    convention. `formatMoney` (`src/constants/numberFormat.ts`) finally consumes
+    `Settings.Formats.AmountDp` (persisted since item 17, unread until now); `asciiMoney` (in
+    `renderMonoSlip.ts`) strips the ₹ glyph for thermal/matrix printers, same as the mock's own
+    `p.chg.replace("₹ ", "Rs.")`. Charge is now wired end to end: the Weighing "Captured &
+    calculated" card's 4th box, Reports' Tickets and Summary columns, Dashboard's "Charge collected
+    today" KPI tile, and the real Charge field on all three print layouts. Deliberately does not
+    build "Value" (material-rate-based valuation) — that needs Master body-field editing UI that
+    doesn't exist yet (see Known gap). Along the way, `WeighingScreen.tsx`'s recall-offer logic
+    (resume/stored-tare/fill-from-last-ticket) was extracted into `_private/buildRecallOffers.ts`,
+    a pure function with no JSX — the screen had grown past this project's 300-line file-split
+    convention (`docs/CodingStandards.md`) while this item was being wired in. ✅ Verified
+    in-browser: captured a full ticket, confirmed `₹ 250.00` on the Weighing card, in both Reports
+    views, on Dashboard's new tile, and on the A4 and thermal print previews (`Rs.250.00` on the
+    latter); also confirmed the `buildRecallOffers` extraction still offers a correct "Resume" for
+    an open ticket after the refactor.
 
 ## Known gap
 
@@ -191,16 +210,20 @@ never specifies, so nothing here invents one.)
 - **Settings** — Weighing and System are the only two of the mock's six panes actually wired
   (see Phase-2 item 17); Fields & language, Print & printers, Appearance and Connections render as
   named placeholders, each pending the feature it would configure. Within System, ticket
-  numbering is live but date/time/amount formats are only persisted — nothing else in the app
-  (Reports, Dashboard, printed tickets) reads them back yet. The stale-tare threshold
+  numbering is live and `Formats.AmountDp` now reaches every money display (item 20); date/time
+  formats are still only persisted, unread elsewhere. The stale-tare threshold
   (`STORED_TARE_STALE_AFTER_DAYS` in `src/db/storedTare.ts`) stays a fixed constant — the mock
   itself never exposes it as a setting either (`ex:"expired"` is static demo master data, not
   computed from a configurable day count).
 - **Schema-driven rendering** — Weighing pulls field _labels_ from `DEFAULT_TICKET_SCHEMA` but
   does not render fields generically from schema/formula config; that needs a Settings pane to
   edit `Schema` rows first.
-- **Billing** — there is no rate/charge engine. Reports and Dashboard show ticket counts and net
-  tonnage only; no Charge column, no Charge KPI (the mock's is a fabricated demo number).
+- **Billing** — Charge is real now (item 20: `engines/billing`, wired into Weighing, Reports,
+  Dashboard, and the print slip), but flat and hardcoded (`TARE_CHARGE_INR` + `GROSS_CHARGE_INR`),
+  matching the mock's own actual runtime behaviour rather than its schema's aspirational
+  vehicle-type formula. Not built: "Value" (a Material.Rate-based valuation, separate from
+  Charge) and any Settings-driven way to change the flat rate — both need Master body-field
+  editing UI that doesn't exist yet (see "Master field richness" above).
 - **Export** — Reports' Export PDF/Excel/CSV buttons are shown disabled rather than silently doing
   nothing; the ticket register itself has no print composition either (the mock's `reportA4`/
   `reportMx`/`reportTh` and `btnRPrint` — a bulk, multi-row layout, different from a single

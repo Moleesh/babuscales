@@ -7,25 +7,25 @@ import { SearchableDropdown } from "@components/SearchableDropdown";
 import { SegmentedControl } from "@components/SegmentedControl";
 import type { SegmentedOption } from "@components/SegmentedControl";
 import { StatusPill } from "@components/StatusPill";
-import { formatWeightKg } from "@constants/numberFormat";
-import { isStoredTareBody, isStoredTareStale, storedTareAgeDays } from "@db/storedTare";
+import { formatMoney, formatWeightKg } from "@constants/numberFormat";
 import type { CaptureType } from "@db/ticketBody";
 import type { DocRow } from "@db/types";
 import { useDataPort } from "@db/useDataPort";
 import { useMasterCache } from "@db/useMasterCache";
+import { computeCharge } from "@engines/billing";
 import { useIndicator, useIndicatorReading } from "@engines/indicator";
 import { buildSlipData } from "@engines/print";
 import { DEFAULT_TICKET_SCHEMA } from "@engines/schemaEngine";
 import { useSettings } from "@features/settings";
 
+import { buildRecallOffers } from "./_private/buildRecallOffers";
 import { PrintPreviewModal } from "./_private/PrintPreviewModal";
 import { OpenTicketStrip } from "./OpenTicketStrip";
-import { findLatestTicketForVehicle, findOpenTicketForVehicle, listOpenTickets } from "./recall";
+import { listOpenTickets } from "./recall";
 import type { OpenTicketSummary } from "./recall";
 import { RecallBanner } from "./RecallBanner";
-import type { RecallOffer } from "./RecallBanner";
 import { formatTicketNo } from "./ticketNumber";
-import type { TicketFormFields, UseWeighingTicket } from "./useWeighingTicket";
+import type { UseWeighingTicket } from "./useWeighingTicket";
 import styles from "./WeighingScreen.module.css";
 
 const fieldLabel = (fieldId: string): string =>
@@ -112,63 +112,18 @@ export const WeighingScreen = ({ ticket }: WeighingScreenProps) => {
         return () => clearTimeout(timer);
     }, [armed, settings.Rules.AutoCapture, reading.WeightKg, ticket]);
 
-    const recallOffers = useMemo((): RecallOffer[] => {
-        if (ticket.isLocked || !ticket.fields.vehicleNo.trim()) return [];
-        const offers: RecallOffer[] = [];
+    const recallOffers = useMemo(
+        () =>
+            buildRecallOffers({
+                ticket,
+                allTicketDocs,
+                storedTareCache,
+                strictTare: settings.Rules.StrictTare,
+            }),
+        [ticket, allTicketDocs, storedTareCache, settings.Rules.StrictTare],
+    );
 
-        const openMatch = findOpenTicketForVehicle(
-            allTicketDocs.filter((doc) => doc.DocId !== ticket.docId),
-            ticket.fields.vehicleNo,
-        );
-        if (openMatch) {
-            offers.push({
-                key: "resume",
-                label: `Resume ${formatTicketNo(openMatch.doc.DocSeq)}`,
-                hint: `${openMatch.kind} ${formatWeightKg(openMatch.weightKg)} kg · ${formatStamp(openMatch.capturedAt)}`,
-                onAccept: () => ticket.resume(openMatch.doc),
-            });
-        }
-
-        if (!settings.Rules.StrictTare && ticket.captures.every((c) => c.Type !== "Tare")) {
-            const storedTare = storedTareCache
-                .search(ticket.fields.vehicleNo)
-                .find(
-                    (row) => isStoredTareBody(row.Body) && !isStoredTareStale(row.Body.CapturedAt),
-                );
-            if (storedTare && isStoredTareBody(storedTare.Body)) {
-                const body = storedTare.Body;
-                offers.push({
-                    key: "storedTare",
-                    label: `Use stored tare ${formatWeightKg(body.WeightKg)} kg`,
-                    hint: `taken ${storedTareAgeDays(body.CapturedAt)} days ago`,
-                    onAccept: () => ticket.useStoredTare(body.WeightKg, body.CapturedAt),
-                });
-            }
-        }
-
-        const latest = findLatestTicketForVehicle(
-            allTicketDocs,
-            ticket.fields.vehicleNo,
-            ticket.docId ?? undefined,
-        );
-        if (latest && (latest.body.Party || latest.body.Material || latest.body.Transporter)) {
-            const fill: Partial<Pick<TicketFormFields, "party" | "material" | "transporter">> = {
-                party: latest.body.Party,
-                material: latest.body.Material,
-                transporter: latest.body.Transporter,
-            };
-            offers.push({
-                key: "fill",
-                label: `Fill from ${formatTicketNo(latest.doc.DocSeq)}`,
-                hint:
-                    [latest.body.Party, latest.body.Material].filter(Boolean).join(" · ") ||
-                    "Previous ticket",
-                onAccept: () => ticket.applyRecalledFields(fill),
-            });
-        }
-
-        return offers;
-    }, [allTicketDocs, storedTareCache, ticket, settings.Rules.StrictTare]);
+    const charge = computeCharge(ticket.weights.netKg !== null);
 
     const slipData = useMemo(
         () =>
@@ -186,8 +141,10 @@ export const WeighingScreen = ({ ticket }: WeighingScreenProps) => {
                 grossAt: ticket.captures.find((c) => c.Type === "Gross")?.At ?? null,
                 operator: settings.OperatorName,
                 printCount: ticket.printCount,
+                charge,
+                amountDp: settings.Formats.AmountDp,
             }),
-        [ticket, settings.OperatorName],
+        [ticket, settings.OperatorName, settings.Formats.AmountDp, charge],
     );
 
     const ticketDate = formatStamp(ticket.captures[0]?.At);
@@ -380,6 +337,17 @@ export const WeighingScreen = ({ ticket }: WeighingScreenProps) => {
                                     {ticket.weights.netKg !== null
                                         ? formatWeightKg(ticket.weights.netKg)
                                         : "—"}
+                                </b>
+                                <div className={styles.calcStamp}>&nbsp;</div>
+                            </div>
+                            <div
+                                className={`${styles.calcBox} ${charge === null ? styles.calcPending : ""}`}
+                            >
+                                <span className="lbl">Charge</span>
+                                <b className={styles.calcValue}>
+                                    {charge === null
+                                        ? "—"
+                                        : formatMoney(charge, settings.Formats.AmountDp)}
                                 </b>
                                 <div className={styles.calcStamp}>&nbsp;</div>
                             </div>

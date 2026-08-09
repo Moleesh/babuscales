@@ -7,9 +7,10 @@ import type { DataTableColumn } from "@components/DataTable";
 import { Field, FieldGrid } from "@components/Field";
 import { SegmentedControl } from "@components/SegmentedControl";
 import type { SegmentedOption } from "@components/SegmentedControl";
-import { formatWeightKg } from "@constants/numberFormat";
+import { formatMoney, formatWeightKg } from "@constants/numberFormat";
 import type { DocRow } from "@db/types";
 import { useDataPort } from "@db/useDataPort";
+import { useSettings } from "@features/settings";
 import { formatTicketNo } from "@features/weighing";
 
 import { buildTicketRows, filterTicketRows, summarizeTicketRows } from "./reportRows";
@@ -49,12 +50,12 @@ const formatWeightCell = (kg: number | null): string =>
 
 // PLAN §13.1 — "there is no Tickets tab... a ticket list is a report that
 // has not been grouped yet." One dataset (reportRows.ts), one toggle
-// between the flat Tickets view and the grouped Summary view. Charge
-// columns and PDF/Excel/CSV export need the billing and print/export
-// engines (app/README.md known gaps) — export actions are shown disabled
-// rather than silently doing nothing.
+// between the flat Tickets view and the grouped Summary view. PDF/Excel/CSV
+// export still needs the print/export engine (app/README.md known gap) —
+// those actions are shown disabled rather than silently doing nothing.
 export const ReportsScreen = ({ onOpenTicket }: ReportsScreenProps) => {
     const db = useDataPort();
+    const { settings } = useSettings();
     const [docs, setDocs] = useState<DocRow[]>([]);
     const [view, setView] = useState<ReportView>("tickets");
     const [query, setQuery] = useState("");
@@ -103,6 +104,13 @@ export const ReportsScreen = ({ onOpenTicket }: ReportsScreenProps) => {
             render: (row) => formatWeightCell(row.grossKg),
         },
         { key: "net", header: "Net", numeric: true, render: (row) => formatWeightCell(row.netKg) },
+        {
+            key: "charge",
+            header: "Charge",
+            numeric: true,
+            render: (row) =>
+                row.charge === null ? "—" : formatMoney(row.charge, settings.Formats.AmountDp),
+        },
         { key: "at", header: "At", render: (row) => new Date(row.at).toLocaleString() },
         {
             key: "status",
@@ -141,6 +149,14 @@ export const ReportsScreen = ({ onOpenTicket }: ReportsScreenProps) => {
             header: "Net tonnes",
             numeric: true,
             render: (row) => <span className="num">{row.netTonnes.toFixed(2)}</span>,
+        },
+        {
+            key: "charge",
+            header: "Charge",
+            numeric: true,
+            render: (row) => (
+                <span className="num">{formatMoney(row.charge, settings.Formats.AmountDp)}</span>
+            ),
         },
     ];
 

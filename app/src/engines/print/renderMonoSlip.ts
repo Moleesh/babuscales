@@ -6,6 +6,11 @@ import type { SlipData } from "./types";
 const rpad = (s: string, n: number): string => s.padEnd(n).slice(0, n);
 const lpad = (s: string, n: number): string => s.padStart(n).slice(-n);
 
+// Ported from the mock's `p.chg.replace("₹ ", "Rs.")` — a dot-matrix/thermal
+// driver's fixed character set can't be trusted with ₹, unlike the A4 slip
+// (real text, a real browser font).
+const asciiMoney = (s: string): string => s.replace("₹ ", "Rs.");
+
 // Ported from the mock's `ticketMx` — a 40-column dot-matrix slip.
 export const renderMatrixSlip = (p: SlipData): string =>
     "+--------------------------------------+\n" +
@@ -21,7 +26,7 @@ export const renderMatrixSlip = (p: SlipData): string =>
     ` GROSS  ${lpad(p.GrossKg, 10)} KG  ${rpad(p.GrossAt.slice(0, 12), 12)}\n` +
     ` NET    ${lpad(p.NetKg, 10)} KG\n` +
     "----------------------------------------\n" +
-    ` CHARGE ${lpad(p.Charge, 12)}\n` +
+    ` CHARGE ${lpad(asciiMoney(p.Charge), 12)}\n` +
     ` OPERATOR ${rpad(p.Operator, 20)}\n` +
     "========================================";
 
@@ -34,5 +39,5 @@ export const renderThermalSlip = (p: SlipData): string =>
     "------------------------------\n" +
     ` Tare     ${lpad(p.TareKg, 12)} kg\n Gross    ${lpad(p.GrossKg, 12)} kg\n NET      ${lpad(p.NetKg, 12)} kg\n` +
     "------------------------------\n" +
-    ` Charge   ${lpad(p.Charge, 12)}\n Operator ${rpad(p.Operator, 12)}\n\n` +
+    ` Charge   ${lpad(asciiMoney(p.Charge), 12)}\n Operator ${rpad(p.Operator, 12)}\n\n` +
     `      [ QR ]  ${p.TicketNo}\n------------------------------`;

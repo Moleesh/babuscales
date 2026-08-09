@@ -27,11 +27,16 @@
     color: var(--dim);
 }
 
-/* Ported from the mock's ".calc"/".calc>div"/".calc b"/".calc .stamp"/".calc .lead". */
+/* Ported from the mock's ".calc"/".calc>div"/".calc b"/".calc .stamp"/".calc .lead"/".calc .pend". */
 .calc {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     gap: 9px;
+}
+@media (max-width: 560px) {
+    .calc {
+        grid-template-columns: repeat(2, 1fr);
+    }
 }
 .calcBox {
     border: 1px solid var(--line);
@@ -62,6 +67,9 @@
 }
 .calcLead .calcValue {
     color: var(--led);
+}
+.calcPending .calcValue {
+    color: var(--faint);
 }
 
 /* Ported from the mock's ".actions". */

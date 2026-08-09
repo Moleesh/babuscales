@@ -14,7 +14,7 @@ export interface SlipData {
     NetKg: string;
     TareAt: string;
     GrossAt: string;
-    /** Always "—" — there is no rate/charge engine yet (app/README.md known gap). */
+    /** Pre-formatted money (engines/billing) — "—" until both weights are in. */
     Charge: string;
     Operator: string;
     /** "" for the first print, "DUPLICATE COPY N" after — mirrors the mock's `state.prints`/`p.copy`. */

@@ -3,11 +3,12 @@ import { useEffect, useMemo, useState } from "react";
 import { Card } from "@components/Card";
 import { DataTable } from "@components/DataTable";
 import type { DataTableColumn } from "@components/DataTable";
-import { formatWeightKg } from "@constants/numberFormat";
+import { formatMoney, formatWeightKg } from "@constants/numberFormat";
 import type { DocRow } from "@db/types";
 import { useDataPort } from "@db/useDataPort";
 import { buildTicketRows } from "@features/reports";
 import type { TicketRow } from "@features/reports";
+import { useSettings } from "@features/settings";
 import { formatTicketNo } from "@features/weighing";
 
 import { computeDashboardKpis, hourlyTicketCounts } from "./dashboardData";
@@ -23,12 +24,13 @@ const SPLIT_COUNT = 6;
 const p2 = (n: number): string => String(n).padStart(2, "0");
 
 // PLAN §18 — "dashboard (throughput, tonnage, ... top ... materials,
-// peak hours...)". Charge/revenue, ANPR, anomaly detection and the printed
-// business footer are not built (app/README.md known gaps) — this is the
-// operational slice: today's KPIs, the hourly shape of the day, where the
-// tonnage is coming from, and the most recent tickets.
+// peak hours...)". ANPR and anomaly detection are not built (app/README.md
+// known gaps) — this is the operational slice: today's KPIs (including,
+// now, Charge collected — engines/billing), the hourly shape of the day,
+// where the tonnage is coming from, and the most recent tickets.
 export const DashboardScreen = ({ onNavigateToReports }: DashboardScreenProps) => {
     const db = useDataPort();
+    const { settings } = useSettings();
     const [docs, setDocs] = useState<DocRow[]>([]);
     const referenceIso = useMemo(() => new Date().toISOString(), []);
 
@@ -95,6 +97,12 @@ export const DashboardScreen = ({ onNavigateToReports }: DashboardScreenProps) =
                 <div className={`${styles.kpi} ${styles.accent}`}>
                     <span className="lbl">Net tonnage today</span>
                     <b className={styles.value}>{kpis.netTonnesToday.toFixed(1)} t</b>
+                </div>
+                <div className={styles.kpi}>
+                    <span className="lbl">Charge collected today</span>
+                    <b className={styles.value}>
+                        {formatMoney(kpis.chargeToday, settings.Formats.AmountDp)}
+                    </b>
                 </div>
                 {onNavigateToReports ? (
                     <button type="button" className={styles.kpi} onClick={onNavigateToReports}>

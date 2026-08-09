@@ -1,11 +1,13 @@
 import { deriveWeights, isOpenTicket, parseTicketBody } from "@db/ticketBody";
 import type { DocRow } from "@db/types";
+import { computeCharge } from "@engines/billing";
 
 // PLAN §13.1 — "there is no Tickets tab... a ticket list is a report that
 // has not been grouped yet." This is the one place `doc` rows become the
 // flat, sortable shape both the Tickets view and the Summary view read
-// from. No billing/charge fields yet — the rate/charge engine (PLAN §4.9)
-// is a tracked gap, so Summary carries tonnage and ticket counts only.
+// from. `charge` is the flat per-ticket amount (engines/billing) — a real
+// per-vehicle-type/material rate table is still a tracked gap
+// (app/README.md), so this is a real number, just not yet a configurable one.
 
 export interface TicketRow {
     doc: DocRow;
@@ -19,6 +21,7 @@ export interface TicketRow {
     tareKg: number | null;
     grossKg: number | null;
     netKg: number | null;
+    charge: number | null;
     isCancelled: boolean;
     /** Parked with exactly one weight — PLAN §7.5. */
     isOpen: boolean;
@@ -44,6 +47,7 @@ export const buildTicketRows = (docs: DocRow[]): TicketRow[] =>
                 tareKg: weights.tareKg,
                 grossKg: weights.grossKg,
                 netKg: weights.netKg,
+                charge: computeCharge(weights.netKg !== null),
                 isCancelled: doc.IsCancelled,
                 isOpen: isOpenTicket(doc.IsCancelled, body.Captures),
                 at: last?.At ?? doc.UpdatedAt,
@@ -77,6 +81,7 @@ export interface SummaryRow {
     key: string;
     ticketCount: number;
     netTonnes: number;
+    charge: number;
 }
 
 /** Only rows with both weights in and not cancelled contribute — a half-open ticket has nothing to total yet. */
@@ -85,9 +90,10 @@ export const summarizeTicketRows = (rows: TicketRow[], groupBy: GroupKey): Summa
     for (const row of rows) {
         if (row.isCancelled || row.netKg === null) continue;
         const key = row[groupBy] || "—";
-        const existing = totals.get(key) ?? { key, ticketCount: 0, netTonnes: 0 };
+        const existing = totals.get(key) ?? { key, ticketCount: 0, netTonnes: 0, charge: 0 };
         existing.ticketCount += 1;
         existing.netTonnes += row.netKg / 1000;
+        existing.charge += row.charge ?? 0;
         totals.set(key, existing);
     }
     return Array.from(totals.values()).sort((a, b) => b.netTonnes - a.netTonnes);
