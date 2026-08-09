@@ -14,9 +14,11 @@ import type { DocRow } from "@db/types";
 import { useDataPort } from "@db/useDataPort";
 import { useMasterCache } from "@db/useMasterCache";
 import { useIndicator, useIndicatorReading } from "@engines/indicator";
+import { buildSlipData } from "@engines/print";
 import { DEFAULT_TICKET_SCHEMA } from "@engines/schemaEngine";
 import { useSettings } from "@features/settings";
 
+import { PrintPreviewModal } from "./_private/PrintPreviewModal";
 import { OpenTicketStrip } from "./OpenTicketStrip";
 import { findLatestTicketForVehicle, findOpenTicketForVehicle, listOpenTickets } from "./recall";
 import type { OpenTicketSummary } from "./recall";
@@ -56,6 +58,7 @@ export const WeighingScreen = ({ ticket }: WeighingScreenProps) => {
 
     const [allTicketDocs, setAllTicketDocs] = useState<DocRow[]>([]);
     const [refreshToken, setRefreshToken] = useState(0);
+    const [printModalOpen, setPrintModalOpen] = useState(false);
 
     useEffect(() => {
         let cancelled = false;
@@ -166,6 +169,26 @@ export const WeighingScreen = ({ ticket }: WeighingScreenProps) => {
 
         return offers;
     }, [allTicketDocs, storedTareCache, ticket, settings.Rules.StrictTare]);
+
+    const slipData = useMemo(
+        () =>
+            buildSlipData({
+                ticketNo: formatTicketNo(ticket.docSeq),
+                vehicleNo: ticket.fields.vehicleNo,
+                party: ticket.fields.party,
+                material: ticket.fields.material,
+                challanNo: ticket.fields.challanNo,
+                transporter: ticket.fields.transporter,
+                tareKg: ticket.weights.tareKg,
+                grossKg: ticket.weights.grossKg,
+                netKg: ticket.weights.netKg,
+                tareAt: ticket.captures.find((c) => c.Type === "Tare")?.At ?? null,
+                grossAt: ticket.captures.find((c) => c.Type === "Gross")?.At ?? null,
+                operator: settings.OperatorName,
+                printCount: ticket.printCount,
+            }),
+        [ticket, settings.OperatorName],
+    );
 
     const ticketDate = formatStamp(ticket.captures[0]?.At);
     const captureLabel = ticket.isComplete
@@ -408,7 +431,7 @@ export const WeighingScreen = ({ ticket }: WeighingScreenProps) => {
                                 </Button>
                                 <Button
                                     disabled={!ticket.isLocked || ticket.printCount > 0}
-                                    onClick={() => void handlePrint()}
+                                    onClick={() => setPrintModalOpen(true)}
                                 >
                                     Print
                                 </Button>
@@ -416,7 +439,7 @@ export const WeighingScreen = ({ ticket }: WeighingScreenProps) => {
                             <div className={styles.actions}>
                                 <Button
                                     disabled={ticket.printCount === 0}
-                                    onClick={() => void handlePrint()}
+                                    onClick={() => setPrintModalOpen(true)}
                                 >
                                     Reprint
                                 </Button>
@@ -462,6 +485,13 @@ export const WeighingScreen = ({ ticket }: WeighingScreenProps) => {
                     </Card>
                 </div>
             </div>
+            <PrintPreviewModal
+                open={printModalOpen}
+                onClose={() => setPrintModalOpen(false)}
+                data={slipData}
+                onSend={() => void handlePrint()}
+                sending={ticket.saving}
+            />
         </div>
     );
 };

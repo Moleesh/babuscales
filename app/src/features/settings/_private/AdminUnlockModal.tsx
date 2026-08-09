@@ -47,7 +47,7 @@ export const AdminUnlockModal = ({ open, onClose }: AdminUnlockModalProps) => {
     };
 
     return (
-        <AppModal open={open} title="Admin unlock" onClose={close}>
+        <AppModal open={open} title="Admin unlock" onClose={close} size="small">
             <div className={styles.body}>
                 <Field id="admPw" label={{ en: "Admin password" }}>
                     <input

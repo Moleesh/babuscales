@@ -7,6 +7,8 @@ export interface AppModalProps {
     title: ReactNode;
     onClose: () => void;
     closeLabel?: string;
+    /** "default" = mock's `.sheet` (760px) — most dialogs. "small" = mock's `.sheet.sm` (420px) — a short confirmation like the admin unlock. */
+    size?: "default" | "small";
     children: ReactNode;
 }
 
@@ -20,6 +22,7 @@ export const AppModal = ({
     title,
     onClose,
     closeLabel = "Close",
+    size = "default",
     children,
 }: AppModalProps) => {
     if (!open) return null;
@@ -32,7 +35,7 @@ export const AppModal = ({
             }}
         >
             <div
-                className={styles.sheet}
+                className={`${styles.sheet} ${size === "small" ? styles.small : ""}`}
                 role="dialog"
                 aria-modal="true"
                 data-enter-scope

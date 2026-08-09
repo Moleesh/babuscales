@@ -149,6 +149,24 @@ on Reports and Dashboard).
     unmarked Enter inside it got hijacked and force-focused something else instead of committing.
     `useEnterAsTab` now bails out on `[data-enter-skip]`, mirroring the mock's own
     `e.target === $("opEdit")` exclusion. ✅
+19. **Real print composition for tickets.** `src/engines/print/` — "one content model, three
+    layout engines" (the mock's own description): `buildSlipData` turns live ticket state into a
+    flat, formatted `SlipData`; `renderThermalSlip`/`renderMatrixSlip` are pure text generators
+    ported from the mock's `ticketTh`/`ticketMx`. A4 is real JSX (`SlipA4`) rather than an HTML
+    string — React escapes every field automatically, so there's no `esc()` call to remember, and
+    no `dangerouslySetInnerHTML`. `PrintPreviewModal` (a new `size="default"` use of `AppModal`,
+    which gained a `size` prop for it) lets the operator switch papers before committing; "Send to
+    printer" calls `window.print()` scoped to just the rendered slip via a `#print-slip` id and an
+    `@media print` rule, then commits the existing `PrintCount` increment. Deliberately drops the
+    mock's "Verify: babuscale.app/v/…" footer line — that URL doesn't resolve to anything (no QR
+    verification hosting — see Known gap), and a dead link on an actual printed business document
+    would be worse than the mock's own fake demo copy. Charge always reads "—": there's still no
+    rate/charge engine. ✅ Verified: all three papers render real ticket data correctly (weights,
+    timestamps, operator, ticket number, ORIGINAL/DUPLICATE COPY labelling) in-browser. `window
+.print()` itself opens a real, OS-native modal print dialog — by design impossible to drive
+    through headless browser automation (the same category of gap as "no real Tauri GUI window in
+    this environment" elsewhere in this project's history), so that one click wasn't exercised
+    end-to-end here; the composition it prints was.
 
 ## Known gap
 
@@ -183,9 +201,14 @@ never specifies, so nothing here invents one.)
   edit `Schema` rows first.
 - **Billing** — there is no rate/charge engine. Reports and Dashboard show ticket counts and net
   tonnage only; no Charge column, no Charge KPI (the mock's is a fabricated demo number).
-- **Print/export** — Print and Reprint just increment a ticket's `PrintCount` and re-save; there is
-  no real print composition, and Reports' Export PDF/Excel/CSV buttons are shown disabled rather
-  than silently doing nothing.
+- **Export** — Reports' Export PDF/Excel/CSV buttons are shown disabled rather than silently doing
+  nothing; the ticket register itself has no print composition either (the mock's `reportA4`/
+  `reportMx`/`reportTh` and `btnRPrint` — a bulk, multi-row layout, different from a single
+  ticket's slip). Per-ticket printing is real now (Phase-2 item 19) — Print/Reprint open a real
+  print preview, not just a `PrintCount` bump.
+- **Print templates** — the mock's three-step template wizard (upload custom HTML with
+  `{{Placeholders}}`, multiple named templates per paper size, per-kind default printers) wasn't
+  ported; Phase-2 item 19 built the three built-in layouts only, not the editor around them.
 - **`CaptureTimeline`** (named in PLAN's architecture list) was not built — Weighing's "Captured &
   calculated" card uses the mock's `.calc` three-box grid instead.
 - **Dashboard's hourly window** (06:00–20:00) is a fixed default; there is no site-hours Setting.

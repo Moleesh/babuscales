@@ -11,7 +11,7 @@
 
 .sheet {
     width: 100%;
-    max-width: 420px;
+    max-width: 760px;
     background: var(--panel);
     border: 1px solid var(--line);
     border-radius: var(--radius);
@@ -20,6 +20,11 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
+}
+
+/* Mock's `.sheet.sm` — a short confirmation-style dialog (e.g. AdminUnlockModal). */
+.small {
+    max-width: 420px;
 }
 
 .header {
