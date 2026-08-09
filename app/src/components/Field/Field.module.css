@@ -1,0 +1,97 @@
+/* Ported from demo/BabuScale-demo.html ".f"/".lbl"/".mst"/".tag"/".recalled"
+   rules. Scoped to this component (CSS Modules) rather than left as global
+   utility classes — everything else in src/components follows that pattern. */
+.f {
+    display: grid;
+    gap: 5px;
+    min-width: 0;
+}
+
+.f :global(input),
+.f :global(select),
+.f :global(textarea) {
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 8px 10px;
+    color: var(--text);
+    font: inherit;
+    font-size: 0.8125rem;
+    width: 100%;
+    min-width: 0;
+}
+.f :global(input[readonly]) {
+    color: var(--dim);
+}
+.f :global(input:focus),
+.f :global(select:focus),
+.f :global(textarea:focus) {
+    border-color: var(--led);
+    outline: none;
+}
+.f :global(input:disabled),
+.f :global(select:disabled) {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.lbl {
+    font-size: 0.6875rem;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--dim);
+}
+
+/* a field that searches a master list carries the glass */
+.mst {
+    margin-left: 5px;
+    color: var(--led);
+    font-size: 0.8125rem;
+    line-height: 1;
+}
+
+.tag {
+    margin-left: 6px;
+    font-size: 0.5625rem;
+    padding: 1px 5px;
+    border-radius: 4px;
+    background: var(--led-ghost);
+    color: var(--led);
+    letter-spacing: 0.08em;
+}
+
+.recalled :global(input) {
+    border-style: dashed;
+    border-color: var(--led-dim);
+}
+
+/* Field layout grid — mock's .fields/.row2/.row3/.row4. One component
+   (FieldGrid) with a `columns` prop instead of four near-identical classes. */
+.grid1 {
+    display: grid;
+    gap: 11px;
+}
+.grid2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 11px;
+}
+.grid3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 11px;
+}
+.grid4 {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 11px;
+}
+
+/* Mock's `@media (max-width:899px){.row2,.row3,.row4{grid-template-columns:1fr}}` */
+@media (max-width: 899px) {
+    .grid2,
+    .grid3,
+    .grid4 {
+        grid-template-columns: 1fr;
+    }
+}

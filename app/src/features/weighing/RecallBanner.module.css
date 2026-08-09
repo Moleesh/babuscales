@@ -1,0 +1,48 @@
+/* A simplified, statically-positioned stand-in for PLAN §9.2's popover
+   (which is viewport-positioned near the Vehicle field in the mock) — same
+   simplification SearchableDropdown made, documented there too. */
+.banner {
+    display: grid;
+    gap: 6px;
+    padding: 9px 11px;
+    border: 1px dashed var(--led-dim);
+    border-radius: 9px;
+    background: var(--led-ghost);
+}
+
+.title {
+    font-size: 0.6875rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--dim);
+}
+
+.offers {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.offer {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1px;
+    padding: 6px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--line);
+    background: var(--panel);
+    color: var(--text);
+    font: inherit;
+    font-size: 0.75rem;
+    cursor: pointer;
+    text-align: left;
+}
+.offer:hover {
+    border-color: var(--led);
+    color: var(--led);
+}
+.offer small {
+    color: var(--dim);
+    font-size: 0.6875rem;
+}

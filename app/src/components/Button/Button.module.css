@@ -44,3 +44,8 @@
 .danger {
     color: var(--alert);
 }
+
+.large {
+    min-height: 64px;
+    font-size: 1rem;
+}

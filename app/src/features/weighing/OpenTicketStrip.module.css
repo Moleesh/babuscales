@@ -1,0 +1,44 @@
+/* Ported from demo/BabuScale-demo.html's ".strip". */
+.strip {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 7px 11px;
+    flex: none;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--panel);
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+.strip::-webkit-scrollbar {
+    display: none;
+}
+
+.label {
+    flex: none;
+}
+
+.item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 10px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background: var(--panel-2);
+    color: var(--text);
+    font: inherit;
+    font-size: 0.75rem;
+    white-space: nowrap;
+    cursor: pointer;
+}
+.item:hover {
+    border-color: var(--led-dim);
+    color: var(--led);
+}
+.weight {
+    font-family: var(--mono);
+    font-variant-numeric: tabular-nums;
+    color: var(--dim);
+}

@@ -1,0 +1,35 @@
+.screen {
+    display: grid;
+    gap: 13px;
+}
+
+.body {
+    display: grid;
+    gap: 11px;
+}
+
+/* Ported from demo/BabuScale-demo.html's ".search". */
+.search {
+    width: 100%;
+    padding: 9px 11px;
+    border-radius: 9px;
+    border: 1px solid var(--line);
+    background: var(--panel-2);
+    color: var(--text);
+    font: inherit;
+    font-size: 0.8125rem;
+}
+.search:focus {
+    border-color: var(--led);
+    outline: none;
+}
+
+.stale {
+    color: var(--warn);
+}
+
+.formActions {
+    display: flex;
+    gap: 9px;
+    flex-wrap: wrap;
+}

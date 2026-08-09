@@ -2,10 +2,21 @@ import { useState } from "react";
 
 import { AppShell } from "@components/AppShell";
 import type { AppShellTab } from "@components/AppShell";
-import { Button } from "@components/Button";
 import { ContextualHelp } from "@components/ContextualHelp";
-import { StatusPill } from "@components/StatusPill";
 import { WeightDisplay } from "@components/WeightDisplay";
+import { createDataPort } from "@db/createDataPort";
+import { DataPortProvider } from "@db/DataPortProvider";
+import type { DocRow } from "@db/types";
+import {
+    createSimulatedIndicator,
+    IndicatorProvider,
+    useIndicatorReading,
+} from "@engines/indicator";
+import { DashboardScreen } from "@features/dashboard";
+import { MastersScreen } from "@features/masters";
+import { ReportsScreen } from "@features/reports";
+import { useWeighingTicket, WeighingScreen } from "@features/weighing";
+import type { UseWeighingTicket } from "@features/weighing";
 import { DEFAULT_HELP_TOPICS } from "@i18n/helpTopics";
 import { I18nProvider } from "@i18n/I18nProvider";
 import type { LanguagePack } from "@i18n/types";
@@ -35,35 +46,6 @@ const TAB_ICONS: Record<(typeof TAB_KEYS)[number], string> = {
     reports: "▦",
     masters: "◈",
     settings: "⚙",
-};
-
-// See src/App.tsx's earlier revision history: this proves the ported
-// components hold together, not the Weighing feature (Phase 2, PLAN §21).
-const WeighingPreview = () => {
-    const { t } = useTranslation();
-    const [captured, setCaptured] = useState(false);
-    return (
-        <div style={{ display: "grid", gap: 12 }}>
-            <StatusPill
-                tareKg={captured ? 12340 : null}
-                grossKg={captured ? 31120 : null}
-                labels={{ tare: t("tare"), gross: t("gross"), net: t("net") }}
-            />
-            <div style={{ display: "flex", gap: 9, flexWrap: "wrap" }}>
-                <Button
-                    variant="primary"
-                    caption="Design-system check"
-                    onClick={() => setCaptured((v) => !v)}
-                >
-                    {captured ? "Clear" : "Capture Tare"}
-                </Button>
-                <Button disabled={!captured}>Save</Button>
-                <Button variant="danger" disabled={!captured} onClick={() => setCaptured(false)}>
-                    Clear
-                </Button>
-            </div>
-        </div>
-    );
 };
 
 interface TopBarActionsProps {
@@ -96,10 +78,44 @@ const TopBarActions = ({
     </>
 );
 
+interface TabContentProps {
+    tab: (typeof TAB_KEYS)[number];
+    label: string;
+    ticket: UseWeighingTicket;
+    onOpenTicket: (doc: DocRow) => void;
+    onNavigateToReports: () => void;
+}
+
+// The Weighing ticket hook is lifted to Shell (not owned by WeighingScreen
+// itself) so Reports and Dashboard can resume a ticket into the same deck
+// across a tab switch — see @features/weighing's UseWeighingTicket.
+const TabContent = ({ tab, label, ticket, onOpenTicket, onNavigateToReports }: TabContentProps) => {
+    switch (tab) {
+        case "dash":
+            return <DashboardScreen onNavigateToReports={onNavigateToReports} />;
+        case "weigh":
+            return <WeighingScreen ticket={ticket} />;
+        case "reports":
+            return <ReportsScreen onOpenTicket={onOpenTicket} />;
+        case "masters":
+            return <MastersScreen />;
+        case "cameras":
+        case "settings":
+            return <p className="lbl">{label} — Phase 2</p>;
+    }
+};
+
 const Shell = () => {
     const { t, lang, setLang } = useTranslation();
     const [activeTab, setActiveTab] = useState<(typeof TAB_KEYS)[number]>("weigh");
     const [helpOpen, setHelpOpen] = useState(false);
+    const reading = useIndicatorReading();
+    const ticket = useWeighingTicket();
+
+    const openTicket = (doc: DocRow): void => {
+        ticket.resume(doc);
+        setActiveTab("weigh");
+    };
 
     const tabs: AppShellTab[] = TAB_KEYS.map((key) => ({
         key,
@@ -124,10 +140,10 @@ const Shell = () => {
             }
             header={
                 <WeightDisplay
-                    weightKg={0}
+                    weightKg={reading.WeightKg}
                     capacityKg={60000}
-                    stable={false}
-                    motion={false}
+                    stable={reading.Stable}
+                    motion={!reading.Stable}
                     mode={activeTab === "weigh" ? "full" : "compact"}
                     labels={{
                         indicator: t("ind"),
@@ -138,11 +154,13 @@ const Shell = () => {
                 />
             }
         >
-            {activeTab === "weigh" ? (
-                <WeighingPreview />
-            ) : (
-                <p className="lbl">{tabs.find((tab) => tab.key === activeTab)?.label} — Phase 2</p>
-            )}
+            <TabContent
+                tab={activeTab}
+                label={tabs.find((tab) => tab.key === activeTab)?.label ?? ""}
+                ticket={ticket}
+                onOpenTicket={openTicket}
+                onNavigateToReports={() => setActiveTab("reports")}
+            />
             <ContextualHelp
                 open={helpOpen}
                 topic={DEFAULT_HELP_TOPICS[activeTab] ?? null}
@@ -154,8 +172,17 @@ const Shell = () => {
     );
 };
 
-export const App = () => (
-    <I18nProvider packs={[DEMO_TAMIL_PACK]}>
-        <Shell />
-    </I18nProvider>
-);
+export const App = () => {
+    const [db] = useState(() => createDataPort());
+    const [indicator] = useState(() => createSimulatedIndicator());
+
+    return (
+        <I18nProvider packs={[DEMO_TAMIL_PACK]}>
+            <DataPortProvider db={db}>
+                <IndicatorProvider source={indicator}>
+                    <Shell />
+                </IndicatorProvider>
+            </DataPortProvider>
+        </I18nProvider>
+    );
+};

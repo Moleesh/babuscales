@@ -1,0 +1,82 @@
+.screen {
+    display: grid;
+    gap: 12px;
+}
+
+/* Ported from demo/BabuScale-demo.html's ".grid2"/".col" (Weighing's own
+   330px action-column layout — distinct from Field's generic FieldGrid). */
+.layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 330px;
+    gap: 12px;
+    align-items: start;
+}
+@media (max-width: 899px) {
+    .layout {
+        grid-template-columns: 1fr;
+    }
+}
+
+.col {
+    display: grid;
+    gap: 12px;
+    min-width: 0;
+}
+
+.dateField {
+    color: var(--dim);
+}
+
+/* Ported from the mock's ".calc"/".calc>div"/".calc b"/".calc .stamp"/".calc .lead". */
+.calc {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 9px;
+}
+.calcBox {
+    border: 1px solid var(--line);
+    border-radius: 9px;
+    padding: 9px 11px;
+    background: var(--panel-2);
+    min-width: 0;
+}
+.calcValue {
+    display: block;
+    font-family: var(--mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 1.25rem;
+    margin-top: 3px;
+    letter-spacing: 0.02em;
+}
+.calcStamp {
+    font-size: 0.5625rem;
+    color: var(--faint);
+    margin-top: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.calcLead {
+    border-color: var(--led-dim);
+    background: var(--led-ghost);
+}
+.calcLead .calcValue {
+    color: var(--led);
+}
+
+/* Ported from the mock's ".actions". */
+.actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 9px;
+}
+.actions > * {
+    flex: 1;
+}
+
+.hint {
+    font-size: 0.6875rem;
+    color: var(--dim);
+    margin: 0;
+    line-height: 1.6;
+}

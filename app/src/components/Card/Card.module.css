@@ -1,0 +1,24 @@
+/* Ported from demo/BabuScale-demo.html's ".card"/".card>header"/".card>.body". */
+.card {
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--panel);
+    min-width: 0;
+}
+
+.header {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 9px 13px;
+    border-bottom: 1px solid var(--line);
+    flex-wrap: wrap;
+}
+
+.push {
+    margin-left: auto;
+}
+
+.body {
+    padding: 13px;
+}

@@ -1,7 +1,12 @@
 import { useEffect } from "react";
 
+// `[tabindex="-1"]` is excluded deliberately — a SearchableDropdown's popover
+// buttons (search results, "Add new") are that: reachable by mouse, but not
+// part of the field-to-field walk. Without this, Enter could land on one of
+// those buttons and then lose focus entirely the instant its popover closes
+// on blur, dropping focus to <body> mid-walk.
 const FOCUSABLE =
-    'input:not([readonly]):not([disabled]):not([type="file"]),select:not([disabled]),textarea:not([disabled]),button:not([disabled])';
+    'input:not([readonly]):not([disabled]):not([type="file"]),select:not([disabled]),textarea:not([disabled]),button:not([disabled]):not([tabindex="-1"])';
 
 const isVisible = (el: HTMLElement): boolean =>
     Boolean(el.offsetParent) || el.getClientRects().length > 0;

@@ -1225,7 +1225,7 @@ Resequenced after review, to remove dependencies on work scheduled later.
 | **0 Groundwork** | **Rotate the ngrok token (today).** Reverse-engineer and document the four v1 site presets — Kotta, Godown, Estimated-weight, Ice-water — **before** the formula language is designed, since they determine whether it is expressive enough. Model the hardest print format (`Pre Print 1`, three carbon columns) on paper to validate the block set. Prove the WebView2 → pdfium → spooler path end-to-end as a spike |
 | **0.5 Mock** | **Done.** Four review rounds on `demo/BabuScale-demo.html`. It is now the reference specification for Phase 1 — see §22 |
 | **1 Foundation** | `app/` scaffold, Tauri shell, fixed schema, `DataPort` + memory/SQLite adapters, component library **built against the mock**, i18n with language packs, help framework, CI gates, README, Pages demo live, **and backup/restore from day one** — real data must never exist without backup |
-| **2 Core** | Schema engine, formula engine, capture model, ticket state machine, masters + search, indicator + wizard, **hash chain on `audit` now** (cheap on day one, impossible to retrofit once history exists) |
+| **2 Core** | Schema engine, formula engine, capture model (§7.1, one status per §7.4 — no state machine), masters + search, indicator + wizard, **hash chain on `audit` now** (cheap on day one, impossible to retrofit once history exists) |
 | **3 Print** | Content model, three layout engines, the six real v1 formats, per-target preview, printer capability profiles |
 | **4 Capture** | 4 cameras, crop, overlay, ONVIF/RTSP, clips, retention, live view |
 | **5 Insight** | Reports, dashboard, Excel/CSV import-export, custom indexes, mass print |

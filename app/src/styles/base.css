@@ -37,6 +37,35 @@ body {
     color: var(--dim);
 }
 
+/* Small pill — a count badge, a status flag, the top-bar language toggle
+   (App.tsx's TopBarActions). Global for the same reason as .num/.lbl: one
+   look everywhere it appears, not owned by any single component. */
+.chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 9px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    font-size: 0.6875rem;
+    color: var(--dim);
+    background: var(--panel-2);
+    white-space: nowrap;
+}
+.chip.act {
+    cursor: pointer;
+    font-family: inherit;
+}
+.chip.act:hover {
+    color: var(--text);
+    border-color: var(--led-dim);
+}
+.chip.on {
+    color: var(--led);
+    border-color: var(--led-dim);
+    background: var(--led-ghost);
+}
+
 :focus-visible {
     outline: 2px solid var(--led);
     outline-offset: 2px;

@@ -1,0 +1,46 @@
+/* Ported from demo/BabuScale-demo.html's ".tw"/table rules. */
+.wrapper {
+    overflow-x: auto;
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8125rem;
+}
+
+.table th {
+    text-align: left;
+    font-size: 0.625rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--dim);
+    font-weight: 500;
+    padding: 7px 9px;
+    border-bottom: 1px solid var(--line);
+    white-space: nowrap;
+}
+
+.table td {
+    padding: 8px 9px;
+    border-bottom: 1px solid var(--line);
+    white-space: nowrap;
+}
+
+.table tr:last-child td {
+    border-bottom: none;
+}
+
+.numeric {
+    font-family: var(--mono);
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+}
+
+.table tbody tr:hover td {
+    background: var(--panel-2);
+}
+
+.clickable {
+    cursor: pointer;
+}

@@ -85,13 +85,70 @@ the frontend, via throwaway `cargo run` examples for the Rust store, deleted onc
    yet live**: this folder isn't pushed to a GitHub remote yet, so the Pages workflow has never
    run — see the open item in `../PLAN.md` §23.
 
+**Phase 2 — the features, in build order.** All built against the memory adapter (the same one
+that makes the Pages demo real), typechecked, linted (zero blocking errors) and exercised end to
+end in-browser (send a lorry → capture Tare → capture Gross → Save → the ticket appears correctly
+on Reports and Dashboard).
+
+8. **Formula engine + `Decimal`** — `src/engines/formulaEngine/` — a small arbitrary-precision
+   decimal type and a tokenizer/parser/evaluator over it (PLAN §6.6, §8.1). ✅
+9. **Schema engine** — `src/engines/schemaEngine/` — the field-definition type system and
+   `DEFAULT_TICKET_SCHEMA`. ✅ Wired into Weighing for field *labels* only so far — see Known gap.
+10. **Ticket/capture model** — `src/db/ticketBody.ts` (the `Capture[]` shape, `deriveWeights`,
+    `isOpenTicket` — PLAN §7.1/§7.4/§7.5) and `DataPortProvider`/`useDataPort`. ✅
+11. **`SearchableDropdown` + `Field`** — `src/components/SearchableDropdown/`,
+    `src/components/Field/` (`Field`, `FieldGrid`). ✅
+12. **Simulated indicator** — `src/engines/indicator/` — ports the mock's tick physics exactly
+    (`TICK_MS`, `SETTLE_TICKS`, damped approach then settle-jitter). `IndicatorSource`'s
+    `loadLorry`/`reset` are optional so a future real serial adapter isn't obliged to implement
+    demo-only controls. ✅
+13. **Masters** — `src/features/masters/` — one screen, eight `MasterKind`s, `useMasterCache` for
+    client-side cached search. ✅
+14. **Weighing** — `src/features/weighing/` — the real screen: capture, recall, open-ticket strip,
+    save/lock/print-count, all PLAN §7 rules end to end. ✅
+15. **Reports + Dashboard** — `src/features/reports/`, `src/features/dashboard/` — one ticket
+    dataset (`reportRows.ts`) feeding both the Tickets/Summary report and the KPI/hourly/material-
+    split dashboard, with real (not simulated) numbers. The Weighing ticket hook is lifted to
+    `App.tsx`'s `Shell` so Reports can resume a ticket into the same deck across a tab switch. ✅
+
 ## Known gap
 
-The Rust side compiles, links and is verified (`cargo check`/`clippy`/`fmt` all pass; the store and
-backup modules were exercised with real `cargo run` examples), but **no Tauri commands exist
-yet** — `src-tauri/src/commands/` is still just a module doc comment, and there is no `tauri`
-`DataPort` adapter in `src/db/adapters/`. The desktop build cannot talk to SQLite from the
-frontend yet. That wiring is Phase 2 work, done alongside the features that first need it.
+**Desktop I/O.** The Rust side compiles, links and is verified (`cargo check`/`clippy`/`fmt` all
+pass; the store and backup modules were exercised with real `cargo run` examples), but **no Tauri
+commands exist yet** — `src-tauri/src/commands/` is still just a module doc comment, and there is
+no `tauri` `DataPort` adapter in `src/db/adapters/`. The desktop build cannot talk to SQLite from
+the frontend yet, and there is no real serial-port indicator adapter — only the simulated one.
+
+**Not built at all yet, so the tab still says "— Phase 2":** Cameras, Settings (all six panes —
+fields/language, print/printers, appearance, weighing, connections, system), login/operator
+accounts (every capture is stamped with one hardcoded `DEMO_OPERATOR`).
+
+**Built, but deliberately smaller than the PLAN §9.1/§18 spec:**
+
+- **Masters** — client-side substring search over a per-kind cache, not FTS5; a plain table, not
+  virtualised/keyset-paginated; no merge-duplicates or bulk import/export. Fine at demo/site scale,
+  not at 100,000 rows.
+- **Master field richness** — generic Name/Notes only, except StoredTare. No GST fields on Party,
+  no Vehicle↔VehicleType linkage.
+- **Recall** (PLAN §9.2) — a simplified, statically-positioned inline banner (`RecallBanner`), not
+  the mock's viewport-positioned popover.
+- **Weighing rules** — tare-first vs gross-first, strict vs loose tare, and the stale-tare
+  threshold are fixed constants (`TARE_FIRST`, `STORED_TARE_STALE_AFTER_DAYS`) pending a real
+  Weighing settings pane. Ticket numbering (`TKT-####`) is a hardcoded prefix/width pending a
+  Settings-driven `Format` config.
+- **Schema-driven rendering** — Weighing pulls field *labels* from `DEFAULT_TICKET_SCHEMA` but
+  does not render fields generically from schema/formula config; that needs a Settings pane to
+  edit `Schema` rows first.
+- **Billing** — there is no rate/charge engine. Reports and Dashboard show ticket counts and net
+  tonnage only; no Charge column, no Charge KPI (the mock's is a fabricated demo number).
+- **Print/export** — Print and Reprint just increment a ticket's `PrintCount` and re-save; there is
+  no real print composition, and Reports' Export PDF/Excel/CSV buttons are shown disabled rather
+  than silently doing nothing.
+- **`CaptureTimeline`** (named in PLAN's architecture list) was not built — Weighing's "Captured &
+  calculated" card uses the mock's `.calc` three-box grid instead.
+- **Dashboard's hourly window** (06:00–20:00) is a fixed default; there is no site-hours Setting.
+- **Trust and integrations** (PLAN §18) — the hash chain, QR verification, anomaly detection,
+  WhatsApp/SMS delivery, Cloudflare Tunnel/Tailscale remote access, MiMaS: none of it is built.
 
 ## Carried over from the mock, verbatim
 

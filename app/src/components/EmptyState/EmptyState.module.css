@@ -1,0 +1,25 @@
+.wrapper {
+    display: grid;
+    justify-items: center;
+    gap: 6px;
+    padding: 28px 16px;
+    text-align: center;
+    color: var(--dim);
+}
+
+.icon {
+    font-size: 1.5rem;
+    color: var(--faint);
+}
+
+.title {
+    font-size: 0.8125rem;
+    color: var(--text);
+}
+
+.hint {
+    font-size: 0.75rem;
+    color: var(--dim);
+    line-height: 1.6;
+    max-width: 32ch;
+}

@@ -22,4 +22,5 @@ export const EN_STRINGS: Record<string, string> = {
     help: "Help",
     "adm.locked": "Locked",
     "adm.unlocked": "Admin",
+    recalled: "Recalled",
 };
