@@ -139,6 +139,16 @@ on Reports and Dashboard).
     `DataPort.resetDocSeries` for real. ✅ Verified: unlock/lock/wrong-password in-browser, a
     live prefix change reflected in the open-ticket strip's ticket number, and auto-capture
     firing a real Tare capture with no button press once enabled.
+18. **Operator on duty.** Turns out the mock has no login/accounts at all — `OperatorChip` (a
+    top-bar `#opChip`/`#opEdit` port: click to edit inline, blur or Enter commits) and Settings'
+    Appearance pane both just set a free-text `OperatorName`, deliberately _not_ admin-gated (the
+    mock's own comment: "operator comfort", not configuration). `useWeighingTicket` now stamps
+    every capture with it, replacing the hardcoded `DEMO_OPERATOR` constant from Task 14.
+    Along the way, found and fixed the same class of bug Task 16's Enter-as-Tab keyboard walk hit
+    before: a top-bar inline-edit chip isn't part of any screen's Enter-walk scope, so an
+    unmarked Enter inside it got hijacked and force-focused something else instead of committing.
+    `useEnterAsTab` now bails out on `[data-enter-skip]`, mirroring the mock's own
+    `e.target === $("opEdit")` exclusion. ✅
 
 ## Known gap
 
@@ -146,9 +156,10 @@ on Reports and Dashboard).
 (`src/engines/indicator/simulatedIndicator.ts`); a real adapter would live in
 `src-tauri/src/devices/` behind the same `IndicatorSource` interface.
 
-**Not built at all yet, so the tab still says "— Phase 2":** Cameras, login/operator accounts
-(every capture is stamped with one hardcoded `DEMO_OPERATOR` — a per-operator login is separate
-from the one shared admin password Settings now gates).
+**Not built at all yet, so the tab still says "— Phase 2":** Cameras. (Operator identity is now
+real, per item 18 — but it's a name, not an account: anyone can change it, there's no password.
+A real per-operator login, if ever wanted, is a different and bigger feature the mock itself
+never specifies, so nothing here invents one.)
 
 **Built, but deliberately smaller than the PLAN §9.1/§18 spec:**
 

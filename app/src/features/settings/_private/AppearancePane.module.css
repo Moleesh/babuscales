@@ -1,0 +1,12 @@
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 12px;
+    align-items: start;
+}
+
+.note {
+    font-size: 0.8125rem;
+    color: var(--dim);
+    line-height: 1.6;
+}

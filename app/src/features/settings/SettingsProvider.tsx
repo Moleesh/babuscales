@@ -10,6 +10,7 @@ import { DEFAULT_ADMIN_PASSWORD, hashAdminPassword, verifyAdminPassword } from "
 import {
     DEFAULT_FORMATS,
     DEFAULT_NUMBERING,
+    DEFAULT_OPERATOR_NAME,
     DEFAULT_RULES,
     DEFAULT_STABILITY,
     SETTINGS_CONFIG_ID,
@@ -31,6 +32,7 @@ const SYNC_DEFAULT_BODY: SettingsBody = {
     Stability: DEFAULT_STABILITY,
     Numbering: DEFAULT_NUMBERING,
     Formats: DEFAULT_FORMATS,
+    OperatorName: DEFAULT_OPERATOR_NAME,
     AdminPasswordHash: "",
     AdminPasswordSalt: "",
 };
@@ -127,9 +129,11 @@ export const SettingsProvider = ({ children }: SettingsProviderProps) => {
         [settings.AdminPasswordHash, settings.AdminPasswordSalt, armLockTimer],
     );
 
-    const save = useCallback(
+    // Shared by every write path — `save` gates it on `unlocked`, but
+    // `setOperatorName` deliberately doesn't (the mock's own Appearance pane
+    // is "operator comfort", not configuration — see SettingsContext.ts).
+    const persist = useCallback(
         async (next: SettingsBody): Promise<void> => {
-            if (!unlocked) return;
             const row = await db.saveConfig({
                 ConfigId: SETTINGS_CONFIG_ID,
                 ConfigKind: "Settings",
@@ -139,7 +143,15 @@ export const SettingsProvider = ({ children }: SettingsProviderProps) => {
             setSettings(next);
             setVersion(row.Version);
         },
-        [db, unlocked, version],
+        [db, version],
+    );
+
+    const save = useCallback(
+        async (next: SettingsBody): Promise<void> => {
+            if (!unlocked) return;
+            await persist(next);
+        },
+        [unlocked, persist],
     );
 
     const changeAdminPassword = useCallback(
@@ -151,9 +163,27 @@ export const SettingsProvider = ({ children }: SettingsProviderProps) => {
         [unlocked, settings, save],
     );
 
+    const setOperatorName = useCallback(
+        async (name: string): Promise<void> => {
+            const trimmed = name.trim() || DEFAULT_OPERATOR_NAME;
+            if (trimmed === settings.OperatorName) return;
+            await persist({ ...settings, OperatorName: trimmed });
+        },
+        [settings, persist],
+    );
+
     const value = useMemo<SettingsContextValue>(
-        () => ({ settings, loading, unlocked, unlock, lock, save, changeAdminPassword }),
-        [settings, loading, unlocked, unlock, lock, save, changeAdminPassword],
+        () => ({
+            settings,
+            loading,
+            unlocked,
+            unlock,
+            lock,
+            save,
+            changeAdminPassword,
+            setOperatorName,
+        }),
+        [settings, loading, unlocked, unlock, lock, save, changeAdminPassword, setOperatorName],
     );
 
     return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>;

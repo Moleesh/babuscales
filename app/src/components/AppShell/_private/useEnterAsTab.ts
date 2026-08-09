@@ -29,6 +29,13 @@ export const useEnterAsTab = (): void => {
             if (event.key !== "Enter" || event.ctrlKey || event.metaKey || event.altKey) return;
             const target = event.target;
             if (target instanceof HTMLTextAreaElement) return; // keeps its own literal newline
+            // Mock's own bailout (`e.target === $("opEdit") || e.target === $("admPw")`) —
+            // a top-bar inline-edit chip (OperatorChip) isn't part of any screen's walk at
+            // all; without this, an Enter meant to commit it gets caught by the walker
+            // instead, force-focusing something in the main content area (`current` comes
+            // back -1 since the chip's input isn't in `scope`'s list) before the chip's own
+            // handler runs.
+            if (target instanceof HTMLElement && target.closest("[data-enter-skip]")) return;
 
             const scope = resolveScope();
             const list = Array.from(scope.querySelectorAll<HTMLElement>(FOCUSABLE)).filter(

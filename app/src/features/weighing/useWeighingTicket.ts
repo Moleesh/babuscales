@@ -13,11 +13,6 @@ import type { DocRow } from "@db/types";
 import { useDataPort } from "@db/useDataPort";
 import { useIndicator } from "@engines/indicator";
 
-// No login/operator-selection screen yet (PLAN §12 — optional accounts is
-// System settings work, tracked as a known gap in app/README.md); every
-// capture in this build is stamped with one demo operator.
-const DEMO_OPERATOR = "Operator";
-
 export interface TicketFormFields {
     vehicleNo: string;
     party: string;
@@ -65,8 +60,12 @@ export interface UseWeighingTicket {
 // `tareFirst` (Settings, Weighing pane — "Applied immediately" per the
 // mock's own card header) only sets which weight is offered first; it can
 // change mid-session, so every place it decides the default kind re-derives
-// on change rather than being captured once at mount.
-export const useWeighingTicket = (tareFirst: boolean): UseWeighingTicket => {
+// on change rather than being captured once at mount. `operatorName` is the
+// mock's own "Operator on duty" (Settings' Appearance pane, not admin-gated
+// — a free-text label, not a login) stamped onto every capture; it too can
+// change mid-shift, so it's read fresh at capture time rather than closed
+// over once.
+export const useWeighingTicket = (tareFirst: boolean, operatorName: string): UseWeighingTicket => {
     const db = useDataPort();
     const indicator = useIndicator();
 
@@ -123,14 +122,14 @@ export const useWeighingTicket = (tareFirst: boolean): UseWeighingTicket => {
                 Type: kind,
                 WeightKg: Math.round(weightKg),
                 At: capturedAtIso ?? new Date().toISOString(),
-                Operator: DEMO_OPERATOR,
+                Operator: operatorName,
                 Source: source,
                 Images: [],
             };
             setCaptures((prev) => [...prev, capture]);
             if (source === "Indicator") indicator.reset?.();
         },
-        [captures, indicator, isLocked, kind],
+        [captures, indicator, isLocked, kind, operatorName],
     );
 
     const capture = useCallback(

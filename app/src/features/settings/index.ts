@@ -1,4 +1,5 @@
 export { AdminChip } from "./AdminChip";
+export { OperatorChip } from "./OperatorChip";
 export { SettingsProvider } from "./SettingsProvider";
 export type { SettingsProviderProps } from "./SettingsProvider";
 export { SettingsScreen } from "./SettingsScreen";

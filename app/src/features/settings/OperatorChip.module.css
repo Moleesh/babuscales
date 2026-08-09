@@ -1,0 +1,12 @@
+/* The editing state reuses the global `.chip` pill shape but needs the bits
+   a plain <input> doesn't inherit by default. */
+.input {
+    font: inherit;
+    font-size: 0.6875rem;
+    color: var(--text);
+    width: 130px;
+    outline: none;
+}
+.input:focus {
+    border-color: var(--led);
+}

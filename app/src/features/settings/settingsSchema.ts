@@ -47,6 +47,8 @@ export const settingsBodySchema = z.object({
     Stability: stabilitySchema,
     Numbering: numberingSchema,
     Formats: formatsSchema,
+    /** "Operator on duty" (mock's `#opChip`/Appearance pane `#setOp`) — a free-text label, not an account; deliberately not admin-gated. */
+    OperatorName: z.string(),
     AdminPasswordHash: z.string(),
     AdminPasswordSalt: z.string(),
 });
@@ -64,6 +66,9 @@ export const DEFAULT_STABILITY: StabilityGate = {
     ReadingsInRow: 5,
     BandKg: 20,
 };
+
+/** The mock's own fallback (`setOperator`: `(v || "").trim() || "Operator"`) — what an empty name reverts to. */
+export const DEFAULT_OPERATOR_NAME = "Operator";
 
 export const DEFAULT_NUMBERING: TicketNumbering = {
     Prefix: "TKT-",

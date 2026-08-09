@@ -3,6 +3,7 @@ import { useState } from "react";
 import { SegmentedControl } from "@components/SegmentedControl";
 import type { SegmentedOption } from "@components/SegmentedControl";
 
+import { AppearancePane } from "./_private/AppearancePane";
 import { PlaceholderPane } from "./_private/PlaceholderPane";
 import { SystemPane } from "./_private/SystemPane";
 import { WeighingPane } from "./_private/WeighingPane";
@@ -64,12 +65,7 @@ export const SettingsScreen = ({ onResetTicketSeries }: SettingsScreenProps) => 
                     note="Printer selection and print-template editing depend on the print/export engine, which isn't built yet (app/README.md known gap: Print/export)."
                 />
             )}
-            {pane === "look" && (
-                <PlaceholderPane
-                    title="Appearance"
-                    note="The six skins (tokens.css) and the text-size control are wired into styles/tokens.css already — a picker for them belongs here once this pane is built out."
-                />
-            )}
+            {pane === "look" && <AppearancePane />}
             {pane === "weigh" && <WeighingPane />}
             {pane === "conn" && (
                 <PlaceholderPane

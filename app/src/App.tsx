@@ -17,7 +17,13 @@ import type { SimulatedIndicatorSource } from "@engines/indicator";
 import { DashboardScreen } from "@features/dashboard";
 import { MastersScreen } from "@features/masters";
 import { ReportsScreen } from "@features/reports";
-import { AdminChip, SettingsProvider, SettingsScreen, useSettings } from "@features/settings";
+import {
+    AdminChip,
+    OperatorChip,
+    SettingsProvider,
+    SettingsScreen,
+    useSettings,
+} from "@features/settings";
 import { useWeighingTicket, WeighingScreen } from "@features/weighing";
 import type { UseWeighingTicket } from "@features/weighing";
 import { DEFAULT_HELP_TOPICS } from "@i18n/helpTopics";
@@ -70,6 +76,7 @@ const TopBarActions = ({
         <button className="chip act" onClick={onToggleLang}>
             {lang === "ta" ? "தமிழ்" : "English"}
         </button>
+        <OperatorChip />
         <AdminChip />
         <button
             className="iconbtn"
@@ -125,7 +132,7 @@ const Shell = () => {
     const reading = useIndicatorReading();
     const db = useDataPort();
     const { settings } = useSettings();
-    const ticket = useWeighingTicket(settings.Rules.TareFirst);
+    const ticket = useWeighingTicket(settings.Rules.TareFirst, settings.OperatorName);
 
     const openTicket = (doc: DocRow): void => {
         ticket.resume(doc);
