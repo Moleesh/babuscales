@@ -1,9 +1,25 @@
 // Formatting only — the number itself comes from `DataPort.allocateDocSeq`,
-// called once at first Save (PLAN §6.1 — "at close, never at draft"). The
-// prefix/width belong to a numbering Format config once Settings exists
-// (app/README.md known gap); these are the mock's own defaults meanwhile.
-const PREFIX = "TKT-";
-const WIDTH = 4;
+// called once at first Save (PLAN §6.1 — "at close, never at draft").
+
+export interface TicketNumberFormat {
+    prefix: string;
+    width: number;
+}
+
+const DEFAULT_FORMAT: TicketNumberFormat = { prefix: "TKT-", width: 4 };
+
+// `formatTicketNo` is called from small leaf components all over the app
+// (OpenTicketStrip, Dashboard's and Reports' tables, WeighingScreen) that
+// have no other reason to read Settings — SettingsProvider pushes the live
+// prefix/width here once on load and again on every save, rather than
+// threading a `TicketNumberFormat` prop through every call site.
+let activeFormat: TicketNumberFormat = DEFAULT_FORMAT;
+
+export const setTicketNumberFormat = (format: TicketNumberFormat): void => {
+    activeFormat = format;
+};
 
 export const formatTicketNo = (docSeq: number | null): string =>
-    docSeq === null ? "Draft" : `${PREFIX}${String(docSeq).padStart(WIDTH, "0")}`;
+    docSeq === null
+        ? "Draft"
+        : `${activeFormat.prefix}${String(docSeq).padStart(activeFormat.width, "0")}`;

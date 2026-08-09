@@ -15,6 +15,7 @@ import { useDataPort } from "@db/useDataPort";
 import { useMasterCache } from "@db/useMasterCache";
 import { useIndicator, useIndicatorReading } from "@engines/indicator";
 import { DEFAULT_TICKET_SCHEMA } from "@engines/schemaEngine";
+import { useSettings } from "@features/settings";
 
 import { OpenTicketStrip } from "./OpenTicketStrip";
 import { findLatestTicketForVehicle, findOpenTicketForVehicle, listOpenTickets } from "./recall";
@@ -51,6 +52,7 @@ export const WeighingScreen = ({ ticket }: WeighingScreenProps) => {
     const db = useDataPort();
     const indicator = useIndicator();
     const reading = useIndicatorReading();
+    const { settings } = useSettings();
 
     const [allTicketDocs, setAllTicketDocs] = useState<DocRow[]>([]);
     const [refreshToken, setRefreshToken] = useState(0);
@@ -97,6 +99,16 @@ export const WeighingScreen = ({ ticket }: WeighingScreenProps) => {
         !!ticket.kind &&
         !ticket.isLocked;
 
+    // Rules.AutoCapture (mock: `if (rules.autoCapture) setTimeout(capture, 350)`,
+    // fired once per settle) — the deck's own tick loop stops the instant it
+    // reports Stable, so `reading.WeightKg` is steady for the lifetime of this
+    // effect; nothing re-triggers the timer until the next `armed` transition.
+    useEffect(() => {
+        if (!armed || !settings.Rules.AutoCapture) return;
+        const timer = setTimeout(() => ticket.capture(reading.WeightKg), 350);
+        return () => clearTimeout(timer);
+    }, [armed, settings.Rules.AutoCapture, reading.WeightKg, ticket]);
+
     const recallOffers = useMemo((): RecallOffer[] => {
         if (ticket.isLocked || !ticket.fields.vehicleNo.trim()) return [];
         const offers: RecallOffer[] = [];
@@ -114,7 +126,7 @@ export const WeighingScreen = ({ ticket }: WeighingScreenProps) => {
             });
         }
 
-        if (ticket.captures.every((c) => c.Type !== "Tare")) {
+        if (!settings.Rules.StrictTare && ticket.captures.every((c) => c.Type !== "Tare")) {
             const storedTare = storedTareCache
                 .search(ticket.fields.vehicleNo)
                 .find(
@@ -153,7 +165,7 @@ export const WeighingScreen = ({ ticket }: WeighingScreenProps) => {
         }
 
         return offers;
-    }, [allTicketDocs, storedTareCache, ticket]);
+    }, [allTicketDocs, storedTareCache, ticket, settings.Rules.StrictTare]);
 
     const ticketDate = formatStamp(ticket.captures[0]?.At);
     const captureLabel = ticket.isComplete

@@ -1,0 +1,16 @@
+.body {
+    display: grid;
+    gap: 12px;
+}
+
+.error {
+    font-size: 0.75rem;
+    color: var(--alert);
+    margin: 0;
+}
+
+.actions {
+    display: flex;
+    gap: 9px;
+    justify-content: flex-end;
+}

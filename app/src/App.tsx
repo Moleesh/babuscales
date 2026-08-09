@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { AppShell } from "@components/AppShell";
 import type { AppShellTab } from "@components/AppShell";
@@ -7,14 +7,17 @@ import { WeightDisplay } from "@components/WeightDisplay";
 import { createDataPort } from "@db/createDataPort";
 import { DataPortProvider } from "@db/DataPortProvider";
 import type { DocRow } from "@db/types";
+import { useDataPort } from "@db/useDataPort";
 import {
     createSimulatedIndicator,
     IndicatorProvider,
     useIndicatorReading,
 } from "@engines/indicator";
+import type { SimulatedIndicatorSource } from "@engines/indicator";
 import { DashboardScreen } from "@features/dashboard";
 import { MastersScreen } from "@features/masters";
 import { ReportsScreen } from "@features/reports";
+import { AdminChip, SettingsProvider, SettingsScreen, useSettings } from "@features/settings";
 import { useWeighingTicket, WeighingScreen } from "@features/weighing";
 import type { UseWeighingTicket } from "@features/weighing";
 import { DEFAULT_HELP_TOPICS } from "@i18n/helpTopics";
@@ -67,6 +70,7 @@ const TopBarActions = ({
         <button className="chip act" onClick={onToggleLang}>
             {lang === "ta" ? "தமிழ்" : "English"}
         </button>
+        <AdminChip />
         <button
             className="iconbtn"
             aria-expanded={helpOpen}
@@ -84,12 +88,20 @@ interface TabContentProps {
     ticket: UseWeighingTicket;
     onOpenTicket: (doc: DocRow) => void;
     onNavigateToReports: () => void;
+    onResetTicketSeries: () => Promise<void>;
 }
 
 // The Weighing ticket hook is lifted to Shell (not owned by WeighingScreen
 // itself) so Reports and Dashboard can resume a ticket into the same deck
 // across a tab switch — see @features/weighing's UseWeighingTicket.
-const TabContent = ({ tab, label, ticket, onOpenTicket, onNavigateToReports }: TabContentProps) => {
+const TabContent = ({
+    tab,
+    label,
+    ticket,
+    onOpenTicket,
+    onNavigateToReports,
+    onResetTicketSeries,
+}: TabContentProps) => {
     switch (tab) {
         case "dash":
             return <DashboardScreen onNavigateToReports={onNavigateToReports} />;
@@ -99,8 +111,9 @@ const TabContent = ({ tab, label, ticket, onOpenTicket, onNavigateToReports }: T
             return <ReportsScreen onOpenTicket={onOpenTicket} />;
         case "masters":
             return <MastersScreen />;
-        case "cameras":
         case "settings":
+            return <SettingsScreen onResetTicketSeries={onResetTicketSeries} />;
+        case "cameras":
             return <p className="lbl">{label} — Phase 2</p>;
     }
 };
@@ -110,11 +123,17 @@ const Shell = () => {
     const [activeTab, setActiveTab] = useState<(typeof TAB_KEYS)[number]>("weigh");
     const [helpOpen, setHelpOpen] = useState(false);
     const reading = useIndicatorReading();
-    const ticket = useWeighingTicket();
+    const db = useDataPort();
+    const { settings } = useSettings();
+    const ticket = useWeighingTicket(settings.Rules.TareFirst);
 
     const openTicket = (doc: DocRow): void => {
         ticket.resume(doc);
         setActiveTab("weigh");
+    };
+
+    const resetTicketSeries = async (): Promise<void> => {
+        await db.resetDocSeries("Ticket", "default");
     };
 
     const tabs: AppShellTab[] = TAB_KEYS.map((key) => ({
@@ -160,6 +179,7 @@ const Shell = () => {
                 ticket={ticket}
                 onOpenTicket={openTicket}
                 onNavigateToReports={() => setActiveTab("reports")}
+                onResetTicketSeries={resetTicketSeries}
             />
             <ContextualHelp
                 open={helpOpen}
@@ -172,6 +192,26 @@ const Shell = () => {
     );
 };
 
+interface StabilityGateSyncProps {
+    indicator: SimulatedIndicatorSource;
+}
+
+// Settings' Weighing pane (Stability gate) writes through to the simulated
+// indicator's live-updatable options — "Applied immediately", per the
+// mock's own card header. A real serial adapter has no `updateOptions` to
+// call (SimulatedIndicatorSource-only), so this bridge only exists here,
+// not inside IndicatorProvider/useIndicator's generic surface.
+const StabilityGateSync = ({ indicator }: StabilityGateSyncProps) => {
+    const { settings } = useSettings();
+    useEffect(() => {
+        indicator.updateOptions({
+            settleTicks: settings.Stability.ReadingsInRow,
+            closeEnoughKg: settings.Stability.BandKg,
+        });
+    }, [indicator, settings.Stability.ReadingsInRow, settings.Stability.BandKg]);
+    return null;
+};
+
 export const App = () => {
     const [db] = useState(() => createDataPort());
     const [indicator] = useState(() => createSimulatedIndicator());
@@ -179,9 +219,12 @@ export const App = () => {
     return (
         <I18nProvider packs={[DEMO_TAMIL_PACK]}>
             <DataPortProvider db={db}>
-                <IndicatorProvider source={indicator}>
-                    <Shell />
-                </IndicatorProvider>
+                <SettingsProvider>
+                    <IndicatorProvider source={indicator}>
+                        <StabilityGateSync indicator={indicator} />
+                        <Shell />
+                    </IndicatorProvider>
+                </SettingsProvider>
             </DataPortProvider>
         </I18nProvider>
     );

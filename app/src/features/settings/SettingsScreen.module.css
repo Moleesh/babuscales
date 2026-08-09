@@ -1,0 +1,21 @@
+.screen {
+    padding: 12px;
+    display: grid;
+    gap: 12px;
+    align-content: start;
+}
+
+.lockbar {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 9px 13px;
+    border-radius: var(--radius);
+    border: 1px solid var(--warn);
+    background: var(--led-ghost);
+    font-size: 0.8125rem;
+    color: var(--text);
+}
+.lockbar .push {
+    margin-left: auto;
+}

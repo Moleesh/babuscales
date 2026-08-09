@@ -125,6 +125,20 @@ on Reports and Dashboard).
     than merges. Also verified by inspecting the actual built bundle: `VITE_DATA_ADAPTER=memory`
     (the Pages demo) still ships zero Tauri code, `VITE_DATA_ADAPTER=tauri` ships it — the "branch
     not taken is never bundled" guarantee holds in both directions.
+17. **Settings — the admin gate, for real.** `src/features/settings/` — a persisted `Settings`
+    config row (weighing rules, stability gate, ticket numbering, date/time/amount formats, a
+    salted-SHA-256 admin password hash), `SettingsProvider`/`useSettings`, and the mock's six-pane
+    split (`SettingsScreen`). Weighing and System are fully wired against that row; the other four
+    panes are documented placeholders (see Known gap). The top-bar admin chip
+    (`AdminChip`) and unlock modal (`AppModal`, newly built — PLAN §10's deferred component,
+    built now that a feature needs it) gate every pane's controls, with the mock's own 10-minute
+    silent auto-lock. `Rules.TareFirst`/`StrictTare`/`AutoCapture` reach `useWeighingTicket` and
+    `WeighingScreen` live ("Applied immediately", per the mock's own card header); the Stability
+    gate reaches the simulated indicator's settle physics the same way. Ticket numbering's
+    prefix/width reach `formatTicketNo` live, and "Reset the counter now" calls
+    `DataPort.resetDocSeries` for real. ✅ Verified: unlock/lock/wrong-password in-browser, a
+    live prefix change reflected in the open-ticket strip's ticket number, and auto-capture
+    firing a real Tare capture with no button press once enabled.
 
 ## Known gap
 
@@ -132,9 +146,9 @@ on Reports and Dashboard).
 (`src/engines/indicator/simulatedIndicator.ts`); a real adapter would live in
 `src-tauri/src/devices/` behind the same `IndicatorSource` interface.
 
-**Not built at all yet, so the tab still says "— Phase 2":** Cameras, Settings (all six panes —
-fields/language, print/printers, appearance, weighing, connections, system), login/operator
-accounts (every capture is stamped with one hardcoded `DEMO_OPERATOR`).
+**Not built at all yet, so the tab still says "— Phase 2":** Cameras, login/operator accounts
+(every capture is stamped with one hardcoded `DEMO_OPERATOR` — a per-operator login is separate
+from the one shared admin password Settings now gates).
 
 **Built, but deliberately smaller than the PLAN §9.1/§18 spec:**
 
@@ -145,10 +159,14 @@ accounts (every capture is stamped with one hardcoded `DEMO_OPERATOR`).
   no Vehicle↔VehicleType linkage.
 - **Recall** (PLAN §9.2) — a simplified, statically-positioned inline banner (`RecallBanner`), not
   the mock's viewport-positioned popover.
-- **Weighing rules** — tare-first vs gross-first, strict vs loose tare, and the stale-tare
-  threshold are fixed constants (`TARE_FIRST`, `STORED_TARE_STALE_AFTER_DAYS`) pending a real
-  Weighing settings pane. Ticket numbering (`TKT-####`) is a hardcoded prefix/width pending a
-  Settings-driven `Format` config.
+- **Settings** — Weighing and System are the only two of the mock's six panes actually wired
+  (see Phase-2 item 17); Fields & language, Print & printers, Appearance and Connections render as
+  named placeholders, each pending the feature it would configure. Within System, ticket
+  numbering is live but date/time/amount formats are only persisted — nothing else in the app
+  (Reports, Dashboard, printed tickets) reads them back yet. The stale-tare threshold
+  (`STORED_TARE_STALE_AFTER_DAYS` in `src/db/storedTare.ts`) stays a fixed constant — the mock
+  itself never exposes it as a setting either (`ex:"expired"` is static demo master data, not
+  computed from a configurable day count).
 - **Schema-driven rendering** — Weighing pulls field _labels_ from `DEFAULT_TICKET_SCHEMA` but
   does not render fields generically from schema/formula config; that needs a Settings pane to
   edit `Schema` rows first.

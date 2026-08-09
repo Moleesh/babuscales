@@ -18,9 +18,6 @@ import { useIndicator } from "@engines/indicator";
 // capture in this build is stamped with one demo operator.
 const DEMO_OPERATOR = "Operator";
 
-/** The rule only sets which weight is offered first — Settings work not built yet, so tare-first is the fixed default. */
-const TARE_FIRST = true;
-
 export interface TicketFormFields {
     vehicleNo: string;
     party: string;
@@ -65,7 +62,11 @@ export interface UseWeighingTicket {
     print: () => Promise<void>;
 }
 
-export const useWeighingTicket = (): UseWeighingTicket => {
+// `tareFirst` (Settings, Weighing pane — "Applied immediately" per the
+// mock's own card header) only sets which weight is offered first; it can
+// change mid-session, so every place it decides the default kind re-derives
+// on change rather than being captured once at mount.
+export const useWeighingTicket = (tareFirst: boolean): UseWeighingTicket => {
     const db = useDataPort();
     const indicator = useIndicator();
 
@@ -74,17 +75,17 @@ export const useWeighingTicket = (): UseWeighingTicket => {
     const [fields, setFields] = useState<TicketFormFields>(emptyFields());
     const [recalledFields, setRecalledFields] = useState<Set<RecalledField>>(new Set());
     const [captures, setCaptures] = useState<Capture[]>([]);
-    const [kind, setKindState] = useState<CaptureType | null>(defaultCaptureKind([], TARE_FIRST));
+    const [kind, setKindState] = useState<CaptureType | null>(defaultCaptureKind([], tareFirst));
     const [isLocked, setIsLocked] = useState(false);
     const [printCount, setPrintCount] = useState(0);
     const [saving, setSaving] = useState(false);
 
     useEffect(() => {
         setKindState((current) => {
-            const next = defaultCaptureKind(captures, TARE_FIRST);
+            const next = defaultCaptureKind(captures, tareFirst);
             return current !== next ? next : current;
         });
-    }, [captures]);
+    }, [captures, tareFirst]);
 
     const setField = useCallback((key: keyof TicketFormFields, value: string) => {
         setFields((prev) => ({ ...prev, [key]: value }));
@@ -108,11 +109,11 @@ export const useWeighingTicket = (): UseWeighingTicket => {
         setFields(emptyFields());
         setRecalledFields(new Set());
         setCaptures([]);
-        setKindState(defaultCaptureKind([], TARE_FIRST));
+        setKindState(defaultCaptureKind([], tareFirst));
         setIsLocked(false);
         setPrintCount(0);
         indicator.reset?.();
-    }, [indicator]);
+    }, [indicator, tareFirst]);
 
     const pushCapture = useCallback(
         (weightKg: number, source: Capture["Source"], capturedAtIso?: string) => {
@@ -213,7 +214,7 @@ export const useWeighingTicket = (): UseWeighingTicket => {
             });
             setRecalledFields(new Set());
             setCaptures(body.Captures);
-            setKindState(defaultCaptureKind(body.Captures, TARE_FIRST));
+            setKindState(defaultCaptureKind(body.Captures, tareFirst));
             // Mirrors save()'s own rule: two captures in means the ticket is
             // already finalised. Only PLAN §7.5's open (one-weight) tickets
             // should come back editable — a completed ticket resumed from
@@ -222,7 +223,7 @@ export const useWeighingTicket = (): UseWeighingTicket => {
             setPrintCount(body.PrintCount ?? 0);
             indicator.reset?.();
         },
-        [indicator],
+        [indicator, tareFirst],
     );
 
     const print = useCallback(async () => {

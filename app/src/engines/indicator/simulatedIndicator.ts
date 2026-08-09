@@ -3,9 +3,9 @@ import type { CaptureType } from "@db/ticketBody";
 import type { IndicatorListener, IndicatorReading, IndicatorSource } from "./types";
 
 const TICK_MS = 70;
-/** PLAN §13 — "weight is only accepted after N consecutive stable readings". */
-const SETTLE_TICKS = 12;
-const CLOSE_ENOUGH_KG = 40;
+/** PLAN §13 — "weight is only accepted after N consecutive stable readings". Settings' Weighing pane overrides these live (Stability gate — mock's `#setReads`/`#setBand`). */
+const DEFAULT_SETTLE_TICKS = 12;
+const DEFAULT_CLOSE_ENOUGH_KG = 40;
 
 const DEFAULT_TARE_RANGE_KG: readonly [number, number] = [12340, 13240];
 const DEFAULT_GROSS_RANGE_KG: readonly [number, number] = [30500, 34000];
@@ -13,6 +13,10 @@ const DEFAULT_GROSS_RANGE_KG: readonly [number, number] = [30500, 34000];
 export interface SimulatedIndicatorOptions {
     tareRangeKg?: readonly [number, number];
     grossRangeKg?: readonly [number, number];
+    /** "readings in a row" — the mock's `#setReads`. */
+    settleTicks?: number;
+    /** "within ± kg of each other" — the mock's `#setBand`. */
+    closeEnoughKg?: number;
 }
 
 export interface SimulatedIndicatorSource extends IndicatorSource {
@@ -20,6 +24,8 @@ export interface SimulatedIndicatorSource extends IndicatorSource {
     loadLorry: (kind: CaptureType) => void;
     /** Deck cleared — back to a stable zero. */
     reset: () => void;
+    /** Settings' Stability gate changes live ("Applied immediately", per the mock's own card header) — no real serial adapter is obliged to implement this, hence it lives only on the simulated source. */
+    updateOptions: (options: SimulatedIndicatorOptions) => void;
 }
 
 const randomInRange = ([lo, hi]: readonly [number, number]): number =>
@@ -34,6 +40,8 @@ export const createSimulatedIndicator = (
 ): SimulatedIndicatorSource => {
     const tareRange = options.tareRangeKg ?? DEFAULT_TARE_RANGE_KG;
     const grossRange = options.grossRangeKg ?? DEFAULT_GROSS_RANGE_KG;
+    let settleTicks = options.settleTicks ?? DEFAULT_SETTLE_TICKS;
+    let closeEnoughKg = options.closeEnoughKg ?? DEFAULT_CLOSE_ENOUGH_KG;
 
     let reading: IndicatorReading = { WeightKg: 0, Stable: true };
     let target = 0;
@@ -53,13 +61,13 @@ export const createSimulatedIndicator = (
 
     const tick = (): void => {
         const delta = target - reading.WeightKg;
-        if (Math.abs(delta) > CLOSE_ENOUGH_KG) {
+        if (Math.abs(delta) > closeEnoughKg) {
             reading = {
                 WeightKg: reading.WeightKg + delta * 0.14 + (Math.random() - 0.5) * 260,
                 Stable: false,
             };
             settleCount = 0;
-        } else if (settleCount < SETTLE_TICKS) {
+        } else if (settleCount < settleTicks) {
             reading = {
                 WeightKg: target + (Math.random() - 0.5) * (30 - settleCount * 2),
                 Stable: false,
@@ -92,6 +100,10 @@ export const createSimulatedIndicator = (
             settleCount = 0;
             reading = { WeightKg: 0, Stable: true };
             notify();
+        },
+        updateOptions: (next) => {
+            if (next.settleTicks !== undefined) settleTicks = next.settleTicks;
+            if (next.closeEnoughKg !== undefined) closeEnoughKg = next.closeEnoughKg;
         },
     };
 };
