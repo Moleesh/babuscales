@@ -25,6 +25,9 @@ thiserror = "1"
 rusqlite = { version = "0.32", features = ["bundled-full"] }
 sha2 = "0.10"
 chrono = "0.4"
+# Same strategy as the TS side's `ulid` package (src/db/id.ts) — every table
+# in PLAN §6.1 uses a ULID primary key.
+ulid = "1"
 
 [profile.release]
 # Smallest installer over fastest build — PLAN §5 targets a ~10MB MSI.

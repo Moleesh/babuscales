@@ -10,12 +10,54 @@ pub mod net;
 pub mod outbox;
 pub mod print;
 pub mod security;
+pub mod state;
 pub mod store;
+
+use tauri::Manager;
+
+use state::AppState;
 
 // Returns the Result rather than unwrapping — `unwrap`/`expect` are banned
 // outside main.rs (docs/CodingStandards.md), so the top-level panic point
 // stays in main.rs, the one sanctioned place for it.
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() -> tauri::Result<()> {
-    tauri::Builder::default().run(tauri::generate_context!())
+    tauri::Builder::default()
+        .setup(|app| {
+            // One file, in the app's own data directory — not a project
+            // path, not a temp dir (PLAN §6.4). `store::open` creates it
+            // (and its parent) if this is the first run.
+            let db_path = app.path().app_data_dir()?.join("babuscale.db");
+            let conn = store::open(&db_path)?;
+            app.manage(AppState {
+                conn: std::sync::Mutex::new(conn),
+                db_path,
+            });
+            Ok(())
+        })
+        .invoke_handler(tauri::generate_handler![
+            commands::docs::get_doc,
+            commands::docs::list_docs,
+            commands::docs::save_doc,
+            commands::docs::allocate_doc_seq,
+            commands::docs::reset_doc_series,
+            commands::masters::get_master,
+            commands::masters::list_masters,
+            commands::masters::save_master,
+            commands::configs::get_config,
+            commands::configs::list_config,
+            commands::configs::save_config,
+            commands::assets::get_asset_meta,
+            commands::assets::get_asset_bytes,
+            commands::assets::list_asset_meta,
+            commands::assets::put_asset,
+            commands::audit::append_audit,
+            commands::audit::list_audit,
+            commands::outbox::enqueue_outbox,
+            commands::outbox::list_outbox,
+            commands::outbox::update_outbox,
+            commands::backup::export_backup,
+            commands::backup::import_backup,
+        ])
+        .run(tauri::generate_context!())
 }

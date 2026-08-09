@@ -189,12 +189,10 @@ export const WeighingScreen = ({ ticket }: WeighingScreenProps) => {
                                     value={ticket.fields.vehicleNo}
                                     onChange={(value) => ticket.setField("vehicleNo", value)}
                                     onSearch={(query) =>
-                                        vehicleCache
-                                            .search(query)
-                                            .map((row) => ({
-                                                Value: row.MasterId,
-                                                Label: row.Name,
-                                            }))
+                                        vehicleCache.search(query).map((row) => ({
+                                            Value: row.MasterId,
+                                            Label: row.Name,
+                                        }))
                                     }
                                     onAddNew={(query) =>
                                         void vehicleCache.save({
@@ -228,12 +226,10 @@ export const WeighingScreen = ({ ticket }: WeighingScreenProps) => {
                                     value={ticket.fields.party}
                                     onChange={(value) => ticket.setField("party", value)}
                                     onSearch={(query) =>
-                                        partyCache
-                                            .search(query)
-                                            .map((row) => ({
-                                                Value: row.MasterId,
-                                                Label: row.Name,
-                                            }))
+                                        partyCache.search(query).map((row) => ({
+                                            Value: row.MasterId,
+                                            Label: row.Name,
+                                        }))
                                     }
                                     onAddNew={(query) =>
                                         void partyCache.save({
@@ -256,12 +252,10 @@ export const WeighingScreen = ({ ticket }: WeighingScreenProps) => {
                                     value={ticket.fields.material}
                                     onChange={(value) => ticket.setField("material", value)}
                                     onSearch={(query) =>
-                                        materialCache
-                                            .search(query)
-                                            .map((row) => ({
-                                                Value: row.MasterId,
-                                                Label: row.Name,
-                                            }))
+                                        materialCache.search(query).map((row) => ({
+                                            Value: row.MasterId,
+                                            Label: row.Name,
+                                        }))
                                     }
                                     onAddNew={(query) =>
                                         void materialCache.save({
@@ -297,12 +291,10 @@ export const WeighingScreen = ({ ticket }: WeighingScreenProps) => {
                                     value={ticket.fields.transporter}
                                     onChange={(value) => ticket.setField("transporter", value)}
                                     onSearch={(query) =>
-                                        transporterCache
-                                            .search(query)
-                                            .map((row) => ({
-                                                Value: row.MasterId,
-                                                Label: row.Name,
-                                            }))
+                                        transporterCache.search(query).map((row) => ({
+                                            Value: row.MasterId,
+                                            Label: row.Name,
+                                        }))
                                     }
                                     onAddNew={(query) =>
                                         void transporterCache.save({

@@ -8,6 +8,8 @@
         "build": "tsc -b && vite build",
         "preview": "vite preview",
         "tauri": "tauri",
+        "dev:tauri": "cross-env VITE_DATA_ADAPTER=tauri npm run dev",
+        "build:tauri": "cross-env VITE_DATA_ADAPTER=tauri npm run build",
         "typecheck": "tsc -b",
         "lint": "eslint .",
         "lint:errors": "eslint . --quiet",
@@ -19,6 +21,7 @@
         "scan:secrets": "secretlint \"**/*\""
     },
     "dependencies": {
+        "@tauri-apps/api": "^2.11.1",
         "react": "^19.0.0",
         "react-dom": "^19.0.0",
         "ulid": "^3.0.2",
@@ -32,6 +35,7 @@
         "@types/react": "^19.0.0",
         "@types/react-dom": "^19.0.0",
         "@vitejs/plugin-react": "^4.3.4",
+        "cross-env": "^10.1.0",
         "eslint": "^9.18.0",
         "eslint-import-resolver-typescript": "^3.7.0",
         "eslint-plugin-import": "^2.31.0",

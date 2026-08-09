@@ -29,6 +29,19 @@ CREATE UNIQUE INDEX IF NOT EXISTS ux_doc_seq
   ON doc (doc_kind, profile_id, series_epoch, doc_seq)
   WHERE doc_seq IS NOT NULL;
 
+-- The *current* numbering epoch per (doc_kind, profile_id) — bumped by a
+-- manual numbering reset ("reset ticket no", PLAN §6.1/§4.10). Not
+-- derivable from `doc` alone: right after a reset the new epoch has zero
+-- rows yet, so MAX(series_epoch) over existing docs would still return the
+-- old one. Mirrors the memory adapter's own `state.seriesEpoch` map, which
+-- is likewise treated as durable state (carried in its backup snapshot).
+CREATE TABLE IF NOT EXISTS series_counter (
+  doc_kind   TEXT NOT NULL,
+  profile_id TEXT NOT NULL,
+  epoch      INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (doc_kind, profile_id)
+);
+
 -- All reference data: parties, materials, vehicles, transporters, places, tares, operators.
 CREATE TABLE IF NOT EXISTS master (
   master_id   TEXT PRIMARY KEY,

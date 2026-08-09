@@ -8,10 +8,26 @@ use rusqlite::Connection;
 
 use crate::error::AppError;
 
+mod assets;
+mod audit;
 mod backup;
+mod configs;
+mod docs;
+pub mod dto;
+mod hash;
+mod ids;
+mod masters;
+mod outbox;
 mod patches;
+mod time;
 
+pub use assets::{get_asset_bytes, get_asset_meta, list_asset_meta, put_asset};
+pub use audit::{append_audit, list_audit};
 pub use backup::{backup as backup_database, restore as restore_database, BackupInfo};
+pub use configs::{get_config, list_config, save_config};
+pub use docs::{allocate_doc_seq, get_doc, list_docs, reset_doc_series, save_doc};
+pub use masters::{get_master, list_masters, save_master};
+pub use outbox::{enqueue_outbox, list_outbox, update_outbox};
 
 const SCHEMA_SQL: &str = include_str!("schema.sql");
 

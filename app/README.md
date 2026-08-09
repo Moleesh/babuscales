@@ -93,7 +93,7 @@ on Reports and Dashboard).
 8. **Formula engine + `Decimal`** — `src/engines/formulaEngine/` — a small arbitrary-precision
    decimal type and a tokenizer/parser/evaluator over it (PLAN §6.6, §8.1). ✅
 9. **Schema engine** — `src/engines/schemaEngine/` — the field-definition type system and
-   `DEFAULT_TICKET_SCHEMA`. ✅ Wired into Weighing for field *labels* only so far — see Known gap.
+   `DEFAULT_TICKET_SCHEMA`. ✅ Wired into Weighing for field _labels_ only so far — see Known gap.
 10. **Ticket/capture model** — `src/db/ticketBody.ts` (the `Capture[]` shape, `deriveWeights`,
     `isOpenTicket` — PLAN §7.1/§7.4/§7.5) and `DataPortProvider`/`useDataPort`. ✅
 11. **`SearchableDropdown` + `Field`** — `src/components/SearchableDropdown/`,
@@ -110,14 +110,27 @@ on Reports and Dashboard).
     dataset (`reportRows.ts`) feeding both the Tickets/Summary report and the KPI/hourly/material-
     split dashboard, with real (not simulated) numbers. The Weighing ticket hook is lifted to
     `App.tsx`'s `Shell` so Reports can resume a ticket into the same deck across a tab switch. ✅
+16. **Desktop wiring — the Tauri `DataPort` adapter.** New files under `src-tauri/src/store/`
+    (`docs.rs`, `masters.rs`, `configs.rs`, `assets.rs`, `audit.rs`, `outbox.rs`) — real SQLite CRUD
+    mirroring the memory adapter's exact semantics, including anti-gap `doc_seq` allocation inside
+    `BEGIN IMMEDIATE` and the `audit` hash chain.
+    One command per `DataPort` method in `src-tauri/src/commands/`, an `AppState` opening the one
+    database file at startup, and `src/db/adapters/tauri/` on the TS side — the same contract, one
+    `invoke()` call per method. `npm run dev:tauri`/`build:tauri` (via `cross-env`) are what
+    actually select this adapter; a plain `npm run dev`/`build` still defaults to memory. ✅
+    Verified: `cargo check`/`clippy -D warnings`/`fmt --check` clean, a full binary build succeeds,
+    and a throwaway `cargo run --example` (deleted once it passed, same as steps 2/3) exercised
+    every operation against a real file — including a corrupted-mid-transaction-proof numbering
+    reset and a genuine backup → mutate → restore round trip that proves restore replaces rather
+    than merges. Also verified by inspecting the actual built bundle: `VITE_DATA_ADAPTER=memory`
+    (the Pages demo) still ships zero Tauri code, `VITE_DATA_ADAPTER=tauri` ships it — the "branch
+    not taken is never bundled" guarantee holds in both directions.
 
 ## Known gap
 
-**Desktop I/O.** The Rust side compiles, links and is verified (`cargo check`/`clippy`/`fmt` all
-pass; the store and backup modules were exercised with real `cargo run` examples), but **no Tauri
-commands exist yet** — `src-tauri/src/commands/` is still just a module doc comment, and there is
-no `tauri` `DataPort` adapter in `src/db/adapters/`. The desktop build cannot talk to SQLite from
-the frontend yet, and there is no real serial-port indicator adapter — only the simulated one.
+**No real serial-port indicator adapter** — Weighing only ever talks to the simulated one
+(`src/engines/indicator/simulatedIndicator.ts`); a real adapter would live in
+`src-tauri/src/devices/` behind the same `IndicatorSource` interface.
 
 **Not built at all yet, so the tab still says "— Phase 2":** Cameras, Settings (all six panes —
 fields/language, print/printers, appearance, weighing, connections, system), login/operator
@@ -136,7 +149,7 @@ accounts (every capture is stamped with one hardcoded `DEMO_OPERATOR`).
   threshold are fixed constants (`TARE_FIRST`, `STORED_TARE_STALE_AFTER_DAYS`) pending a real
   Weighing settings pane. Ticket numbering (`TKT-####`) is a hardcoded prefix/width pending a
   Settings-driven `Format` config.
-- **Schema-driven rendering** — Weighing pulls field *labels* from `DEFAULT_TICKET_SCHEMA` but
+- **Schema-driven rendering** — Weighing pulls field _labels_ from `DEFAULT_TICKET_SCHEMA` but
   does not render fields generically from schema/formula config; that needs a Settings pane to
   edit `Schema` rows first.
 - **Billing** — there is no rate/charge engine. Reports and Dashboard show ticket counts and net
