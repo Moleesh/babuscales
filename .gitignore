@@ -1,0 +1,8 @@
+# OS and editor noise — build-specific ignores live in app/.gitignore,
+# which already covers node_modules, dist, src-tauri/target, etc.
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/*
+!.vscode/extensions.json
+*.swp

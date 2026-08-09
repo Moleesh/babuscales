@@ -1,0 +1,46 @@
+/* Ported from demo/BabuScale-demo.html ".btn" rules (PLAN §22). */
+.btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    padding: 9px 12px;
+    border-radius: 9px;
+    border: 1px solid var(--line);
+    background: var(--panel-2);
+    color: var(--text);
+    font: inherit;
+    font-size: 0.8125rem;
+    cursor: pointer;
+    min-height: 38px;
+    text-align: center;
+}
+.btn:hover:not(:disabled) {
+    border-color: var(--dim);
+}
+.btn:disabled {
+    opacity: 0.32;
+    cursor: not-allowed;
+}
+
+.caption {
+    font-size: 0.625rem;
+    color: var(--dim);
+    font-weight: 400;
+}
+
+.primary {
+    background: var(--led);
+    border-color: var(--led);
+    color: var(--void);
+    font-weight: 650;
+}
+.primary .caption {
+    color: var(--void);
+    opacity: 0.75;
+}
+
+.danger {
+    color: var(--alert);
+}

@@ -1,0 +1,34 @@
+[package]
+name = "babuscale"
+version = "0.1.0"
+description = "Weighbridge management software that a quarry can actually run."
+authors = ["Babulens"]
+edition = "2021"
+rust-version = "1.77"
+
+[lib]
+# Required by the mobile targets (Android/iOS) that Tauri v2 adds later —
+# see PLAN §21 Phase 8. Desktop and mobile share this crate.
+name = "babuscale_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "1"
+# bundled-full: statically links SQLite, no system install required, and
+# turns on FTS5 — PLAN §6.1's `doc_fts`/`master_fts` virtual tables need it.
+rusqlite = { version = "0.32", features = ["bundled-full"] }
+sha2 = "0.10"
+chrono = "0.4"
+
+[profile.release]
+# Smallest installer over fastest build — PLAN §5 targets a ~10MB MSI.
+panic = "abort"
+codegen-units = 1
+lto = true
+strip = true

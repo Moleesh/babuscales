@@ -1,0 +1,76 @@
+import type { ReactNode } from "react";
+
+import { BrandMark } from "./_private/BrandMark";
+import { useEnterAsTab } from "./_private/useEnterAsTab";
+import styles from "./AppShell.module.css";
+
+export interface AppShellTab {
+    key: string;
+    label: string;
+    icon: ReactNode;
+}
+
+export interface AppShellProps {
+    /** e.g. "Sri Lakshmi Blue Metals · Nagercoil · Bridge 1" — configured per site. */
+    siteLabel: string;
+    tabs: AppShellTab[];
+    activeTab: string;
+    onNavigate: (key: string) => void;
+    /** Comm/operator/admin chips and the help button — feature-owned, not the shell's business. */
+    topRight?: ReactNode;
+    /** The weight indicator readout — sits above every screen, full-size on Weighing (PLAN §13). */
+    header?: ReactNode;
+    children: ReactNode;
+}
+
+// The six-tab frame every screen lives inside (PLAN §13.1 — dashboard,
+// weighing, cameras, reports, masters, settings; no separate Tickets tab).
+// Enter-as-Tab is wired here once, for the whole app, rather than per-screen.
+export const AppShell = ({
+    siteLabel,
+    tabs,
+    activeTab,
+    onNavigate,
+    topRight,
+    header,
+    children,
+}: AppShellProps) => {
+    useEnterAsTab();
+
+    return (
+        <div className={styles.app}>
+            <header className={styles.top}>
+                <div className={styles.brandbox}>
+                    <BrandMark />
+                    <div style={{ minWidth: 0 }}>
+                        <div className={styles.brand}>
+                            Babu<em>Scale</em>
+                        </div>
+                        <div className={styles.site}>{siteLabel}</div>
+                    </div>
+                </div>
+
+                <nav className={styles.tabs} aria-label="Sections">
+                    {tabs.map((tab) => (
+                        <button
+                            key={tab.key}
+                            className={`${styles.tab} ${tab.key === activeTab ? styles.active : ""}`}
+                            aria-current={tab.key === activeTab ? "page" : undefined}
+                            onClick={() => onNavigate(tab.key)}
+                        >
+                            <span className={styles.tabIcon}>{tab.icon}</span>
+                            <span>{tab.label}</span>
+                        </button>
+                    ))}
+                </nav>
+
+                <div className={styles.topRight}>{topRight}</div>
+            </header>
+
+            <div className={styles.main} data-enter-scope>
+                {header}
+                <div className={styles.screen}>{children}</div>
+            </div>
+        </div>
+    );
+};

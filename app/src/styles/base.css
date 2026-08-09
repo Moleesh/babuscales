@@ -1,0 +1,66 @@
+/* ============================================================
+   BabuScale — base reset
+   Carried over from demo/BabuScale-demo.html, split out from
+   tokens.css because tokens.css is documented as a verbatim,
+   closed port (app/README.md) — this is the small reset layer
+   that sits on top of it, and can change independently.
+   ============================================================ */
+
+* {
+    box-sizing: border-box;
+}
+[hidden] {
+    display: none !important;
+}
+
+body {
+    margin: 0;
+    background: var(--void);
+    color: var(--text);
+    font-family: var(--ui);
+    font-size: 0.875rem;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* Two utility classes used everywhere a value or a caption appears — kept
+   global rather than per-component because that's what they are: a value
+   (tabular, monospace) and a caption (small, spaced, muted). */
+.num {
+    font-family: var(--mono);
+    font-variant-numeric: tabular-nums;
+}
+.lbl {
+    font-size: 0.6875rem;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--dim);
+}
+
+:focus-visible {
+    outline: 2px solid var(--led);
+    outline-offset: 2px;
+}
+
+/* A small square icon-only button — the top-bar "?" and every drawer's ✕.
+   Global rather than owned by one component because both AppShell's help
+   button and ContextualHelp's close button are this same button. */
+.iconbtn {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    border: 1px solid var(--line);
+    background: var(--panel-2);
+    color: var(--dim);
+    cursor: pointer;
+    font-size: 0.875rem;
+    line-height: 1;
+    flex: none;
+}
+.iconbtn:hover {
+    color: var(--text);
+}
+.iconbtn[aria-expanded="true"] {
+    color: var(--led);
+    border-color: var(--led-dim);
+}

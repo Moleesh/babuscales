@@ -1,0 +1,58 @@
+/* Ported from demo/BabuScale-demo.html ".wst" rules — PLAN §7.4:
+   "there is only one status, and it is the weights." */
+.pill {
+    display: inline-flex;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    overflow: hidden;
+    font-size: 0.625rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    line-height: 1;
+    white-space: nowrap;
+}
+.pill.cancelled {
+    opacity: 0.5;
+    text-decoration: line-through;
+}
+
+.segment {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 9px;
+    font-style: normal;
+    color: var(--faint);
+}
+.segment + .segment {
+    border-left: 1px solid var(--line);
+}
+.segment.on {
+    color: var(--dim);
+}
+
+.value {
+    font-family: var(--mono);
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+    letter-spacing: 0;
+    min-width: 6.5ch;
+    text-align: right;
+    color: var(--faint);
+}
+.segment.on .value {
+    color: var(--text);
+}
+
+/* Net carries the accent, and only once both weights exist (PLAN §7.4). */
+.net {
+    background: var(--panel-2);
+}
+.net.on {
+    color: var(--led);
+    background: var(--led-ghost);
+}
+.net.on .value {
+    color: var(--led);
+    font-weight: 700;
+}

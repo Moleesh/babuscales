@@ -1,0 +1,20 @@
+node_modules
+dist
+dist-ssr
+*.local
+*.tsbuildinfo
+
+# Rust / Tauri
+src-tauri/target
+src-tauri/gen
+
+# Editors, logs
+.vscode/*
+!.vscode/extensions.json
+*.log
+npm-debug.log*
+
+# SQLite dev database (never committed — see PLAN §6.4)
+*.db
+*.db-journal
+*.db-wal

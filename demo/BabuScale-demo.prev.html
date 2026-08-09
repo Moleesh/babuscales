@@ -1,0 +1,1613 @@
+<title>BabuScale — virtual demo</title>
+<style>
+/* ============================================================
+   SKINS — every colour in the app comes from these tokens.
+   A skin is a saved settings value, not a code change.
+   ============================================================ */
+:root{
+  --s:1;                       /* font scale, set by the A− A A+ control */
+  --radius:10px;
+  --mono:ui-monospace,"Cascadia Mono","SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+  --ui:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --warn:#E8A33D; --alert:#E4614B;
+}
+/* 1 · Indicator — the default. Amber on black, the colour of a weighbridge head. */
+:root,:root[data-skin="indicator"]{
+  color-scheme:dark;
+  --void:#0B0E0F; --panel:#141A1C; --panel-2:#1B2325; --line:#252F32;
+  --text:#DCE6E6; --dim:#7C8D91; --faint:#4E5D61;
+  --led:#FFA92E; --led-dim:#7A4F13; --led-ghost:rgba(255,169,46,.07);
+  --stable:#3ECF8E; --live:#4AA8FF;
+}
+/* 2 · Graphite — cool dark, teal accent. Calmer for long shifts on a big monitor. */
+:root[data-skin="graphite"]{
+  color-scheme:dark;
+  --void:#0C1013; --panel:#151B21; --panel-2:#1C242B; --line:#29333C;
+  --text:#DCE5EC; --dim:#8494A2; --faint:#54626D;
+  --led:#4FD6C9; --led-dim:#1E5450; --led-ghost:rgba(79,214,201,.08);
+  --stable:#5FD08A; --live:#7BA7FF;
+}
+/* 3 · Night shift — near-black, no blue light, deep orange. For the 2 a.m. cabin. */
+:root[data-skin="night"]{
+  color-scheme:dark;
+  --void:#0A0705; --panel:#14100B; --panel-2:#1D1710; --line:#2E251A;
+  --text:#EADDCA; --dim:#96856C; --faint:#5F5341;
+  --led:#FF7A1A; --led-dim:#6B3406; --led-ghost:rgba(255,122,26,.08);
+  --stable:#B7C24E; --live:#D8A44C;
+  --warn:#D9932F; --alert:#DB5A3C;
+}
+/* 4 · Paper — warm light, burnt-orange accent. Reads like the printed ticket. */
+:root[data-skin="paper"]{
+  color-scheme:light;
+  --void:#EDE8DE; --panel:#FFFDF8; --panel-2:#F6F1E7; --line:#DCD4C4;
+  --text:#1D1913; --dim:#6B6153; --faint:#9A9182;
+  --led:#9A3412; --led-dim:#E8CDBC; --led-ghost:rgba(154,52,18,.06);
+  --stable:#14733F; --live:#1F5FA8;
+}
+/* 5 · Daylight — cool light, blue accent. The one for a bright office window. */
+:root[data-skin="daylight"]{
+  color-scheme:light;
+  --void:#E8EDF2; --panel:#FFFFFF; --panel-2:#F1F5F9; --line:#D2DAE3;
+  --text:#111820; --dim:#546270; --faint:#8695A1;
+  --led:#0B5FBF; --led-dim:#BFD6F2; --led-ghost:rgba(11,95,191,.06);
+  --stable:#0E7C4F; --live:#0B5FBF;
+}
+/* 6 · High contrast — maximum legibility through dust, glare and cheap glass. */
+:root[data-skin="contrast"]{
+  color-scheme:dark;
+  --void:#000000; --panel:#0A0A0A; --panel-2:#141414; --line:#4D4D4D;
+  --text:#FFFFFF; --dim:#CFCFCF; --faint:#9C9C9C;
+  --led:#FFD400; --led-dim:#6B5A00; --led-ghost:rgba(255,212,0,.10);
+  --stable:#00E07A; --live:#4FC3FF; --warn:#FFB000; --alert:#FF5C4D;
+}
+
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{font-size:calc(16px * var(--s));}
+body{margin:0;background:var(--void);color:var(--text);font-family:var(--ui);
+     font-size:.875rem;line-height:1.5;-webkit-font-smoothing:antialiased;}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.lbl{font-size:.6875rem;letter-spacing:.09em;text-transform:uppercase;color:var(--dim)}
+:focus-visible{outline:2px solid var(--led);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+/* ===== shell: fixed frame, only .main ever scrolls ===== */
+.app{display:flex;flex-direction:column;height:100vh;height:100dvh;overflow:hidden}
+.main{flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column}
+
+/* ===== top bar: brand · tabs · operator ===== */
+.top{display:flex;align-items:center;gap:12px;padding:0 12px;height:52px;flex:none;
+     background:var(--panel);border-bottom:1px solid var(--line)}
+.brandbox{display:flex;align-items:center;gap:9px;min-width:0}
+.mark{width:26px;height:26px;border-radius:7px;flex:none;display:grid;place-items:center;
+      background:linear-gradient(150deg,var(--led),var(--led-dim));color:var(--panel);
+      font-weight:800;font-size:.8125rem}
+.brandbox b{font-size:.875rem}
+.site{font-size:.6875rem;color:var(--dim);white-space:nowrap}
+.tabs{display:flex;gap:2px;flex:1;min-width:0;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{display:flex;align-items:center;gap:7px;padding:7px 11px;border-radius:8px;border:none;
+     background:none;color:var(--dim);cursor:pointer;font:inherit;font-size:.8125rem;white-space:nowrap}
+.tab:hover{color:var(--text)}
+.tab[aria-current="page"]{background:var(--panel-2);color:var(--text);box-shadow:inset 0 -2px 0 var(--led)}
+.tab .ic{font-size:.75rem;color:var(--faint)}
+.tab[aria-current="page"] .ic{color:var(--led)}
+.topr{display:flex;align-items:center;gap:8px;flex:none}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:4px 9px;border:1px solid var(--line);
+      border-radius:999px;font-size:.6875rem;color:var(--dim);background:var(--panel-2);white-space:nowrap}
+.chip.act{cursor:pointer;font-family:inherit}
+.chip.act:hover{color:var(--text);border-color:var(--led-dim)}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--stable);flex:none}
+.dot.off{background:var(--faint)}
+.iconbtn{width:30px;height:30px;border-radius:8px;border:1px solid var(--line);background:var(--panel-2);
+         color:var(--dim);cursor:pointer;font-size:.875rem;line-height:1;flex:none}
+.iconbtn:hover{color:var(--text)}
+.iconbtn[aria-expanded="true"]{color:var(--led);border-color:var(--led-dim)}
+#opEdit{width:110px;padding:3px 7px;font:inherit;font-size:.6875rem;background:var(--panel);
+        color:var(--text);border:1px solid var(--led);border-radius:999px}
+
+/* ===== indicator head ===== */
+.head{margin:12px 12px 0;flex:none;border:1px solid var(--line);border-radius:var(--radius);
+      background:radial-gradient(90% 160% at 50% -40%,var(--led-ghost),transparent 62%),var(--panel-2);
+      display:grid;grid-template-columns:200px minmax(0,1fr) 220px;gap:16px;align-items:center;
+      padding:12px 16px}
+.head-l{display:flex;flex-direction:column;gap:7px;min-width:0}
+.lamps{display:flex;gap:6px;flex-wrap:wrap}
+.lamp{display:inline-flex;align-items:center;gap:5px;padding:3px 8px;border-radius:999px;
+      border:1px solid var(--line);font-size:.625rem;letter-spacing:.08em;text-transform:uppercase;color:var(--faint)}
+.lamp .dot{background:var(--faint)}
+.lamp.on{color:var(--stable);border-color:var(--stable)}
+.lamp.on .dot{background:var(--stable)}
+.lamp.busy{color:var(--live);border-color:var(--live)}
+.lamp.busy .dot{background:var(--live);animation:pulse 1s infinite}
+@keyframes pulse{50%{opacity:.25}}
+.readout{position:relative;display:flex;align-items:baseline;justify-content:center;gap:8px;min-width:0}
+.ghost{position:absolute;inset:0;display:flex;align-items:baseline;justify-content:center;
+       pointer-events:none;color:var(--led-ghost)}
+.digits,.ghost span{font-family:var(--mono);font-variant-numeric:tabular-nums;
+      font-size:clamp(2.5rem,7vw,4.4rem);font-weight:700;letter-spacing:.03em;line-height:1;
+      transition:font-size .16s ease}
+.digits{color:var(--led);text-shadow:0 0 26px var(--led-ghost)}
+.unit{font-size:.9375rem;color:var(--dim)}
+.head-r{text-align:right;display:flex;flex-direction:column;gap:5px;align-items:flex-end}
+.clock{font-family:var(--mono);font-size:1.25rem;letter-spacing:.04em}
+.cday{font-size:.6875rem;color:var(--dim)}
+.cap{width:100%;height:4px;border-radius:999px;background:var(--line);overflow:hidden}
+.cap i{display:block;height:100%;background:var(--led);width:0;transition:width .2s linear}
+#capTxt{font-size:.6875rem}
+.head[data-mode="compact"]{grid-template-columns:auto minmax(0,1fr) auto;padding:7px 14px;gap:12px}
+.head[data-mode="compact"] .digits,
+.head[data-mode="compact"] .ghost span{font-size:1.75rem}
+.head[data-mode="compact"] .cap,
+.head[data-mode="compact"] .cday,
+.head[data-mode="compact"] #capTxt{display:none}
+.head[data-mode="compact"] .clock{font-size:.875rem}
+.head[data-mode="compact"] .head-l{flex-direction:row;align-items:center;gap:10px}
+
+/* ===== screens ===== */
+.screen{padding:12px;display:grid;gap:12px;align-content:start}
+.grid2{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:12px;align-items:start}
+.col{display:grid;gap:12px;min-width:0}
+.card{border:1px solid var(--line);border-radius:var(--radius);background:var(--panel);min-width:0}
+.card>header{display:flex;align-items:center;gap:9px;padding:9px 13px;border-bottom:1px solid var(--line)}
+.card>.body{padding:13px}
+.push{margin-left:auto}
+
+/* weighing tab fits the frame — nothing scrolls on a desktop screen */
+@media (min-width:900px) and (min-height:700px){
+  .app[data-screen="weigh"] .main{overflow:hidden}
+  .app[data-screen="weigh"] .screen[data-screen="weigh"]{min-height:0;overflow:hidden}
+  .app[data-screen="weigh"] .foot{display:none}
+  .app[data-screen="weigh"] #camSide{max-height:none}
+}
+
+/* ===== fields ===== */
+.fields{display:grid;gap:11px}
+.f{display:grid;gap:5px;min-width:0}
+.f input,.f select{background:var(--panel-2);border:1px solid var(--line);border-radius:8px;
+  padding:8px 10px;color:var(--text);font:inherit;font-size:.8125rem;width:100%;min-width:0}
+.f input[readonly]{color:var(--dim)}
+.f input:focus,.f select:focus{border-color:var(--led);outline:none}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+.row3{display:grid;grid-template-columns:repeat(3,1fr);gap:11px}
+.recalled input{border-style:dashed;border-color:var(--led-dim)}
+.tag{margin-left:6px;font-size:.5625rem;padding:1px 5px;border-radius:4px;
+     background:var(--led-ghost);color:var(--led);letter-spacing:.08em}
+
+/* ===== buttons ===== */
+.btn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+     padding:9px 12px;border-radius:9px;border:1px solid var(--line);background:var(--panel-2);
+     color:var(--text);font:inherit;font-size:.8125rem;cursor:pointer;min-height:38px;text-align:center}
+.btn:hover:not(:disabled){border-color:var(--dim)}
+.btn small{font-size:.625rem;color:var(--dim);font-weight:400}
+.btn.primary{background:var(--led);border-color:var(--led);color:var(--void);font-weight:650}
+.btn.primary small{color:var(--void);opacity:.75}
+.btn.danger{color:var(--alert)}
+.btn:disabled{opacity:.32;cursor:not-allowed}
+.actions{display:flex;flex-wrap:wrap;gap:9px}
+.actions .btn{flex:1 1 120px}
+
+/* ===== captured & calculated ===== */
+.calc{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}
+.calc>div{border:1px solid var(--line);border-radius:9px;padding:9px 11px;background:var(--panel-2);min-width:0}
+.calc b{display:block;font-family:var(--mono);font-variant-numeric:tabular-nums;
+        font-size:1.25rem;margin-top:3px;letter-spacing:.02em}
+.calc .stamp{font-size:.5625rem;color:var(--faint);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.calc .lead{border-color:var(--led-dim);background:var(--led-ghost)}
+.calc .lead b{color:var(--led)}
+.calc .pend b{color:var(--faint)}
+.formula{margin-top:10px;display:grid;gap:4px;font-size:.6875rem;color:var(--dim);font-family:var(--mono)}
+.formula em{color:var(--text);font-style:normal}
+
+/* ===== cameras ===== */
+.cams{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.cam{position:relative;aspect-ratio:4/3;border-radius:9px;border:1px solid var(--line);overflow:hidden;
+     background:repeating-linear-gradient(115deg,var(--panel-2) 0 9px,var(--panel) 9px 18px)}
+.cam .nm{position:absolute;top:6px;left:7px;font-size:.5625rem;letter-spacing:.08em;
+         text-transform:uppercase;color:var(--dim)}
+.cam .burn{position:absolute;left:6px;right:6px;bottom:5px;font-family:var(--mono);font-size:.5625rem;
+           color:var(--led);text-shadow:0 1px 3px #000;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cam .plate{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-family:var(--mono);
+            font-size:.75rem;padding:3px 8px;border-radius:4px;background:#F2F2F0;color:#111;letter-spacing:.06em}
+.cam.off{opacity:.4;display:grid;place-items:center}
+.cam.off span{font-size:.625rem;color:var(--faint)}
+
+/* ===== tables ===== */
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:.8125rem}
+th{text-align:left;font-size:.625rem;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);
+   font-weight:500;padding:7px 9px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:8px 9px;border-bottom:1px solid var(--line);white-space:nowrap}
+tr:last-child td{border-bottom:none}
+td.n{font-family:var(--mono);font-variant-numeric:tabular-nums;text-align:right}
+tbody tr:hover td{background:var(--panel-2)}
+/* The only status a ticket has: tare, gross, and the net they produce.
+   Fixed-width numerals so the three columns line up down a table. */
+.wst{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;
+     font-size:.625rem;letter-spacing:.06em;text-transform:uppercase;line-height:1;white-space:nowrap}
+.wst i{display:inline-flex;align-items:center;gap:6px;padding:5px 9px;font-style:normal;color:var(--faint)}
+.wst i+i{border-left:1px solid var(--line)}
+.wst i b{font-family:var(--mono);font-variant-numeric:tabular-nums;font-weight:600;letter-spacing:0;
+         min-width:6.5ch;text-align:right;color:var(--faint)}
+.wst i.on{color:var(--dim)}
+.wst i.on b{color:var(--text)}
+/* net is the number the site actually gets paid on — it carries the accent */
+.wst i.net{background:var(--panel-2)}
+.wst i.net.on{color:var(--led);background:var(--led-ghost)}
+.wst i.net.on b{color:var(--led);font-weight:700}
+.wst.cancelled{opacity:.45;text-decoration:line-through}
+@media (max-width:899px){
+  .card>header{flex-wrap:wrap}
+  .wst i{padding:5px 7px;gap:4px}
+  .wst i b{min-width:6ch}
+}
+.mini{padding:3px 9px;border-radius:7px;border:1px solid var(--line);background:var(--panel-2);
+      color:var(--text);font:inherit;font-size:.6875rem;cursor:pointer}
+.mini:hover{border-color:var(--led-dim);color:var(--led)}
+.search{width:100%;padding:9px 11px;border-radius:9px;border:1px solid var(--line);
+        background:var(--panel-2);color:var(--text);font:inherit;font-size:.8125rem}
+.search:focus{border-color:var(--led);outline:none}
+.hint{font-size:.6875rem;color:var(--dim);margin:0;line-height:1.6}
+.segbar{display:flex;gap:2px;border:1px solid var(--line);border-radius:8px;padding:2px;background:var(--panel-2);
+        width:max-content}
+.segbar button{border:none;background:none;color:var(--dim);font:inherit;font-size:.6875rem;
+        padding:4px 10px;border-radius:6px;cursor:pointer}
+.segbar button[aria-pressed="true"]{background:var(--panel);color:var(--text);box-shadow:inset 0 0 0 1px var(--line)}
+
+/* ===== dashboard ===== */
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.kpi{border:1px solid var(--line);border-radius:var(--radius);background:var(--panel);padding:12px 14px}
+.kpi .v{font-family:var(--mono);font-size:1.5rem;margin-top:5px}
+.kpi.accent{border-color:var(--led-dim);background:linear-gradient(180deg,var(--led-ghost),transparent),var(--panel)}
+.kpi.accent .v{color:var(--led)}
+.kpi .d{font-size:.6875rem;color:var(--dim);margin-top:3px}
+.kpi .d.up{color:var(--stable)} .kpi .d.dn{color:var(--warn)}
+.bars{display:flex;align-items:flex-end;gap:5px;height:130px}
+.bars div{flex:1;background:var(--led-dim);border-radius:3px 3px 0 0;position:relative}
+.bars div.q{background:var(--led)}
+.bars div span{position:absolute;bottom:-17px;left:0;right:0;text-align:center;font-size:.5625rem;color:var(--faint)}
+.split{display:grid;gap:9px}
+.split .r{display:grid;grid-template-columns:110px 1fr 62px;gap:9px;align-items:center;font-size:.75rem}
+.track{height:7px;border-radius:999px;background:var(--panel-2);overflow:hidden}
+.track i{display:block;height:100%;background:var(--led)}
+
+/* ===== settings ===== */
+pre.json{margin:0;font-family:var(--mono);font-size:.6875rem;line-height:1.7;color:var(--dim);
+         white-space:pre;overflow-x:auto}
+pre.json b{color:var(--led);font-weight:600}
+.drop{display:grid;place-items:center;gap:6px;padding:16px;border:1.5px dashed var(--line);
+      border-radius:9px;background:var(--panel-2);cursor:pointer;text-align:center}
+.drop:hover,.drop.over{border-color:var(--led);color:var(--text)}
+.drop .big{font-size:1.125rem;color:var(--led)}
+.drop small{font-size:.6875rem;color:var(--dim)}
+.applied{font-size:.6875rem;color:var(--stable)}
+.applied.bad{color:var(--alert)}
+.checks{display:grid;grid-template-columns:1fr 1fr;gap:8px 14px}
+.ck{display:flex;align-items:flex-start;gap:8px;font-size:.8125rem;cursor:pointer;line-height:1.35}
+.ck input{margin:2px 0 0;accent-color:var(--led);width:15px;height:15px;flex:none}
+.ck small{display:block;font-size:.625rem;color:var(--dim)}
+.ck.lock{cursor:not-allowed;opacity:.75}
+.skins{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:9px}
+.skin{border:1px solid var(--line);border-radius:9px;padding:9px;background:var(--panel-2);cursor:pointer;
+      text-align:left;font:inherit;color:var(--text);display:grid;gap:7px}
+.skin[aria-pressed="true"]{border-color:var(--led);box-shadow:0 0 0 1px var(--led)}
+.sw{display:flex;height:26px;border-radius:6px;overflow:hidden;border:1px solid rgba(128,128,128,.25)}
+.sw i{flex:1}
+.sw i.a{flex:1.6}
+.skin .nm{font-size:.75rem;font-weight:600}
+.skin .ds{font-size:.625rem;color:var(--dim);line-height:1.35}
+
+/* ===== modal / drawer / sheet ===== */
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.62);display:grid;place-items:center;padding:16px;z-index:60}
+.modal[hidden]{display:none}
+.sheet{background:var(--panel);border:1px solid var(--line);border-radius:12px;width:min(760px,100%);
+       max-height:92vh;display:flex;flex-direction:column}
+.sheet>header{display:flex;align-items:center;gap:9px;padding:11px 14px;border-bottom:1px solid var(--line)}
+.sheet>.body{padding:14px;overflow:auto}
+.tabs2{display:flex;gap:5px;padding:9px 14px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.tabs2 button{padding:5px 11px;border-radius:7px;border:1px solid var(--line);background:var(--panel-2);
+     color:var(--dim);font:inherit;font-size:.6875rem;cursor:pointer}
+.tabs2 button[aria-pressed="true"]{border-color:var(--led);color:var(--led)}
+.paper{background:#FFFDF7;color:#141414;border-radius:6px;padding:20px 22px;font-size:.75rem;line-height:1.55}
+.paper.matrix,.paper.thermal{font-family:var(--mono);white-space:pre;overflow-x:auto;font-size:.6875rem;
+     background:#F6F4EC;line-height:1.35}
+.paper.thermal{max-width:300px;margin:0 auto}
+.slip-h{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #141414;padding-bottom:8px}
+.slip-g{display:grid;grid-template-columns:1fr 1fr;gap:4px 18px;margin:10px 0;font-size:.6875rem}
+.slip-w{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:10px 0;text-align:center}
+.slip-w div{border:1px solid #C9C4B4;border-radius:4px;padding:7px}
+.slip-w b{display:block;font-family:var(--mono);font-size:1rem;margin-top:2px}
+.note{margin-top:11px;font-size:.6875rem;color:var(--dim);line-height:1.6}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(400px,92vw);background:var(--panel);
+        border-left:1px solid var(--line);z-index:70;display:flex;flex-direction:column;
+        box-shadow:-20px 0 50px rgba(0,0,0,.35)}
+.drawer[hidden]{display:none}
+.drawer>header{display:flex;align-items:center;gap:9px;padding:12px 14px;border-bottom:1px solid var(--line)}
+.drawer>.body{padding:14px;overflow:auto;display:grid;gap:12px}
+.drawer h4{margin:0;font-size:.9375rem}
+.drawer ul{margin:0;padding-left:17px;display:grid;gap:6px;font-size:.8125rem;color:var(--text)}
+.drawer li b{color:var(--led);font-weight:600}
+.drawer .tip{border-left:2px solid var(--led);padding-left:11px;font-size:.75rem;color:var(--dim);line-height:1.6}
+.kbd{font-family:var(--mono);font-size:.625rem;border:1px solid var(--line);border-radius:4px;padding:1px 5px;color:var(--dim)}
+
+.foot{margin-top:auto;display:flex;gap:12px;justify-content:space-between;flex-wrap:wrap;
+      padding:10px 14px;border-top:1px solid var(--line);font-size:.6875rem;color:var(--faint)}
+
+/* ===== mobile ===== */
+.bnav{display:none}
+.more{position:fixed;left:0;right:0;bottom:0;z-index:65;background:var(--panel);
+      border-top:1px solid var(--line);border-radius:14px 14px 0 0;padding:10px 10px 14px;display:grid;gap:5px}
+.more[hidden]{display:none}
+.more button{display:flex;align-items:center;gap:10px;padding:11px 13px;border-radius:9px;border:none;
+      background:var(--panel-2);color:var(--text);font:inherit;font-size:.875rem;cursor:pointer;text-align:left}
+@media (max-width:899px){
+  .top{height:48px;gap:8px}
+  .site{display:none}
+  .tabs{display:none}
+  /* two rows, named areas — the digits can never share a column with the clock */
+  .head{margin:9px 9px 0;padding:9px 11px;gap:6px 9px;
+        grid-template-columns:minmax(0,1fr) auto;
+        grid-template-areas:"lamps clock" "read read";}
+  .head-l{grid-area:lamps;flex-direction:row;align-items:center;gap:8px}
+  .head-r{grid-area:clock}
+  .readout{grid-area:read}
+  .head .cap,.head .cday,.head #capTxt,.head-l .ind{display:none}
+  .head .digits,.head .ghost span{font-size:2.5rem}
+  .head[data-mode="compact"]{grid-template-columns:minmax(0,1fr) auto;
+        grid-template-areas:"read clock";align-items:center;padding:7px 11px;gap:9px}
+  .head[data-mode="compact"] .head-l{display:none}
+  .head[data-mode="compact"] .digits,
+  .head[data-mode="compact"] .ghost span{font-size:1.375rem}
+  .screen{padding:9px;gap:9px}
+  .grid2{grid-template-columns:1fr}
+  .kpis{grid-template-columns:1fr 1fr}
+  .calc{grid-template-columns:1fr 1fr}
+  .row2,.row3{grid-template-columns:1fr}
+  .checks{grid-template-columns:1fr}
+  .split .r{grid-template-columns:88px 1fr 54px}
+  /* item 3 · the camera wall is its own tab on a phone — it does not belong mid-form */
+  #camCard{display:none}
+  /* item 4 · actions come first and are thumb-sized */
+  .actCol{order:-1}
+  .actions .btn{flex:1 1 44%;min-height:46px}
+  #btnCap{min-height:64px;font-size:1rem}
+  .bnav{display:grid;grid-template-columns:repeat(5,1fr);flex:none;background:var(--panel);
+        border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
+  .bnav button{display:grid;justify-items:center;gap:2px;padding:7px 2px;border:none;background:none;
+        color:var(--dim);font:inherit;font-size:.5625rem;letter-spacing:.05em;text-transform:uppercase;cursor:pointer}
+  .bnav button .ic{font-size:.9375rem}
+  .bnav button[aria-current="page"]{color:var(--led)}
+  .foot{display:none}
+}
+@media (max-width:420px){
+  .calc{grid-template-columns:1fr 1fr}
+  .head .digits,.head .ghost span{font-size:2rem}
+}
+</style>
+
+<div class="app" id="app" data-screen="weigh">
+
+  <!-- ===== top bar (item 5: tabs, no sidebar · item 9: Cameras is third) ===== -->
+  <header class="top">
+    <div class="brandbox">
+      <div class="mark">B</div>
+      <div style="min-width:0">
+        <b>BabuScale</b>
+        <div class="site">Sri Lakshmi Blue Metals · Nagercoil · Bridge 1</div>
+      </div>
+    </div>
+
+    <nav class="tabs" id="tabs" role="tablist" aria-label="Sections">
+      <button class="tab" data-go="weigh" aria-current="page"><span class="ic">◎</span><span data-t="nav.weigh">Weighing</span></button>
+      <button class="tab" data-go="dash"><span class="ic">▩</span><span data-t="nav.dash">Dashboard</span></button>
+      <button class="tab" data-go="cameras"><span class="ic">▣</span><span data-t="nav.cameras">Cameras</span></button>
+      <button class="tab" data-go="tickets"><span class="ic">▤</span><span data-t="nav.tickets">Tickets</span></button>
+      <button class="tab" data-go="masters"><span class="ic">◈</span><span data-t="nav.masters">Masters</span></button>
+      <button class="tab" data-go="reports"><span class="ic">▦</span><span data-t="nav.reports">Reports</span></button>
+      <button class="tab" data-go="settings"><span class="ic">⚙</span><span data-t="nav.settings">Settings</span></button>
+    </nav>
+
+    <div class="topr">
+      <span class="chip" id="comChip"><span class="dot"></span>COM3 · 9600 8N1</span>
+      <!-- item 17 · the operator name is editable, and it is stamped on every capture -->
+      <button class="chip act" id="opChip" title="Change operator"><span class="dot"></span><span data-t="op">Operator</span>:&nbsp;<b id="opName">Ravi</b> ✎</button>
+      <input id="opEdit" hidden aria-label="Operator name">
+      <!-- item 14 · help follows the tab you are on -->
+      <button class="iconbtn" id="btnHelp" aria-expanded="false" title="Help for this tab">?</button>
+    </div>
+  </header>
+
+  <div class="main" id="main">
+
+    <!-- ===== indicator: full on Weighing, compact everywhere else ===== -->
+    <section class="head" id="head" data-mode="full" aria-label="Weight indicator">
+      <div class="head-l">
+        <div class="lbl ind" data-t="ind">Indicator · Bridge 1</div>
+        <div class="lamps">
+          <span class="lamp" id="lStable"><span class="dot"></span><span data-t="stable">Stable</span></span>
+          <span class="lamp busy" id="lLive"><span class="dot"></span><span data-t="motion">Motion</span></span>
+        </div>
+        <div class="lbl num" id="capTxt">0 / 60,000 kg</div>
+      </div>
+
+      <div class="readout">
+        <div class="ghost" aria-hidden="true"><span>88,888</span></div>
+        <span class="digits num" id="wt">0</span><span class="unit">kg</span>
+      </div>
+
+      <div class="head-r">
+        <div class="clock num" id="clock">--:--:--</div>
+        <div class="cday" id="cday">—</div>
+        <div class="cap"><i id="capBar"></i></div>
+      </div>
+    </section>
+
+    <!-- ===== WEIGHING ===== -->
+    <div class="screen" data-screen="weigh">
+      <div class="grid2">
+        <div class="col">
+          <section class="card">
+            <header>
+              <span class="lbl" data-t="ticket">Ticket</span>
+              <span class="chip num" id="tkNo">TKT-1042</span>
+              <span class="push"><span class="wst" id="tkState"></span></span>
+            </header>
+            <div class="body fields">
+              <div class="row2">
+                <div class="f">
+                  <label class="lbl" for="fVeh" data-t="f.vehicle">Vehicle No</label>
+                  <input id="fVeh" value="TN74 AB 1234" spellcheck="false">
+                </div>
+                <div class="f">
+                  <label class="lbl" for="fDate" data-t="f.date">Ticket Date</label>
+                  <input id="fDate" readonly>
+                </div>
+              </div>
+              <div class="row2">
+                <div class="f recalled">
+                  <label class="lbl"><span data-t="f.party">Party</span><span class="tag" data-t="recalled">RECALLED</span></label>
+                  <input value="Sri Lakshmi Traders">
+                </div>
+                <div class="f recalled">
+                  <label class="lbl"><span data-t="f.material">Material</span><span class="tag" data-t="recalled">RECALLED</span></label>
+                  <input value="M-Sand">
+                </div>
+              </div>
+              <div class="row3">
+                <div class="f"><label class="lbl" data-t="f.challan">Challan No</label><input value="DC-8871"></div>
+                <div class="f"><label class="lbl" data-t="f.transporter">Transporter</label><input value="Murugan Lorry Service"></div>
+                <div class="f"><label class="lbl" data-t="f.type">Vehicle Type</label><input value="Tipper 10W" readonly></div>
+              </div>
+            </div>
+          </section>
+
+          <section class="card">
+            <header>
+              <span class="lbl" data-t="calc">Captured &amp; calculated</span>
+              <span class="push lbl" id="modeChip">Tare first · strict tare</span>
+            </header>
+            <div class="body">
+              <div class="calc">
+                <div id="cTare"  class="pend"><span class="lbl" data-t="tare">Tare</span><b>—</b><div class="stamp">—</div></div>
+                <div id="cGross" class="pend"><span class="lbl" data-t="gross">Gross</span><b>—</b><div class="stamp">—</div></div>
+                <div id="cNet"   class="pend lead"><span class="lbl" data-t="net">Net</span><b>—</b><div class="stamp">—</div></div>
+                <div id="cChg"   class="pend"><span class="lbl" data-t="charge">Charge</span><b>—</b><div class="stamp">—</div></div>
+              </div>
+              <div class="formula" id="formula"></div>
+            </div>
+          </section>
+        </div>
+
+        <div class="col actCol">
+          <section class="card">
+            <header><span class="lbl" data-t="acts">Actions</span>
+              <span class="push chip num" id="printChip">0 prints</span></header>
+            <div class="body" style="display:grid;gap:9px">
+              <button class="btn primary" id="btnCap" disabled style="padding:13px">
+                <span id="capMain" data-t="cap.tare">Capture Tare</span>
+                <small id="capHint" data-t="cap.wait">Waiting for a stable reading</small>
+              </button>
+              <div class="actions">
+                <button class="btn" id="btnSave" disabled data-t="save">Save</button>
+                <button class="btn" id="btnPrint" disabled data-t="print.btn">Print</button>
+              </div>
+              <div class="actions">
+                <button class="btn" id="btnReprint" disabled data-t="reprint">Reprint</button>
+                <button class="btn danger" id="btnClear" data-t="clear">Clear</button>
+              </div>
+              <hr style="border:none;border-top:1px solid var(--line);margin:1px 0">
+              <button class="btn" id="btnSim" data-t="sim">Send a lorry onto the deck</button>
+              <p class="hint" id="status" data-t="s.idle">Deck empty. Send a lorry to begin.</p>
+            </div>
+          </section>
+
+          <section class="card" id="camCard">
+            <header><span class="lbl" data-t="cams">Cameras</span><span class="push chip">3 / 4</span></header>
+            <div class="body cams" id="camSide"></div>
+          </section>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== DASHBOARD ===== -->
+    <div class="screen" data-screen="dash" hidden>
+      <div class="kpis">
+        <div class="kpi"><span class="lbl" data-t="k.tickets">Tickets today</span>
+          <div class="v">48</div><div class="d up">▲ 11% <span data-t="k.vs">vs yesterday</span></div></div>
+        <div class="kpi accent"><span class="lbl" data-t="k.tonnage">Net tonnage today</span>
+          <div class="v">612.4 <span style="font-size:.9375rem;color:var(--dim)">t</span></div>
+          <div class="d up">▲ 6% <span data-t="k.vs">vs yesterday</span></div></div>
+        <div class="kpi"><span class="lbl" data-t="k.charge">Charge collected</span>
+          <div class="v">₹ 12,000</div><div class="d" data-t="k.credit">₹ 3,250 on credit</div></div>
+        <div class="kpi"><span class="lbl" data-t="k.deck">Waiting for a second weight</span>
+          <div class="v" id="kWait">3</div><div class="d dn" data-t="k.open">Oldest is over 2 h old</div></div>
+      </div>
+
+      <div class="grid2">
+        <section class="card">
+          <header><span class="lbl" data-t="d.hourly">Tickets by hour</span>
+            <span class="push lbl">06:00 — 18:00</span></header>
+          <div class="body"><div class="bars" id="bars"></div></div>
+        </section>
+        <section class="card">
+          <header><span class="lbl" data-t="d.material">Material split · today</span></header>
+          <div class="body split" id="split"></div>
+        </section>
+      </div>
+
+      <section class="card">
+        <header><span class="lbl" data-t="d.recent">Recent tickets</span>
+          <span class="push lbl" data-t="d.live">Updates as tickets are saved</span></header>
+        <div class="body tw"><table id="dashTbl"></table></div>
+      </section>
+    </div>
+
+    <!-- ===== CAMERAS ===== -->
+    <div class="screen" data-screen="cameras" hidden>
+      <section class="card">
+        <header><span class="lbl" data-t="nav.cameras">Cameras</span>
+          <span class="push chip">3 <span data-t="c.of">of</span> 4 <span data-t="c.conf">configured</span></span></header>
+        <div class="body">
+          <div class="cams" style="grid-template-columns:repeat(auto-fit,minmax(210px,1fr))" id="camGrid"></div>
+          <p class="hint" style="margin-top:11px" data-t="c.hint">USB, IP, RTSP and ONVIF. Per-camera crop, auto-capture on stable, ticket number and weight burned into every image.</p>
+        </div>
+      </section>
+    </div>
+
+    <!-- ===== TICKETS ===== -->
+    <div class="screen" data-screen="tickets" hidden>
+      <section class="card">
+        <header><span class="lbl" data-t="nav.tickets">Tickets</span>
+          <span class="chip" id="openChip"><span class="dot" style="background:var(--warn)"></span><span data-t="t.waiting">2 waiting for a second weight</span></span>
+          <span class="push"><button class="mini" id="btnResume" data-t="t.resume">Resume the oldest</button></span></header>
+        <div class="body" style="display:grid;gap:11px">
+          <input class="search" id="tkSearch" data-t-ph="t.search" placeholder="Search vehicle, party, ticket no, challan…">
+          <div class="segbar" id="tkFilter" role="group" aria-label="Filter">
+            <button data-fil="all"  aria-pressed="true"  data-t="t.f.all">All</button>
+            <button data-fil="half" aria-pressed="false" data-t="t.f.half">Waiting for the second weight</button>
+            <button data-fil="both" aria-pressed="false" data-t="t.f.both">Both weights</button>
+          </div>
+          <div class="tw"><table id="tkTbl"></table></div>
+          <p class="hint" data-t="t.hint">Search runs against normalised expression indexes — instant at 100,000 rows.</p>
+        </div>
+      </section>
+    </div>
+
+    <!-- ===== MASTERS ===== -->
+    <div class="screen" data-screen="masters" hidden>
+      <div class="grid2">
+        <section class="card">
+          <header><span class="lbl" data-t="m.parties">Parties</span><span class="push chip num">1,284</span></header>
+          <div class="body" style="display:grid;gap:11px">
+            <input class="search" data-t-ph="m.search" placeholder="Type to search…">
+            <div class="tw"><table id="mTbl"></table></div>
+          </div>
+        </section>
+        <section class="card">
+          <header><span class="lbl" data-t="m.stored">Stored tares</span></header>
+          <div class="body" style="display:grid;gap:11px">
+            <div class="tw"><table id="stTbl"></table></div>
+            <p class="hint" data-t="m.tarehint">Loose tare reuses a stored weight until it expires. Strict tare re-weighs every trip.</p>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <!-- ===== REPORTS ===== -->
+    <div class="screen" data-screen="reports" hidden>
+      <section class="card">
+        <header><span class="lbl" data-t="nav.reports">Reports</span>
+          <span class="push lbl" data-t="r.note">Any report prints on any of the three printers</span></header>
+        <div class="body" style="display:grid;gap:11px">
+          <div class="row3">
+            <div class="f"><label class="lbl" data-t="r.from">From</label><input id="rFrom" readonly></div>
+            <div class="f"><label class="lbl" data-t="r.to">To</label><input id="rTo" readonly></div>
+            <div class="f"><label class="lbl" data-t="r.group">Group by</label><input value="Material" readonly></div>
+          </div>
+          <div class="tw"><table id="rTbl"></table></div>
+          <div class="actions">
+            <button class="btn primary" id="btnRPrint" data-t="r.print">Print report</button>
+            <button class="btn" data-t="r.pdf">Export PDF</button>
+            <button class="btn" data-t="r.xls">Export Excel</button>
+            <button class="btn" data-t="r.csv">Export CSV</button>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- ===== SETTINGS ===== -->
+    <div class="screen" data-screen="settings" hidden>
+      <div class="grid2">
+        <div class="col">
+
+          <!-- item 10 · schema arrives as an uploaded file, applied on drop, no save button -->
+          <section class="card">
+            <header><span class="lbl" data-t="s.schema">Field schema</span>
+              <span class="chip">🔒 <span data-t="s.admin">Admin</span></span>
+              <span class="push applied" id="jsonMsg" data-t="s.stored">Stored in the database</span></header>
+            <div class="body" style="display:grid;gap:11px">
+              <label class="drop" id="dropJson">
+                <span class="big">⬆</span>
+                <span data-t="s.upjson">Drop a schema .json here, or click to choose</span>
+                <small data-t="s.upnote">Applies the moment it lands. There is no save button — and no file on disk; the contents go straight into the settings table.</small>
+                <input type="file" accept=".json,application/json" hidden id="fileJson">
+              </label>
+              <pre class="json" id="jsonView"></pre>
+            </div>
+          </section>
+
+          <!-- item 10 · same for the print template -->
+          <section class="card">
+            <header><span class="lbl" data-t="s.tpl">Print template · HTML</span>
+              <span class="push applied" id="tplMsg" data-t="s.tpldefault">Built-in A4 template</span></header>
+            <div class="body" style="display:grid;gap:11px">
+              <label class="drop" id="dropTpl">
+                <span class="big">⬆</span>
+                <span data-t="s.uptpl">Drop a ticket .html here, or click to choose</span>
+                <small data-t="s.uptplnote">Placeholders like {{TicketNo}} {{Vehicle}} {{Net}} are filled at print time. Open Print preview to see yours.</small>
+                <input type="file" accept=".html,.htm,text/html" hidden id="fileTpl">
+              </label>
+              <p class="hint" data-t="s.tplhint">The dot-matrix and thermal layouts are generated from the same content model — a character grid cannot take an HTML file.</p>
+              <div class="actions"><button class="mini" id="btnTplPrev" data-t="s.tplprev">Open print preview</button>
+                <button class="mini" id="btnTplReset" data-t="s.tplreset">Back to built-in</button></div>
+            </div>
+          </section>
+        </div>
+
+        <div class="col">
+
+          <!-- items 8 + 19 · skins, saved in settings -->
+          <section class="card">
+            <header><span class="lbl" data-t="s.skin">Appearance</span>
+              <span class="push applied" id="skinMsg" data-t="s.skinsaved">Saved to settings</span></header>
+            <div class="body" style="display:grid;gap:12px">
+              <div class="skins" id="skins"></div>
+
+              <!-- item 7 · font size -->
+              <div class="f">
+                <label class="lbl" data-t="s.fs">Text size</label>
+                <div class="segbar" id="fsBar" role="group" aria-label="Text size">
+                  <button data-fs=".9" style="font-size:.625rem">A−</button>
+                  <button data-fs="1" aria-pressed="true" style="font-size:.75rem">A</button>
+                  <button data-fs="1.12" style="font-size:.875rem">A+</button>
+                  <button data-fs="1.28" style="font-size:1rem">A++</button>
+                </div>
+                <p class="hint" data-t="s.fsnote">Scales the whole interface, not one label. Sites with a monitor on the far wall run A++ all day.</p>
+              </div>
+
+              <!-- item 15 · language lives here now -->
+              <div class="f">
+                <label class="lbl" data-t="s.lang">Language</label>
+                <div class="segbar" id="langBar" role="group" aria-label="Language">
+                  <button data-lang="en" aria-pressed="true">English</button>
+                  <button data-lang="ta" aria-pressed="false">தமிழ்</button>
+                </div>
+                <p class="hint" data-t="s.langnote">English is always available. One more language ships at a time — Tamil first, others later. The printed ticket has its own language setting, because a dot-matrix printer has no Tamil font.</p>
+              </div>
+
+              <div class="f">
+                <label class="lbl" for="setOp" data-t="s.op">Operator on duty</label>
+                <input id="setOp" value="Ravi">
+              </div>
+            </div>
+          </section>
+
+          <!-- item 12 · rules are checkboxes -->
+          <section class="card">
+            <header><span class="lbl" data-t="s.ops">Weighing rules</span>
+              <span class="push lbl" data-t="s.livenote">Changes apply immediately</span></header>
+            <div class="body" style="display:grid;gap:12px">
+              <div class="checks" id="rules"></div>
+              <div class="row2">
+                <div class="f"><label class="lbl" for="setReads" data-t="s.reads">Stable readings</label>
+                  <input id="setReads" type="number" min="1" max="20" value="5"></div>
+                <div class="f"><label class="lbl" for="setBand" data-t="s.band">Stable band ± kg</label>
+                  <input id="setBand" type="number" min="1" max="200" value="20"></div>
+              </div>
+              <p class="hint" data-t="s.stabnote">A lorry's suspension bounces for several seconds. The indicator streams a reading ten times a second; capture stays locked until 5 readings in a row land within ± 20 kg of each other. Loosen the band on a windy site, tighten it for high-value cargo.</p>
+            </div>
+          </section>
+
+          <section class="card">
+            <header><span class="lbl" data-t="s.disp">Date, time &amp; amounts</span></header>
+            <div class="body fields">
+              <div class="row2">
+                <div class="f"><label class="lbl" for="setDate" data-t="s.datefmt">Date format</label>
+                  <select id="setDate">
+                    <option value="dd MMM yyyy">dd MMM yyyy — 09 Aug 2026</option>
+                    <option value="dd-MM-yyyy">dd-MM-yyyy — 09-08-2026</option>
+                    <option value="dd/MM/yy">dd/MM/yy — 09/08/26</option>
+                    <option value="yyyy-MM-dd">yyyy-MM-dd — 2026-08-09</option>
+                  </select></div>
+                <div class="f"><label class="lbl" for="setTime" data-t="s.timefmt">Time format</label>
+                  <select id="setTime">
+                    <option value="24">24 hour — 14:32</option>
+                    <option value="12">12 hour — 02:32 PM</option>
+                  </select></div>
+              </div>
+              <div class="row2">
+                <div class="f"><label class="lbl" for="setAmt" data-t="s.amtround">Amount rounding</label>
+                  <select id="setAmt">
+                    <option value="2" selected>2 decimals — ₹ 250.00</option>
+                    <option value="0">Whole rupees — ₹ 250</option>
+                  </select></div>
+                <div class="f"><label class="lbl" data-t="s.series">Ticket numbering</label>
+                  <input value="TKT-#### · resets yearly" readonly></div>
+              </div>
+              <p class="hint" data-t="s.hint">Every setting on this page is a row in the database. Nothing is written to a file on disk, so a re-install or a second terminal picks up the same configuration.</p>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+
+    <footer class="foot">
+      <span data-t="foot.1">Virtual demo · no database, simulated indicator</span>
+      <span>BabuScale by Babulens</span>
+    </footer>
+  </div>
+
+  <!-- ===== mobile bottom nav (item 6) ===== -->
+  <nav class="bnav" id="bnav" aria-label="Sections">
+    <button data-go="weigh" aria-current="page"><span class="ic">◎</span><span data-t="nav.weigh">Weighing</span></button>
+    <button data-go="dash"><span class="ic">▩</span><span data-t="nav.dash">Dashboard</span></button>
+    <button data-go="cameras"><span class="ic">▣</span><span data-t="nav.cameras">Cameras</span></button>
+    <button data-go="tickets"><span class="ic">▤</span><span data-t="nav.tickets">Tickets</span></button>
+    <button id="btnMore"><span class="ic">⋯</span><span data-t="nav.more">More</span></button>
+  </nav>
+</div>
+
+<!-- ===== more sheet (mobile) ===== -->
+<div class="more" id="moreSheet" hidden>
+  <button data-go="masters"><span>◈</span><span data-t="nav.masters">Masters</span></button>
+  <button data-go="reports"><span>▦</span><span data-t="nav.reports">Reports</span></button>
+  <button data-go="settings"><span>⚙</span><span data-t="nav.settings">Settings</span></button>
+  <button id="moreHelp"><span>?</span><span data-t="nav.help">Help for this tab</span></button>
+</div>
+
+<!-- ===== help drawer (item 14) ===== -->
+<aside class="drawer" id="help" hidden role="dialog" aria-modal="false" aria-labelledby="helpTitle">
+  <header>
+    <span class="lbl" data-t="help">Help</span>
+    <span class="push"><button class="iconbtn" id="helpClose" aria-label="Close help">✕</button></span>
+  </header>
+  <div class="body" id="helpBody"></div>
+</aside>
+
+<!-- ===== print dialog ===== -->
+<div class="modal" id="modal" hidden role="dialog" aria-modal="true" aria-labelledby="mTitle">
+  <div class="sheet">
+    <header>
+      <span class="lbl" id="mTitle" data-t="print">Print preview</span>
+      <span class="chip" id="mDoc">Ticket</span>
+      <span class="push"><button class="iconbtn" id="mClose" aria-label="Close">✕</button></span>
+    </header>
+    <div class="tabs2" id="pTabs">
+      <button data-p="a4" aria-pressed="true">A4 · laser / inkjet</button>
+      <button data-p="mx" aria-pressed="false">80-col · dot matrix</button>
+      <button data-p="th" aria-pressed="false">58 mm · thermal</button>
+    </div>
+    <div class="body">
+      <div id="paper"></div>
+      <p class="note" id="tabNote"></p>
+    </div>
+    <div class="tabs2" style="border-top:1px solid var(--line);border-bottom:none;justify-content:flex-end">
+      <button id="mCancel" data-t="cancel">Cancel</button>
+      <button id="mSend" style="border-color:var(--led);color:var(--led)" data-t="sendprint">Send to printer</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+"use strict";
+
+/* ---------- tiny helpers ---------- */
+const $  = id  => document.getElementById(id);
+const $$ = sel => Array.from(document.querySelectorAll(sel));
+const p2 = n   => String(n).padStart(2,"0");
+
+/* ---------- language (item 15) ---------- */
+const T = {
+  /* English is filled from the markup at boot; only strings that never appear
+     in the markup as-is are declared here. */
+  en:{
+    "cap.tare":"Capture Tare","cap.gross":"Capture Gross","cap.done":"Both weights captured",
+    "cap.wait":"Waiting for a stable reading","cap.go":"Stable — capture now",
+    "t.resume2":"Resume",
+    "s.idle":"Deck empty. Send a lorry to begin.",
+    "s.motion":"Weight in motion — capture is locked until the reading settles.",
+    "s.stable":"Stable. Capture is armed.",
+    "s.one":"First weight captured. The lorry can leave and come back.",
+    "s.two":"Both weights captured. Save writes the ticket to the ledger.",
+    "s.saved":"Saved and hash-chained. The fields are locked; a cancellation is the only change left.",
+    "s.printed":"Printed. Any further copy is stamped DUPLICATE and recorded."
+  },
+  ta:{
+    "s.idle":"மேடை காலியாக உள்ளது. தொடங்க ஒரு லாரியை அனுப்புங்கள்.",
+    "s.motion":"எடை அசைகிறது — அளவீடு நிலைபெறும் வரை எடுக்க முடியாது.",
+    "s.stable":"நிலையானது. இப்போது எடுக்கலாம்.",
+    "s.one":"முதல் எடை எடுக்கப்பட்டது. லாரி திரும்பி வரலாம்.",
+    "s.two":"இரண்டு எடைகளும் எடுக்கப்பட்டன. சேமித்தால் பதிவேட்டில் எழுதப்படும்.",
+    "s.saved":"சேமிக்கப்பட்டது. புலங்கள் பூட்டப்பட்டன.",
+    "s.printed":"அச்சிடப்பட்டது. அடுத்த நகல் DUPLICATE என முத்திரையிடப்படும்.",
+    "t.resume2":"தொடர்",
+    "nav.weigh":"நிறுத்தல்","nav.dash":"கண்ணோட்டம்","nav.cameras":"கேமராக்கள்",
+    "nav.tickets":"சீட்டுகள்","nav.masters":"முதன்மைத் தரவு","nav.reports":"அறிக்கைகள்",
+    "nav.settings":"அமைப்புகள்","nav.more":"மேலும்","nav.help":"இந்தத் தாவலுக்கு உதவி",
+    "op":"இயக்குபவர்","ind":"காட்டி · பாலம் 1","stable":"நிலையானது","motion":"அசைவு",
+    "ticket":"சீட்டு","calc":"எடுத்தவை & கணக்கிட்டவை","tare":"காலி எடை","gross":"மொத்த எடை",
+    "net":"நிகர எடை","charge":"கட்டணம்","acts":"செயல்கள்","cams":"கேமராக்கள்",
+    "f.vehicle":"வாகன எண்","f.date":"சீட்டு தேதி","f.party":"கட்சி","f.material":"பொருள்",
+    "f.challan":"சலான் எண்","f.transporter":"போக்குவரத்து","f.type":"வாகன வகை","recalled":"நினைவுகூரப்பட்டது",
+    "cap.tare":"காலி எடையை எடு","cap.gross":"மொத்த எடையை எடு","cap.done":"இரண்டும் எடுக்கப்பட்டது",
+    "cap.wait":"நிலையான அளவீட்டுக்குக் காத்திருக்கிறது","cap.go":"இப்போது எடுக்கலாம்",
+    "save":"சேமி","print.btn":"அச்சிடு","reprint":"மீண்டும் அச்சிடு","clear":"அழி",
+    "sim":"லாரியை மேடையில் அனுப்பு","print":"அச்சு முன்னோட்டம்","cancel":"ரத்து","sendprint":"அச்சுப்பொறிக்கு அனுப்பு",
+    "help":"உதவி","s.skin":"தோற்றம்","s.lang":"மொழி","s.fs":"எழுத்து அளவு","s.ops":"நிறுத்தல் விதிகள்"
+  }
+};
+let lang = "en";
+const t = k => (T[lang] && T[lang][k]) || (T.en[k] !== undefined ? T.en[k] : null);
+
+/* ---------- config (item 11: no weight rounding — the indicator does that) ---------- */
+const cfg = { dateFmt:"dd MMM yyyy", timeFmt:"24", amtDp:2, skin:"indicator", fs:1 };
+
+const rules = {
+  tareFirst:true, strictTare:true, autoCapture:false, requireParty:true,
+  requireChallan:false, autoPrint:false, allowReprint:true, voidReason:true, resetYearly:true
+};
+
+const RULE_DEFS = [
+  ["tareFirst",  "Weigh tare first",            "Off means the loaded lorry is weighed first — a delivery coming in."],
+  ["strictTare", "Strict tare",                 "Re-weigh the empty lorry every trip instead of reusing a stored tare."],
+  ["autoCapture","Auto-capture when stable",    "The operator never touches the button; the reading is taken the moment it settles."],
+  ["requireParty","Party is required",          "The first weight cannot be captured until a party is chosen."],
+  ["requireChallan","Challan number is required","Useful where the delivery note is the legal document."],
+  ["autoPrint",  "Print automatically on save", "For sites that always hand over a slip."],
+  ["allowReprint","Allow reprints",             "Off locks the ticket to one printed copy."],
+  ["voidReason", "Void needs a reason",         "Always on. A void without a reason is not an audit trail.", true],
+  ["resetYearly","Reset ticket number yearly",  "TKT-0001 again every 1 April."]
+];
+
+const MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const fDate = d => {
+  const y = d.getFullYear(), m = d.getMonth(), dd = d.getDate();
+  if (cfg.dateFmt === "dd-MM-yyyy") return `${p2(dd)}-${p2(m+1)}-${y}`;
+  if (cfg.dateFmt === "dd/MM/yy")   return `${p2(dd)}/${p2(m+1)}/${String(y).slice(2)}`;
+  if (cfg.dateFmt === "yyyy-MM-dd") return `${y}-${p2(m+1)}-${p2(dd)}`;
+  return `${p2(dd)} ${MON[m]} ${y}`;
+};
+const fTime = (d,sec) => {
+  let h = d.getHours(); const su = cfg.timeFmt === "12";
+  const ap = h >= 12 ? "PM" : "AM";
+  if (su) { h = h % 12 || 12; }
+  return `${su ? h : p2(h)}:${p2(d.getMinutes())}${sec ? ":" + p2(d.getSeconds()) : ""}${su ? " " + ap : ""}`;
+};
+const fmt   = n => Number(n).toLocaleString("en-IN");
+const money = n => "₹ " + Number(n).toLocaleString("en-IN",
+                    {minimumFractionDigits:cfg.amtDp, maximumFractionDigits:cfg.amtDp});
+
+/* ---------- state ---------- */
+const RATE = { tareCharge:100, grossCharge:150 };
+const CAPACITY = 60000;
+const state = {
+  screen:"weigh", ticketNo:1042, captures:[], calc:null, saved:false, prints:0,
+  weight:0, target:0, stable:true, doc:"ticket", operator:"Ravi", tpl:null
+};
+let timer = null;
+
+/* ---------- indicator ---------- */
+const tickClock = () => {
+  const n = new Date();
+  $("clock").textContent = fTime(n, true);
+  $("cday").textContent  = fDate(n);
+  if (!$("rFrom").value) { $("rFrom").value = fDate(new Date(n.getFullYear(), n.getMonth(), 1)); }
+  $("rTo").value = fDate(n);
+};
+setInterval(tickClock, 1000);
+
+const drawHead = () => {
+  $("wt").textContent = fmt(Math.round(state.weight));
+  $("capBar").style.width = Math.min(100, (state.weight / CAPACITY) * 100) + "%";
+  $("capTxt").textContent = `${fmt(Math.round(state.weight))} / ${fmt(CAPACITY)} kg`;
+  $("lStable").classList.toggle("on", state.stable && state.target > 0);
+  $("lLive").classList.toggle("busy", !state.stable);
+};
+
+const nextKind = () => {
+  const order = rules.tareFirst ? ["tare","gross"] : ["gross","tare"];
+  return order[state.captures.length] || null;
+};
+
+const sendLorry = () => {
+  if (state.saved || state.captures.length >= 2) return;
+  state.target = nextKind() === "tare" ? 12340 : 31120;
+  state.stable = false;
+  let settle = 0;
+  clearInterval(timer);
+  timer = setInterval(() => {
+    const d = state.target - state.weight;
+    if (Math.abs(d) > 40)      { state.weight += d * 0.14 + (Math.random() - 0.5) * 260; settle = 0; }
+    else if (settle < 12)      { state.weight = state.target + (Math.random() - 0.5) * (30 - settle * 2); settle++; }
+    else                       { state.weight = state.target; state.stable = true; clearInterval(timer);
+                                 if (rules.autoCapture) setTimeout(capture, 350); }
+    drawHead(); syncActions();
+  }, 70);
+  drawHead(); syncActions();
+};
+
+const capture = () => {
+  if (!state.stable || state.target <= 0 || state.captures.length >= 2 || state.saved) return;
+  const now = new Date();
+  state.captures.push({ kind:nextKind(), kg:Math.round(state.weight), at:now, op:state.operator });
+  if (state.captures.length === 1) $("fDate").value = `${fDate(now)}  ${fTime(now)}`;
+  recalculate();
+  state.weight = 0; state.target = 0; state.stable = true;
+  clearInterval(timer);
+  drawHead(); renderCalc(); renderCams(); syncActions();
+};
+
+const recalculate = () => {
+  const tare  = state.captures.find(c => c.kind === "tare");
+  const gross = state.captures.find(c => c.kind === "gross");
+  state.calc = {
+    tare, gross,
+    net:    tare && gross ? Math.abs(gross.kg - tare.kg) : null,
+    charge: tare && gross ? RATE.tareCharge + RATE.grossCharge : null
+  };
+};
+
+const renderCalc = () => {
+  const c = state.calc || {};
+  const cell = (id, cap, txt) => {
+    const el = $(id);
+    el.classList.toggle("pend", !cap && txt == null);
+    el.querySelector("b").textContent = txt != null ? txt : (cap ? fmt(cap.kg) + " kg" : "—");
+    el.querySelector(".stamp").textContent = cap ? `${fDate(cap.at)} · ${fTime(cap.at)} · ${cap.op}` : "—";
+  };
+  cell("cTare",  c.tare);
+  cell("cGross", c.gross);
+  cell("cNet",   null, c.net    != null ? fmt(c.net) + " kg" : "—");
+  cell("cChg",   null, c.charge != null ? money(c.charge)    : "—");
+  $("cNet").classList.toggle("pend", c.net == null);
+  $("cChg").classList.toggle("pend", c.charge == null);
+  $("formula").innerHTML = c.net == null ? "" : `
+    <span>Net = Gross − Tare = <em>${fmt(c.gross.kg)} − ${fmt(c.tare.kg)} = ${fmt(c.net)} kg</em></span>
+    <span>Charge = Type.TareCharge + Type.GrossCharge = <em>₹100 + ₹150 = ${money(c.charge)}</em></span>`;
+};
+
+/* ---------- ticket state machine ---------- */
+/* One status, and it is the two weights. Nothing else to look up. */
+const wstSegs = (tare, gross) => {
+  const seg = (key, kg, cls) =>
+    `<i class="${cls || ""}${kg ? " on" : ""}">${t(key)}<b>${kg ? fmt(kg) : "—"}</b></i>`;
+  return seg("tare", tare) + seg("gross", gross) +
+         seg("net", tare && gross ? Math.abs(gross - tare) : 0, "net");
+};
+const wst = (tare, gross, cancelled) =>
+  `<span class="wst${cancelled ? " cancelled" : ""}">${wstSegs(tare, gross)}</span>`;
+const setWeightStatus = () => {
+  const c = state.calc || {};
+  const el = $("tkState");
+  el.className = "wst";
+  el.innerHTML = wstSegs(c.tare && c.tare.kg, c.gross && c.gross.kg);
+};
+const setStatus = key => { $("status").dataset.t = key; $("status").textContent = t(key); };
+
+const syncActions = () => {
+  const n = state.captures.length;
+  const armed = state.stable && state.target > 0 && n < 2 && !state.saved;
+  $("btnCap").disabled     = !armed;
+  $("btnSave").disabled    = !(state.calc && state.calc.net != null && !state.saved);
+  $("btnPrint").disabled   = !(state.saved && state.prints === 0);
+  $("btnReprint").disabled = !(state.prints > 0 && rules.allowReprint);
+  $("btnSim").disabled     = state.saved || n >= 2;
+  $("printChip").textContent = state.prints === 0 ? "0 prints"
+                             : state.prints === 1 ? "1 print" : state.prints + " prints";
+  const kind = nextKind();
+  const mainKey = n >= 2 ? "cap.done" : kind === "tare" ? "cap.tare" : "cap.gross";
+  $("capMain").dataset.t = mainKey;
+  $("capMain").textContent = t(mainKey) || (n >= 2 ? "Both weights captured" : "Capture " + kind);
+  $("capHint").dataset.t = armed ? "cap.go" : "cap.wait";
+  $("capHint").textContent = t(armed ? "cap.go" : "cap.wait") || (armed ? "Ready" : "Waiting for a stable reading");
+
+  setWeightStatus();
+  if (state.saved)           setStatus(state.prints ? "s.printed" : "s.saved");
+  else if (n === 2)          setStatus("s.two");
+  else if (n === 1)          setStatus(armed ? "s.stable" : "s.one");
+  else if (armed)            setStatus("s.stable");
+  else if (state.target > 0) setStatus("s.motion");
+  else                       setStatus("s.idle");
+
+  $("modeChip").textContent = (rules.tareFirst ? "Tare first" : "Gross first") + " · " +
+                              (rules.strictTare ? "strict tare" : "loose tare") +
+                              (rules.autoCapture ? " · auto-capture" : "");
+};
+
+const save = () => {
+  if (state.saved || !state.calc || state.calc.net == null) return;
+  state.saved = true;
+  recent.unshift({
+    no:"TKT-" + state.ticketNo, veh:$("fVeh").value, party:"Sri Lakshmi Traders", mat:"M-Sand",
+    tare:state.calc.tare.kg, gross:state.calc.gross.kg, at:fTime(new Date())
+  });
+  renderTables(); syncActions();
+  if (rules.autoPrint) openPrint("ticket");
+};
+
+const clearTicket = () => {
+  if (state.saved) state.ticketNo += 1;
+  state.captures = []; state.calc = null; state.saved = false; state.prints = 0;
+  state.weight = 0; state.target = 0; state.stable = true;
+  clearInterval(timer);
+  $("tkNo").textContent = "TKT-" + state.ticketNo;
+  $("fDate").value = "";
+  drawHead(); renderCalc(); renderCams(); syncActions();
+};
+
+$("btnCap").addEventListener("click", capture);
+$("btnSave").addEventListener("click", save);
+$("btnClear").addEventListener("click", clearTicket);
+$("btnSim").addEventListener("click", sendLorry);
+$("btnPrint").addEventListener("click", () => openPrint("ticket"));
+$("btnReprint").addEventListener("click", () => openPrint("ticket"));
+$("btnRPrint").addEventListener("click", () => openPrint("report"));
+
+/* ---------- cameras ---------- */
+const CAMS = [{n:"Front",plate:true},{n:"Rear"},{n:"Plate",plate:true},{n:"Driver",off:true}];
+const camTile = (c, mark) => c.off
+  ? `<div class="cam off"><span>${c.n} · not configured</span></div>`
+  : `<div class="cam"><span class="nm">${c.n}</span>${c.plate ? `<span class="plate">${$("fVeh").value}</span>` : ""}<span class="burn">${mark}</span></div>`;
+const renderCams = () => {
+  const last = state.captures[state.captures.length - 1];
+  const mark = last ? `TKT-${state.ticketNo} · ${fmt(last.kg)} kg · ${fTime(last.at)}` : "—";
+  const html = CAMS.map(c => camTile(c, mark)).join("");
+  $("camSide").innerHTML = html;
+  $("camGrid").innerHTML = html;
+};
+
+/* ---------- demo data ---------- */
+/* A ticket carries two weights and nothing else. `cancelled` is an audit flag,
+   not a status — the row stays, struck through, and the reason lives on the trail. */
+const recent = [
+  {no:"TKT-1041",veh:"TN74 BC 5521",party:"Anand Constructions",mat:"Blue Metal 20mm",tare:13120,gross:31360,at:"14:02"},
+  {no:"TKT-1040",veh:"TN75 K 9087",  party:"Devi Traders",       mat:"M-Sand",         tare:12980,gross:34080,at:"13:41"},
+  {no:"TKT-1039",veh:"TN74 AZ 3311", party:"Murugan Lorry",      mat:"P-Sand",         tare:12410,gross:0,    at:"13:12",cancelled:true},
+  {no:"TKT-1038",veh:"TN72 AC 4410", party:"Kanya Builders",     mat:"Gravel",         tare:11890,gross:0,    at:"11:58"},
+  {no:"TKT-1037",veh:"TN74 D 7712",  party:"Sri Lakshmi Traders",mat:"M-Sand",         tare:12340,gross:32220,at:"11:20"},
+  {no:"TKT-1036",veh:"TN75 F 2201",  party:"Anand Constructions",mat:"Blue Metal 20mm",tare:13640,gross:0,    at:"10:44"}
+];
+const PARTIES = [
+  {n:"Sri Lakshmi Traders",  p:"Nagercoil", l:"today"},
+  {n:"Anand Constructions",  p:"Thuckalay", l:"today"},
+  {n:"Devi Traders",         p:"Marthandam",l:"yesterday"},
+  {n:"Kanya Builders",       p:"Kanyakumari",l:"3 days ago"}
+];
+const TARES = [
+  {v:"TN74 AB 1234", kg:12340, on:"04 Aug 2026", ex:"in 21 days"},
+  {v:"TN75 K 9087",  kg:13120, on:"29 Jul 2026", ex:"in 15 days"},
+  {v:"TN72 AC 4410", kg:11890, on:"12 Jul 2026", ex:"expired"}
+];
+const REPORT = [
+  {m:"M-Sand",          tk:19, t:238.4, c:4750},
+  {m:"Blue Metal 20mm", tk:14, t:201.2, c:3500},
+  {m:"P-Sand",          tk:9,  t:112.6, c:2250},
+  {m:"Gravel",          tk:6,  t:60.2,  c:1500}
+];
+
+/* ---------- tables ---------- */
+const head = keys => `<thead><tr>${keys.map(k => `<th>${k}</th>`).join("")}</tr></thead>`;
+let tkFilter = "all";
+const renderTables = () => {
+  const row = (r, act) => `<tr${r.cancelled ? ' style="opacity:.5"' : ""}>
+      <td class="num">${r.no}</td><td class="num">${r.veh}</td><td>${r.party}</td><td>${r.mat}</td>
+      <td>${wst(r.tare, r.gross, r.cancelled)}</td>
+      <td class="num">${r.at}</td>${act ? `<td>${
+        r.cancelled ? "" :
+        !r.gross ? `<button class="mini">${t("t.resume2")}</button>`
+                 : `<button class="mini">${t("reprint")}</button>`}</td>` : ""}
+    </tr>`;
+  const cols = ["Ticket","Vehicle","Party","Material","Tare · Gross · Net (kg)","Time"];
+
+  $("dashTbl").innerHTML = head(cols) + "<tbody>" +
+    recent.slice(0, 5).map(r => row(r, false)).join("") + "</tbody>";
+
+  const q = ($("tkSearch").value || "").toLowerCase();
+  const list = recent.filter(r =>
+    (tkFilter === "all" || (tkFilter === "both" ? !!r.gross : !r.gross && !r.cancelled)) &&
+    (!q || (r.no + r.veh + r.party + r.mat).toLowerCase().includes(q)));
+  $("tkTbl").innerHTML = head(cols.concat("")) + "<tbody>" + (list.length ? list.map(r => row(r, true)).join("")
+    : `<tr><td colspan="7" style="color:var(--dim)">Nothing matches that filter.</td></tr>`) + "</tbody>";
+  const waiting = recent.filter(r => !r.gross && !r.cancelled).length;
+  $("openChip").lastElementChild.textContent = `${waiting} waiting for a second weight`;
+  $("kWait").textContent = waiting;
+
+  $("mTbl").innerHTML = head(["Party","Place","Last ticket"]) + "<tbody>" +
+    PARTIES.map(r => `<tr><td>${r.n}</td><td>${r.p}</td><td>${r.l}</td></tr>`).join("") + "</tbody>";
+
+  $("stTbl").innerHTML = head(["Vehicle","Tare kg","Taken","Expires"]) + "<tbody>" +
+    TARES.map(r => `<tr><td class="num">${r.v}</td><td class="n">${fmt(r.kg)}</td><td>${r.on}</td>
+      <td style="color:${r.ex === "expired" ? "var(--alert)" : "var(--dim)"}">${r.ex}</td></tr>`).join("") + "</tbody>";
+
+  $("rTbl").innerHTML = head(["Material","Tickets","Net tonnes","Charge"]) + "<tbody>" +
+    REPORT.map(r => `<tr><td>${r.m}</td><td class="n">${r.tk}</td><td class="n">${r.t.toFixed(1)}</td>
+      <td class="n">${money(r.c)}</td></tr>`).join("") +
+    `<tr><td><b>Total</b></td><td class="n"><b>${REPORT.reduce((a, r) => a + r.tk, 0)}</b></td>
+      <td class="n"><b>${REPORT.reduce((a, r) => a + r.t, 0).toFixed(1)}</b></td>
+      <td class="n"><b>${money(REPORT.reduce((a, r) => a + r.c, 0))}</b></td></tr></tbody>`;
+};
+$("tkSearch").addEventListener("input", renderTables);
+$$("#tkFilter button").forEach(b => b.addEventListener("click", () => {
+  tkFilter = b.dataset.fil;
+  $$("#tkFilter button").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+  renderTables();
+}));
+$("btnResume").addEventListener("click", () => { tkFilter = "half";
+  $$("#tkFilter button").forEach(x => x.setAttribute("aria-pressed", String(x.dataset.fil === "half")));
+  renderTables(); });
+
+/* ---------- dashboard ---------- */
+const HOURS = [2,4,3,6,7,5,8,6,4,5,3,2];
+const renderDash = () => {
+  const now = new Date().getHours();
+  $("bars").innerHTML = HOURS.map((v, i) => {
+    const h = 6 + i;
+    return `<div class="${h === now ? "q" : ""}" style="height:${(v / 8) * 100}%"><span>${p2(h)}</span></div>`;
+  }).join("");
+  const tot = REPORT.reduce((a, r) => a + r.t, 0);
+  $("split").innerHTML = REPORT.map(r => `<div class="r"><span>${r.m}</span>
+    <span class="track"><i style="width:${(r.t / tot) * 100}%"></i></span>
+    <span class="num" style="text-align:right">${r.t.toFixed(1)} t</span></div>`).join("");
+};
+
+/* ---------- print ---------- */
+const rpad = (s, n) => String(s).padEnd(n).slice(0, n);
+const pad  = (s, n) => String(s).padStart(n).slice(-n);
+const P = () => {
+  const c = state.calc || {};
+  return {
+    no:"TKT-" + state.ticketNo,
+    veh:$("fVeh").value,
+    party:"Sri Lakshmi Traders", mat:"M-Sand", chal:"DC-8871",
+    tare:c.tare  ? fmt(c.tare.kg)  : "—",
+    gross:c.gross ? fmt(c.gross.kg) : "—",
+    net:c.net != null ? fmt(c.net) : "—",
+    chg:c.charge != null ? money(c.charge) : "—",
+    tareAt:c.tare  ? `${fDate(c.tare.at)} ${fTime(c.tare.at)}`  : "—",
+    grossAt:c.gross ? `${fDate(c.gross.at)} ${fTime(c.gross.at)}` : "—",
+    op:state.operator,
+    copy:state.prints >= 1 ? `DUPLICATE COPY ${state.prints + 1}` : ""
+  };
+};
+
+const ticketA4 = p => {
+  if (state.tpl) {
+    return `<div class="paper">${state.tpl
+      .replace(/\{\{TicketNo\}\}/g, p.no).replace(/\{\{Vehicle\}\}/g, p.veh)
+      .replace(/\{\{Party\}\}/g, p.party).replace(/\{\{Material\}\}/g, p.mat)
+      .replace(/\{\{Tare\}\}/g, p.tare).replace(/\{\{Gross\}\}/g, p.gross)
+      .replace(/\{\{Net\}\}/g, p.net).replace(/\{\{Charge\}\}/g, p.chg)
+      .replace(/\{\{Operator\}\}/g, p.op).replace(/\{\{Copy\}\}/g, p.copy)}</div>`;
+  }
+  return `<div class="paper">
+    <div class="slip-h">
+      <div><div style="font-weight:700;font-size:.875rem">SRI LAKSHMI BLUE METALS</div>
+        <div style="font-size:.625rem">Kottaram Road, Nagercoil 629001 · GSTIN 33ABCDE1234F1Z5</div></div>
+      <div style="text-align:right"><div style="font-family:var(--mono);font-weight:700">${p.no}</div>
+        <div style="font-size:.625rem">${p.copy || "ORIGINAL"}</div></div>
+    </div>
+    <div class="slip-g">
+      <div><b>Vehicle</b> ${p.veh}</div><div><b>Challan</b> ${p.chal}</div>
+      <div><b>Party</b> ${p.party}</div><div><b>Material</b> ${p.mat}</div>
+      <div><b>Tare at</b> ${p.tareAt}</div><div><b>Gross at</b> ${p.grossAt}</div>
+    </div>
+    <div class="slip-w">
+      <div>TARE<b>${p.tare}</b>kg</div><div>GROSS<b>${p.gross}</b>kg</div><div>NET<b>${p.net}</b>kg</div>
+    </div>
+    <div class="slip-g"><div><b>Charge</b> ${p.chg}</div><div><b>Operator</b> ${p.op}</div></div>
+    <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-top:14px;
+                border-top:1px solid #C9C4B4;padding-top:9px;font-size:.625rem">
+      <span>Verify: babuscale.app/v/${p.no}</span><span>Signature</span>
+    </div></div>`;
+};
+
+const ticketMx = p => `<div class="paper matrix">${
+`+--------------------------------------+
+|  SRI LAKSHMI BLUE METALS  NAGERCOIL  |
++--------------------------------------+
+ TICKET  ${rpad(p.no, 12)} ${pad(p.copy || "ORIGINAL", 16)}
+ VEHICLE ${rpad(p.veh, 29)}
+ PARTY   ${rpad(p.party, 29)}
+ MATERIAL${rpad(p.mat, 29)}
+ CHALLAN ${rpad(p.chal, 29)}
+----------------------------------------
+ TARE   ${pad(p.tare, 10)} KG  ${rpad(p.tareAt.slice(0, 12), 12)}
+ GROSS  ${pad(p.gross, 10)} KG  ${rpad(p.grossAt.slice(0, 12), 12)}
+ NET    ${pad(p.net, 10)} KG
+----------------------------------------
+ CHARGE ${pad(p.chg.replace("₹ ", "Rs."), 12)}
+ OPERATOR ${rpad(p.op, 20)}
+========================================`}</div>`;
+
+const ticketTh = p => `<div class="paper thermal">${
+`   SRI LAKSHMI BLUE METALS
+      Nagercoil  Bridge 1
+------------------------------
+ ${rpad(p.no, 14)}${pad(p.copy || "ORIGINAL", 15)}
+ Vehicle  ${rpad(p.veh, 20)}
+ Party    ${rpad(p.party, 20)}
+ Material ${rpad(p.mat, 20)}
+------------------------------
+ Tare     ${pad(p.tare, 12)} kg
+ Gross    ${pad(p.gross, 12)} kg
+ NET      ${pad(p.net, 12)} kg
+------------------------------
+ Charge   ${pad(p.chg.replace("₹ ", "Rs."), 12)}
+ Operator ${rpad(p.op, 12)}
+
+      [ QR ]  ${p.no}
+------------------------------`}</div>`;
+
+const rTot = () => REPORT.reduce((a, r) => ({tk:a.tk + r.tk, t:a.t + r.t, c:a.c + r.c}), {tk:0, t:0, c:0});
+const reportA4 = () => {
+  const T2 = rTot();
+  return `<div class="paper">
+    <div class="slip-h"><div><div style="font-weight:700;font-size:.875rem">MATERIAL SUMMARY</div>
+      <div style="font-size:.625rem">${$("rFrom").value} — ${$("rTo").value} · Bridge 1</div></div>
+      <div style="text-align:right;font-size:.625rem">Sri Lakshmi Blue Metals</div></div>
+    <table style="width:100%;border-collapse:collapse;margin-top:11px;font-size:.6875rem">
+      <tr style="border-bottom:1px solid #141414"><th align="left">Material</th><th align="right">Tickets</th>
+        <th align="right">Net t</th><th align="right">Charge</th></tr>
+      ${REPORT.map(r => `<tr><td>${r.m}</td><td align="right">${r.tk}</td>
+        <td align="right">${r.t.toFixed(1)}</td><td align="right">${money(r.c)}</td></tr>`).join("")}
+      <tr style="border-top:1px solid #141414;font-weight:700"><td>Total</td><td align="right">${T2.tk}</td>
+        <td align="right">${T2.t.toFixed(1)}</td><td align="right">${money(T2.c)}</td></tr>
+    </table></div>`;
+};
+const reportMx = () => { const T2 = rTot();
+  return `<div class="paper matrix">${
+`         MATERIAL SUMMARY  BRIDGE 1
+ ${rpad($("rFrom").value, 14)} TO ${rpad($("rTo").value, 14)}
+----------------------------------------
+ MATERIAL           TKTS   NET T  CHARGE
+${REPORT.map(r => ` ${rpad(r.m, 18)}${pad(r.tk, 5)}${pad(r.t.toFixed(1), 8)}${pad("Rs." + r.c, 8)}`).join("\n")}
+----------------------------------------
+ ${rpad("TOTAL", 18)}${pad(T2.tk, 5)}${pad(T2.t.toFixed(1), 8)}${pad("Rs." + T2.c, 8)}`}</div>`; };
+const reportTh = () => { const T2 = rTot();
+  return `<div class="paper thermal">${
+`     MATERIAL SUMMARY
+ ${rpad($("rFrom").value, 12)}-${rpad($("rTo").value, 12)}
+------------------------------
+${REPORT.map(r => ` ${rpad(r.m, 17)}${pad(r.t.toFixed(1), 7)}t`).join("\n")}
+------------------------------
+ ${rpad("TOTAL", 17)}${pad(T2.t.toFixed(1), 7)}t
+ ${rpad("CHARGE", 17)}${pad("Rs." + T2.c, 8)}`}</div>`; };
+
+const NOTES = {
+  a4:"Full typography, proportional layout, logo, QR and camera photographs. Tamil script prints here.",
+  mx:"A fixed 40-column character grid driven straight to the print head. No fonts, no driver — Latin characters only, so a Tamil site prints this one in English.",
+  th:"Narrow receipt column with a native QR command. Same content, a third layout engine."
+};
+let ptab = "a4";
+const renderPaper = () => {
+  const p = P();
+  const isT = state.doc === "ticket";
+  $("mDoc").textContent = isT ? "Ticket " + p.no + (p.copy ? " · " + p.copy : "") : "Material summary";
+  $("paper").innerHTML = isT
+    ? (ptab === "a4" ? ticketA4(p) : ptab === "mx" ? ticketMx(p) : ticketTh(p))
+    : (ptab === "a4" ? reportA4()  : ptab === "mx" ? reportMx()  : reportTh());
+  $("tabNote").textContent = NOTES[ptab] +
+    (isT && ptab === "a4" && state.tpl ? "  ·  Using your uploaded template." : "");
+};
+$$("#pTabs button").forEach(b => b.addEventListener("click", () => {
+  ptab = b.dataset.p;
+  $$("#pTabs button").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+  renderPaper();
+}));
+
+const openPrint  = doc => { state.doc = doc; $("modal").hidden = false; renderPaper(); $("mClose").focus(); };
+const closePrint = () => { $("modal").hidden = true; };
+const sendToPrinter = () => {
+  if (state.doc === "ticket") state.prints += 1;
+  closePrint(); syncActions();
+};
+$("mClose").addEventListener("click", closePrint);
+$("mCancel").addEventListener("click", closePrint);
+$("mSend").addEventListener("click", sendToPrinter);
+$("modal").addEventListener("click", e => { if (e.target === $("modal")) closePrint(); });
+
+/* ---------- help, per tab (item 14) ---------- */
+const HELP = {
+  weigh:{ h:"Weighing",
+    lead:"One lorry, one ticket, from empty deck to printed slip.",
+    pts:[["Send a lorry","starts the simulated indicator. On site this is the live serial stream from the weighbridge head."],
+         ["Capture","is locked while the weight moves. It arms only after the configured number of steady readings."],
+         ["Save","writes the ticket to the ledger and hash-chains it. After that the fields are read-only."],
+         ["Print / Reprint","a reprint is a counted, audited copy stamped DUPLICATE."]],
+    tip:"Nothing touches the database before Save, so a lorry that drives off before the first capture leaves no row behind." },
+  dash:{ h:"Dashboard",
+    lead:"The shift at a glance — today against yesterday.",
+    pts:[["Open tickets","are lorries that took a first weight and have not come back. Chase these first."],
+         ["Tickets by hour","shows the rush. The lit bar is the hour you are in."],
+         ["Material split","is net tonnes, not ticket count — one gravel lorry is not one sand lorry."]],
+    tip:"Every number here is a query over the same ledger the tickets tab searches. There is no separate reporting copy to fall out of date." },
+  cameras:{ h:"Cameras",
+    lead:"Photographic evidence attached to the weight, not filed beside it.",
+    pts:[["Sources","USB, IP, RTSP and ONVIF. Four here; the design does not cap the number."],
+         ["Burn-in","ticket number, weight and time are written into the image itself, so a cropped screenshot still proves itself."],
+         ["Auto-capture","fires on the same stable signal the weight capture uses — the photo and the weight are the same instant."]],
+    tip:"Images are content-addressed and stored once. The same lorry photographed twice in a day costs one copy on disk." },
+  tickets:{ h:"Tickets",
+    lead:"Everything the Weighing tab has finished with — and everything it has not.",
+    pts:[["One weight only","is the reason this tab exists. A lorry weighs in at 11:58 and returns at 16:20; the operator finds it here and resumes it."],
+         ["Search","runs on normalised indexes — partial vehicle numbers, party names, challan numbers."],
+         ["Reprint","from the row, so an operator never has to reload a ticket into the weighing screen just to hand over a second slip."],
+         ["Cancel","never deletes. The row stays, struck through, with the reason on the audit trail."]],
+    tip:"Weighing holds one ticket. Tickets holds all of them. Merging the two would mean the live weight sharing a screen with a 40,000-row table." },
+  masters:{ h:"Masters",
+    lead:"The lists the ticket fields pull from.",
+    pts:[["Parties","recall the last material and transporter used, so the second visit is two fields shorter than the first."],
+         ["Stored tares","let a known lorry skip the empty weighment when the site allows it."],
+         ["Expiry","a stored tare goes stale — mud, fuel, a new body. It expires and forces a re-weigh."]],
+    tip:"Strict tare ignores stored tares entirely. Loose tare uses them until they expire. That is a per-site rule, not a per-ticket decision." },
+  reports:{ h:"Reports",
+    lead:"The same data, grouped the way the office needs it.",
+    pts:[["Any printer","a report is content plus a layout engine, so the summary prints on A4, on the dot matrix, or on the 58 mm roll."],
+         ["Exports","PDF, Excel and CSV come from the same content model as the print."],
+         ["Group by","material, party, vehicle, transporter or day."]],
+    tip:"Nothing here is a fixed report definition in code. A report is a saved query plus a template, both of them rows in the database." },
+  settings:{ h:"Settings",
+    lead:"Everything configurable, stored in the database and gated by the admin password.",
+    pts:[["Uploads","the field schema and the print template arrive as files and are applied on the spot. There is no save button and no file left on disk."],
+         ["Rules","are what the operator can and cannot do. Change one and the Weighing tab changes behaviour immediately."],
+         ["Appearance","skin and text size are saved with the site, so a re-install or a second terminal comes up looking the same."],
+         ["Language","English always, plus one more. The printed ticket has a separate language setting."]],
+    tip:"No setting is a file. That is deliberate: a config file is the one thing that never gets backed up and never gets copied to the second machine." }
+};
+const renderHelp = () => {
+  const h = HELP[state.screen] || HELP.weigh;
+  $("helpBody").innerHTML = `<h4 id="helpTitle">${h.h}</h4>
+    <p class="hint" style="font-size:.8125rem;color:var(--text)">${h.lead}</p>
+    <ul>${h.pts.map(p => `<li><b>${p[0]}</b> — ${p[1]}</li>`).join("")}</ul>
+    <p class="tip">${h.tip}</p>
+    ${state.screen === "tickets" || state.screen === "weigh" ? `
+    <p class="hint">A ticket has one status and it is the pair of weights:</p>
+    <div style="display:grid;gap:7px;justify-items:start">
+      ${wst(0, 0)}${wst(12340, 0)}${wst(12340, 31120)}
+    </div>
+    <p class="tip">Nothing to memorise — the status is the data. Printing is not part of it either: a printed ticket carries a print count, and every copy after the first is stamped DUPLICATE and recorded.</p>` : ""}`;
+};
+const toggleHelp = force => {
+  const open = force !== undefined ? force : $("help").hidden;
+  $("help").hidden = !open;
+  $("btnHelp").setAttribute("aria-expanded", String(open));
+  if (open) { renderHelp(); $("helpClose").focus(); }
+};
+$("btnHelp").addEventListener("click", () => toggleHelp());
+$("helpClose").addEventListener("click", () => toggleHelp(false));
+$("moreHelp").addEventListener("click", () => { $("moreSheet").hidden = true; toggleHelp(true); });
+document.addEventListener("keydown", e => {
+  if (e.key !== "Escape") return;
+  if (!$("modal").hidden) closePrint();
+  else if (!$("help").hidden) toggleHelp(false);
+  else if (!$("moreSheet").hidden) $("moreSheet").hidden = true;
+});
+
+/* ---------- navigation (items 5 + 9) ---------- */
+const go = name => {
+  state.screen = name;
+  $("app").dataset.screen = name;
+  $$("div.screen[data-screen]").forEach(s => { s.hidden = s.dataset.screen !== name; });
+  $$("[data-go]").forEach(b => {
+    if (b.dataset.go === name) b.setAttribute("aria-current", "page");
+    else b.removeAttribute("aria-current");
+  });
+  $("head").dataset.mode = name === "weigh" ? "full" : "compact";
+  $("moreSheet").hidden = true;
+  if (name === "dash")    renderDash();
+  if (name === "cameras") renderCams();
+  if (!$("help").hidden)  renderHelp();
+  $("main").scrollTo({top:0, behavior:"smooth"});
+};
+$$("[data-go]").forEach(b => b.addEventListener("click", () => go(b.dataset.go)));
+$("btnMore").addEventListener("click", () => { $("moreSheet").hidden = !$("moreSheet").hidden; });
+
+/* ---------- operator name (item 17) ---------- */
+const setOperator = v => {
+  state.operator = (v || "").trim() || "Operator";
+  $("opName").textContent = state.operator;
+  $("setOp").value = state.operator;
+  renderCalc();
+};
+$("opChip").addEventListener("click", () => {
+  $("opChip").hidden = true;
+  const i = $("opEdit");
+  i.hidden = false; i.value = state.operator; i.focus(); i.select();
+});
+const commitOp = () => {
+  setOperator($("opEdit").value);
+  $("opEdit").hidden = true;
+  $("opChip").hidden = false;
+};
+$("opEdit").addEventListener("blur", commitOp);
+$("opEdit").addEventListener("keydown", e => { if (e.key === "Enter") commitOp(); });
+$("setOp").addEventListener("input", e => setOperator(e.target.value));
+
+/* ---------- skins (items 8 + 19) ---------- */
+const SKINS = [
+  {k:"indicator", n:"Indicator", d:"Amber on black — the colour of a weighbridge head.", c:["#0B0E0F","#1B2325","#FFA92E","#3ECF8E"]},
+  {k:"graphite",  n:"Graphite",  d:"Cool dark, teal accent. Easier over a twelve-hour shift.", c:["#0C1013","#1C242B","#4FD6C9","#5FD08A"]},
+  {k:"night",     n:"Night shift", d:"No blue light, deep orange. For the 2 a.m. cabin.", c:["#0A0705","#1D1710","#FF7A1A","#B7C24E"]},
+  {k:"paper",     n:"Paper",     d:"Warm light, burnt orange. Reads like the printed slip.", c:["#EDE8DE","#FFFDF8","#9A3412","#14733F"]},
+  {k:"daylight",  n:"Daylight",  d:"Cool light, blue accent. For a bright office window.", c:["#E8EDF2","#FFFFFF","#0B5FBF","#0E7C4F"]},
+  {k:"contrast",  n:"High contrast", d:"Maximum legibility through dust and glare.", c:["#000000","#141414","#FFD400","#00E07A"]}
+];
+const flash = (el, msg, bad) => {
+  el.textContent = msg;
+  el.classList.toggle("bad", !!bad);
+};
+const setSkin = k => {
+  cfg.skin = k;
+  document.documentElement.setAttribute("data-skin", k);
+  $$("#skins .skin").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.skin === k)));
+  flash($("skinMsg"), "Saved to settings · " + (SKINS.find(s => s.k === k) || {}).n);
+};
+$("skins").innerHTML = SKINS.map(s => `<button class="skin" data-skin="${s.k}" aria-pressed="false">
+  <span class="sw">${s.c.map((c, i) => `<i class="${i === 2 ? "a" : ""}" style="background:${c}"></i>`).join("")}</span>
+  <span class="nm">${s.n}</span><span class="ds">${s.d}</span></button>`).join("");
+$$("#skins .skin").forEach(b => b.addEventListener("click", () => setSkin(b.dataset.skin)));
+
+/* ---------- font size (item 7) ---------- */
+const setFs = v => {
+  cfg.fs = Number(v);
+  document.documentElement.style.setProperty("--s", cfg.fs);
+  $$("#fsBar button").forEach(b => b.setAttribute("aria-pressed", String(Number(b.dataset.fs) === cfg.fs)));
+};
+$$("#fsBar button").forEach(b => b.addEventListener("click", () => setFs(b.dataset.fs)));
+
+/* ---------- rules (item 12) ---------- */
+$("rules").innerHTML = RULE_DEFS.map(([k, label, note, locked]) => `
+  <label class="ck${locked ? " lock" : ""}">
+    <input type="checkbox" data-rule="${k}" ${rules[k] ? "checked" : ""} ${locked ? "disabled" : ""}>
+    <span>${label}${locked ? " 🔒" : ""}<small>${note}</small></span>
+  </label>`).join("");
+$$("#rules input[data-rule]").forEach(i => i.addEventListener("change", e => {
+  rules[e.target.dataset.rule] = e.target.checked;
+  if (state.captures.length === 0) { state.target = 0; state.weight = 0; clearInterval(timer); drawHead(); }
+  syncActions();
+}));
+$("setReads").addEventListener("change", syncActions);
+$("setBand").addEventListener("change", syncActions);
+
+/* ---------- uploads (item 10) ---------- */
+const DEFAULT_SCHEMA = {
+  BodyVersion:3,
+  Fields:[
+    {Key:"VehicleNo", Type:"Text",   Required:true, Search:"Master", Upper:true, Index:true},
+    {Key:"Party",     Type:"Master", Master:"Party", Recall:"LastByVehicleNo"},
+    {Key:"Material",  Type:"Master", Master:"Material"},
+    {Key:"Charge",    Type:"Formula", Formula:"Type.TareCharge + Type.GrossCharge"},
+    {Key:"Value",     Type:"Formula", Formula:"Round(Net / 1000 * Material.Rate, 0)"}
+  ],
+  Capture:{Order:"TareFirst", TareMode:"Strict", StableReadings:5, StableBand:20}
+};
+const showSchema = obj => {
+  $("jsonView").innerHTML = JSON.stringify(obj, null, 2)
+    .replace(/"(BodyVersion|Fields|Capture)"/g, '"<b>$1</b>');
+};
+const wireDrop = (dropId, inputId, onText) => {
+  const drop = $(dropId), input = $(inputId);
+  input.addEventListener("change", () => {
+    const f = input.files && input.files[0];
+    if (f) f.text().then(txt => onText(txt, f));
+    input.value = "";
+  });
+  ["dragenter","dragover"].forEach(ev => drop.addEventListener(ev, e => {
+    e.preventDefault(); drop.classList.add("over");
+  }));
+  ["dragleave","drop"].forEach(ev => drop.addEventListener(ev, e => {
+    e.preventDefault(); drop.classList.remove("over");
+  }));
+  drop.addEventListener("drop", e => {
+    const f = e.dataTransfer && e.dataTransfer.files[0];
+    if (f) f.text().then(txt => onText(txt, f));
+  });
+};
+wireDrop("dropJson", "fileJson", (txt, f) => {
+  try {
+    const obj = JSON.parse(txt);
+    showSchema(obj);
+    const n = Array.isArray(obj.Fields) ? obj.Fields.length : 0;
+    if (obj.Capture && typeof obj.Capture.Order === "string") {
+      rules.tareFirst = obj.Capture.Order === "TareFirst";
+      const box = document.querySelector('#rules input[data-rule="tareFirst"]');
+      if (box) box.checked = rules.tareFirst;
+      syncActions();
+    }
+    flash($("jsonMsg"), `Applied · ${f.name} · ${n} fields · stored in the database`);
+  } catch (err) {
+    flash($("jsonMsg"), "Not valid JSON — " + err.message, true);
+  }
+});
+wireDrop("dropTpl", "fileTpl", (txt, f) => {
+  state.tpl = txt;
+  flash($("tplMsg"), `Applied · ${f.name} · ${(txt.length / 1024).toFixed(1)} KB`);
+  if (!$("modal").hidden) renderPaper();
+});
+$("btnTplPrev").addEventListener("click", () => { ptab = "a4";
+  $$("#pTabs button").forEach(x => x.setAttribute("aria-pressed", String(x.dataset.p === "a4")));
+  openPrint("ticket"); });
+$("btnTplReset").addEventListener("click", () => {
+  state.tpl = null;
+  flash($("tplMsg"), "Built-in A4 template");
+});
+
+/* ---------- display settings ---------- */
+const applyCfg = () => {
+  tickClock(); drawHead(); renderCalc(); renderCams(); renderTables();
+  if (!$("modal").hidden) renderPaper();
+};
+$("setDate").addEventListener("change", e => { cfg.dateFmt = e.target.value; applyCfg(); });
+$("setTime").addEventListener("change", e => { cfg.timeFmt = e.target.value; applyCfg(); });
+$("setAmt").addEventListener("change",  e => { cfg.amtDp = Number(e.target.value); applyCfg(); });
+
+/* ---------- language paint ---------- */
+/* The markup is the English source of truth — snapshot it once so switching
+   back from Tamil restores the original wording without a reload. */
+const snapshotEnglish = () => {
+  $$("[data-t]").forEach(el => {
+    const k = el.dataset.t;
+    if (T.en[k] === undefined) T.en[k] = el.textContent;
+  });
+  $$("[data-t-ph]").forEach(el => {
+    const k = el.dataset.tPh;
+    if (T.en[k] === undefined) T.en[k] = el.placeholder;
+  });
+};
+const paint = () => {
+  $$("[data-t]").forEach(el => { const v = t(el.dataset.t); if (v) el.textContent = v; });
+  $$("[data-t-ph]").forEach(el => { const v = t(el.dataset.tPh); if (v) el.placeholder = v; });
+  renderTables(); renderCalc(); renderCams(); renderDash(); syncActions();
+  if (!$("help").hidden) renderHelp();
+};
+$$("#langBar button").forEach(b => b.addEventListener("click", () => {
+  lang = b.dataset.lang;
+  $$("#langBar button").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+  paint();
+}));
+
+/* ---------- boot ---------- */
+snapshotEnglish();
+showSchema(DEFAULT_SCHEMA);
+setSkin("indicator");
+setFs(1);
+tickClock();
+drawHead();
+renderCalc();
+renderCams();
+renderTables();
+renderDash();
+syncActions();
+})();
+</script>

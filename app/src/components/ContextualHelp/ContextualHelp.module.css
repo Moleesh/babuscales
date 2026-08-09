@@ -1,0 +1,63 @@
+/* Ported from demo/BabuScale-demo.html ".drawer" rules — PLAN §11. */
+.drawer {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: min(400px, 92vw);
+    background: var(--panel);
+    border-left: 1px solid var(--line);
+    z-index: 70;
+    display: flex;
+    flex-direction: column;
+    box-shadow: -20px 0 50px rgba(0, 0, 0, 0.35);
+}
+
+.header {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--line);
+}
+.push {
+    margin-left: auto;
+}
+
+.body {
+    padding: 14px;
+    overflow: auto;
+    display: grid;
+    gap: 12px;
+}
+
+.heading {
+    margin: 0;
+    font-size: 0.9375rem;
+}
+.lead {
+    font-size: 0.8125rem;
+    color: var(--text);
+}
+
+.points {
+    margin: 0;
+    padding-left: 17px;
+    display: grid;
+    gap: 6px;
+    font-size: 0.8125rem;
+    color: var(--text);
+}
+.points b {
+    color: var(--led);
+    font-weight: 600;
+}
+
+.tip {
+    border-left: 2px solid var(--led);
+    padding-left: 11px;
+    font-size: 0.75rem;
+    color: var(--dim);
+    line-height: 1.6;
+    margin: 0;
+}

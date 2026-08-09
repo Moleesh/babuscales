@@ -1,0 +1,66 @@
+/* ============================================================
+   BabuScale — design tokens
+   Carried over verbatim from demo/BabuScale-demo.html (PLAN §13).
+
+   Every colour in the application comes from these tokens.
+   No component may name a colour. A skin is a saved settings
+   value, not a code change: set data-skin on <html>.
+
+   Text scale: the A- A A+ A++ control writes --s, and every
+   size in the app is expressed in rem, so the whole interface
+   scales rather than one label.
+   ============================================================ */
+
+:root{
+  --s:1;
+  --radius:10px;
+  --mono:ui-monospace,"Cascadia Mono","SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+  --ui:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --warn:#E8A33D; --alert:#E4614B;
+}
+:root,:root[data-skin="indicator"]{
+  color-scheme:dark;
+  --void:#0B0E0F; --panel:#141A1C; --panel-2:#1B2325; --line:#252F32;
+  --text:#DCE6E6; --dim:#7C8D91; --faint:#4E5D61;
+  --led:#FFA92E; --led-dim:#7A4F13; --led-ghost:rgba(255,169,46,.07);
+  --stable:#3ECF8E; --live:#4AA8FF;
+}
+:root[data-skin="graphite"]{
+  color-scheme:dark;
+  --void:#0C1013; --panel:#151B21; --panel-2:#1C242B; --line:#29333C;
+  --text:#DCE5EC; --dim:#8494A2; --faint:#54626D;
+  --led:#4FD6C9; --led-dim:#1E5450; --led-ghost:rgba(79,214,201,.08);
+  --stable:#5FD08A; --live:#7BA7FF;
+}
+:root[data-skin="night"]{
+  color-scheme:dark;
+  --void:#0A0705; --panel:#14100B; --panel-2:#1D1710; --line:#2E251A;
+  --text:#EADDCA; --dim:#96856C; --faint:#5F5341;
+  --led:#FF7A1A; --led-dim:#6B3406; --led-ghost:rgba(255,122,26,.08);
+  --stable:#B7C24E; --live:#D8A44C;
+  --warn:#D9932F; --alert:#DB5A3C;
+}
+:root[data-skin="paper"]{
+  color-scheme:light;
+  --void:#EDE8DE; --panel:#FFFDF8; --panel-2:#F6F1E7; --line:#DCD4C4;
+  --text:#1D1913; --dim:#6B6153; --faint:#9A9182;
+  --led:#9A3412; --led-dim:#E8CDBC; --led-ghost:rgba(154,52,18,.06);
+  --stable:#14733F; --live:#1F5FA8;
+}
+:root[data-skin="daylight"]{
+  color-scheme:light;
+  --void:#E8EDF2; --panel:#FFFFFF; --panel-2:#F1F5F9; --line:#D2DAE3;
+  --text:#111820; --dim:#546270; --faint:#8695A1;
+  --led:#0B5FBF; --led-dim:#BFD6F2; --led-ghost:rgba(11,95,191,.06);
+  --stable:#0E7C4F; --live:#0B5FBF;
+}
+:root[data-skin="contrast"]{
+  color-scheme:dark;
+  --void:#000000; --panel:#0A0A0A; --panel-2:#141414; --line:#4D4D4D;
+  --text:#FFFFFF; --dim:#CFCFCF; --faint:#9C9C9C;
+  --led:#FFD400; --led-dim:#6B5A00; --led-ghost:rgba(255,212,0,.10);
+  --stable:#00E07A; --live:#4FC3FF; --warn:#FFB000; --alert:#FF5C4D;
+}
+
+
+html{ font-size:calc(16px * var(--s)); }
