@@ -176,13 +176,20 @@ Kotta setting · Godown setting · Estimated-weight setting · Ice-water setting
 | | Tauri v2 | JVM | Electron |
 |---|---|---|---|
 | Idle RAM | **~60–90MB** | ~250–400MB | ~350–500MB |
-| Installer | **~10MB MSI** | ~80MB | ~150MB |
+| Installer | **~10MB MSI**¹ | ~80MB | ~150MB |
 | Cold start | **<0.5s** | 1.5–4s | 1–2s |
 | Native APK, same code | **✅** | ❌ | ❌ |
 
 Chosen on a **4GB RAM** target, performance, current technology, zero licence cost and the Android
 end-goal. Rust is confined to hardware, storage and transport — **target <15% of the codebase**.
 All domain logic is TypeScript so it runs identically on desktop, LAN, browser demo and Android.
+
+¹ Tauri's own baseline, with a WebView2 install mode that fetches the runtime over the internet at
+install time. Task #39 measured the real, shipped MSI/NSIS at **~204MB** each — `webviewInstallMode:
+offlineInstaller` (§20.1) bakes the entire WebView2 Evergreen Runtime into the installer itself so a
+quarry with no internet connection can still install cleanly, which was always the actual
+requirement. That tradeoff is deliberate and stands; a USB stick or LAN copy handles ~200MB without
+issue, and it's still an order of magnitude smaller than Electron's idle RAM footprint alone.
 
 ### 5.1 The decision was challenged and stands
 
@@ -1136,9 +1143,11 @@ jobs:
           args: --bundles msi,nsis
 ```
 
-Produces `BabuScales_x.y.z_x64_en-US.msi` (~10MB) plus an NSIS `.exe`, attached to a draft release.
+Produces `BabuScales_x.y.z_x64_en-US.msi` plus an NSIS `.exe`, attached to a draft release.
 `tauri.conf.json` sets `webviewInstallMode: offlineInstaller` so sites with no internet install
-cleanly. Code signing later is two secrets and no restructuring.
+cleanly — that bakes the full WebView2 Evergreen Runtime into both installers, so expect ~200MB
+each (see §5's footnote), not the small download-stub size Tauri ships by default. Code signing
+later is two secrets and no restructuring.
 
 ### 20.2 GitHub Pages — the app with no database
 
