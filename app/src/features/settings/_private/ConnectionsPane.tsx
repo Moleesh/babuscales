@@ -4,6 +4,7 @@ import { Card } from "@components/Card";
 import { Field, FieldGrid } from "@components/Field";
 import { formatWeightKg } from "@constants/numberFormat";
 import { isSerialIndicatorSource, useIndicator, useIndicatorReading } from "@engines/indicator";
+import { useVerificationServer } from "@engines/verification";
 
 import { BAUD_RATE_OPTIONS, INTEGRATION_FIXTURES } from "../settingsSchema";
 import type { IntegrationFixture, IntegrationKey } from "../settingsSchema";
@@ -45,6 +46,7 @@ const IntegrationRow = ({ fixture, on, unlocked, onToggle, onConfigure }: Integr
 
 const IntegrationsCard = () => {
     const { settings, unlocked, save } = useSettings();
+    const verificationServer = useVerificationServer();
     const [flash, setFlash] = useState<string | null>(null);
     const flashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -70,8 +72,26 @@ const IntegrationsCard = () => {
         showFlash(`${name} ${next ? "enabled" : "disabled"}`);
     };
 
-    const configure = (name: string, config: string): void => {
-        showFlash(`${name} · ${config} — stored in the settings table`);
+    // Real for QR verification — everything else stays the mock's own
+    // "here's where this would be configured" placeholder (app/README.md
+    // known gap): PLAN §23 items 4/5 leave WhatsApp/SMS providers and
+    // pricing undecided, so there's nothing real to wire those to yet.
+    const configure = async (fixture: IntegrationFixture): Promise<void> => {
+        if (fixture.key === "qr") {
+            if (!settings.Integrations.qr) {
+                showFlash("QR verification page — turn it on first to see its address");
+                return;
+            }
+            const status =
+                (await verificationServer.status()) ?? (await verificationServer.start());
+            showFlash(
+                status
+                    ? `QR verification page — ${status.LanUrl ?? status.LoopbackUrl}`
+                    : "QR verification page — desktop app only, not available in this build",
+            );
+            return;
+        }
+        showFlash(`${fixture.name} · ${fixture.config} — stored in the settings table`);
     };
 
     return (
@@ -87,7 +107,7 @@ const IntegrationsCard = () => {
                         on={settings.Integrations[fixture.key]}
                         unlocked={unlocked}
                         onToggle={() => toggle(fixture.key, fixture.name)}
-                        onConfigure={() => configure(fixture.name, fixture.config)}
+                        onConfigure={() => void configure(fixture)}
                     />
                 ))}
             </div>

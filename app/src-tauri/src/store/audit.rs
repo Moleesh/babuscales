@@ -6,7 +6,7 @@
 
 use rusqlite::{params, Connection, OptionalExtension, Row};
 
-use super::dto::{AuditDraft, AuditQuery, AuditRow};
+use super::dto::{AuditDraft, AuditQuery, AuditRow, ChainVerification};
 use super::hash::hash_audit_row;
 use super::ids::new_id;
 use super::time::now_iso;
@@ -78,6 +78,58 @@ pub fn append_audit(conn: &mut Connection, draft: &AuditDraft) -> Result<AuditRo
         body: draft.body.clone(),
         row_hash,
         prev_hash,
+    })
+}
+
+/// Walks the whole ledger oldest-to-newest, recomputing each row's hash from
+/// its own content and the *previous row's stored hash*, and confirms both
+/// that recomputation matches what's on disk and that the chain pointer
+/// (`prev_hash`) itself wasn't rewritten. A single altered row — anywhere,
+/// not just on the ticket being viewed — breaks every hash after it, which
+/// is the whole point of the chain living here and not on `doc` (PLAN §18).
+/// Returns the id of the first row that fails, if any. `O(n)` in the number
+/// of audit rows — fine at the sizes this runs at (recomputing one SHA-256
+/// per row on a scan/print event, not a hot path); revisit with a periodic
+/// checkpoint if a single quarry's ledger ever grows large enough to make a
+/// full walk on every QR scan noticeable (app/README.md known gap).
+pub fn verify_chain(conn: &Connection) -> Result<ChainVerification, AppError> {
+    let mut statement = conn.prepare(
+        "SELECT audit_id, at, actor, action, target, body, row_hash, prev_hash FROM audit ORDER BY rowid ASC",
+    )?;
+    let rows = statement
+        .query_map([], row_to_audit)?
+        .collect::<Result<Vec<_>, _>>()?;
+
+    let mut expected_prev: Option<String> = None;
+    for row in &rows {
+        if row.prev_hash != expected_prev {
+            return Ok(ChainVerification {
+                intact: false,
+                checked: rows.len() as i64,
+                broken_at: Some(row.audit_id.clone()),
+            });
+        }
+        let content = serde_json::json!({
+            "Actor": row.actor,
+            "Action": row.action,
+            "Target": row.target,
+            "Body": row.body,
+            "At": row.at,
+        });
+        let recomputed = hash_audit_row(&content, expected_prev.as_deref())?;
+        if recomputed != row.row_hash {
+            return Ok(ChainVerification {
+                intact: false,
+                checked: rows.len() as i64,
+                broken_at: Some(row.audit_id.clone()),
+            });
+        }
+        expected_prev = Some(row.row_hash.clone());
+    }
+    Ok(ChainVerification {
+        intact: true,
+        checked: rows.len() as i64,
+        broken_at: None,
     })
 }
 

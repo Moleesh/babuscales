@@ -15,6 +15,9 @@ import {
 } from "@engines/indicator";
 import type { IndicatorSource } from "@engines/indicator";
 import { createIndicatorSource } from "@engines/indicator/createIndicatorSource";
+import { createVerificationServerSource } from "@engines/verification/createVerificationServerSource";
+import { VerificationServerProvider } from "@engines/verification";
+import type { VerificationServerSource } from "@engines/verification";
 import { CamerasScreen } from "@features/cameras";
 import { DashboardScreen } from "@features/dashboard";
 import { MastersScreen } from "@features/masters";
@@ -252,6 +255,24 @@ const StabilityGateSync = ({ indicator }: IndicatorSyncProps) => {
     return null;
 };
 
+// Settings' Integrations → "QR verification page" toggle (PLAN §18/§23
+// item 6), same "Applied immediately" shape as StabilityGateSync/
+// SerialConnectionSync above: flip it on and the LAN server starts
+// without a restart, flip it off and it stops. The noop source (browser
+// demo / memory adapter build) makes both calls harmless no-ops.
+const VerificationServerSync = ({ source }: { source: VerificationServerSource }) => {
+    const { settings } = useSettings();
+    const enabled = settings.Integrations.qr;
+    useEffect(() => {
+        if (enabled) {
+            void source.start();
+        } else {
+            void source.stop();
+        }
+    }, [source, enabled]);
+    return null;
+};
+
 // Settings' Connections pane writes through to the real serial adapter the
 // same "Applied immediately" way — opens (or reopens, on a config change)
 // the configured port on every save, including the very first one after
@@ -280,6 +301,7 @@ const SerialConnectionSync = ({ indicator }: IndicatorSyncProps) => {
 export const App = () => {
     const [db] = useState(() => createDataPort());
     const [indicator] = useState(() => createIndicatorSource());
+    const [verificationServer] = useState(() => createVerificationServerSource());
     const [packs, setPacks] = useState<LanguagePack[]>([]);
 
     // Loaded from `config` (ConfigKind: "LanguagePack") — I18nProvider's own
@@ -317,9 +339,12 @@ export const App = () => {
             <DataPortProvider db={db}>
                 <SettingsProvider>
                     <IndicatorProvider source={indicator}>
-                        <StabilityGateSync indicator={indicator} />
-                        <SerialConnectionSync indicator={indicator} />
-                        <Shell onAddLanguagePack={addLanguagePack} />
+                        <VerificationServerProvider source={verificationServer}>
+                            <StabilityGateSync indicator={indicator} />
+                            <SerialConnectionSync indicator={indicator} />
+                            <VerificationServerSync source={verificationServer} />
+                            <Shell onAddLanguagePack={addLanguagePack} />
+                        </VerificationServerProvider>
                     </IndicatorProvider>
                 </SettingsProvider>
             </DataPortProvider>

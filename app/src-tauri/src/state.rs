@@ -10,6 +10,7 @@ use rusqlite::Connection;
 
 use crate::devices::indicator::IndicatorState;
 use crate::error::AppError;
+use crate::net::VerificationServerState;
 
 pub struct AppState {
     pub conn: Mutex<Connection>,
@@ -24,6 +25,9 @@ pub struct AppState {
     /// `devices::indicator`'s own comment), so this field can't be any
     /// more visible than that without the compiler rightly complaining.
     pub(crate) indicator: IndicatorState,
+    /// The QR verification LAN server, if running — same shape and same
+    /// visibility reasoning as `indicator` above (`net`'s own doc comment).
+    pub(crate) verification_server: VerificationServerState,
 }
 
 /// `unwrap()`/`expect()` are banned outside `main.rs` (docs/CodingStandards.md)

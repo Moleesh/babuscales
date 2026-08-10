@@ -12,4 +12,5 @@ pub mod configs;
 pub mod docs;
 pub mod indicator;
 pub mod masters;
+pub mod net;
 pub mod outbox;

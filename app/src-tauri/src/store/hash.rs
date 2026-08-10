@@ -21,6 +21,17 @@ pub fn hash_body(body: &serde_json::Value) -> Result<String, AppError> {
     Ok(sha256_hex(json.as_bytes()))
 }
 
+/// True if a doc's current `body` still hashes to its stored `body_hash` —
+/// the other half of the QR verification page's trust badge alongside
+/// `audit::verify_chain` (net/mod.rs): this catches the row itself having
+/// been altered outside the app (direct file edit), the chain catches an
+/// audit entry being altered.
+pub fn body_matches_hash(body: &serde_json::Value, stored_hash: &str) -> bool {
+    hash_body(body)
+        .map(|recomputed| recomputed == stored_hash)
+        .unwrap_or(false)
+}
+
 /// One link in the `audit` hash chain — mixes the previous row's hash into
 /// this row's content so altering any past entry breaks every hash after it.
 pub fn hash_audit_row(

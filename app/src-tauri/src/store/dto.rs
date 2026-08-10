@@ -178,6 +178,17 @@ pub struct AuditQuery {
     pub limit: Option<i64>,
 }
 
+/// Result of `audit::verify_chain` — whether the whole ledger's hash chain
+/// is unbroken, and where it first isn't if not. Drives the QR verification
+/// page's trust badge (PLAN §18, net/mod.rs).
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "PascalCase")]
+pub struct ChainVerification {
+    pub intact: bool,
+    pub checked: i64,
+    pub broken_at: Option<String>,
+}
+
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct OutboxRow {

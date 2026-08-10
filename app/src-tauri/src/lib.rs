@@ -33,6 +33,7 @@ pub fn run() -> tauri::Result<()> {
                 conn: std::sync::Mutex::new(conn),
                 db_path,
                 indicator: devices::indicator::new_state(),
+                verification_server: net::new_state(),
             });
             Ok(())
         })
@@ -57,6 +58,9 @@ pub fn run() -> tauri::Result<()> {
             commands::assets::put_asset,
             commands::audit::append_audit,
             commands::audit::list_audit,
+            commands::net::start_verification_server,
+            commands::net::stop_verification_server,
+            commands::net::verification_server_status,
             commands::outbox::enqueue_outbox,
             commands::outbox::list_outbox,
             commands::outbox::update_outbox,

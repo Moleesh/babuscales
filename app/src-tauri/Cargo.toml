@@ -34,6 +34,10 @@ serialport = "4"
 # The custom-pattern fallback (PLAN §17's "so any indicator works without a
 # code change") — a per-brand frame format the operator supplies as a regex.
 regex = "1"
+# The QR-verification LAN server (PLAN §18, net/mod.rs) — a blocking,
+# dependency-light HTTP server rather than pulling in tokio/axum for one
+# small always-on listener. MIT licensed, ~4 small transitive deps.
+tiny_http = "0.12"
 
 [profile.release]
 # Smallest installer over fastest build — PLAN §5 targets a ~10MB MSI.
