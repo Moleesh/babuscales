@@ -139,10 +139,11 @@ const LicenceCard = () => {
                 </div>
                 <p className={styles.hint}>
                     Every install starts a free 14-day trial from first run — no account, no server.
-                    To licence it, send the request code above to Babulens (see the About footer for
-                    contact details); they sign it offline against this machine&apos;s ID and send
-                    back the activation code above to paste in. Bound to this machine only — it
-                    won&apos;t work after a hardware change or on a different install.
+                    To licence it, send the request code above to Babulens (see whoever supplied
+                    this install for contact details — there&apos;s no in-app directory yet); they
+                    sign it offline against this machine&apos;s ID and send back the activation code
+                    above to paste in. Bound to this machine only — it won&apos;t work after a
+                    hardware change or on a different install.
                 </p>
             </div>
         </Card>
