@@ -2,10 +2,11 @@ import { useState } from "react";
 
 import { SegmentedControl } from "@components/SegmentedControl";
 import type { SegmentedOption } from "@components/SegmentedControl";
+import type { LanguagePack } from "@i18n/types";
 
 import { AppearancePane } from "./_private/AppearancePane";
 import { ConnectionsPane } from "./_private/ConnectionsPane";
-import { PlaceholderPane } from "./_private/PlaceholderPane";
+import { FieldsLanguagePane } from "./_private/FieldsLanguagePane";
 import { PrintPane } from "./_private/PrintPane";
 import { SystemPane } from "./_private/SystemPane";
 import { WeighingPane } from "./_private/WeighingPane";
@@ -26,6 +27,8 @@ const PANE_OPTIONS: SegmentedOption<PaneKey>[] = [
 export interface SettingsScreenProps {
     /** `DataPort.resetDocSeries("Ticket", "default")` — lives at App level, same as everywhere else Settings needs a DataPort call it doesn't otherwise make. */
     onResetTicketSeries: () => Promise<void>;
+    /** Persists a language pack (`config`, `ConfigKind: "LanguagePack"`) and makes it live — owned at App level, same reason as `onResetTicketSeries`: the loaded pack list lives above `I18nProvider`, which is above this screen. */
+    onAddLanguagePack: (pack: LanguagePack) => Promise<void>;
 }
 
 // Six-pane split, ported from demo/BabuScale-demo.html's `#setTabs` +
@@ -33,9 +36,9 @@ export interface SettingsScreenProps {
 // are fully wired against a real Settings config row (PLAN's "admin
 // password to change configuration"); Appearance is partly wired
 // (Operator-on-duty is real, Theme is still a placeholder — see
-// AppearancePane); Fields & language stays a full documented placeholder
-// — see PlaceholderPane.
-export const SettingsScreen = ({ onResetTicketSeries }: SettingsScreenProps) => {
+// AppearancePane); Fields & language is half wired — Language packs are
+// real (FieldsLanguagePane), Field schema stays a documented placeholder.
+export const SettingsScreen = ({ onResetTicketSeries, onAddLanguagePack }: SettingsScreenProps) => {
     const { unlocked } = useSettings();
     const [pane, setPane] = useState<PaneKey>("weigh");
 
@@ -58,12 +61,7 @@ export const SettingsScreen = ({ onResetTicketSeries }: SettingsScreenProps) => 
                 </div>
             )}
 
-            {pane === "fields" && (
-                <PlaceholderPane
-                    title="Fields & language"
-                    note="Editing DEFAULT_TICKET_SCHEMA's field labels and required-ness, and managing uploaded language packs, needs a Schema-config editor that isn't built yet (app/README.md known gap: schema-driven rendering)."
-                />
-            )}
+            {pane === "fields" && <FieldsLanguagePane onAddLanguagePack={onAddLanguagePack} />}
             {pane === "print" && <PrintPane />}
             {pane === "look" && <AppearancePane />}
             {pane === "weigh" && <WeighingPane />}

@@ -1,0 +1,61 @@
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 12px;
+    align-items: start;
+}
+
+.body {
+    display: grid;
+    gap: 11px;
+}
+
+.hint {
+    font-size: 0.6875rem;
+    color: var(--dim);
+    margin: 0;
+    line-height: 1.6;
+}
+
+/* Ported from the mock's own `.drop` — a dashed drop zone that doubles as a file-picker label. */
+.drop {
+    display: grid;
+    place-items: center;
+    gap: 6px;
+    padding: 14px;
+    border: 1.5px dashed var(--line);
+    border-radius: 9px;
+    background: var(--panel-2);
+    cursor: pointer;
+    text-align: center;
+    font-size: 0.8125rem;
+}
+.drop:hover {
+    border-color: var(--led);
+    color: var(--text);
+}
+.dropDisabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+.dropDisabled:hover {
+    border-color: var(--line);
+    color: inherit;
+}
+
+.dropIcon {
+    font-size: 1.125rem;
+    color: var(--led);
+}
+
+.applied {
+    font-size: 0.6875rem;
+    color: var(--stable);
+    margin: 0;
+}
+
+.bad {
+    font-size: 0.6875rem;
+    color: var(--alert);
+    margin: 0;
+}

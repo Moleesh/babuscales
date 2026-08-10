@@ -30,12 +30,16 @@ import { useWeighingTicket, WeighingScreen } from "@features/weighing";
 import type { UseWeighingTicket } from "@features/weighing";
 import { DEFAULT_HELP_TOPICS } from "@i18n/helpTopics";
 import { I18nProvider } from "@i18n/I18nProvider";
+import { loadLanguagePacks, saveLanguagePack } from "@i18n/loadLanguagePacks";
 import type { LanguagePack } from "@i18n/types";
 import { useTranslation } from "@i18n/useTranslation";
 
-// A demo pack, not real content — proves a pack overrides a subset of keys
-// and everything else falls through to English (PLAN §8.3). Actual Tamil
-// content is authoring work, not infrastructure.
+// The day-one seed, saved as a real `config` row on first run (see
+// `loadLanguagePacks`'s effect below) rather than a hardcoded prop — proves
+// a pack overrides a subset of keys and everything else falls through to
+// English (PLAN §8.3). Not real Tamil content (that's authoring work, not
+// infrastructure); real packs after this one come from Settings' Fields &
+// language pane, same upload path, same shape.
 const DEMO_TAMIL_PACK: LanguagePack = {
     Code: "ta",
     Name: "தமிழ்",
@@ -61,6 +65,8 @@ const TAB_ICONS: Record<(typeof TAB_KEYS)[number], string> = {
 
 interface TopBarActionsProps {
     lang: string;
+    /** Name of the first non-English installed pack, or null if none is — "one extra language ships at a time" (I18nProvider's own doc comment), so this stays a toggle, not a picker, even though `packs` can hold more. */
+    otherPackName: string | null;
     onToggleLang: () => void;
     helpOpen: boolean;
     onToggleHelp: () => void;
@@ -69,15 +75,18 @@ interface TopBarActionsProps {
 
 const TopBarActions = ({
     lang,
+    otherPackName,
     onToggleLang,
     helpOpen,
     onToggleHelp,
     helpTitle,
 }: TopBarActionsProps) => (
     <>
-        <button className="chip act" onClick={onToggleLang}>
-            {lang === "ta" ? "தமிழ்" : "English"}
-        </button>
+        {otherPackName && (
+            <button className="chip act" onClick={onToggleLang}>
+                {lang === "en" ? otherPackName : "English"}
+            </button>
+        )}
         <OperatorChip />
         <AdminChip />
         <button
@@ -97,6 +106,7 @@ interface TabContentProps {
     onOpenTicket: (doc: DocRow) => void;
     onNavigateToReports: () => void;
     onResetTicketSeries: () => Promise<void>;
+    onAddLanguagePack: (pack: LanguagePack) => Promise<void>;
 }
 
 // The Weighing ticket hook is lifted to Shell (not owned by WeighingScreen
@@ -108,6 +118,7 @@ const TabContent = ({
     onOpenTicket,
     onNavigateToReports,
     onResetTicketSeries,
+    onAddLanguagePack,
 }: TabContentProps) => {
     switch (tab) {
         case "dash":
@@ -119,20 +130,31 @@ const TabContent = ({
         case "masters":
             return <MastersScreen />;
         case "settings":
-            return <SettingsScreen onResetTicketSeries={onResetTicketSeries} />;
+            return (
+                <SettingsScreen
+                    onResetTicketSeries={onResetTicketSeries}
+                    onAddLanguagePack={onAddLanguagePack}
+                />
+            );
         case "cameras":
             return <CamerasScreen ticket={ticket} />;
     }
 };
 
-const Shell = () => {
-    const { t, lang, setLang } = useTranslation();
+interface ShellProps {
+    /** Owned at App level — the loaded/live pack list lives above I18nProvider, which is above Shell. */
+    onAddLanguagePack: (pack: LanguagePack) => Promise<void>;
+}
+
+const Shell = ({ onAddLanguagePack }: ShellProps) => {
+    const { t, lang, setLang, packs } = useTranslation();
     const [activeTab, setActiveTab] = useState<(typeof TAB_KEYS)[number]>("weigh");
     const [helpOpen, setHelpOpen] = useState(false);
     const reading = useIndicatorReading();
     const db = useDataPort();
     const { settings } = useSettings();
     const ticket = useWeighingTicket(settings.Rules.TareFirst, settings.OperatorName);
+    const otherPack = packs.find((pack) => pack.Code !== "en") ?? null;
 
     const openTicket = (doc: DocRow): void => {
         ticket.resume(doc);
@@ -158,7 +180,10 @@ const Shell = () => {
             topRight={
                 <TopBarActions
                     lang={lang}
-                    onToggleLang={() => setLang(lang === "ta" ? "en" : "ta")}
+                    otherPackName={otherPack?.Name ?? null}
+                    onToggleLang={() =>
+                        otherPack && setLang(lang === otherPack.Code ? "en" : otherPack.Code)
+                    }
                     helpOpen={helpOpen}
                     onToggleHelp={() => setHelpOpen((v) => !v)}
                     helpTitle={t("nav.help")}
@@ -186,6 +211,7 @@ const Shell = () => {
                 onOpenTicket={openTicket}
                 onNavigateToReports={() => setActiveTab("reports")}
                 onResetTicketSeries={resetTicketSeries}
+                onAddLanguagePack={onAddLanguagePack}
             />
             <ContextualHelp
                 open={helpOpen}
@@ -254,15 +280,46 @@ const SerialConnectionSync = ({ indicator }: IndicatorSyncProps) => {
 export const App = () => {
     const [db] = useState(() => createDataPort());
     const [indicator] = useState(() => createIndicatorSource());
+    const [packs, setPacks] = useState<LanguagePack[]>([]);
+
+    // Loaded from `config` (ConfigKind: "LanguagePack") — I18nProvider's own
+    // doc comment: "loading is the caller's job", this is that job. A fresh
+    // install has no rows yet, so the one pack this build ships with is
+    // seeded as a real row rather than kept as a hardcoded prop — same
+    // "create the default row on first run" shape SettingsProvider already
+    // uses for its own config row.
+    useEffect(() => {
+        let cancelled = false;
+        void loadLanguagePacks(db).then(async (loaded) => {
+            if (cancelled) return;
+            if (loaded.length > 0) {
+                setPacks(loaded);
+                return;
+            }
+            await saveLanguagePack(db, DEMO_TAMIL_PACK);
+            if (!cancelled) setPacks([DEMO_TAMIL_PACK]);
+        });
+        return () => {
+            cancelled = true;
+        };
+    }, [db]);
+
+    // Settings' Fields & language pane calls this on a successful upload —
+    // persists, then updates the live list the same render pass, so the
+    // new pack is immediately selectable without a reload.
+    const addLanguagePack = async (pack: LanguagePack): Promise<void> => {
+        await saveLanguagePack(db, pack);
+        setPacks((prev) => [...prev.filter((existing) => existing.Code !== pack.Code), pack]);
+    };
 
     return (
-        <I18nProvider packs={[DEMO_TAMIL_PACK]}>
+        <I18nProvider packs={packs}>
             <DataPortProvider db={db}>
                 <SettingsProvider>
                     <IndicatorProvider source={indicator}>
                         <StabilityGateSync indicator={indicator} />
                         <SerialConnectionSync indicator={indicator} />
-                        <Shell />
+                        <Shell onAddLanguagePack={addLanguagePack} />
                     </IndicatorProvider>
                 </SettingsProvider>
             </DataPortProvider>

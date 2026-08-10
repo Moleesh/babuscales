@@ -318,6 +318,28 @@ on Reports and Dashboard).
     every screen in this codebase already carries), both builds succeed, tree-shake grep still
     passes, and in-browser: captured a real Tare through the split screen and confirmed every card
     (Ticket fields, calc grid, Actions, Cameras) still renders and updates exactly as before.
+28. **Real language-pack upload — the other half of "Fields & language."** Turned out this was
+    already scoped for, just never wired up: `i18n/schemas.ts`'s `languagePackSchema` and
+    `I18nProvider`'s own doc comment ("loading is the caller's job") were sitting there since item
+    5, unused, while `App.tsx` passed a hardcoded `[DEMO_TAMIL_PACK]` prop. Now `i18n/loadLanguagePacks.ts`
+    loads every `config` row (`ConfigKind: "LanguagePack"`) at startup — seeding `DEMO_TAMIL_PACK`
+    as a real row on a fresh install, same "create the default row on first run" shape
+    `SettingsProvider` already uses — and `_private/FieldsLanguagePane.tsx` (Settings' Fields &
+    language pane) ports the mock's own real `wireDrop("dropLang", ...)`: pick a `.json`, parse,
+    validate against `languagePackSchema`, save, apply immediately. Matches the mock's own
+    installed-packs table (Code/Language/Strings/Version). The top-bar language chip — this app's
+    own addition, not in the mock, which puts its language picker in the Appearance pane instead —
+    is generalized from a hardcoded en/ta toggle to show whichever pack is actually installed,
+    keeping the "one extra language ships at a time" scope `I18nProvider`'s own comment states.
+    "Field schema" (the pane's other card — a schema.json drop zone that would edit field
+    labels/required-ness) stays a placeholder; that needs schema-driven field rendering, a
+    separate and much larger feature (see Known gap). Deleted the now-fully-unused
+    `PlaceholderPane.tsx` (its only two callers were this pane and Print & printers — item 24
+    replaced the second one). ✅ Verified in-browser: fresh load seeded and showed தமிழ் as the
+    toggle target; clicking it live-switched nav labels to Tamil; uploaded a real two-string French
+    pack via a dispatched `change` event on the file input and confirmed the flash message
+    ("Applied · Français · 2 strings"), the installed-packs table gaining a row, and — separately —
+    a malformed-JSON upload producing the correct "Not valid JSON" error flash rather than a crash.
 
 ## Known gap
 
@@ -355,8 +377,8 @@ a different and bigger feature the mock itself never specifies, so nothing here 
   (the printed rows' own earliest–latest timestamp) rather than fabricating one.
 - **Settings** — Weighing, System, Connections and Print & printers are fully wired (items 17, 21,
   24); Appearance is partly wired (Operator-on-duty is real, Theme is a placeholder — item 18);
-  Fields & language still renders as a named placeholder, pending the Schema-config editor it
-  would need (see "Schema-driven rendering" below). Within System, ticket
+  Fields & language is now half wired (item 28: Language packs are real, Field schema stays a
+  placeholder — see "Schema-driven rendering" below). Within System, ticket
   numbering is live and `Formats.AmountDp` now reaches every money display (item 20); date/time
   formats are still only persisted, unread elsewhere. The stale-tare threshold
   (`STORED_TARE_STALE_AFTER_DAYS` in `src/db/storedTare.ts`) stays a fixed constant — the mock
@@ -364,7 +386,8 @@ a different and bigger feature the mock itself never specifies, so nothing here 
   computed from a configurable day count).
 - **Schema-driven rendering** — Weighing pulls field _labels_ from `DEFAULT_TICKET_SCHEMA` but
   does not render fields generically from schema/formula config; that needs a Settings pane to
-  edit `Schema` rows first.
+  edit `Schema` rows first (the "Field schema" half of Fields & language — item 28 built the
+  "Language packs" half only, a separate and much smaller piece).
 - **Billing** — Charge is real (item 20: `engines/billing`, wired into Weighing, Reports,
   Dashboard, and the print slip), but flat and hardcoded (`TARE_CHARGE_INR` + `GROSS_CHARGE_INR`),
   matching the mock's own actual runtime behaviour rather than its schema's aspirational

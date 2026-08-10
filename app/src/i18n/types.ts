@@ -1,3 +1,5 @@
+import type { JsonRecord } from "@db/types";
+
 // PLAN §8.3 — localisation lives in two places. This file is the shared
 // half: the `Localized` shape a field's `Label`/`Help` carries inline, and
 // the `LanguagePack` shape uploaded as JSON and stored as a `config` row.
@@ -9,7 +11,8 @@ export interface Localized {
     [lang: string]: string;
 }
 
-export interface LanguagePack {
+/** Extends `JsonRecord` (same reason `TicketBody` does, db/ticketBody.ts) — a pack is saved as a `config` row's `Body` verbatim, see loadLanguagePacks.ts. */
+export interface LanguagePack extends JsonRecord {
     Code: string;
     Name: string;
     Version: number;
