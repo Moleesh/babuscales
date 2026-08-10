@@ -13,4 +13,5 @@ export type {
     StabilityGate,
     TicketNumbering,
     DisplayFormats,
+    DailySummaryConfig,
 } from "./settingsSchema";

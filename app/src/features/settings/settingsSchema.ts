@@ -169,6 +169,23 @@ const connectionsSchema = z.object({
 });
 export type ConnectionsConfig = z.infer<typeof connectionsSchema>;
 
+// Task #45 — PLAN §18's "scheduled daily summary". `Time` is a plain
+// "HH:MM" 24-hour string (an `<input type="time">`'s own value shape), not a
+// Date — there's nothing to serialize/parse, and it compares correctly
+// against `dailySummaryEmail.ts`'s `nowLocalHm()` as a plain string.
+// `LastSentDate` is bookkeeping, not admin configuration: it's what guards
+// against sending twice in one day (or resending on every relaunch after
+// the scheduled time has already passed) — see SettingsProvider's
+// `recordDailySummarySent`, the one write path to this schema that isn't
+// gated by `unlocked`, same reasoning as `setOperatorName`.
+const dailySummarySchema = z.object({
+    Enabled: z.boolean(),
+    Time: z.string(),
+    Recipient: z.string(),
+    LastSentDate: z.string(),
+});
+export type DailySummaryConfig = z.infer<typeof dailySummarySchema>;
+
 export const settingsBodySchema = z.object({
     Rules: rulesSchema,
     Stability: stabilitySchema,
@@ -179,6 +196,7 @@ export const settingsBodySchema = z.object({
     Integrations: integrationsSchema,
     RemoteAccess: remoteAccessSchema,
     Smtp: smtpSchema,
+    DailySummary: dailySummarySchema,
     /** "Operator on duty" (mock's `#opChip`/Appearance pane `#setOp`) — a free-text label, not an account; deliberately not admin-gated. */
     OperatorName: z.string(),
     AdminPasswordHash: z.string(),
@@ -241,6 +259,14 @@ export const DEFAULT_SMTP: SmtpConfig = {
     Host: "",
     Port: 587,
     Username: "",
+};
+
+/** Off, unset recipient, never sent — same "not configured yet" shape as `DEFAULT_SMTP`, which this reuses for the relay itself. */
+export const DEFAULT_DAILY_SUMMARY: DailySummaryConfig = {
+    Enabled: false,
+    Time: "18:00",
+    Recipient: "",
+    LastSentDate: "",
 };
 
 /** INTEGRATIONS' own `on:` flags, verbatim. */

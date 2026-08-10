@@ -415,6 +415,42 @@ on Reports and Dashboard).
     directly above `INTEGRATION_FIXTURES`'s `whatsapp` entry in `settingsSchema.ts`, `AdminSetup.md`
     §8, and this item. ✅ Nothing to verify — no runtime behaviour changed; the toggle persists and
     "Configure" flashes the same decorative stub it always has (see item 25).
+32. **Scheduled daily summary.** PLAN §18's own "scheduled daily summary" bullet — a real, if
+    minimal, scheduler: `App.tsx`'s new `DailySummarySync` (same `*Sync` shape as
+    `SerialConnectionSync`/`VerificationServerSync` just above it) checks once a minute whether
+    Settings → System → Scheduled daily summary is on, today's chosen time has passed, and today's
+    date isn't already `DailySummary.LastSentDate` — and if all three hold, builds and sends one
+    e-mail over the exact SMTP path item 29 already built (`@engines/email`), then advances
+    `LastSentDate` whether the send succeeded or not (one attempt, no retry queue, the same honesty
+    item 29/30 already established for per-ticket delivery — a permanently misconfigured relay fails
+    once a day here, not once a minute). No background service exists in this app or ever will
+    without a genuine OS-level daemon (known gap, below) — this scheduler is entirely inside the
+    running React app, so a machine that's off or asleep at the scheduled time sends nothing until
+    it's next opened, stated plainly in both the card's own hint text and `AdminSetup.md`.
+    `reports/dailySummaryEmail.ts`'s `buildDailySummaryEmail` composes the message body from the
+    same `reportRows.ts` data the Reports screen itself totals — the three Dashboard KPIs (tickets,
+    net tonnes, charge collected) plus a by-material breakdown — as plain text, not a PDF/Excel
+    attachment (no export engine exists yet, same known gap Reports' own disabled Export buttons
+    already document). Deliberately not reimplemented against `dashboardData.ts`'s own
+    `computeDashboardKpis` — importing across features/dashboard would have closed a
+    reports↔dashboard cycle (`dashboardData.ts` already imports `TicketRow` from `@features/reports`)
+    — so this is a small, independent second computation of the same three numbers, not a shared
+    one. `settingsSchema.ts` gained a `DailySummary` config block (`Enabled`, `Time`, `Recipient`,
+    `LastSentDate`); `LastSentDate` is bookkeeping, not admin configuration, so it writes through a
+    new `recordDailySummarySent` context method that — like `setOperatorName` before it —
+    deliberately isn't gated by `unlocked`: the scheduler can fire while Settings sits locked, same
+    as any other automatic behaviour in this app. Settings → System gained a **Scheduled daily
+    summary** card (`SystemPane.tsx`) with the enable toggle, time picker and recipient field
+    (all admin-gated, `save`), and a **Send now** button that runs the exact same build-and-send path
+    on demand — both the fastest way to confirm the relay and recipient are right, and a real manual
+    trigger in its own right. ✅ Verified: typecheck/lint/build clean; in-browser (memory adapter)
+    confirmed the card renders under System, "Send now" stayed disabled with an empty recipient,
+    and with one filled in it enqueued a `Channel: "Email"` outbox row, honestly reported
+    `"Send failed — e-mail delivery — desktop app only, not available in this build"` (the noop
+    source, same as item 29/30's own test-send verification), and still advanced `LastSentDate` to
+    today — confirmed by the card's own "Last sent: …" hint updating immediately after. Actually
+    sending needs a real SMTP relay and the desktop build, neither available in this environment —
+    the same category of gap item 29's own verification note already names.
 
 ## Known gap
 
@@ -525,6 +561,13 @@ a different and bigger feature the mock itself never specifies, so nothing here 
   the decision to leave it decorative permanently, not queued: it has no free, ToS-compliant path.
   Anomaly detection is deferred by decision (PLAN §21 Phase 8); MiMaS is a Phase 7 item, not built,
   blocked on a spec that doesn't exist yet.
+- **No OS-level scheduler or background service exists anywhere in this app** — item 32's
+  `DailySummarySync` is a `setInterval` inside the running React app, not a Windows Task Scheduler
+  entry or a Tauri background process; it only checks (and only can send) while the app happens to
+  be open. A site that wants the summary out even on a morning nobody's opened BabuScales yet would
+  need a real OS-level task calling into this app (or a small standalone sender), neither of which
+  exists — stated plainly in the Scheduled daily summary card's own hint text and `AdminSetup.md`
+  rather than left to be discovered.
 - **Licensing** (PLAN §4.10/§12/§23 item 4, tasks #37/#38) — the offline activation-code format and
   its verification are real and exercised end to end (see `tools/license-format`'s own module doc
   for the full design and the "why asymmetric signing at all" reasoning): a ~15-character request

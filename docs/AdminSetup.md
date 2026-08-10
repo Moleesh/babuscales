@@ -104,8 +104,15 @@ before a reading is accepted, and similar fixed policy toggles. Applies immediat
 
 **System** — *Ticket numbering* (prefix, digit width, manual or automatic reset), *Date, time &
 amounts* (display formats — currently saved but not yet read by Reports, Dashboard or the printed
-slip, which still use the browser's own formatting), the **admin password** field, **Backup &
-restore**, and **Licence** (§2 above).
+slip, which still use the browser's own formatting), the **admin password** field, **Scheduled
+daily summary** (an automatic e-mail — tickets, net tonnes and charge collected today, plus a
+by-material breakdown — sent once a day at a time you choose, over the same SMTP relay as
+Connections → E-mail delivery; a "Send now" button sends today's numbers on demand, useful both as
+a real manual summary and to confirm the relay and recipient are right before relying on the
+scheduled send). This one only runs while the app is open — there's no background service on this
+machine, so a workstation that's off or asleep at the scheduled time sends nothing until it's next
+opened, same honesty as every other channel here having no retry queue. **Backup & restore**, and
+**Licence** (§2 above).
 
 ## 5. Backup and restore
 

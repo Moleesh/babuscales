@@ -16,6 +16,7 @@ import {
 import type { IndicatorSource } from "@engines/indicator";
 import { createIndicatorSource } from "@engines/indicator/createIndicatorSource";
 import { createLicensingSource } from "@engines/licensing/createLicensingSource";
+import { createEmailSource } from "@engines/email/createEmailSource";
 import { createTunnelSource } from "@engines/tunnel/createTunnelSource";
 import { TunnelProvider } from "@engines/tunnel";
 import type { TunnelSource } from "@engines/tunnel";
@@ -27,6 +28,7 @@ import { DashboardScreen } from "@features/dashboard";
 import { LicenseProvider, renderLicenseBanner, useLicense } from "@features/licensing";
 import { MastersScreen } from "@features/masters";
 import { ReportsScreen } from "@features/reports";
+import { buildDailySummaryEmail, nowLocalHm, todayLocalDate } from "@features/reports/dailySummaryEmail";
 import {
     AdminChip,
     OperatorChip,
@@ -329,6 +331,74 @@ const SerialConnectionSync = ({ indicator }: IndicatorSyncProps) => {
     return null;
 };
 
+// Task #45 — PLAN §18's "scheduled daily summary". Same "Applied
+// immediately" shape as the Sync components above, but on a timer instead
+// of a settings-change effect: no background worker/service exists in this
+// app (app/README.md known gap), so this is the entire scheduler — a
+// once-a-minute check, while the app happens to be open, for "has today's
+// scheduled time passed, and did today's summary not already go out."
+// `DailySummary.LastSentDate` (advanced via `recordDailySummarySent`,
+// regardless of send success) is what stops a satisfied check from firing
+// again next minute, and what stops a relaunch later the same day from
+// re-sending. One attempt, no retry queue — the same honesty as
+// `WeighingScreen`'s own per-ticket e-mail/SMS (see its own comments), so a
+// misconfigured SMTP relay fails once a day here, not once a minute.
+const DailySummarySync = () => {
+    const db = useDataPort();
+    const { settings, recordDailySummarySent } = useSettings();
+    const [email] = useState(() => createEmailSource());
+    const cfg = settings.DailySummary;
+    const smtp = settings.Smtp;
+    const amountDp = settings.Formats.AmountDp;
+
+    useEffect(() => {
+        if (!cfg.Enabled) return;
+        const checkDue = (): void => {
+            const today = todayLocalDate();
+            if (cfg.LastSentDate === today) return;
+            if (nowLocalHm() < cfg.Time) return;
+            const to = cfg.Recipient.trim();
+            if (!to) return;
+            void (async () => {
+                const docs = await db.listDocs({ DocKind: "Ticket" });
+                const { subject, body } = buildDailySummaryEmail(docs, today, amountDp);
+                const outboxRow = await db.enqueueOutbox({
+                    Channel: "Email",
+                    Body: { Kind: "DailySummary", Date: today, To: to },
+                });
+                const result = await email.send({
+                    host: smtp.Host,
+                    port: smtp.Port,
+                    username: smtp.Username,
+                    to,
+                    subject,
+                    body,
+                });
+                await db.updateOutbox(outboxRow.OutboxId, {
+                    State: result.Ok ? "Sent" : "Failed",
+                    Attempts: outboxRow.Attempts + 1,
+                });
+                await recordDailySummarySent(today);
+            })();
+        };
+        checkDue();
+        const timer = setInterval(checkDue, 60_000);
+        return () => clearInterval(timer);
+    }, [
+        db,
+        email,
+        cfg.Enabled,
+        cfg.Time,
+        cfg.Recipient,
+        cfg.LastSentDate,
+        smtp,
+        amountDp,
+        recordDailySummarySent,
+    ]);
+
+    return null;
+};
+
 export const App = () => {
     const [db] = useState(() => createDataPort());
     const [indicator] = useState(() => createIndicatorSource());
@@ -379,6 +449,7 @@ export const App = () => {
                                     <SerialConnectionSync indicator={indicator} />
                                     <VerificationServerSync source={verificationServer} />
                                     <RemoteAccessSync source={tunnel} />
+                                    <DailySummarySync />
                                     <Shell onAddLanguagePack={addLanguagePack} />
                                 </TunnelProvider>
                             </VerificationServerProvider>

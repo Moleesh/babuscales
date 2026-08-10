@@ -2,14 +2,18 @@ import { useEffect, useRef, useState } from "react";
 
 import { Card } from "@components/Card";
 import { Field, FieldGrid } from "@components/Field";
-// Direct subpaths, not the `@features/licensing` barrel — that barrel's
-// LicenseProvider itself imports `useSettings` from this feature's own
-// barrel; going through it here would close a cycle
-// (settings → licensing → settings). Both of these leaf modules only
-// depend on `@engines/licensing`'s types, so importing them directly skips
-// the cycle entirely without losing anything.
+import { useDataPort } from "@db/useDataPort";
+import { createEmailSource } from "@engines/email/createEmailSource";
+// Direct subpaths, not the `@features/licensing`/`@features/reports`
+// barrels — `@features/licensing`'s own LicenseProvider, and
+// `@features/reports`'s own ReportsScreen, both import `useSettings` from
+// this feature's barrel; going through either barrel here would close a
+// cycle (settings → licensing/reports → settings). Every one of these leaf
+// modules only depends on plain types/functions, so importing them
+// directly skips the cycle entirely without losing anything.
 import { describeLicenseState } from "@features/licensing/describeLicenseState";
 import { useLicense } from "@features/licensing/useLicense";
+import { buildDailySummaryEmail, todayLocalDate } from "@features/reports/dailySummaryEmail";
 
 import { RESET_EVERY_OPTIONS } from "../settingsSchema";
 import type { ResetEvery } from "../settingsSchema";
@@ -144,6 +148,148 @@ const LicenceCard = () => {
                     sign it offline against this machine&apos;s ID and send back the activation code
                     above to paste in. Bound to this machine only — it won&apos;t work after a
                     hardware change or on a different install.
+                </p>
+            </div>
+        </Card>
+    );
+};
+
+// Task #45 — PLAN §18's "scheduled daily summary", the manual half:
+// `DailySummarySync` (App.tsx) is the automatic half, checking once a
+// minute whether it's time to send; this card configures what it sends to
+// and when, plus a "Send now" button that runs the exact same
+// build-and-send path on demand — both the fastest way to confirm the SMTP
+// relay and recipient are right, and a real manual trigger in its own
+// right (e.g. an admin who wants today's numbers before the scheduled
+// time). `Enabled`/`Time`/`Recipient` are admin configuration, gated by
+// `unlocked` like every other field on this pane; `LastSentDate` is not —
+// it goes through `recordDailySummarySent` instead (see that context
+// method's own doc comment).
+const DailySummaryCard = () => {
+    const db = useDataPort();
+    const { settings, unlocked, save, recordDailySummarySent } = useSettings();
+    const [email] = useState(() => createEmailSource());
+    const [sending, setSending] = useState(false);
+    const [flash, setFlash] = useState<string | null>(null);
+    const flashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const cfg = settings.DailySummary;
+
+    useEffect(
+        () => () => {
+            if (flashTimer.current) clearTimeout(flashTimer.current);
+        },
+        [],
+    );
+
+    const showFlash = (message: string): void => {
+        if (flashTimer.current) clearTimeout(flashTimer.current);
+        setFlash(message);
+        flashTimer.current = setTimeout(() => setFlash(null), FLASH_MS);
+    };
+
+    const handleSendNow = async (): Promise<void> => {
+        const to = cfg.Recipient.trim();
+        if (!to) return;
+        setSending(true);
+        try {
+            const today = todayLocalDate();
+            const docs = await db.listDocs({ DocKind: "Ticket" });
+            const { subject, body } = buildDailySummaryEmail(
+                docs,
+                today,
+                settings.Formats.AmountDp,
+            );
+            const outboxRow = await db.enqueueOutbox({
+                Channel: "Email",
+                Body: { Kind: "DailySummary", Date: today, To: to },
+            });
+            const result = await email.send({
+                host: settings.Smtp.Host,
+                port: settings.Smtp.Port,
+                username: settings.Smtp.Username,
+                to,
+                subject,
+                body,
+            });
+            await db.updateOutbox(outboxRow.OutboxId, {
+                State: result.Ok ? "Sent" : "Failed",
+                Attempts: outboxRow.Attempts + 1,
+            });
+            await recordDailySummarySent(today);
+            showFlash(result.Ok ? "Sent — today's summary" : `Send failed — ${result.Error}`);
+        } finally {
+            setSending(false);
+        }
+    };
+
+    return (
+        <Card
+            title={<span className="lbl">Scheduled daily summary</span>}
+            headerRight={flash ? <span className={styles.applied}>{flash}</span> : null}
+        >
+            <div className={styles.body}>
+                <label className={styles.ck}>
+                    <input
+                        type="checkbox"
+                        checked={cfg.Enabled}
+                        disabled={!unlocked}
+                        onChange={(event) =>
+                            void save({
+                                ...settings,
+                                DailySummary: { ...cfg, Enabled: event.target.checked },
+                            })
+                        }
+                    />
+                    <span>Send automatically every day</span>
+                </label>
+                <FieldGrid columns={2}>
+                    <Field id="dsTime" label={{ en: "Send at" }}>
+                        <input
+                            id="dsTime"
+                            type="time"
+                            value={cfg.Time}
+                            disabled={!unlocked}
+                            onChange={(event) =>
+                                void save({
+                                    ...settings,
+                                    DailySummary: { ...cfg, Time: event.target.value },
+                                })
+                            }
+                        />
+                    </Field>
+                    <Field id="dsRecipient" label={{ en: "Recipient e-mail" }}>
+                        <input
+                            id="dsRecipient"
+                            type="email"
+                            placeholder="admin@example.com"
+                            value={cfg.Recipient}
+                            disabled={!unlocked}
+                            onChange={(event) =>
+                                void save({
+                                    ...settings,
+                                    DailySummary: { ...cfg, Recipient: event.target.value },
+                                })
+                            }
+                        />
+                    </Field>
+                </FieldGrid>
+                <div className={styles.confirmRow}>
+                    <button
+                        type="button"
+                        className={styles.mini}
+                        disabled={!unlocked || sending || !cfg.Recipient.trim()}
+                        onClick={() => void handleSendNow()}
+                    >
+                        {sending ? "Sending…" : "Send now"}
+                    </button>
+                </div>
+                <p className={styles.hint}>
+                    Goes out over the same SMTP relay as ticket e-mail (Connections → E-mail
+                    delivery) — set that up first. This only runs while the app is open: it checks
+                    once a minute for the scheduled time, there is no background service, so a
+                    machine that&apos;s off (or asleep) at the scheduled time sends nothing until
+                    it&apos;s next opened.
+                    {cfg.LastSentDate && ` Last sent: ${cfg.LastSentDate}.`}
                 </p>
             </div>
         </Card>
@@ -417,6 +563,8 @@ export const SystemPane = ({ onResetTicketSeries }: SystemPaneProps) => {
                     </p>
                 </div>
             </Card>
+
+            <DailySummaryCard />
 
             <BackupRestoreCard />
 

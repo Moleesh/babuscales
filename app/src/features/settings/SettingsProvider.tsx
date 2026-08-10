@@ -9,6 +9,7 @@ import type { SettingsContextValue } from "./_private/SettingsContext";
 import { DEFAULT_ADMIN_PASSWORD, hashAdminPassword, verifyAdminPassword } from "./adminAuth";
 import {
     DEFAULT_CONNECTIONS,
+    DEFAULT_DAILY_SUMMARY,
     DEFAULT_FORMATS,
     DEFAULT_INTEGRATIONS,
     DEFAULT_NUMBERING,
@@ -42,6 +43,7 @@ const SYNC_DEFAULT_BODY: SettingsBody = {
     Integrations: DEFAULT_INTEGRATIONS,
     RemoteAccess: DEFAULT_REMOTE_ACCESS,
     Smtp: DEFAULT_SMTP,
+    DailySummary: DEFAULT_DAILY_SUMMARY,
     OperatorName: DEFAULT_OPERATOR_NAME,
     AdminPasswordHash: "",
     AdminPasswordSalt: "",
@@ -182,6 +184,20 @@ export const SettingsProvider = ({ children }: SettingsProviderProps) => {
         [settings, persist],
     );
 
+    // Task #45 — see SettingsContext.ts's own doc comment on why this
+    // bypasses `unlocked`: it's the scheduler (`DailySummarySync`, App.tsx)
+    // recording its own automatic behaviour, not an admin editing a setting.
+    const recordDailySummarySent = useCallback(
+        async (dateIso: string): Promise<void> => {
+            if (dateIso === settings.DailySummary.LastSentDate) return;
+            await persist({
+                ...settings,
+                DailySummary: { ...settings.DailySummary, LastSentDate: dateIso },
+            });
+        },
+        [settings, persist],
+    );
+
     const value = useMemo<SettingsContextValue>(
         () => ({
             settings,
@@ -192,8 +208,19 @@ export const SettingsProvider = ({ children }: SettingsProviderProps) => {
             save,
             changeAdminPassword,
             setOperatorName,
+            recordDailySummarySent,
         }),
-        [settings, loading, unlocked, unlock, lock, save, changeAdminPassword, setOperatorName],
+        [
+            settings,
+            loading,
+            unlocked,
+            unlock,
+            lock,
+            save,
+            changeAdminPassword,
+            setOperatorName,
+            recordDailySummarySent,
+        ],
     );
 
     return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>;
