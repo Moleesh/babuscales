@@ -445,22 +445,30 @@ a different and bigger feature the mock itself never specifies, so nothing here 
   and accounting-format export are all still unimplemented consumers, and no outdoor display board
   is driven. Anomaly detection is deferred by decision (PLAN §21 Phase 8); MiMaS is a Phase 7 item,
   not built, blocked on a spec that doesn't exist yet.
-- **Licensing** (PLAN §4.10/§12/§23 item 4, task #37) — the offline activation-code format and its
-  verification are real and exercised end to end (see `tools/license-format`'s own module doc for
-  the full design and the "why asymmetric signing at all" reasoning): a ~15-character request code
-  binds to this machine's own OS identifier (`machine-uid`, hashed), Babulens turns it into a
+- **Licensing** (PLAN §4.10/§12/§23 item 4, tasks #37/#38) — the offline activation-code format and
+  its verification are real and exercised end to end (see `tools/license-format`'s own module doc
+  for the full design and the "why asymmetric signing at all" reasoning): a ~15-character request
+  code binds to this machine's own OS identifier (`machine-uid`, hashed), Babulens turns it into a
   ~124-character Ed25519-signed activation code with the offline, never-shipped `tools/licensegen`
   CLI, and `src-tauri/src/licensing/mod.rs` verifies it against a public key baked into the binary —
-  no server, no network call, ever. **What's genuinely a placeholder:** `VENDOR_PUBLIC_KEY` in
+  no server, no network call, ever. Persistence is real too: a `"License"`-kind config row
+  (`ConfigId: "license"`, `db/types.ts`'s `CONFIG_KINDS`) holds `TrialStartedOn`/`ActivationCode`
+  through the same generic `get_config`/`save_config` commands every other Settings-shaped row uses
+  (`@features/licensing/LicenseProvider`) — no config-specific Tauri command. Settings → System has
+  a real Licence card: current state, the request code (read-only, focus-to-select), an
+  admin-gated activation-code field that's validated against the real crypto _before_ it's ever
+  persisted (a mistyped paste is reported back, never saved over a working code), and a Clear-code
+  button. Gating is real and deliberately narrow: `TrialExpired`/`Expired`/`Invalid` blocks new
+  weight captures and Save (`WeighingScreen`'s `licenseGated` prop) and shows a persistent
+  `AppShell` banner (also used, non-blockingly, to flag "3 days left" on a running-low trial) — an
+  already-open ticket's fields, Reports, Dashboard, Masters and reprinting a ticket already on disk
+  all stay fully readable, so a lapsed licence never locks an operator out of data they're entitled
+  to see, only out of adding more of it. **What's genuinely a placeholder:** `VENDOR_PUBLIC_KEY` in
   `tools/license-format/src/lib.rs` is a throwaway dev keypair generated while building this format,
   not Babulens' real signing key, which doesn't exist yet — PLAN §23 item 4 ("pricing and licence
   tiers") is still an open decision that key rotation waits on, same one-swap-away shape as the
-  `BLS` logo placeholder (item 1). **Not built here:** persisting `TrialStartedOn`/`ActivationCode`
-  (just another `"License"`-kind config row through the existing generic `get_config`/`save_config`
-  commands, once that `ConfigKind` is added), the Settings → System "request code / paste activation
-  code" UI, and the app-wide read-only gate a lapsed trial should trigger — all task #38. The
-  14-day trial length (`licensing::TRIAL_DAYS`) is likewise a placeholder pending that same open
-  pricing decision.
+  `BLS` logo placeholder (item 1). The 14-day trial length (`licensing::TRIAL_DAYS`) is likewise a
+  placeholder pending that same open pricing decision.
 
 ## Carried over from the mock, verbatim
 

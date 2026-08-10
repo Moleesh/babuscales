@@ -20,6 +20,8 @@ export interface AppShellProps {
     topRight?: ReactNode;
     /** The weight indicator readout — sits above every screen, full-size on Weighing (PLAN §13). */
     header?: ReactNode;
+    /** A persistent, full-width strip above every screen (e.g. `@features/licensing`'s trial/expiry notice) — feature-owned content, same as `topRight`/`header`; the shell just reserves the slot. Absent (not rendered) when there's nothing to say. */
+    banner?: ReactNode;
     children: ReactNode;
 }
 
@@ -33,12 +35,14 @@ export const AppShell = ({
     onNavigate,
     topRight,
     header,
+    banner,
     children,
 }: AppShellProps) => {
     useEnterAsTab();
 
     return (
         <div className={styles.app}>
+            {banner && <div className={styles.banner}>{banner}</div>}
             <header className={styles.top}>
                 <div className={styles.brandbox}>
                     <BrandMark />

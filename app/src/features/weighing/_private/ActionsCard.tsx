@@ -19,6 +19,8 @@ export interface ActionsCardProps {
     /** `IndicatorSource.loadLorry` — undefined on a real serial adapter, present only on the simulated one (demo/dev). */
     loadLorry: ((kind: CaptureType) => void) | undefined;
     armed: boolean;
+    /** `useLicense().isGated` — blocks Save (a new row hitting the DB) in addition to `armed` already blocking capture; see WeighingScreen's own `licenseGated` prop comment for why Print/Reprint of an already-saved ticket stays open. */
+    gated: boolean;
     captureLabel: string;
     captureHint: string;
     onSave: () => void;
@@ -34,6 +36,7 @@ export const ActionsCard = ({
     reading,
     loadLorry,
     armed,
+    gated,
     captureLabel,
     captureHint,
     onSave,
@@ -66,7 +69,9 @@ export const ActionsCard = ({
             </Button>
             <div className={styles.actions}>
                 <Button
-                    disabled={ticket.isLocked || ticket.captures.length === 0 || ticket.saving}
+                    disabled={
+                        ticket.isLocked || ticket.captures.length === 0 || ticket.saving || gated
+                    }
                     onClick={onSave}
                 >
                     {ticket.isComplete ? "Save" : "Save & park"}
@@ -98,17 +103,19 @@ export const ActionsCard = ({
                 )}
             </div>
             <p className={styles.hint}>
-                {ticket.isLocked
-                    ? ticket.printCount > 0
-                        ? "Printed."
-                        : "Saved — ready to print."
-                    : ticket.isComplete
-                      ? "Both weights captured — Save to finish."
-                      : reading.WeightKg === 0 && reading.Stable
-                        ? "Deck empty. Send a lorry to begin."
-                        : armed
-                          ? "Stable — capture now."
-                          : "Weight in motion — capture is locked until it settles."}
+                {gated && !ticket.isLocked
+                    ? "Licence needs attention — see the banner above. Activate in Settings → System to resume."
+                    : ticket.isLocked
+                      ? ticket.printCount > 0
+                          ? "Printed."
+                          : "Saved — ready to print."
+                      : ticket.isComplete
+                        ? "Both weights captured — Save to finish."
+                        : reading.WeightKg === 0 && reading.Stable
+                          ? "Deck empty. Send a lorry to begin."
+                          : armed
+                            ? "Stable — capture now."
+                            : "Weight in motion — capture is locked until it settles."}
             </p>
         </div>
     </Card>

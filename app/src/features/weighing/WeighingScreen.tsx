@@ -30,6 +30,16 @@ const formatStamp = (iso: string | undefined): string =>
 export interface WeighingScreenProps {
     /** Lifted to Shell (PLAN §13.1) so Reports can resume a ticket into the same deck across a tab switch. */
     ticket: UseWeighingTicket;
+    /**
+     * `useLicense().isGated` (task #38) — the one place licence state
+     * actually changes what the operator can do: a lapsed trial or invalid
+     * code blocks new captures and Save, but never touches an
+     * already-open ticket's fields, Reports, Dashboard or Masters — those
+     * stay fully readable (and Print still works for whatever was already
+     * saved) so a lapsed licence never locks an operator out of data
+     * they're entitled to see, only out of adding more of it.
+     */
+    licenseGated: boolean;
 }
 
 // PLAN §7 end to end: an ordered capture array (§7.1), a stability-gated
@@ -39,7 +49,7 @@ export interface WeighingScreenProps {
 // preview tied to this same ticket state — @features/cameras). Real
 // print-template editing is a separate, not-yet-built feature
 // (app/README.md known gap) — this screen does not render it.
-export const WeighingScreen = ({ ticket }: WeighingScreenProps) => {
+export const WeighingScreen = ({ ticket, licenseGated }: WeighingScreenProps) => {
     const db = useDataPort();
     const indicator = useIndicator();
     const reading = useIndicatorReading();
@@ -84,7 +94,8 @@ export const WeighingScreen = ({ ticket }: WeighingScreenProps) => {
         reading.WeightKg > 0 &&
         ticket.captures.length < 2 &&
         !!ticket.kind &&
-        !ticket.isLocked;
+        !ticket.isLocked &&
+        !licenseGated;
 
     // Rules.AutoCapture (mock: `if (rules.autoCapture) setTimeout(capture, 350)`,
     // fired once per settle) — the deck's own tick loop stops the instant it
@@ -215,6 +226,7 @@ export const WeighingScreen = ({ ticket }: WeighingScreenProps) => {
                         reading={reading}
                         loadLorry={indicator.loadLorry}
                         armed={armed}
+                        gated={licenseGated}
                         captureLabel={captureLabel}
                         captureHint={captureHint}
                         onSave={() => void handleSave()}

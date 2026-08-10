@@ -15,6 +15,7 @@ import {
 } from "@engines/indicator";
 import type { IndicatorSource } from "@engines/indicator";
 import { createIndicatorSource } from "@engines/indicator/createIndicatorSource";
+import { createLicensingSource } from "@engines/licensing/createLicensingSource";
 import { createTunnelSource } from "@engines/tunnel/createTunnelSource";
 import { TunnelProvider } from "@engines/tunnel";
 import type { TunnelSource } from "@engines/tunnel";
@@ -23,6 +24,7 @@ import { VerificationServerProvider } from "@engines/verification";
 import type { VerificationServerSource } from "@engines/verification";
 import { CamerasScreen } from "@features/cameras";
 import { DashboardScreen } from "@features/dashboard";
+import { LicenseProvider, renderLicenseBanner, useLicense } from "@features/licensing";
 import { MastersScreen } from "@features/masters";
 import { ReportsScreen } from "@features/reports";
 import {
@@ -113,6 +115,8 @@ interface TabContentProps {
     onNavigateToReports: () => void;
     onResetTicketSeries: () => Promise<void>;
     onAddLanguagePack: (pack: LanguagePack) => Promise<void>;
+    /** `useLicense().isGated` — the one place licensing actually changes what the operator can do (task #38); see WeighingScreen's own `licenseGated` prop comment. */
+    licenseGated: boolean;
 }
 
 // The Weighing ticket hook is lifted to Shell (not owned by WeighingScreen
@@ -125,12 +129,13 @@ const TabContent = ({
     onNavigateToReports,
     onResetTicketSeries,
     onAddLanguagePack,
+    licenseGated,
 }: TabContentProps) => {
     switch (tab) {
         case "dash":
             return <DashboardScreen onNavigateToReports={onNavigateToReports} />;
         case "weigh":
-            return <WeighingScreen ticket={ticket} />;
+            return <WeighingScreen ticket={ticket} licenseGated={licenseGated} />;
         case "reports":
             return <ReportsScreen onOpenTicket={onOpenTicket} />;
         case "masters":
@@ -159,6 +164,7 @@ const Shell = ({ onAddLanguagePack }: ShellProps) => {
     const reading = useIndicatorReading();
     const db = useDataPort();
     const { settings } = useSettings();
+    const license = useLicense();
     const ticket = useWeighingTicket(settings.Rules.TareFirst, settings.OperatorName);
     const otherPack = packs.find((pack) => pack.Code !== "en") ?? null;
 
@@ -210,6 +216,7 @@ const Shell = ({ onAddLanguagePack }: ShellProps) => {
                     }}
                 />
             }
+            banner={renderLicenseBanner(license.state, license.isGated)}
         >
             <TabContent
                 tab={activeTab}
@@ -218,6 +225,7 @@ const Shell = ({ onAddLanguagePack }: ShellProps) => {
                 onNavigateToReports={() => setActiveTab("reports")}
                 onResetTicketSeries={resetTicketSeries}
                 onAddLanguagePack={onAddLanguagePack}
+                licenseGated={license.isGated}
             />
             <ContextualHelp
                 open={helpOpen}
@@ -326,6 +334,7 @@ export const App = () => {
     const [indicator] = useState(() => createIndicatorSource());
     const [verificationServer] = useState(() => createVerificationServerSource());
     const [tunnel] = useState(() => createTunnelSource());
+    const [licensing] = useState(() => createLicensingSource());
     const [packs, setPacks] = useState<LanguagePack[]>([]);
 
     // Loaded from `config` (ConfigKind: "LanguagePack") — I18nProvider's own
@@ -362,17 +371,19 @@ export const App = () => {
         <I18nProvider packs={packs}>
             <DataPortProvider db={db}>
                 <SettingsProvider>
-                    <IndicatorProvider source={indicator}>
-                        <VerificationServerProvider source={verificationServer}>
-                            <TunnelProvider source={tunnel}>
-                                <StabilityGateSync indicator={indicator} />
-                                <SerialConnectionSync indicator={indicator} />
-                                <VerificationServerSync source={verificationServer} />
-                                <RemoteAccessSync source={tunnel} />
-                                <Shell onAddLanguagePack={addLanguagePack} />
-                            </TunnelProvider>
-                        </VerificationServerProvider>
-                    </IndicatorProvider>
+                    <LicenseProvider source={licensing}>
+                        <IndicatorProvider source={indicator}>
+                            <VerificationServerProvider source={verificationServer}>
+                                <TunnelProvider source={tunnel}>
+                                    <StabilityGateSync indicator={indicator} />
+                                    <SerialConnectionSync indicator={indicator} />
+                                    <VerificationServerSync source={verificationServer} />
+                                    <RemoteAccessSync source={tunnel} />
+                                    <Shell onAddLanguagePack={addLanguagePack} />
+                                </TunnelProvider>
+                            </VerificationServerProvider>
+                        </IndicatorProvider>
+                    </LicenseProvider>
                 </SettingsProvider>
             </DataPortProvider>
         </I18nProvider>

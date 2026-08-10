@@ -1,12 +1,23 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { Card } from "@components/Card";
 import { Field, FieldGrid } from "@components/Field";
+// Direct subpaths, not the `@features/licensing` barrel — that barrel's
+// LicenseProvider itself imports `useSettings` from this feature's own
+// barrel; going through it here would close a cycle
+// (settings → licensing → settings). Both of these leaf modules only
+// depend on `@engines/licensing`'s types, so importing them directly skips
+// the cycle entirely without losing anything.
+import { describeLicenseState } from "@features/licensing/describeLicenseState";
+import { useLicense } from "@features/licensing/useLicense";
 
 import { RESET_EVERY_OPTIONS } from "../settingsSchema";
 import type { ResetEvery } from "../settingsSchema";
 import { useSettings } from "../useSettings";
 import styles from "./SystemPane.module.css";
+
+// Mock's own `flash()` timing, reused from ConnectionsPane's RemoteAccessCard.
+const FLASH_MS = 3000;
 
 const RESET_EVERY_LABEL: Record<ResetEvery, string> = {
     year: "Financial year",
@@ -19,6 +30,122 @@ const clampInt = (value: string, min: number, max: number, fallback: number): nu
     const n = Number.parseInt(value, 10);
     if (!Number.isFinite(n)) return fallback;
     return Math.min(max, Math.max(min, n));
+};
+
+// PLAN §4.10 "licence with trial and expiry · UID machine binding", task
+// #38 — the request/activate round trip is entirely offline (task #37's
+// own design): this card only ever calls `@engines/licensing`'s two Tauri
+// commands, never a server. `unlocked` gates Activate/Clear the same way
+// every other write on this pane is gated; the status line itself is
+// always visible, locked or not, since an operator needs to see "trial
+// expired" without first knowing the admin password.
+const LicenceCard = () => {
+    const { unlocked } = useSettings();
+    const license = useLicense();
+    const [requestCode, setRequestCode] = useState<string | null>(null);
+    const [codeInput, setCodeInput] = useState("");
+    const [flash, setFlash] = useState<string | null>(null);
+    const flashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    useEffect(() => {
+        void license.requestCode().then(setRequestCode);
+    }, [license]);
+
+    useEffect(
+        () => () => {
+            if (flashTimer.current) clearTimeout(flashTimer.current);
+        },
+        [],
+    );
+
+    const showFlash = (message: string): void => {
+        if (flashTimer.current) clearTimeout(flashTimer.current);
+        setFlash(message);
+        flashTimer.current = setTimeout(() => setFlash(null), FLASH_MS);
+    };
+
+    const handleActivate = async (): Promise<void> => {
+        const result = await license.activate(codeInput);
+        showFlash(result.message);
+        if (result.ok) setCodeInput("");
+    };
+
+    const handleClear = async (): Promise<void> => {
+        await license.clearActivation();
+        showFlash("Activation code cleared — back to the trial clock.");
+    };
+
+    // A code was saved at some point if the current read isn't a trial
+    // state — there's nothing else `Licensed`/`Expired`/`Invalid` could
+    // come from (see `licensing::evaluate`, src-tauri/src/licensing/mod.rs:
+    // those three are only ever reached once `activation_code` is `Some`).
+    const hasCode =
+        license.state?.Kind === "Licensed" ||
+        license.state?.Kind === "Expired" ||
+        license.state?.Kind === "Invalid";
+
+    return (
+        <Card
+            title={<span className="lbl">Licence</span>}
+            headerRight={flash ? <span className={styles.applied}>{flash}</span> : null}
+        >
+            <div className={styles.body}>
+                <div className={styles.statusRow}>
+                    <span className={license.isGated ? styles.statusBad : styles.statusOk}>
+                        {license.state
+                            ? describeLicenseState(license.state)
+                            : license.loading
+                              ? "Loading…"
+                              : "Not applicable — this build has no licence to check (web demo)."}
+                    </span>
+                </div>
+                <Field id="licReqCode" label={{ en: "Request code — send to Babulens" }}>
+                    <input
+                        id="licReqCode"
+                        readOnly
+                        value={requestCode ?? "Not available in this build"}
+                        onFocus={(event) => event.target.select()}
+                    />
+                </Field>
+                <Field id="licActCode" label={{ en: "Activation code" }}>
+                    <input
+                        id="licActCode"
+                        placeholder="Paste the code Babulens sent back"
+                        value={codeInput}
+                        disabled={!unlocked}
+                        onChange={(event) => setCodeInput(event.target.value)}
+                    />
+                </Field>
+                <div className={styles.statusRow}>
+                    <button
+                        type="button"
+                        className={styles.mini}
+                        disabled={!unlocked || !codeInput.trim()}
+                        onClick={() => void handleActivate()}
+                    >
+                        Activate
+                    </button>
+                    {hasCode && (
+                        <button
+                            type="button"
+                            className={`${styles.mini} ${styles.danger}`}
+                            disabled={!unlocked}
+                            onClick={() => void handleClear()}
+                        >
+                            Clear code
+                        </button>
+                    )}
+                </div>
+                <p className={styles.hint}>
+                    Every install starts a free 14-day trial from first run — no account, no server.
+                    To licence it, send the request code above to Babulens (see the About footer for
+                    contact details); they sign it offline against this machine&apos;s ID and send
+                    back the activation code above to paste in. Bound to this machine only — it
+                    won&apos;t work after a hardware change or on a different install.
+                </p>
+            </div>
+        </Card>
+    );
 };
 
 export interface SystemPaneProps {
@@ -288,6 +415,8 @@ export const SystemPane = ({ onResetTicketSeries }: SystemPaneProps) => {
                     </p>
                 </div>
             </Card>
+
+            <LicenceCard />
         </div>
     );
 };

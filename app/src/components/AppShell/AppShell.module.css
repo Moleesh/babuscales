@@ -8,6 +8,18 @@
     overflow: hidden;
 }
 
+.banner {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 7px 14px;
+    flex: none;
+    background: var(--led-ghost);
+    border-bottom: 1px solid var(--warn);
+    font-size: 0.75rem;
+    color: var(--text);
+}
+
 .top {
     display: flex;
     align-items: center;

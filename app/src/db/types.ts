@@ -36,6 +36,8 @@ export const CONFIG_KINDS = [
     "LanguagePack",
     /** Per-tab/per-field guidance shown by the help control — PLAN §11. Editable without a release, travels with backups. */
     "Help",
+    /** One row (`ConfigId: "license"`) holding `TrialStartedOn`/`ActivationCode` — PLAN §4.10, task #38. Evaluated against the embedded Ed25519 public key by `@engines/licensing`; never anything to migrate, same as every other config row. */
+    "License",
 ] as const;
 export type ConfigKind = (typeof CONFIG_KINDS)[number];
 
