@@ -1,0 +1,64 @@
+.doc {
+    margin-left: 8px;
+}
+
+.body {
+    display: grid;
+    gap: 12px;
+}
+
+.mono {
+    background: #f6f4ec;
+    color: #141414;
+    border-radius: 6px;
+    padding: 16px;
+    font-family: var(--mono);
+    white-space: pre;
+    overflow-x: auto;
+    font-size: 0.6875rem;
+    line-height: 1.35;
+}
+.mono.thermal {
+    max-width: 300px;
+    margin: 0 auto;
+}
+
+.footer {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding-top: 11px;
+    border-top: 1px solid var(--line);
+}
+
+.meta {
+    font-size: 0.6875rem;
+    color: var(--dim);
+}
+
+.actions {
+    margin-left: auto;
+    display: flex;
+    gap: 5px;
+}
+
+/* Same trick as weighing/_private/PrintPreviewModal.module.css's own copy
+   of this rule — see its comment for why it's duplicated rather than
+   shared (plain CSS Modules don't rewrite id selectors, so this could in
+   principle live in one shared stylesheet, but each print surface owns
+   its own scoped-print rule right next to the markup it targets). */
+@media print {
+    body * {
+        visibility: hidden;
+    }
+    #print-slip,
+    #print-slip * {
+        visibility: visible;
+    }
+    #print-slip {
+        position: fixed;
+        inset: 0;
+        margin: 0;
+        padding: 20px;
+    }
+}

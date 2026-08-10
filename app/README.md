@@ -222,6 +222,24 @@ on Reports and Dashboard).
     simulated indicator is completely unaffected by `StabilityGateSync`'s move from a
     simulated-only type to a duck-typed check. What's **not** verified — genuinely can't be, in
     this environment — is a real connection to real hardware; see Known gap.
+22. **Bulk report print.** `src/features/reports/reportPrintRows.ts` + `src/engines/print/` —
+    the mock's `btnRPrint` (real) alongside its Export PDF/Excel/CSV buttons (dead: no `id`, no
+    click handler at all in `demo/BabuScale-demo.html` — not a corner this app cut, the reference
+    spec's own buttons don't do anything either). Ported `reportA4`/`reportMx`/`reportTh` faithfully:
+    `reportPrintRows.ts` reduces `TicketRow[]`/`SummaryRow[]` to the mock's own narrower,
+    print-specific column set (Ticket/Vehicle/Party/Net kg for the register — no Charge column,
+    unlike the Summary print's Group/Tkts/Net t/Charge; an inconsistency in the mock, kept rather
+    than "fixed", since the mock wins on behaviour — PLAN §22). `engines/print/buildReportSlipData.ts`
+    computes `DateRange` from the real earliest–latest timestamp of the printed rows rather than
+    the mock's `rFrom`/`rTo` inputs, which this app has no date-range filter to drive yet (see
+    Known gap) — a real, data-derived value standing in for one the underlying feature to produce
+    doesn't exist. `pad.ts` (rpad/lpad) extracted out of `renderMonoSlip.ts` so the new
+    `renderReportMonoSlip.ts` doesn't duplicate it. `ReportA4.tsx`/`ReportPrintModal.tsx`
+    (`features/reports/_private/`) mirror `SlipA4.tsx`/`PrintPreviewModal.tsx`'s structure —
+    same `#print-slip` scoped-print trick, same three-paper `SegmentedControl` — for both the
+    Tickets and Summary views. ✅ Verified in-browser: captured a ticket, opened Reports, and
+    confirmed all three papers render real data for both views (six renders total) — including the
+    real computed date range on A4 and the correct column-dropping on Thermal/Matrix.
 
 ## Known gap
 
@@ -250,9 +268,13 @@ never specifies, so nothing here invents one.)
   no Vehicle↔VehicleType linkage.
 - **Recall** (PLAN §9.2) — a simplified, statically-positioned inline banner (`RecallBanner`), not
   the mock's viewport-positioned popover.
-- **Settings** — Weighing and System are the only two of the mock's six panes actually wired
-  (see Phase-2 item 17); Fields & language, Print & printers, Appearance and Connections render as
-  named placeholders, each pending the feature it would configure. Within System, ticket
+- **Reports has no date-range filter** — the mock's `rFrom`/`rTo` inputs weren't ported; both
+  views always show every ticket. Item 22's bulk print substitutes a real, data-derived date range
+  (the printed rows' own earliest–latest timestamp) rather than fabricating one.
+- **Settings** — Weighing, System and Connections are fully wired (items 17, 21); Appearance is
+  partly wired (Operator-on-duty is real, Theme is a placeholder — item 18); Fields & language and
+  Print & printers still render as named placeholders, each pending the feature it would
+  configure. Within System, ticket
   numbering is live and `Formats.AmountDp` now reaches every money display (item 20); date/time
   formats are still only persisted, unread elsewhere. The stale-tare threshold
   (`STORED_TARE_STALE_AFTER_DAYS` in `src/db/storedTare.ts`) stays a fixed constant — the mock
@@ -268,10 +290,10 @@ never specifies, so nothing here invents one.)
   Charge) and any Settings-driven way to change the flat rate — both need Master body-field
   editing UI that doesn't exist yet (see "Master field richness" above).
 - **Export** — Reports' Export PDF/Excel/CSV buttons are shown disabled rather than silently doing
-  nothing; the ticket register itself has no print composition either (the mock's `reportA4`/
-  `reportMx`/`reportTh` and `btnRPrint` — a bulk, multi-row layout, different from a single
-  ticket's slip). Per-ticket printing is real now (Phase-2 item 19) — Print/Reprint open a real
-  print preview, not just a `PrintCount` bump.
+  nothing, matching the mock's own dead buttons for the same three actions (no `id`, no click
+  handler at all — see item 22). Both bulk print (item 22, the ticket register/summary) and
+  per-ticket print (item 19) are real; only PDF/Excel/CSV file export has nothing to port from the
+  reference spec.
 - **Print templates** — the mock's three-step template wizard (upload custom HTML with
   `{{Placeholders}}`, multiple named templates per paper size, per-kind default printers) wasn't
   ported; Phase-2 item 19 built the three built-in layouts only, not the editor around them.

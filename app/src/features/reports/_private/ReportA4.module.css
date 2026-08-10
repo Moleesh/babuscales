@@ -1,0 +1,56 @@
+/* Ported from demo/BabuScale-demo.html's ".paper"/".slip-h" — same
+   deliberately-hardcoded light, near-black-on-cream ink as SlipA4.module.css
+   (this is what actually prints, not a themed screen surface), duplicated
+   rather than shared across features/weighing and features/reports'
+   `_private/` boundary. */
+.paper {
+    background: #fffdf7;
+    color: #141414;
+    border-radius: 6px;
+    padding: 20px 22px;
+    font-size: 0.75rem;
+    line-height: 1.55;
+}
+
+.head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    border-bottom: 2px solid #141414;
+    padding-bottom: 8px;
+}
+.title {
+    font-weight: 700;
+    font-size: 0.875rem;
+}
+.range {
+    font-size: 0.625rem;
+}
+.site {
+    text-align: right;
+    font-size: 0.625rem;
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 11px;
+    font-size: 0.6875rem;
+}
+.table thead tr {
+    border-bottom: 1px solid #141414;
+}
+.table th {
+    padding: 4px 0;
+}
+.table td {
+    padding: 5px 0;
+    border-bottom: 1px solid #e8e3d4;
+}
+
+.footer {
+    margin-top: 12px;
+    padding-top: 9px;
+    border-top: 1px solid #c9c4b4;
+    font-size: 0.625rem;
+}

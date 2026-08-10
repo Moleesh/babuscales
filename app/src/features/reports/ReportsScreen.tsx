@@ -10,9 +10,12 @@ import type { SegmentedOption } from "@components/SegmentedControl";
 import { formatMoney, formatWeightKg } from "@constants/numberFormat";
 import type { DocRow } from "@db/types";
 import { useDataPort } from "@db/useDataPort";
+import { buildReportSlipData } from "@engines/print";
 import { useSettings } from "@features/settings";
 import { formatTicketNo } from "@features/weighing";
 
+import { ReportPrintModal } from "./_private/ReportPrintModal";
+import { buildSummaryPrintRows, buildTicketPrintRows } from "./reportPrintRows";
 import { buildTicketRows, filterTicketRows, summarizeTicketRows } from "./reportRows";
 import type { GroupKey, SummaryRow, TicketRow, TicketRowFilter } from "./reportRows";
 import styles from "./ReportsScreen.module.css";
@@ -50,9 +53,12 @@ const formatWeightCell = (kg: number | null): string =>
 
 // PLAN §13.1 — "there is no Tickets tab... a ticket list is a report that
 // has not been grouped yet." One dataset (reportRows.ts), one toggle
-// between the flat Tickets view and the grouped Summary view. PDF/Excel/CSV
-// export still needs the print/export engine (app/README.md known gap) —
-// those actions are shown disabled rather than silently doing nothing.
+// between the flat Tickets view and the grouped Summary view. Print is real
+// (reportPrintRows.ts + ReportPrintModal, mirroring the per-ticket print
+// engine — Phase-2 item 19/23). Export PDF/Excel/CSV are shown disabled
+// rather than silently doing nothing — the mock's own buttons for these
+// have no click handler at all (dead UI, not a corner this app cut), so
+// there's nothing here to port yet (app/README.md known gap).
 export const ReportsScreen = ({ onOpenTicket }: ReportsScreenProps) => {
     const db = useDataPort();
     const { settings } = useSettings();
@@ -61,6 +67,7 @@ export const ReportsScreen = ({ onOpenTicket }: ReportsScreenProps) => {
     const [query, setQuery] = useState("");
     const [filter, setFilter] = useState<TicketRowFilter>("all");
     const [groupBy, setGroupBy] = useState<GroupKey>("material");
+    const [printOpen, setPrintOpen] = useState(false);
 
     useEffect(() => {
         let cancelled = false;
@@ -76,6 +83,36 @@ export const ReportsScreen = ({ onOpenTicket }: ReportsScreenProps) => {
     const waitingCount = useMemo(() => rows.filter((row) => row.isOpen).length, [rows]);
     const visibleRows = useMemo(() => filterTicketRows(rows, query, filter), [rows, query, filter]);
     const summaryRows = useMemo(() => summarizeTicketRows(rows, groupBy), [rows, groupBy]);
+
+    // Mirrors the mock's own repRows(): whichever view is open decides both
+    // the printed content and which underlying rows its date range is
+    // computed from (summaryRows isn't affected by the tickets view's
+    // search/filter, so its range comes from the same not-cancelled,
+    // both-weights rows summarizeTicketRows itself totals, not visibleRows).
+    const reportSlipData = useMemo(() => {
+        if (view === "summary") {
+            const { head, rows: printRows } = buildSummaryPrintRows(
+                summaryRows,
+                settings.Formats.AmountDp,
+            );
+            const timestamps = rows
+                .filter((row) => !row.isCancelled && row.netKg !== null)
+                .map((row) => row.at);
+            return buildReportSlipData({
+                title: "SUMMARY",
+                head,
+                rows: printRows,
+                rowTimestamps: timestamps,
+            });
+        }
+        const { head, rows: printRows } = buildTicketPrintRows(visibleRows);
+        return buildReportSlipData({
+            title: "TICKET REGISTER",
+            head,
+            rows: printRows,
+            rowTimestamps: visibleRows.map((row) => row.at),
+        });
+    }, [view, summaryRows, rows, visibleRows, settings.Formats.AmountDp]);
 
     const showWaiting = (): void => {
         setView("tickets");
@@ -230,6 +267,9 @@ export const ReportsScreen = ({ onOpenTicket }: ReportsScreenProps) => {
                         </>
                     )}
                     <div className={styles.actions}>
+                        <Button variant="primary" onClick={() => setPrintOpen(true)}>
+                            Print
+                        </Button>
                         <Button disabled caption="Needs the print/export engine">
                             Export PDF
                         </Button>
@@ -242,6 +282,11 @@ export const ReportsScreen = ({ onOpenTicket }: ReportsScreenProps) => {
                     </div>
                 </div>
             </Card>
+            <ReportPrintModal
+                open={printOpen}
+                onClose={() => setPrintOpen(false)}
+                data={reportSlipData}
+            />
         </div>
     );
 };
