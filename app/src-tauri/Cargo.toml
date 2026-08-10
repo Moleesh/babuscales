@@ -24,7 +24,10 @@ thiserror = "1"
 # turns on FTS5 — PLAN §6.1's `doc_fts`/`master_fts` virtual tables need it.
 rusqlite = { version = "0.32", features = ["bundled-full"] }
 sha2 = "0.10"
-chrono = "0.4"
+# "serde": needed from here on for `licensing::LicenseState`'s `NaiveDate`
+# fields to cross the Tauri IPC boundary — nothing before task #37 sent a
+# bare date to the frontend.
+chrono = { version = "0.4", features = ["serde"] }
 # Same strategy as the TS side's `ulid` package (src/db/id.ts) — every table
 # in PLAN §6.1 uses a ULID primary key.
 ulid = "1"
@@ -39,6 +42,14 @@ regex = "1"
 # small always-on listener. MIT licensed, ~4 small transitive deps.
 tiny_http = "0.12"
 keyring = { version = "3", features = ["windows-native"] }
+# Licence activation codes (PLAN §4.10/§12/§23 item 4, task #37) — the wire
+# format, base32 grouping and Ed25519 verification all live in this sibling
+# crate so the app (verify-only) and the never-shipped `tools/licensegen`
+# (sign-only) can't drift apart. See its own module doc for the full design.
+license-format = { path = "../../tools/license-format" }
+# PLAN §4.10's "UID machine binding" — reads the OS's own stable machine
+# identifier (Windows: registry `MachineGuid`) with no admin rights needed.
+machine-uid = "0.6"
 
 [profile.release]
 # Smallest installer over fastest build — PLAN §5 targets a ~10MB MSI.

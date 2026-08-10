@@ -6,6 +6,7 @@
 pub mod commands;
 pub mod devices;
 pub mod error;
+pub mod licensing;
 pub mod net;
 pub mod outbox;
 pub mod print;
@@ -73,6 +74,8 @@ pub fn run() -> tauri::Result<()> {
             commands::tunnel::start_tunnel,
             commands::tunnel::stop_tunnel,
             commands::tunnel::tunnel_status,
+            commands::licensing::license_request_code,
+            commands::licensing::evaluate_license,
         ])
         .run(tauri::generate_context!())
 }

@@ -1,0 +1,9 @@
+# Rust build output — same reasoning as app/.gitignore's src-tauri/target.
+target
+
+# licensegen's whole reason for existing is to hold the one secret that
+# must never reach this repository — see license-format's own module doc
+# ("Why asymmetric signing at all") and licensegen's `keygen` output.
+# Whatever name/path a real signing session uses, keep it out of git:
+vendor.key
+*.key

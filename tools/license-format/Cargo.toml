@@ -1,0 +1,15 @@
+[package]
+name = "license-format"
+version = "0.1.0"
+description = "Shared offline-activation-code wire format for BabuScales (PLAN §12/§23 item 4, task #37) — the one place the byte layout, base32 grouping, and Ed25519 verification live, so the app (verify-only) and tools/licensegen (sign-only) can never drift apart."
+edition = "2021"
+publish = false
+
+[dependencies]
+# Default features only — no `rand_core`. Nothing in this crate ever
+# generates a keypair (that happens once, offline, in licensegen's own
+# `keygen` subcommand); signing and verifying existing keys needs no RNG.
+ed25519-dalek = "2"
+data-encoding = "2"
+chrono = "0.4"
+thiserror = "1"

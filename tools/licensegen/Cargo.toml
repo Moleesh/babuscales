@@ -1,0 +1,19 @@
+[package]
+name = "licensegen"
+version = "0.1.0"
+description = "Babulens-only, offline, never-shipped CLI for issuing BabuScales activation codes (task #37 — see tools/license-format for why this exists as its own tool instead of a Tauri command)."
+edition = "2021"
+publish = false
+
+[[bin]]
+name = "licensegen"
+path = "src/main.rs"
+
+[dependencies]
+license-format = { path = "../license-format" }
+# Only this tool ever generates a keypair, so only this tool needs
+# ed25519-dalek's `rand_core` feature switched on — license-format and the
+# app both stay verify/sign-with-an-existing-key only.
+ed25519-dalek = { version = "2", features = ["rand_core"] }
+rand = "0.8"
+chrono = "0.4"

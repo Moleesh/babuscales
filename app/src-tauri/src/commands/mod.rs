@@ -11,6 +11,7 @@ pub mod backup;
 pub mod configs;
 pub mod docs;
 pub mod indicator;
+pub mod licensing;
 pub mod masters;
 pub mod net;
 pub mod outbox;
