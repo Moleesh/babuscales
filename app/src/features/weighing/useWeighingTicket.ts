@@ -64,8 +64,15 @@ export interface UseWeighingTicket {
 // mock's own "Operator on duty" (Settings' Appearance pane, not admin-gated
 // — a free-text label, not a login) stamped onto every capture; it too can
 // change mid-shift, so it's read fresh at capture time rather than closed
-// over once.
-export const useWeighingTicket = (tareFirst: boolean, operatorName: string): UseWeighingTicket => {
+// over once. `multiGross` (Settings → Weighing → Rules, task #46, default
+// off) is the same shape — read fresh, not captured once — and only ever
+// widens what `pushCapture`/`defaultCaptureKind` allow; with it off every
+// code path below behaves exactly as it did before task #46.
+export const useWeighingTicket = (
+    tareFirst: boolean,
+    operatorName: string,
+    multiGross = false,
+): UseWeighingTicket => {
     const db = useDataPort();
     const indicator = useIndicator();
 
@@ -74,17 +81,19 @@ export const useWeighingTicket = (tareFirst: boolean, operatorName: string): Use
     const [fields, setFields] = useState<TicketFormFields>(emptyFields());
     const [recalledFields, setRecalledFields] = useState<Set<RecalledField>>(new Set());
     const [captures, setCaptures] = useState<Capture[]>([]);
-    const [kind, setKindState] = useState<CaptureType | null>(defaultCaptureKind([], tareFirst));
+    const [kind, setKindState] = useState<CaptureType | null>(
+        defaultCaptureKind([], tareFirst, multiGross),
+    );
     const [isLocked, setIsLocked] = useState(false);
     const [printCount, setPrintCount] = useState(0);
     const [saving, setSaving] = useState(false);
 
     useEffect(() => {
         setKindState((current) => {
-            const next = defaultCaptureKind(captures, tareFirst);
+            const next = defaultCaptureKind(captures, tareFirst, multiGross);
             return current !== next ? next : current;
         });
-    }, [captures, tareFirst]);
+    }, [captures, tareFirst, multiGross]);
 
     const setField = useCallback((key: keyof TicketFormFields, value: string) => {
         setFields((prev) => ({ ...prev, [key]: value }));
@@ -108,15 +117,20 @@ export const useWeighingTicket = (tareFirst: boolean, operatorName: string): Use
         setFields(emptyFields());
         setRecalledFields(new Set());
         setCaptures([]);
-        setKindState(defaultCaptureKind([], tareFirst));
+        setKindState(defaultCaptureKind([], tareFirst, multiGross));
         setIsLocked(false);
         setPrintCount(0);
         indicator.reset?.();
-    }, [indicator, tareFirst]);
+    }, [indicator, tareFirst, multiGross]);
 
     const pushCapture = useCallback(
         (weightKg: number, source: Capture["Source"], capturedAtIso?: string) => {
-            if (!kind || hasCapture(captures, kind) || isLocked) return;
+            if (!kind || isLocked) return;
+            // Task #46: a repeat "Gross" is the one case `hasCapture` must not
+            // block once MultiGross is on — everything else (a second Tare)
+            // still refuses exactly as before.
+            const blocked = hasCapture(captures, kind) && !(multiGross && kind === "Gross");
+            if (blocked) return;
             const capture: Capture = {
                 CaptureId: newId(),
                 Type: kind,
@@ -129,7 +143,7 @@ export const useWeighingTicket = (tareFirst: boolean, operatorName: string): Use
             setCaptures((prev) => [...prev, capture]);
             if (source === "Indicator") indicator.reset?.();
         },
-        [captures, indicator, isLocked, kind, operatorName],
+        [captures, indicator, isLocked, kind, multiGross, operatorName],
     );
 
     const capture = useCallback(
@@ -213,16 +227,20 @@ export const useWeighingTicket = (tareFirst: boolean, operatorName: string): Use
             });
             setRecalledFields(new Set());
             setCaptures(body.Captures);
-            setKindState(defaultCaptureKind(body.Captures, tareFirst));
-            // Mirrors save()'s own rule: two captures in means the ticket is
-            // already finalised. Only PLAN §7.5's open (one-weight) tickets
-            // should come back editable — a completed ticket resumed from
-            // Reports must stay locked, not reopen for editing.
+            setKindState(defaultCaptureKind(body.Captures, tareFirst, multiGross));
+            // Mirrors save()'s own rule: two-or-more captures in means the
+            // ticket is already finalised — `save()` is the only path that
+            // ever locks a ticket (task #46: still triggered at
+            // captures.length>=2 regardless of how many Gross captures that
+            // includes), so anything resumed at that length was already
+            // locked when it was saved. Only PLAN §7.5's open (one-weight)
+            // tickets should come back editable — a completed ticket resumed
+            // from Reports must stay locked, not reopen for editing.
             setIsLocked(body.Captures.length >= 2);
             setPrintCount(body.PrintCount ?? 0);
             indicator.reset?.();
         },
-        [indicator, tareFirst],
+        [indicator, tareFirst, multiGross],
     );
 
     const print = useCallback(async () => {

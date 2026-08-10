@@ -11,6 +11,8 @@ export interface CalcFormulaProps {
     materialRate: number | null;
     value: number | null;
     amountDp: 0 | 2;
+    /** Task #46 — every Gross capture's own weight, in capture order; length 1 in the non-multi-gross case, where the formula collapses back to the original single-pair line. */
+    grossWeightsKg: number[];
 }
 
 // Ported from the mock's own `#formula` derivation text (demo/BabuScales-demo.html's
@@ -27,10 +29,26 @@ export const CalcFormula = ({
     materialRate,
     value,
     amountDp,
+    grossWeightsKg,
 }: CalcFormulaProps) => {
     if (netKg === null || tareKg === null || grossKg === null) return null;
-    return (
-        <div className={styles.formula}>
+    // Task #46 — `netKg` is `grossKg - tareKg` ONLY when there's exactly one
+    // Gross capture; with more than one (Settings → Weighing → Rules.MultiGross),
+    // `db/ticketBody.ts`'s `deriveWeights` sums each load's own net instead,
+    // so the single-pair line above would show a false equation. Spell out
+    // every load's term instead of hiding the sum behind one subtraction.
+    const netLine =
+        grossWeightsKg.length > 1 ? (
+            <span>
+                Net = Σ(Gross − Tare) over {grossWeightsKg.length} loads ={" "}
+                <em>
+                    {grossWeightsKg
+                        .map((g) => formatWeightKg(Math.abs(g - tareKg)))
+                        .join(" + ")}{" "}
+                    = {formatWeightKg(netKg)} kg
+                </em>
+            </span>
+        ) : (
             <span>
                 Net = Gross − Tare ={" "}
                 <em>
@@ -38,6 +56,10 @@ export const CalcFormula = ({
                     kg
                 </em>
             </span>
+        );
+    return (
+        <div className={styles.formula}>
+            {netLine}
             <span>
                 Charge = Type.TareCharge + Type.GrossCharge ={" "}
                 <em>

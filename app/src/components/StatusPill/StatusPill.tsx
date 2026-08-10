@@ -11,6 +11,15 @@ export interface StatusPillLabels {
 export interface StatusPillProps {
     tareKg?: number | null;
     grossKg?: number | null;
+    /**
+     * Task #46 — optional, so every caller from before multi-gross existed
+     * keeps working unchanged. Pass the ticket's own `DerivedWeights.netKg`
+     * (@db/ticketBody) when it's available: with more than one Gross
+     * capture, `netKg` is the sum of each load's own net, not
+     * `grossKg - tareKg` — the fallback below only holds for the
+     * single-gross case.
+     */
+    netKg?: number | null;
     /** Struck through, faded — a cancellation is a flag, not a status (PLAN §7.4). */
     cancelled?: boolean;
     labels?: StatusPillLabels;
@@ -43,12 +52,18 @@ const Segment = ({ label, kg, net }: SegmentProps) => {
 export const StatusPill = ({
     tareKg,
     grossKg,
+    netKg,
     cancelled,
     labels = DEFAULT_LABELS,
 }: StatusPillProps) => {
     const tare = tareKg ?? null;
     const gross = grossKg ?? null;
-    const net = tare !== null && gross !== null ? Math.abs(gross - tare) : null;
+    const net =
+        netKg !== undefined
+            ? (netKg ?? null)
+            : tare !== null && gross !== null
+              ? Math.abs(gross - tare)
+              : null;
 
     return (
         <span className={`${styles.pill} ${cancelled ? styles.cancelled : ""}`}>

@@ -74,7 +74,15 @@ three built-in layouts are the only ones available.
 doesn't yet change how the app looks.
 
 **Weighing** — *Weighing rules* and *Fixed policy* configure capture behaviour: the stability gate
-before a reading is accepted, and similar fixed policy toggles. Applies immediately.
+before a reading is accepted, and similar fixed policy toggles. Applies immediately. **Multi-gross**
+is off by default — every ticket stays the usual single tare/single gross pair. Turn it on for a
+site that loads the same lorry more than once per ticket (repeated tips against one weighbridge
+visit): weigh the empty tare once, then the "Capture as" toggle keeps offering Gross so the operator
+can capture as many loaded weights as the lorry actually made, one after another. Net is the sum of
+every load's own gross minus that one tare — the calc card spells out each load's term rather than
+just showing one subtraction, since gross minus tare alone is wrong once there's more than one load.
+Save still finishes and locks the ticket exactly as before, whenever the operator is done adding
+loads — there's no separate "add another load" action to learn.
 
 **Connections** — six cards:
 - *Integrations* — eight on/off toggles (WhatsApp, SMS gateway, e-mail, cloud backup, webhook/REST,
@@ -168,6 +176,8 @@ for an admin deciding what to promise a site:
   is something to ship into a paid product, unlike SMS (§4 above), which sidesteps any such cost or
   risk entirely by talking to a plain serial GSM modem instead of a cloud provider.
 - Billing (`Charge`) is a flat, hardcoded rate — there's no Settings screen to change it.
+- Multi-gross tickets print one aggregate Gross/Net line, not an itemised line per load, and can't
+  be parked mid-sequence — all of a ticket's loads need capturing in one sitting before Save.
 - MiMaS integration is blocked on an external specification that doesn't exist yet; not a bug, not
   in progress.
 

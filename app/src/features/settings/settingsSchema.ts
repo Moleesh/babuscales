@@ -12,11 +12,15 @@ export type ResetEvery = (typeof RESET_EVERY_OPTIONS)[number];
 // Mock's own comment (demo/BabuScales-demo.html, just above RULE_DEFS):
 // "Only three rules survive. Required-ness moved into the schema JSON;
 // reprint stamping and the cancellation reason are fixed policy, not
-// toggles." — those three are exactly what's here.
+// toggles." — those three are exactly what's here. `MultiGross` is a fourth,
+// added for task #46 with no mock precedent (PLAN §7.1 tags multi-gross
+// "(future)" and the reference mock never built it) — off by default, same
+// "zero behaviour change until an admin opts in" shape as every other rule.
 const rulesSchema = z.object({
     TareFirst: z.boolean(),
     StrictTare: z.boolean(),
     AutoCapture: z.boolean(),
+    MultiGross: z.boolean(),
 });
 export type WeighingRules = z.infer<typeof rulesSchema>;
 
@@ -210,6 +214,7 @@ export const DEFAULT_RULES: WeighingRules = {
     TareFirst: true,
     StrictTare: false,
     AutoCapture: false,
+    MultiGross: false,
 };
 
 export const DEFAULT_STABILITY: StabilityGate = {
@@ -297,6 +302,11 @@ export const RULE_DEFS: readonly [key: keyof WeighingRules, label: string, note:
         "AutoCapture",
         "Auto-capture when stable",
         "The operator never touches the button; the reading is taken the moment it settles.",
+    ],
+    [
+        "MultiGross",
+        "Multi-gross (multiple loads per ticket)",
+        "Weigh the empty lorry's tare once, then capture more than one loaded (Gross) weight under the same ticket — net is the sum of every load's own gross minus that one tare. Off keeps every ticket to the usual single tare/single gross pair.",
     ],
 ];
 

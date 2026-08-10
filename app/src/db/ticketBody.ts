@@ -79,26 +79,53 @@ export interface DerivedWeights {
     netKg: number | null;
 }
 
-/** PLAN §7.4 — "a ticket's status is the pair of weights and the net they produce." */
+/** All Gross-type captures, in the order they were taken — task #46's multi-gross support; a single-gross ticket is just the length-1 case of this. */
+export const grossCaptures = (captures: Capture[]): Capture[] =>
+    captures.filter((c) => c.Type === "Gross");
+
+// PLAN §7.4 — "a ticket's status is the pair of weights and the net they
+// produce," generalised for task #46's multi-gross tickets: PLAN §7.1
+// (line 429, tagged "(future)") spells the shape as
+// `[Tare, Gross1, Gross2, Gross3…]`, "net computed per gross". `grossKg` is
+// the *sum* of every Gross capture (the total material moved under this one
+// ticket); `netKg` is the sum of each Gross's own net against the single
+// Tare, NOT `grossKg - tareKg` — those only coincide when there is exactly
+// one Gross capture (today's default, MultiGross off). CalcFormula shows the
+// per-load breakdown so that distinction is never silently hidden from the
+// operator.
 export const deriveWeights = (captures: Capture[]): DerivedWeights => {
     const tare = findCapture(captures, "Tare");
-    const gross = findCapture(captures, "Gross");
+    const grosses = grossCaptures(captures);
     return {
         tareKg: tare?.WeightKg ?? null,
-        grossKg: gross?.WeightKg ?? null,
-        netKg: tare && gross ? Math.abs(gross.WeightKg - tare.WeightKg) : null,
+        grossKg: grosses.length ? grosses.reduce((sum, c) => sum + c.WeightKg, 0) : null,
+        netKg:
+            tare && grosses.length
+                ? grosses.reduce((sum, c) => sum + Math.abs(c.WeightKg - tare.WeightKg), 0)
+                : null,
     };
 };
 
-/** PLAN §7.5 — open means parked with exactly one weight, waiting for the second. */
+/** PLAN §7.5 — open means parked with exactly one weight, waiting for the second (or, under multi-gross, waiting for the first Gross). */
 export const isOpenTicket = (isCancelled: boolean, captures: Capture[]): boolean => {
     if (isCancelled) return false;
     const { tareKg, grossKg } = deriveWeights(captures);
     return (tareKg !== null) !== (grossKg !== null);
 };
 
-/** The rule only sets which is offered first — the operator can always pick the other (PLAN §7.1's help text). */
-export const defaultCaptureKind = (captures: Capture[], tareFirst: boolean): CaptureType | null => {
+// The rule only sets which is offered first — the operator can always pick
+// the other (PLAN §7.1's help text). Task #46: once both a Tare and a Gross
+// exist, `multiGross` decides whether the pair is final (null — the mock's
+// original behaviour, still the default) or whether another Gross can still
+// be added (repeat-offer "Gross", never "Tare" again — PLAN's own
+// `[Tare, Gross1, Gross2…]` shape, always exactly one Tare).
+export const defaultCaptureKind = (
+    captures: Capture[],
+    tareFirst: boolean,
+    multiGross = false,
+): CaptureType | null => {
     const order: CaptureType[] = tareFirst ? ["Tare", "Gross"] : ["Gross", "Tare"];
-    return order.find((kind) => !hasCapture(captures, kind)) ?? null;
+    const next = order.find((kind) => !hasCapture(captures, kind));
+    if (next) return next;
+    return multiGross && hasCapture(captures, "Tare") ? "Gross" : null;
 };

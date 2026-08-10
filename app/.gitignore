@@ -11,6 +11,7 @@ src-tauri/gen
 # Editors, logs
 .vscode/*
 !.vscode/extensions.json
+.claude/
 *.log
 npm-debug.log*
 

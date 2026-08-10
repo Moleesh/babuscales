@@ -167,7 +167,11 @@ const Shell = ({ onAddLanguagePack }: ShellProps) => {
     const db = useDataPort();
     const { settings } = useSettings();
     const license = useLicense();
-    const ticket = useWeighingTicket(settings.Rules.TareFirst, settings.OperatorName);
+    const ticket = useWeighingTicket(
+        settings.Rules.TareFirst,
+        settings.OperatorName,
+        settings.Rules.MultiGross,
+    );
     const otherPack = packs.find((pack) => pack.Code !== "en") ?? null;
 
     const openTicket = (doc: DocRow): void => {

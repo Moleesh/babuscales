@@ -18,6 +18,8 @@ export interface ActionsCardProps {
     reading: IndicatorReading;
     /** `IndicatorSource.loadLorry` — undefined on a real serial adapter, present only on the simulated one (demo/dev). */
     loadLorry: ((kind: CaptureType) => void) | undefined;
+    /** Settings → Weighing → Rules.MultiGross (task #46) — whether the "Capture as" toggle keeps offering Gross once a Tare+Gross pair already exists. */
+    multiGross: boolean;
     armed: boolean;
     /** `useLicense().isGated` — blocks Save (a new row hitting the DB) in addition to `armed` already blocking capture; see WeighingScreen's own `licenseGated` prop comment for why Print/Reprint of an already-saved ticket stays open. */
     gated: boolean;
@@ -35,6 +37,7 @@ export const ActionsCard = ({
     ticket,
     reading,
     loadLorry,
+    multiGross,
     armed,
     gated,
     captureLabel,
@@ -50,8 +53,13 @@ export const ActionsCard = ({
             <SegmentedControl
                 options={KIND_OPTIONS.map((option) => ({
                     ...option,
+                    // Task #46: with MultiGross on, a Gross that's already
+                    // been captured once stays selectable (there's still
+                    // exactly one Tare per ticket either way).
                     disabled:
-                        ticket.captures.some((c) => c.Type === option.value) || ticket.isLocked,
+                        (ticket.captures.some((c) => c.Type === option.value) &&
+                            !(multiGross && option.value === "Gross")) ||
+                        ticket.isLocked,
                 }))}
                 value={ticket.kind ?? "Tare"}
                 onChange={ticket.setKind}
@@ -95,7 +103,13 @@ export const ActionsCard = ({
                 </Button>
                 {loadLorry && (
                     <Button
-                        disabled={ticket.captures.length >= 2 || ticket.isLocked || !ticket.kind}
+                        // Task #46: `!ticket.kind` alone is the correct gate now
+                        // — `defaultCaptureKind` already returns null exactly
+                        // when nothing more should be captured (the old
+                        // `captures.length >= 2` check would have blocked a
+                        // second Gross under MultiGross even though `kind`
+                        // still offers one).
+                        disabled={ticket.isLocked || !ticket.kind}
                         onClick={() => ticket.kind && loadLorry(ticket.kind)}
                     >
                         Send a lorry
@@ -110,7 +124,9 @@ export const ActionsCard = ({
                           ? "Printed."
                           : "Saved — ready to print."
                       : ticket.isComplete
-                        ? "Both weights captured — Save to finish."
+                        ? multiGross
+                            ? "Capture another Gross to add a load, or Save to finish this ticket."
+                            : "Both weights captured — Save to finish."
                         : reading.WeightKg === 0 && reading.Stable
                           ? "Deck empty. Send a lorry to begin."
                           : armed

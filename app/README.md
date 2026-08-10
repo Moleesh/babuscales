@@ -451,6 +451,36 @@ on Reports and Dashboard).
     today — confirmed by the card's own "Last sent: …" hint updating immediately after. Actually
     sending needs a real SMTP relay and the desktop build, neither available in this environment —
     the same category of gap item 29's own verification note already names.
+33. **Multi-gross weighing.** PLAN §7.1 (line 429) tags this "(future)" with one line of spec —
+    `[Tare, Gross1, Gross2, Gross3…]`, "net computed per gross" — and the reference mock never built
+    it (no multi-gross code anywhere in `demo/BabuScales-demo.html`), so this shipped with no prior
+    art to port. Off by default (`Rules.MultiGross`, new fourth entry alongside the mock's own three
+    surviving rules — `settingsSchema.ts`) — with it off, every code path below behaves exactly as it
+    did before this item; the field only widens what's already allowed, never narrows it.
+    `db/ticketBody.ts`'s `defaultCaptureKind` is the one place that decides whether a Tare+Gross pair
+    is final: with `MultiGross` on it keeps re-offering "Gross" instead of returning `null`, and
+    `deriveWeights` sums every Gross capture's own weight for `grossKg`, and every Gross capture's own
+    net against the single Tare for `netKg` — deliberately NOT `grossKg - tareKg`, which is only true
+    for the single-gross case (a real bug this item found and fixed along the way: `StatusPill` was
+    independently recomputing `Math.abs(gross - tare)` instead of accepting the ticket's already-
+    correct `netKg`, so a second Gross capture made its pill disagree with the calc card next to it —
+    fixed by giving `StatusPill` an optional `netKg` prop that overrides the fallback). `CalcFormula`
+    shows the honest sum-of-per-load-nets line once there's more than one Gross, instead of silently
+    keeping the single-subtraction line that would otherwise show a false equation. `useWeighingTicket`
+    threads the same `multiGross` flag as `tareFirst`/`operatorName` (read fresh, not captured once);
+    `pushCapture`'s guard is the only other change — a repeat "Gross" is the one case `hasCapture`
+    must not block. `save()`'s own lock trigger (`captures.length >= 2`) is untouched: it's still the
+    only thing that finishes and locks a ticket, whether that's the original single pair or however
+    many Gross captures the operator took before clicking Save — there's no separate "add another
+    load" action to learn, the operator just keeps capturing until they're done. Settings → Weighing
+    gained the toggle; `ActionsCard`'s "Capture as" control keeps Gross selectable after the first one
+    when the flag is on, "Send a lorry" and the capture button rely on `!ticket.kind` alone rather
+    than a hardcoded capture count, and the status hint spells out "capture another Gross, or Save to
+    finish" once a pair already exists. ✅ Verified: typecheck/lint/build clean; in-browser (memory
+    adapter) captured Tare + two Gross loads with the rule on — calc card, formula breakdown,
+    StatusPill and the printed slip all agreed on the same aggregate Net — then confirmed the rule off
+    reproduces the exact original single-pair flow (segmented control disables Gross after one
+    capture, "Both weights captured" caption, single-subtraction formula line, no "N loads" stamp).
 
 ## Known gap
 
@@ -523,6 +553,14 @@ a different and bigger feature the mock itself never specifies, so nothing here 
   boundary, not just past the mock's decorative features. Item 19 built the three built-in layouts
   (A4/thermal/dot-matrix); item 24 built per-kind default-printer selection (a config row, not a
   driver binding); the editor around custom layouts is what stays undone.
+- **Multi-gross** (item 33, PLAN §7.1's "(future)" tag) — the calc card and formula breakdown show
+  the honest per-load sum, but the printed slip (`buildSlipData.ts`) has one Gross line, same as
+  before this item: a multi-gross ticket's slip shows the aggregate Gross/Net only, with the last
+  Gross capture's own timestamp, not an itemised line per load. There's also no way to park a
+  multi-gross ticket mid-sequence — `save()` still only ever finishes and locks a ticket (unchanged
+  from before this item), so all of a ticket's loads need capturing in one continuous session before
+  Save; a browser refresh or app restart before that loses whatever wasn't saved yet, the same risk
+  an un-parked Tare-only ticket already carries today.
 - **`CaptureTimeline`** (named in PLAN's architecture list) was not built — Weighing's "Captured &
   calculated" card uses the mock's `.calc` three-box grid instead.
 - **Dashboard's hourly window** (06:00–20:00) is a fixed default; there is no site-hours Setting.

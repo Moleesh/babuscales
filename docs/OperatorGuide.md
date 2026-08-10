@@ -47,6 +47,14 @@ or `MOTION`), the **Ticket** card (party, material, vehicle, transporter — the
    vehicle. **`Clear`** wipes the current form without saving anything — use it for a mis-entered
    ticket you haven't printed yet, not for one that's already saved.
 
+**Multiple loads on one ticket.** If your admin has turned on **Multi-gross** (Settings → Weighing →
+Rules), the `Gross` button keeps working after the first loaded weighing instead of locking — capture
+as many loads as the lorry actually made, one after another, and the calc card's Net updates to the
+sum of every load's own net. `Save`/`Print` still finish the ticket the same way as always; there's
+nothing extra to click between loads, just capture each one and Save once you're done. Without
+Multi-gross on, a second `Gross` isn't offered — every ticket stays one tare, one gross, same as
+always.
+
 **`Send a lorry`** is the simulator's own control, standing in for a vehicle actually driving onto
 the bridge — press it to make the indicator move and settle, useful for testing or demos on a
 machine with no real weighbridge attached. On a site with a real indicator wired up (Settings →

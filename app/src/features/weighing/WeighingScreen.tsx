@@ -97,13 +97,13 @@ export const WeighingScreen = ({ ticket, licenseGated }: WeighingScreenProps) =>
         setRefreshToken((n) => n + 1);
     };
 
+    // Task #46: `!!ticket.kind` alone is the right gate — `defaultCaptureKind`
+    // (@db/ticketBody) already returns null exactly when nothing more should
+    // be captured, and null out was the old `captures.length < 2`'s whole
+    // job. Dropping that clause is what lets a second (third, ...) Gross
+    // stay capturable when Settings → Weighing → Rules.MultiGross is on.
     const armed =
-        reading.Stable &&
-        reading.WeightKg > 0 &&
-        ticket.captures.length < 2 &&
-        !!ticket.kind &&
-        !ticket.isLocked &&
-        !licenseGated;
+        reading.Stable && reading.WeightKg > 0 && !!ticket.kind && !ticket.isLocked && !licenseGated;
 
     // Rules.AutoCapture (mock: `if (rules.autoCapture) setTimeout(capture, 350)`,
     // fired once per settle) — the deck's own tick loop stops the instant it
@@ -248,7 +248,12 @@ export const WeighingScreen = ({ ticket, licenseGated }: WeighingScreenProps) =>
                 grossKg: ticket.weights.grossKg,
                 netKg: ticket.weights.netKg,
                 tareAt: ticket.captures.find((c) => c.Type === "Tare")?.At ?? null,
-                grossAt: ticket.captures.find((c) => c.Type === "Gross")?.At ?? null,
+                // Task #46 — the slip's own layout has one Gross line (no
+                // itemised per-load breakdown, app/README.md known gap), so a
+                // multi-gross ticket shows its LAST Gross's timestamp here —
+                // "when this ticket's weighing finished" reads better on a
+                // printed slip than "when the first of several loads did."
+                grossAt: ticket.captures.filter((c) => c.Type === "Gross").at(-1)?.At ?? null,
                 operator: settings.OperatorName,
                 printCount: ticket.printCount,
                 charge,
@@ -262,12 +267,18 @@ export const WeighingScreen = ({ ticket, licenseGated }: WeighingScreenProps) =>
     const configuredCameraCount = CAMERA_SLOTS.filter((slot) => slot.configured).length;
 
     const ticketDate = formatStamp(ticket.captures[0]?.At);
-    const captureLabel = ticket.isComplete
+    // Task #46: gate the "done" branch on `!ticket.kind`, not `isComplete` —
+    // under MultiGross, isComplete goes true after the first Gross and stays
+    // true while more loads are still capturable, but `kind` only turns null
+    // once the operator has actually run out of things to capture.
+    const captureLabel = !ticket.kind
         ? "Both weights captured"
         : ticket.kind === "Gross"
-          ? "Capture Gross"
+          ? settings.Rules.MultiGross && ticket.isComplete
+              ? "Capture another Gross"
+              : "Capture Gross"
           : "Capture Tare";
-    const captureHint = ticket.isComplete
+    const captureHint = !ticket.kind
         ? "Save to finish this ticket"
         : armed
           ? "Stable — capture now"
@@ -302,6 +313,7 @@ export const WeighingScreen = ({ ticket, licenseGated }: WeighingScreenProps) =>
                         ticket={ticket}
                         reading={reading}
                         loadLorry={indicator.loadLorry}
+                        multiGross={settings.Rules.MultiGross}
                         armed={armed}
                         gated={licenseGated}
                         captureLabel={captureLabel}
