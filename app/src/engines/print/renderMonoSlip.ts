@@ -26,6 +26,14 @@ export const renderMatrixSlip = (p: SlipData): string =>
     "========================================";
 
 // Ported from the mock's `ticketTh` — a narrow 30-column thermal-roll slip.
+// The mock's own `[ QR ]  {no}` line was always a placeholder (a thermal
+// roll driven by plain text, as this renderer's return type is, has no way
+// to emit a bitmap — there's no ESC/POS raster driver in this codebase,
+// app/README.md known gap). Now that the URL it stands in for is real
+// (@engines/verification, task #33), printing the actual address is more
+// useful than a graphic this pipeline can't draw; the line is dropped
+// entirely rather than kept as a placeholder when there's nothing real to
+// print (feature off, or the ticket has no VerifyUrl yet).
 export const renderThermalSlip = (p: SlipData): string =>
     "   SRI LAKSHMI BLUE METALS\n      Nagercoil  Bridge 1\n" +
     "------------------------------\n" +
@@ -34,5 +42,6 @@ export const renderThermalSlip = (p: SlipData): string =>
     "------------------------------\n" +
     ` Tare     ${lpad(p.TareKg, 12)} kg\n Gross    ${lpad(p.GrossKg, 12)} kg\n NET      ${lpad(p.NetKg, 12)} kg\n` +
     "------------------------------\n" +
-    ` Charge   ${lpad(asciiMoney(p.Charge), 12)}\n Operator ${rpad(p.Operator, 12)}\n\n` +
-    `      [ QR ]  ${p.TicketNo}\n------------------------------`;
+    ` Charge   ${lpad(asciiMoney(p.Charge), 12)}\n Operator ${rpad(p.Operator, 12)}\n` +
+    (p.VerifyUrl ? `\n Verify   ${p.VerifyUrl}\n` : "\n") +
+    "------------------------------";

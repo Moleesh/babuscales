@@ -21,6 +21,8 @@ export interface SlipInput {
     charge: number | null;
     /** Settings' `Formats.AmountDp`. */
     amountDp: 0 | 2;
+    /** @engines/verification's resolved `{base}/v/{docId}` — null when unavailable, see SlipData.VerifyUrl. */
+    verifyUrl: string | null;
 }
 
 const weightOrDash = (kg: number | null): string => (kg === null ? "—" : formatWeightKg(kg));
@@ -45,4 +47,5 @@ export const buildSlipData = (input: SlipInput): SlipData => ({
     Charge: input.charge === null ? "—" : formatMoney(input.charge, input.amountDp),
     Operator: input.operator,
     Copy: input.printCount >= 1 ? `DUPLICATE COPY ${input.printCount + 1}` : "",
+    VerifyUrl: input.verifyUrl,
 });

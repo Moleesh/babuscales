@@ -1,3 +1,4 @@
+import { buildQrDataUri } from "@engines/print";
 import type { SlipData } from "@engines/print";
 
 import styles from "./SlipA4.module.css";
@@ -15,10 +16,13 @@ export interface SlipA4Props {
 
 // Ported from the mock's `ticketA4` — real JSX rather than an HTML string,
 // so React escapes every field automatically instead of needing the mock's
-// own `esc()` calls. Deliberately drops the mock's "Verify: babuscales.app/v/…"
-// footer line: that URL doesn't resolve to anything real (no QR-verification
-// hosting yet — app/README.md known gap), and printing a dead link on an
-// actual business document would be worse than the mock's own fake demo copy.
+// own `esc()` calls. The mock's own "Verify: babuscales.app/v/…" footer line
+// was dropped for the longest part of this build (that URL didn't resolve to
+// anything real) — now that @engines/verification's local server exists
+// (task #33), it's back as a real, scannable QR pointing at this exact
+// ticket's page, and only when data.VerifyUrl is actually set: a ticket
+// printed before it's saved, or with the integration off, gets no footer
+// line at all rather than a dead link.
 export const SlipA4 = ({ data }: SlipA4Props) => (
     <div className={styles.paper}>
         <div className={styles.head}>
@@ -75,6 +79,18 @@ export const SlipA4 = ({ data }: SlipA4Props) => (
         </div>
         <div className={styles.footer}>
             <span>Printed {new Date().toLocaleString()}</span>
+            {data.VerifyUrl && (
+                <span className={styles.verify}>
+                    <img
+                        className={styles.qr}
+                        src={buildQrDataUri(data.VerifyUrl)}
+                        alt="Scan to verify this weighment"
+                        width={40}
+                        height={40}
+                    />
+                    Verify: {data.VerifyUrl}
+                </span>
+            )}
             <span>Signature</span>
         </div>
     </div>

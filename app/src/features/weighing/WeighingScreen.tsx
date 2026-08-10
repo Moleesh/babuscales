@@ -8,6 +8,7 @@ import { useMasterCache } from "@db/useMasterCache";
 import { computeCharge, computeValue } from "@engines/billing";
 import { useIndicator, useIndicatorReading } from "@engines/indicator";
 import { buildSlipData } from "@engines/print";
+import { useVerificationUrl } from "@engines/verification";
 import { computeCameraBurnIn, CAMERA_SLOTS, CameraGrid } from "@features/cameras";
 import { useSettings } from "@features/settings";
 
@@ -117,6 +118,13 @@ export const WeighingScreen = ({ ticket }: WeighingScreenProps) => {
     );
     const value = computeValue(ticket.weights.netKg, materialRate);
 
+    // PLAN §18 — the printed slip's own QR points at this ticket's page on
+    // the local verification server (@engines/verification), null until
+    // the ticket has a DocId (a fresh, unsaved ticket has nothing to
+    // verify yet) or while the server itself is off/unavailable.
+    const verifyBase = useVerificationUrl(settings.Integrations.qr);
+    const verifyUrl = verifyBase && ticket.docId ? `${verifyBase}/v/${ticket.docId}` : null;
+
     const slipData = useMemo(
         () =>
             buildSlipData({
@@ -135,8 +143,9 @@ export const WeighingScreen = ({ ticket }: WeighingScreenProps) => {
                 printCount: ticket.printCount,
                 charge,
                 amountDp: settings.Formats.AmountDp,
+                verifyUrl,
             }),
-        [ticket, settings.OperatorName, settings.Formats.AmountDp, charge],
+        [ticket, settings.OperatorName, settings.Formats.AmountDp, charge, verifyUrl],
     );
 
     const cameraBurnIn = computeCameraBurnIn(ticket.docSeq, ticket.captures);

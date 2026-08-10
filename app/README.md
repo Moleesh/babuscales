@@ -158,10 +158,13 @@ on Reports and Dashboard).
     no `dangerouslySetInnerHTML`. `PrintPreviewModal` (a new `size="default"` use of `AppModal`,
     which gained a `size` prop for it) lets the operator switch papers before committing; "Send to
     printer" calls `window.print()` scoped to just the rendered slip via a `#print-slip` id and an
-    `@media print` rule, then commits the existing `PrintCount` increment. Deliberately drops the
-    mock's "Verify: babuscales.app/v/…" footer line — that URL doesn't resolve to anything (no QR
-    verification hosting — see Known gap), and a dead link on an actual printed business document
-    would be worse than the mock's own fake demo copy. Charge read "—" at the time this item
+    `@media print` rule, then commits the existing `PrintCount` increment. Deliberately dropped the
+    mock's "Verify: babuscales.app/v/…" footer line at the time this item landed — that URL didn't
+    resolve to anything yet (no QR verification hosting), and a dead link on an actual printed
+    business document would be worse than the mock's own fake demo copy. A later backlog pass
+    (`src-tauri/src/net/mod.rs`'s local verification server, `src/engines/verification/`, and
+    `src/engines/print/qr.ts`'s real QR rendering) brought a real version of that line back — see
+    the Trust and integrations note below. Charge read "—" at the time this item
     landed — item 20 below made it real. ✅ Verified: all three papers render real ticket data
     correctly (weights, timestamps, operator, ticket number, ORIGINAL/DUPLICATE COPY labelling)
     in-browser. `window.print()` itself opens a real, OS-native modal print dialog — by design
@@ -414,11 +417,18 @@ a different and bigger feature the mock itself never specifies, so nothing here 
 - **Dashboard's hourly window** (06:00–20:00) is a fixed default; there is no site-hours Setting.
 - **Trust and integrations** (PLAN §18) — the hash chain is real (`db/hash.ts`, `audit`-only,
   verified against a real chain in item 20). Item 25 built the Integrations pane's on/off toggles
-  as real, persisted settings, but nothing behind any of those eight switches actually sends
-  anything: no outbox worker delivers WhatsApp/SMS/e-mail, no public QR-verification page exists
-  (the mock's own thermal-slip QR is decorative text — `[ QR ]  <ticket no>` — not a real code or
-  URL, and a genuinely public verification page needs a hosting story this project doesn't have
-  yet), no webhook fires, no cloud backup provider is wired, no accounting-format export runs, no
+  as real, persisted settings; the QR verification switch is now real too, not just a persisted
+  flag: `src-tauri/src/net/mod.rs` runs a LAN-only HTTP server (Tauri-only, off by default, started
+  by the Integrations toggle) serving `/v/{doc_id}`, a page that checks both the doc row's
+  `body_hash` and the full audit hash-chain (`store::verify_chain`) before calling a ticket
+  authentic; `src/engines/print/qr.ts` renders a real, scannable QR on the printed A4 slip
+  (`qrcode-generator`, offline, no network call) pointing at that page, and the thermal slip prints
+  the same URL as text (a dot-matrix/thermal roll driven by this codebase's plain-text renderer has
+  no bitmap-graphics path — no ESC/POS raster driver exists — so a printed URL is what "real" looks
+  like there). LAN-only by design (PLAN §23 item 6's own answer: "local if hosted we can share the
+  hosting url") — a public option riding the same server via an opt-in Cloudflare Tunnel is still
+  open. Still nothing behind the other seven switches: no outbox worker delivers WhatsApp/SMS/
+  e-mail, no webhook fires, no cloud backup provider is wired, no accounting-format export runs, no
   outdoor display board is driven. Anomaly detection is deferred by decision (PLAN §21 Phase 8),
   Cloudflare Tunnel/Tailscale remote access and MiMaS are Phase 7 items, neither built.
 
