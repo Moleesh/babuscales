@@ -9,7 +9,9 @@ import styles from "./SystemPane.module.css";
 // Mock's own `flash()` timing, reused from SystemPane's LicenceCard.
 const FLASH_MS = 3000;
 
-const timestampForFilename = (): string => {
+// Exported for LegacyImportCard.tsx's own pre-import restore point — same
+// filename shape, different prefix, no reason to duplicate the formatting.
+export const timestampForFilename = (): string => {
     const now = new Date();
     const pad = (n: number): string => String(n).padStart(2, "0");
     return `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}`;

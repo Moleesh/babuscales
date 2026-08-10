@@ -481,6 +481,39 @@ on Reports and Dashboard).
     StatusPill and the printed slip all agreed on the same aggregate Net — then confirmed the rule off
     reproduces the exact original single-pair flow (segmented control disables Gross after one
     capture, "Both weights captured" caption, single-subtraction formula line, no "N loads" stamp).
+34. **Legacy v1/v2 data import tool.** PLAN §22 Phase 7 asks for a way to move a site off the older
+    desktop products PLAN calls v1/v2 (VaultBill) onto BabuScales. No v1/v2 source tree or database
+    schema exists in this repo to build a native reader against, so rather than fake a `.mdb`/`.db`
+    parser this shipped a documented, versioned JSON interchange format instead —
+    `src/engines/importEngine/legacyImportBundle.ts` (a zod schema, `LegacyImportBundle`,
+    `BundleVersion: 1`) that a site converts its outgoing data into, by hand for a small site or with
+    a short script for a large one — the honest tradeoff, not an oversight (see the file's own header
+    comment). One JSON bundle, not nine separate CSV importers: Masters bulk import/export at real
+    scale is already its own tracked gap (`MastersScreen.tsx`'s own comment), and building ad-hoc CSV
+    parsing here would have duplicated that future work. `legacyImportPlan.ts` is pure planning logic
+    — no `DataPort`, no IO, matching every other engine (PLAN §11) — `planLegacyImport(bundle,
+    existing)` turns a parsed bundle plus a snapshot of what's already here into a plan of
+    master/ticket drafts and per-row skip reasons; the IO-driving half
+    (`src/features/settings/_private/legacyImportRun.ts`) reads that snapshot via
+    `listMasters`/`listDocs` and applies the plan one `saveMaster`/`saveDoc` call at a time in a
+    sequential loop (not `Promise.all`), so a failure partway through leaves a clean, countable
+    boundary instead of an unordered pile of settled/rejected promises. Idempotent on both sides:
+    masters dedupe by normalized (trimmed, lowercased) name against a fresh read — "good enough at
+    migration-time scale," a documented limitation, not a general merge tool — while tickets carry a
+    required `LegacyId` that's stashed into the new ticket's own body as `ImportRef` (via
+    `TicketBody`'s existing `.passthrough()` parse) and checked against every existing ticket's own
+    `ImportRef` on re-run, so importing the same file twice — or two overlapping files — never
+    double-creates anything. `LegacyImportCard.tsx` (`src/features/settings/_private/`) previewing a
+    chosen file works with Settings locked (read-only, safe); committing needs the admin password
+    unlocked, the same asymmetry `BackupRestoreCard`'s own save-vs-restore split already established.
+    Committing an import triggers `db.exportBackup()` and downloads a `.bak` restore point first
+    (reusing `BackupRestoreCard`'s exact download-Blob pattern, now exported as
+    `timestampForFilename`) before any write happens — PLAN §14's "never exist without a way out"
+    rule applies here too. ✅ Verified: typecheck/lint/build clean; in-browser (memory adapter) happy-
+    path import across five master kinds plus a ticket landed correctly in Masters and Reports with
+    correct computed Net/Charge; re-importing the same file skipped all rows with accurate per-row
+    reasons; malformed JSON and zod-schema-validation errors (bad `BundleVersion`, missing
+    `LegacyId`) both surfaced clearly; preview-while-locked vs. commit-needs-unlock gating confirmed.
 
 ## Known gap
 

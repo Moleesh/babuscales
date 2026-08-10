@@ -122,7 +122,25 @@ machine, so a workstation that's off or asleep at the scheduled time sends nothi
 opened, same honesty as every other channel here having no retry queue. **Backup & restore**, and
 **Licence** (§2 above).
 
-## 5. Backup and restore
+## 5. Moving from an older BabuScales/VaultBill install
+
+**Settings → System → Legacy import (v1/v2).** For a site that already ran an older BabuScales
+product on this machine or another one, not for day-one setup — skip this section entirely if
+you're licensing a fresh install. Reads a documented JSON bundle (one file: parties, materials,
+vehicles, vehicle types, transporters, places, operators, stored tares and tickets, each an array
+under its own key — see `app/src/engines/importEngine/legacyImportBundle.ts` for the exact shape),
+**not the old product's database file directly** — there's no reader for that file built into this
+app, so the old data needs converting into this bundle shape first, by hand for a handful of
+records or with a short script for a full site's worth.
+
+Choosing a file previews it before anything is written: counts of what's new per record kind, and
+what's being skipped and why (already here, matched by name for masters or by the old system's own
+ticket id for tickets — so importing the same file twice, or a file that overlaps an earlier one,
+is safe and creates nothing twice). Needs the admin password to actually commit — previewing does
+not. A restore-point backup downloads automatically the moment you press import, before a single
+row is written, using the same mechanism as **Save a backup** below.
+
+## 6. Backup and restore
 
 **Settings → System → Backup & restore.** This is real data leaving the machine it lives on, not
 just a settings toggle:
@@ -139,7 +157,7 @@ only ever lives next to the database it protects doesn't survive that database's
 failing. Nothing here schedules backups automatically; taking one is a deliberate, manual action
 each time, same as restoring one.
 
-## 6. Masters — set these up before operators start weighing
+## 7. Masters — set these up before operators start weighing
 
 **Masters** (the `◈` tab) holds eight kinds of saved record: **Parties, Materials, Vehicles,
 Vehicle types, Transporters, Places, Operators, Stored tares.** None of it needs Settings unlocked —
@@ -147,7 +165,7 @@ Masters has its own add/search flow open to whoever's using the app. Populate at
 Materials and Vehicle types before go-live; Weighing's own dropdowns search this list, so an empty
 Masters screen means typing full names into every ticket by hand instead of picking from a list.
 
-## 7. QR verification (if you want it)
+## 8. QR verification (if you want it)
 
 Turning on **Connections → Integrations → QR verification page** starts a small LAN-only HTTP
 server (Tauri build only — not available in the browser demo) that serves a page proving a printed
@@ -157,7 +175,7 @@ slip prints the same address as plain text instead (no bitmap-graphics path exis
 printing here). LAN-only by default — to make it reachable from outside the site network, also
 configure **Remote access** (§4 above) with a Cloudflare Tunnel.
 
-## 8. What isn't built yet
+## 9. What isn't built yet
 
 Documented in full in [`app/README.md`](../app/README.md)'s "Known gap" section — the short version
 for an admin deciding what to promise a site:
@@ -180,6 +198,9 @@ for an admin deciding what to promise a site:
   be parked mid-sequence — all of a ticket's loads need capturing in one sitting before Save.
 - MiMaS integration is blocked on an external specification that doesn't exist yet; not a bug, not
   in progress.
+- Legacy import (§5 above) reads a documented JSON bundle, not a VaultBill database file directly —
+  there's no native v1/v2 reader. Converting a site's real old data into that bundle shape is a
+  manual or scripted step outside this tool's scope.
 
 None of this blocks day-to-day ticketing — it's what to tell a site up front rather than let them
 discover by hitting a dead button.
