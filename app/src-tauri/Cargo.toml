@@ -38,6 +38,7 @@ regex = "1"
 # dependency-light HTTP server rather than pulling in tokio/axum for one
 # small always-on listener. MIT licensed, ~4 small transitive deps.
 tiny_http = "0.12"
+keyring = { version = "3", features = ["windows-native"] }
 
 [profile.release]
 # Smallest installer over fastest build — PLAN §5 targets a ~10MB MSI.

@@ -425,17 +425,26 @@ a different and bigger feature the mock itself never specifies, so nothing here 
   (`qrcode-generator`, offline, no network call) pointing at that page, and the thermal slip prints
   the same URL as text (a dot-matrix/thermal roll driven by this codebase's plain-text renderer has
   no bitmap-graphics path — no ESC/POS raster driver exists — so a printed URL is what "real" looks
-  like there). LAN-only by design (PLAN §23 item 6's own answer: "local if hosted we can share the
-  hosting url") — a public option riding the same server via an opt-in Cloudflare Tunnel is still
-  open. `WeighingScreen`'s print flow is now the outbox's first real producer: printing a slip that
-  actually carries a `VerifyUrl` enqueues one `Channel: "Verification"` row (`DocId`, `TicketNo`,
-  `VerifyUrl`) for whatever eventually makes that page reachable off the LAN to consume — nothing
-  is enqueued when the integration is off or the ticket has no `DocId` yet, so there's never a job
-  for a slip that carried no QR. No worker drains this or any other channel yet: WhatsApp/SMS/
-  e-mail delivery, webhook firing, cloud backup, and accounting-format export are all still
-  unimplemented consumers, and no outdoor display board is driven. Anomaly detection is deferred by
-  decision (PLAN §21 Phase 8), Cloudflare Tunnel/Tailscale remote access and MiMaS are Phase 7
-  items, neither built.
+  like there). LAN-only by default (PLAN §23 item 6's own answer: "local if hosted we can share the
+  hosting url") — a public option is now real too: Settings → Connections' "Remote access" card
+  (PLAN §18) saves a Cloudflare Tunnel connector token straight to the Windows Credential Manager
+  (`src-tauri/src/security/mod.rs`, the `keyring` crate — never the settings table, never the
+  repository) and `src-tauri/src/net/tunnel.rs` spawns `cloudflared tunnel run --token …` as a
+  supervised child process when the switch is on. The tunnel itself (creating it, and mapping a
+  public hostname to `http://localhost:8420`) is a one-time step the operator does on their own
+  Cloudflare Zero Trust dashboard — this app never talks to the Cloudflare API and never learns a
+  hostname, and it never downloads `cloudflared`: if it isn't already on PATH, the toggle fails with
+  an actionable error rather than fetching a binary. Only the verification page rides this tunnel;
+  there is no remote admin surface, so "shared by QR + admin access" is only half built. Tailscale
+  remains the unbuilt private-mesh alternative. `WeighingScreen`'s print flow is now the outbox's
+  first real producer: printing a slip that actually carries a `VerifyUrl` enqueues one
+  `Channel: "Verification"` row (`DocId`, `TicketNo`, `VerifyUrl`) for whatever eventually makes
+  that page reachable off the LAN to consume — nothing is enqueued when the integration is off or
+  the ticket has no `DocId` yet, so there's never a job for a slip that carried no QR. No worker
+  drains this or any other channel yet: WhatsApp/SMS/e-mail delivery, webhook firing, cloud backup,
+  and accounting-format export are all still unimplemented consumers, and no outdoor display board
+  is driven. Anomaly detection is deferred by decision (PLAN §21 Phase 8); MiMaS is a Phase 7 item,
+  not built, blocked on a spec that doesn't exist yet.
 
 ## Carried over from the mock, verbatim
 

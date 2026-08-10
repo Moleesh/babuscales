@@ -19,6 +19,8 @@
 //! the shared "one background thread, a stop flag it polls" shape this
 //! copies.
 
+pub mod tunnel;
+
 use std::net::UdpSocket;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};

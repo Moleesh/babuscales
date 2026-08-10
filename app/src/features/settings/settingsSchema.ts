@@ -107,6 +107,18 @@ export const INTEGRATION_FIXTURES: readonly IntegrationFixture[] = [
     { key: "board", name: "Outdoor display board", config: "Port · protocol" },
 ];
 
+// PLAN §18's own separate "Remote access — Cloudflare Tunnel" spec — not
+// one of the mock's eight INTEGRATIONS fixtures (it doesn't appear in
+// demo/BabuScales-demo.html at all), so it isn't ported alongside them.
+// The connector token itself never lives in this schema, or in any
+// settings row — it's a secret (src-tauri/src/security/mod.rs, Windows
+// Credential Manager only), and this `Enabled` flag is the only part of
+// "on or off" that's safe to persist as ordinary config.
+const remoteAccessSchema = z.object({
+    Enabled: z.boolean(),
+});
+export type RemoteAccessConfig = z.infer<typeof remoteAccessSchema>;
+
 const integrationsSchema = z.object({
     whatsapp: z.boolean(),
     sms: z.boolean(),
@@ -138,6 +150,7 @@ export const settingsBodySchema = z.object({
     Connections: connectionsSchema,
     Printers: printersSchema,
     Integrations: integrationsSchema,
+    RemoteAccess: remoteAccessSchema,
     /** "Operator on duty" (mock's `#opChip`/Appearance pane `#setOp`) — a free-text label, not an account; deliberately not admin-gated. */
     OperatorName: z.string(),
     AdminPasswordHash: z.string(),
@@ -186,6 +199,11 @@ export const DEFAULT_PRINTERS: PrintersConfig = {
     A4: "HP LaserJet M1005",
     Mx: "Epson LX-310",
     Th: "TVS RP 3200 Star",
+};
+
+/** Opt-in, off by default (PLAN §18's own words, verbatim). */
+export const DEFAULT_REMOTE_ACCESS: RemoteAccessConfig = {
+    Enabled: false,
 };
 
 /** INTEGRATIONS' own `on:` flags, verbatim. */

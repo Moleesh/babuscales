@@ -15,6 +15,9 @@ import {
 } from "@engines/indicator";
 import type { IndicatorSource } from "@engines/indicator";
 import { createIndicatorSource } from "@engines/indicator/createIndicatorSource";
+import { createTunnelSource } from "@engines/tunnel/createTunnelSource";
+import { TunnelProvider } from "@engines/tunnel";
+import type { TunnelSource } from "@engines/tunnel";
 import { createVerificationServerSource } from "@engines/verification/createVerificationServerSource";
 import { VerificationServerProvider } from "@engines/verification";
 import type { VerificationServerSource } from "@engines/verification";
@@ -273,6 +276,26 @@ const VerificationServerSync = ({ source }: { source: VerificationServerSource }
     return null;
 };
 
+// Settings' Connections pane → Remote access "Turn on/off" toggle (PLAN
+// §18's own "Remote access — Cloudflare Tunnel, opt-in, off by default"),
+// same "Applied immediately" shape as VerificationServerSync above: flip it
+// on and the cloudflared connector starts (if a token is saved — `open`
+// reports a clear error otherwise, surfaced next time the pane checks
+// status) without a restart, flip it off and it stops. The noop source
+// (browser demo / memory adapter build) makes both calls harmless no-ops.
+const RemoteAccessSync = ({ source }: { source: TunnelSource }) => {
+    const { settings } = useSettings();
+    const enabled = settings.RemoteAccess.Enabled;
+    useEffect(() => {
+        if (enabled) {
+            void source.start();
+        } else {
+            void source.stop();
+        }
+    }, [source, enabled]);
+    return null;
+};
+
 // Settings' Connections pane writes through to the real serial adapter the
 // same "Applied immediately" way — opens (or reopens, on a config change)
 // the configured port on every save, including the very first one after
@@ -302,6 +325,7 @@ export const App = () => {
     const [db] = useState(() => createDataPort());
     const [indicator] = useState(() => createIndicatorSource());
     const [verificationServer] = useState(() => createVerificationServerSource());
+    const [tunnel] = useState(() => createTunnelSource());
     const [packs, setPacks] = useState<LanguagePack[]>([]);
 
     // Loaded from `config` (ConfigKind: "LanguagePack") — I18nProvider's own
@@ -340,10 +364,13 @@ export const App = () => {
                 <SettingsProvider>
                     <IndicatorProvider source={indicator}>
                         <VerificationServerProvider source={verificationServer}>
-                            <StabilityGateSync indicator={indicator} />
-                            <SerialConnectionSync indicator={indicator} />
-                            <VerificationServerSync source={verificationServer} />
-                            <Shell onAddLanguagePack={addLanguagePack} />
+                            <TunnelProvider source={tunnel}>
+                                <StabilityGateSync indicator={indicator} />
+                                <SerialConnectionSync indicator={indicator} />
+                                <VerificationServerSync source={verificationServer} />
+                                <RemoteAccessSync source={tunnel} />
+                                <Shell onAddLanguagePack={addLanguagePack} />
+                            </TunnelProvider>
                         </VerificationServerProvider>
                     </IndicatorProvider>
                 </SettingsProvider>

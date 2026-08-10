@@ -10,6 +10,7 @@ use rusqlite::Connection;
 
 use crate::devices::indicator::IndicatorState;
 use crate::error::AppError;
+use crate::net::tunnel::TunnelHandleState;
 use crate::net::VerificationServerState;
 
 pub struct AppState {
@@ -28,6 +29,10 @@ pub struct AppState {
     /// The QR verification LAN server, if running — same shape and same
     /// visibility reasoning as `indicator` above (`net`'s own doc comment).
     pub(crate) verification_server: VerificationServerState,
+    /// The Cloudflare Tunnel connector process, if running — same shape and
+    /// same visibility reasoning as `indicator`/`verification_server` above
+    /// (`net::tunnel`'s own doc comment).
+    pub(crate) tunnel: TunnelHandleState,
 }
 
 /// `unwrap()`/`expect()` are banned outside `main.rs` (docs/CodingStandards.md)

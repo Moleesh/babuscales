@@ -34,6 +34,7 @@ pub fn run() -> tauri::Result<()> {
                 db_path,
                 indicator: devices::indicator::new_state(),
                 verification_server: net::new_state(),
+                tunnel: net::tunnel::new_state(),
             });
             Ok(())
         })
@@ -66,6 +67,12 @@ pub fn run() -> tauri::Result<()> {
             commands::outbox::update_outbox,
             commands::backup::export_backup,
             commands::backup::import_backup,
+            commands::tunnel::save_tunnel_token,
+            commands::tunnel::clear_tunnel_token,
+            commands::tunnel::has_tunnel_token,
+            commands::tunnel::start_tunnel,
+            commands::tunnel::stop_tunnel,
+            commands::tunnel::tunnel_status,
         ])
         .run(tauri::generate_context!())
 }
