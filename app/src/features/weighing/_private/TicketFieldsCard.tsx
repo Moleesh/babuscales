@@ -2,16 +2,15 @@ import { Card } from "@components/Card";
 import { Field, FieldGrid } from "@components/Field";
 import { SearchableDropdown } from "@components/SearchableDropdown";
 import type { UseMasterCache } from "@db/useMasterCache";
-import { DEFAULT_TICKET_SCHEMA } from "@engines/schemaEngine";
+import { useSchema } from "@engines/schemaEngine";
+import { resolveLocalized } from "@i18n/types";
+import { useTranslation } from "@i18n/useTranslation";
 
 import { RecallBanner } from "../RecallBanner";
 import type { RecallOffer } from "../RecallBanner";
 import { formatTicketNo } from "../ticketNumber";
 import type { UseWeighingTicket } from "../useWeighingTicket";
 import styles from "../WeighingScreen.module.css";
-
-const fieldLabel = (fieldId: string): string =>
-    DEFAULT_TICKET_SCHEMA.Fields.find((field) => field.FieldId === fieldId)?.Label.en ?? fieldId;
 
 export interface TicketFieldsCardProps {
     ticket: UseWeighingTicket;
@@ -36,7 +35,19 @@ export const TicketFieldsCard = ({
     partyCache,
     materialCache,
     transporterCache,
-}: TicketFieldsCardProps) => (
+}: TicketFieldsCardProps) => {
+    // Reads the live, admin-editable schema (Settings → Fields & language,
+    // task #50) rather than the hardcoded DEFAULT_TICKET_SCHEMA constant, and
+    // resolves through the active language — previously this always showed
+    // `.en` regardless of the language toggle, a real (if minor) bug.
+    const { ticketSchema } = useSchema();
+    const { lang } = useTranslation();
+    const fieldLabel = (fieldId: string): string => {
+        const field = ticketSchema.Fields.find((candidate) => candidate.FieldId === fieldId);
+        return field ? resolveLocalized(field.Label, lang) : fieldId;
+    };
+
+    return (
     <Card
         title={<span className="lbl">Ticket</span>}
         headerRight={<span className="chip num">{formatTicketNo(ticket.docSeq)}</span>}
@@ -164,4 +175,5 @@ export const TicketFieldsCard = ({
             </Field>
         </FieldGrid>
     </Card>
-);
+    );
+};

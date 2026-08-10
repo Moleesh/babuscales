@@ -514,6 +514,41 @@ on Reports and Dashboard).
     correct computed Net/Charge; re-importing the same file skipped all rows with accurate per-row
     reasons; malformed JSON and zod-schema-validation errors (bad `BundleVersion`, missing
     `LegacyId`) both surfaced clearly; preview-while-locked vs. commit-needs-unlock gating confirmed.
+35. **Settings: real Field schema pane.** PLAN §8/§8.3's field-definition-driven schema system
+    (`src/engines/schemaEngine/` — `Schema`, `Field` union, `DEFAULT_TICKET_SCHEMA`) existed since
+    item 9 but was pure and dormant: nothing loaded it from or saved it to `DataPort`, and its only
+    reader (`TicketFieldsCard.tsx`) read the hardcoded constant directly, always in English,
+    ignoring whichever language was active — a real, if minor, existing bug. This wires the engine
+    up for real, mirroring item 32's language-pack precedent field-for-field: `Schema extends
+    JsonRecord` the same reason `LanguagePack` does (`schemaEngine/types.ts`); an uploaded schema
+    `.json` is untrusted the moment it leaves the file picker, so `schemaEngine/schemaJson.ts`
+    hand-mirrors every `Field` variant via a zod discriminated union (`ticketSchemaSchema`,
+    `parseTicketSchema`) — documented as needing manual sync with `types.ts`, the same tradeoff
+    `legacyImportBundle.ts` already made; `db/schema.ts` holds the IO half (`loadTicketSchema`/
+    `saveTicketSchema`), keyed by a fixed `ConfigId: "schema-Ticket"` (one *active* schema per
+    DocKind, not a history) using the already-reserved `ConfigKind: "Schema"` (`db/types.ts`'s
+    `CONFIG_KINDS`, unused until now); and `App.tsx` owns the loaded state plus a save-and-update
+    callback, same split as `packs`/`addLanguagePack`. Unlike language packs, the schema is reached
+    via a real `SchemaProvider`/`useSchema()` context (`engines/schemaEngine/`, following the
+    `engines/tunnel/` precedent for a Provider living inside an engine folder) rather than threaded
+    down as a prop through four component layers — `FieldsLanguagePane.tsx` and
+    `TicketFieldsCard.tsx` both call `useSchema()` directly. The scope is deliberately narrow, not
+    the full theoretical feature: the schema is genuinely persisted and admin-editable, and its
+    `Label`s genuinely drive Weighing's five existing built-in fields live, correctly resolved
+    through whichever language is active (`resolveLocalized`, fixing the `.en`-only bug) — but
+    schema-driven field *rendering* (auto-generating inputs for a custom `FieldId`, evaluating
+    `VisibleWhen`/`RequiredWhen`/`ReadOnlyWhen`/`Validate` formulas against the ticket form) is a
+    separate, much larger feature this app still doesn't have; a schema introducing new FieldIds
+    validates and saves but its extra fields stay inert. `FieldsLanguagePane.tsx`'s Field schema
+    card shows the live schema in a table (Field/Kind/Label/Indexed), an `unlocked`-gated upload
+    (mirroring the language-pack drop zone exactly) and a Reset-to-default action. ✅ Verified:
+    typecheck/lint/build clean; in-browser (dev server, memory adapter) confirmed the default
+    schema loads and renders on both the Settings table and Weighing's field labels; uploading a
+    relabeled schema updated both live, including a Tamil `Label` resolving correctly after
+    switching the language toggle (proving the `.en`-only bug is actually fixed, not just
+    reworded); malformed JSON was rejected with a clear message and left the prior schema intact;
+    Reset to default restored the built-in labels; the upload control and Reset button are both
+    gated behind Settings being unlocked.
 
 ## Known gap
 
@@ -554,17 +589,20 @@ a different and bigger feature the mock itself never specifies, so nothing here 
   (the printed rows' own earliest–latest timestamp) rather than fabricating one.
 - **Settings** — Weighing, System, Connections and Print & printers are fully wired (items 17, 21,
   24); Appearance is partly wired (Operator-on-duty is real, Theme is a placeholder — item 18);
-  Fields & language is now half wired (item 28: Language packs are real, Field schema stays a
-  placeholder — see "Schema-driven rendering" below). Within System, ticket
-  numbering is live and `Formats.AmountDp` now reaches every money display (item 20); date/time
-  formats are still only persisted, unread elsewhere. The stale-tare threshold
-  (`STORED_TARE_STALE_AFTER_DAYS` in `src/db/storedTare.ts`) stays a fixed constant — the mock
-  itself never exposes it as a setting either (`ex:"expired"` is static demo master data, not
-  computed from a configurable day count).
-- **Schema-driven rendering** — Weighing pulls field _labels_ from `DEFAULT_TICKET_SCHEMA` but
-  does not render fields generically from schema/formula config; that needs a Settings pane to
-  edit `Schema` rows first (the "Field schema" half of Fields & language — item 28 built the
-  "Language packs" half only, a separate and much smaller piece).
+  Fields & language is now fully wired (item 28: Language packs; item 35: Field schema — labels and
+  reordering/indexing are real and persisted, though see "Schema-driven rendering" below for what's
+  still not built). Within System, ticket numbering is live and `Formats.AmountDp` now reaches
+  every money display (item 20); date/time formats are still only persisted, unread elsewhere. The
+  stale-tare threshold (`STORED_TARE_STALE_AFTER_DAYS` in `src/db/storedTare.ts`) stays a fixed
+  constant — the mock itself never exposes it as a setting either (`ex:"expired"` is static demo
+  master data, not computed from a configurable day count).
+- **Schema-driven rendering** — item 35 made the schema itself real, persisted, and admin-editable
+  (Settings → Fields & language's "Field schema" card), and Weighing's five built-in fields now
+  read their `Label`s from that live, saved `Schema` row rather than a hardcoded constant. What's
+  still not built: Weighing does not render fields *generically* from schema config — a custom
+  `FieldId` in an uploaded schema validates and saves but adds no input to the form, and
+  `VisibleWhen`/`RequiredWhen`/`ReadOnlyWhen`/`Validate` formulas are never evaluated against the
+  ticket. That remains a separate, much larger feature.
 - **Billing** — Charge is real (item 20: `engines/billing`, wired into Weighing, Reports,
   Dashboard, and the print slip), but flat and hardcoded (`TARE_CHARGE_INR` + `GROSS_CHARGE_INR`),
   matching the mock's own actual runtime behaviour rather than its schema's aspirational

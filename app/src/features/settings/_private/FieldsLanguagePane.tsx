@@ -3,8 +3,11 @@ import { useState } from "react";
 import { Card } from "@components/Card";
 import { DataTable } from "@components/DataTable";
 import type { DataTableColumn } from "@components/DataTable";
+import { DEFAULT_TICKET_SCHEMA, ticketSchemaSchema, useSchema } from "@engines/schemaEngine";
+import type { Field } from "@engines/schemaEngine";
 import { languagePackSchema } from "@i18n/schemas";
 import type { LanguagePack } from "@i18n/types";
+import { resolveLocalized } from "@i18n/types";
 import { useTranslation } from "@i18n/useTranslation";
 
 import { useSettings } from "../useSettings";
@@ -31,30 +34,47 @@ interface FlashMessage {
     bad: boolean;
 }
 
-// Fields & language pane (demo/BabuScales-demo.html's `data-pane="fields"`)
-// — the Language packs half only. "Field schema" (drop a schema .json to
-// change field labels/required-ness live) stays a documented placeholder:
-// it needs schema-driven field rendering, a separate and much larger
-// feature this app doesn't have (app/README.md known gap) — Weighing's
-// fields are a fixed layout, not read from an uploaded Schema row.
+const fieldColumns = (lang: string): DataTableColumn<Field>[] => [
+    { key: "id", header: "Field", render: (field) => field.FieldId },
+    { key: "kind", header: "Kind", render: (field) => field.Kind },
+    { key: "label", header: "Label", render: (field) => resolveLocalized(field.Label, lang) },
+    { key: "indexed", header: "Indexed", render: (field) => (field.Indexed ? "Yes" : "") },
+];
+
+// Fields & language pane (demo/BabuScales-demo.html's `data-pane="fields"`).
 //
-// Language packs are simpler, and every other piece already existed —
-// i18n/schemas.ts's languagePackSchema, I18nProvider's own doc comment
-// ("loading is the caller's job") — just never wired to a real upload
-// path. `useTranslation().packs` is the live, already-loaded list
-// (App.tsx loads it from `config` rows at startup); `onAddLanguagePack`
-// is how a new one gets in — see App.tsx's `addLanguagePack`.
+// Field schema (task #50, PLAN §8.3) — the schema itself is real and
+// persisted (`config` row, ConfigKind: "Schema", db/schema.ts) and its
+// Labels genuinely drive Weighing's five built-in fields live
+// (TicketFieldsCard.tsx reads it via `useSchema()`). What's still NOT
+// built — documented, not attempted — is schema-driven field *rendering*:
+// uploading a schema with a new custom FieldId doesn't add an input to
+// Weighing, and `VisibleWhen`/`RequiredWhen`/`ReadOnlyWhen`/`Validate`
+// formulas aren't evaluated against the ticket form. That's a separate,
+// much larger feature (app/README.md known gap). Uploading a schema that
+// only relabels/reorders/indexes the five existing FieldIds works today;
+// a schema introducing new ones is accepted (it validates) but its extra
+// fields are simply inert until that feature exists.
 //
-// The mock's own `dropLang` is a real HTML5 drag-and-drop zone; this
-// ports the click-to-choose half only (the `<input type="file">` the
-// mock's own drop zone is built around) — same real parse/validate/save
-// path, without also wiring `dragenter`/`dragover`/`drop` listeners
-// nothing else in this codebase uses yet.
+// Language packs: i18n/schemas.ts's languagePackSchema, I18nProvider's own
+// doc comment ("loading is the caller's job") — `useTranslation().packs`
+// is the live, already-loaded list (App.tsx loads it from `config` rows at
+// startup); `onAddLanguagePack` is how a new one gets in — see App.tsx's
+// `addLanguagePack`.
+//
+// The mock's own `dropLang`/`dropSchema` are real HTML5 drag-and-drop
+// zones; this ports the click-to-choose half only (the `<input
+// type="file">` each mock drop zone is built around) — same real
+// parse/validate/save path, without also wiring `dragenter`/`dragover`/
+// `drop` listeners nothing else in this codebase uses yet.
 export const FieldsLanguagePane = ({ onAddLanguagePack }: FieldsLanguagePaneProps) => {
-    const { packs } = useTranslation();
+    const { packs, lang } = useTranslation();
+    const { ticketSchema, setTicketSchema } = useSchema();
     const { unlocked } = useSettings();
     const [message, setMessage] = useState<FlashMessage | null>(null);
     const [busy, setBusy] = useState(false);
+    const [schemaMessage, setSchemaMessage] = useState<FlashMessage | null>(null);
+    const [schemaBusy, setSchemaBusy] = useState(false);
 
     const handleFile = async (file: File): Promise<void> => {
         setBusy(true);
@@ -83,14 +103,98 @@ export const FieldsLanguagePane = ({ onAddLanguagePack }: FieldsLanguagePaneProp
         }
     };
 
+    const handleSchemaFile = async (file: File): Promise<void> => {
+        setSchemaBusy(true);
+        try {
+            const text = await file.text();
+            const parsed = ticketSchemaSchema.safeParse(JSON.parse(text));
+            if (!parsed.success) {
+                setSchemaMessage({
+                    text: `Not a field schema — ${parsed.error.issues[0]?.message ?? "invalid shape"}`,
+                    bad: true,
+                });
+                return;
+            }
+            await setTicketSchema(parsed.data);
+            setSchemaMessage({
+                text: `Applied · ${parsed.data.Fields.length} fields`,
+                bad: false,
+            });
+        } catch (err) {
+            setSchemaMessage({
+                text: `Not valid JSON — ${err instanceof Error ? err.message : String(err)}`,
+                bad: true,
+            });
+        } finally {
+            setSchemaBusy(false);
+        }
+    };
+
+    const resetSchema = async (): Promise<void> => {
+        setSchemaBusy(true);
+        try {
+            await setTicketSchema(DEFAULT_TICKET_SCHEMA);
+            setSchemaMessage({ text: "Reset to the built-in default schema", bad: false });
+        } finally {
+            setSchemaBusy(false);
+        }
+    };
+
     return (
         <div className={styles.grid}>
-            <Card title={<span className="lbl">Field schema</span>}>
-                <p className={styles.hint}>
-                    Uploading a schema .json to change field labels and required-ness needs
-                    schema-driven field rendering, which isn&apos;t built yet (app/README.md known
-                    gap) — Weighing&apos;s fields are still a fixed layout.
-                </p>
+            <Card
+                title={<span className="lbl">Field schema</span>}
+                headerRight={<span className="chip num">{ticketSchema.Fields.length} fields</span>}
+            >
+                <div className={styles.body}>
+                    <p className={styles.hint}>
+                        Relabels, reorders, or indexes Weighing&apos;s existing fields. Custom
+                        FieldIds validate and save but don&apos;t appear on the form yet —
+                        schema-driven field rendering isn&apos;t built (app/README.md known gap).
+                    </p>
+                    <label
+                        className={`${styles.drop} ${!unlocked ? styles.dropDisabled : ""}`}
+                    >
+                        <span className={styles.dropIcon}>⬆</span>
+                        <span>
+                            {schemaBusy
+                                ? "Applying…"
+                                : "Drop a field schema .json here, or click to choose"}
+                        </span>
+                        <input
+                            type="file"
+                            accept=".json,application/json"
+                            hidden
+                            disabled={schemaBusy || !unlocked}
+                            onChange={(event) => {
+                                const file = event.target.files?.[0];
+                                event.target.value = "";
+                                if (file) void handleSchemaFile(file);
+                            }}
+                        />
+                    </label>
+                    {unlocked && (
+                        <button
+                            type="button"
+                            className={styles.resetButton}
+                            disabled={schemaBusy}
+                            onClick={() => void resetSchema()}
+                        >
+                            Reset to default
+                        </button>
+                    )}
+                    {schemaMessage && (
+                        <p className={schemaMessage.bad ? styles.bad : styles.applied}>
+                            {schemaMessage.text}
+                        </p>
+                    )}
+                    <DataTable
+                        columns={fieldColumns(lang)}
+                        rows={ticketSchema.Fields}
+                        getRowId={(field) => field.FieldId}
+                        emptyMessage="No fields in this schema"
+                    />
+                </div>
             </Card>
             <Card
                 title={<span className="lbl">Language packs</span>}

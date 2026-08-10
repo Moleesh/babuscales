@@ -1,4 +1,4 @@
-import type { MasterKind } from "@db/types";
+import type { JsonRecord, MasterKind } from "@db/types";
 import type { Localized } from "@i18n/types";
 
 // The field type system — PLAN §8. A site's ticket/invoice fields are
@@ -108,7 +108,11 @@ export type Field =
     | MediaField
     | NoteField;
 
-export interface Schema {
+// Extends `JsonRecord` (same reason `LanguagePack` does, i18n/types.ts) — a
+// schema is saved as a `config` row's `Body` verbatim (ConfigKind:
+// "Schema", db/schema.ts), and uploaded as a file the same way a language
+// pack is (task #50).
+export interface Schema extends JsonRecord {
     SchemaId: string;
     /** "Ticket" | "Invoice" — matches DocKind, kept as a string so a future doc kind needs no engine change. */
     DocKind: string;

@@ -6,8 +6,10 @@ import { ContextualHelp } from "@components/ContextualHelp";
 import { WeightDisplay } from "@components/WeightDisplay";
 import { createDataPort } from "@db/createDataPort";
 import { DataPortProvider } from "@db/DataPortProvider";
+import { loadTicketSchema, saveTicketSchema } from "@db/schema";
 import type { DocRow } from "@db/types";
 import { useDataPort } from "@db/useDataPort";
+import { createEmailSource } from "@engines/email/createEmailSource";
 import {
     IndicatorProvider,
     isSerialIndicatorSource,
@@ -16,13 +18,14 @@ import {
 import type { IndicatorSource } from "@engines/indicator";
 import { createIndicatorSource } from "@engines/indicator/createIndicatorSource";
 import { createLicensingSource } from "@engines/licensing/createLicensingSource";
-import { createEmailSource } from "@engines/email/createEmailSource";
-import { createTunnelSource } from "@engines/tunnel/createTunnelSource";
+import { DEFAULT_TICKET_SCHEMA, SchemaProvider } from "@engines/schemaEngine";
+import type { Schema } from "@engines/schemaEngine";
 import { TunnelProvider } from "@engines/tunnel";
 import type { TunnelSource } from "@engines/tunnel";
-import { createVerificationServerSource } from "@engines/verification/createVerificationServerSource";
+import { createTunnelSource } from "@engines/tunnel/createTunnelSource";
 import { VerificationServerProvider } from "@engines/verification";
 import type { VerificationServerSource } from "@engines/verification";
+import { createVerificationServerSource } from "@engines/verification/createVerificationServerSource";
 import { CamerasScreen } from "@features/cameras";
 import { DashboardScreen } from "@features/dashboard";
 import { LicenseProvider, renderLicenseBanner, useLicense } from "@features/licensing";
@@ -410,6 +413,7 @@ export const App = () => {
     const [tunnel] = useState(() => createTunnelSource());
     const [licensing] = useState(() => createLicensingSource());
     const [packs, setPacks] = useState<LanguagePack[]>([]);
+    const [ticketSchema, setTicketSchemaState] = useState<Schema>(DEFAULT_TICKET_SCHEMA);
 
     // Loaded from `config` (ConfigKind: "LanguagePack") — I18nProvider's own
     // doc comment: "loading is the caller's job", this is that job. A fresh
@@ -441,6 +445,29 @@ export const App = () => {
         setPacks((prev) => [...prev.filter((existing) => existing.Code !== pack.Code), pack]);
     };
 
+    // Loaded from `config` (ConfigKind: "Schema") — same "caller loads,
+    // provider just wires it up" split as `packs` above. A fresh install has
+    // no row yet, so `loadTicketSchema` itself falls back to
+    // `DEFAULT_TICKET_SCHEMA` (db/schema.ts) rather than seeding a row here;
+    // the schema only gets persisted once a site actually saves its own.
+    useEffect(() => {
+        let cancelled = false;
+        void loadTicketSchema(db).then((loaded) => {
+            if (!cancelled) setTicketSchemaState(loaded);
+        });
+        return () => {
+            cancelled = true;
+        };
+    }, [db]);
+
+    // Passed to SchemaProvider as `onSetTicketSchema` — reachable from
+    // anywhere in the tree via `useSchema()`, so unlike `addLanguagePack`
+    // this isn't threaded down as a prop.
+    const setTicketSchema = async (schema: Schema): Promise<void> => {
+        await saveTicketSchema(db, schema);
+        setTicketSchemaState(schema);
+    };
+
     return (
         <I18nProvider packs={packs}>
             <DataPortProvider db={db}>
@@ -449,12 +476,14 @@ export const App = () => {
                         <IndicatorProvider source={indicator}>
                             <VerificationServerProvider source={verificationServer}>
                                 <TunnelProvider source={tunnel}>
-                                    <StabilityGateSync indicator={indicator} />
-                                    <SerialConnectionSync indicator={indicator} />
-                                    <VerificationServerSync source={verificationServer} />
-                                    <RemoteAccessSync source={tunnel} />
-                                    <DailySummarySync />
-                                    <Shell onAddLanguagePack={addLanguagePack} />
+                                    <SchemaProvider ticketSchema={ticketSchema} onSetTicketSchema={setTicketSchema}>
+                                        <StabilityGateSync indicator={indicator} />
+                                        <SerialConnectionSync indicator={indicator} />
+                                        <VerificationServerSync source={verificationServer} />
+                                        <RemoteAccessSync source={tunnel} />
+                                        <DailySummarySync />
+                                        <Shell onAddLanguagePack={addLanguagePack} />
+                                    </SchemaProvider>
                                 </TunnelProvider>
                             </VerificationServerProvider>
                         </IndicatorProvider>

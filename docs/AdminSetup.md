@@ -59,10 +59,13 @@ change it from the top-bar chip, by design, since it's just a name for the ticke
 Settings is one screen with six tabs. What's real and wired up in each, as of this build:
 
 **Fields & language** — *Language packs* is real: drop a language-pack `.json` (or click to choose)
-and it applies immediately, alongside English, without a restart. *Field schema* — changing field
-labels/required-ness by uploading a schema — is a documented placeholder; it needs schema-driven
-field rendering, which doesn't exist yet, so Weighing's fields stay a fixed layout regardless of
-what's uploaded here.
+and it applies immediately, alongside English, without a restart. *Field schema* is real too: drop
+a schema `.json` to relabel, reorder, or index Weighing's five built-in fields — the change is
+saved and shows up in the active language immediately, with a Reset-to-default action if needed.
+What it can't do yet: a schema introducing a brand-new field (one Weighing doesn't already have)
+validates and saves, but doesn't add an input to the ticket form — that needs schema-driven field
+rendering, which doesn't exist yet, so Weighing's *layout* (which fields exist, not what they're
+labelled) stays fixed regardless of what's uploaded here.
 
 **Print & printers** — *Printers* picks which registered printer each paper size (A4, dot-matrix,
 thermal) prints to; the change applies immediately, no save button. Every ticket print goes through
