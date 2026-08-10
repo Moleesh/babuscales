@@ -79,11 +79,6 @@ export const WeighingScreen = ({ ticket }: WeighingScreenProps) => {
         setRefreshToken((n) => n + 1);
     };
 
-    const handlePrint = async (): Promise<void> => {
-        await ticket.print();
-        setRefreshToken((n) => n + 1);
-    };
-
     const armed =
         reading.Stable &&
         reading.WeightKg > 0 &&
@@ -124,6 +119,33 @@ export const WeighingScreen = ({ ticket }: WeighingScreenProps) => {
     // verify yet) or while the server itself is off/unavailable.
     const verifyBase = useVerificationUrl(settings.Integrations.qr);
     const verifyUrl = verifyBase && ticket.docId ? `${verifyBase}/v/${ticket.docId}` : null;
+
+    // PLAN §18 — "all integrations... through the durable outbox, so none
+    // can delay or lose a ticket." The LAN verification page itself needs
+    // no queuing (task #33's server reads the doc straight from the DB on
+    // every hit) — this row exists for whatever eventually makes that page
+    // reachable *publicly* (task #36's Cloudflare Tunnel), so that work has
+    // something durable to consume the moment it exists, rather than
+    // needing its own detection of "which tickets were printed with a QR."
+    // Only enqueued when a real VerifyUrl was actually printed — no job
+    // for a slip that carried no QR (feature off, or printed before the
+    // ticket had a DocId). No worker drains this channel yet
+    // (app/README.md known gap, same as the other seven Integrations
+    // rows).
+    const handlePrint = async (): Promise<void> => {
+        await ticket.print();
+        if (verifyUrl && ticket.docId) {
+            await db.enqueueOutbox({
+                Channel: "Verification",
+                Body: {
+                    DocId: ticket.docId,
+                    TicketNo: formatTicketNo(ticket.docSeq),
+                    VerifyUrl: verifyUrl,
+                },
+            });
+        }
+        setRefreshToken((n) => n + 1);
+    };
 
     const slipData = useMemo(
         () =>

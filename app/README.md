@@ -427,10 +427,15 @@ a different and bigger feature the mock itself never specifies, so nothing here 
   no bitmap-graphics path — no ESC/POS raster driver exists — so a printed URL is what "real" looks
   like there). LAN-only by design (PLAN §23 item 6's own answer: "local if hosted we can share the
   hosting url") — a public option riding the same server via an opt-in Cloudflare Tunnel is still
-  open. Still nothing behind the other seven switches: no outbox worker delivers WhatsApp/SMS/
-  e-mail, no webhook fires, no cloud backup provider is wired, no accounting-format export runs, no
-  outdoor display board is driven. Anomaly detection is deferred by decision (PLAN §21 Phase 8),
-  Cloudflare Tunnel/Tailscale remote access and MiMaS are Phase 7 items, neither built.
+  open. `WeighingScreen`'s print flow is now the outbox's first real producer: printing a slip that
+  actually carries a `VerifyUrl` enqueues one `Channel: "Verification"` row (`DocId`, `TicketNo`,
+  `VerifyUrl`) for whatever eventually makes that page reachable off the LAN to consume — nothing
+  is enqueued when the integration is off or the ticket has no `DocId` yet, so there's never a job
+  for a slip that carried no QR. No worker drains this or any other channel yet: WhatsApp/SMS/
+  e-mail delivery, webhook firing, cloud backup, and accounting-format export are all still
+  unimplemented consumers, and no outdoor display board is driven. Anomaly detection is deferred by
+  decision (PLAN §21 Phase 8), Cloudflare Tunnel/Tailscale remote access and MiMaS are Phase 7
+  items, neither built.
 
 ## Carried over from the mock, verbatim
 
