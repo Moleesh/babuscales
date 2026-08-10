@@ -39,10 +39,46 @@
 }
 .markDeck {
     fill: var(--led);
+    transform-origin: center;
+    animation: markDeckGlow 3s ease-in-out infinite;
 }
 .markCell,
 .markBase {
     fill: var(--led-dim);
+}
+.markCell {
+    animation: markCellPulse 3s ease-in-out infinite;
+}
+.markCell:nth-of-type(2) {
+    animation-delay: 0s;
+}
+.markCell:nth-of-type(3) {
+    animation-delay: 1.5s;
+}
+@keyframes markDeckGlow {
+    0%,
+    100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.55;
+    }
+}
+@keyframes markCellPulse {
+    0%,
+    35%,
+    100% {
+        fill: var(--led-dim);
+    }
+    15% {
+        fill: var(--led);
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .markDeck,
+    .markCell {
+        animation: none;
+    }
 }
 .brand {
     font-size: 0.9375rem;

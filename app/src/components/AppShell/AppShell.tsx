@@ -44,7 +44,7 @@ export const AppShell = ({
                     <BrandMark />
                     <div style={{ minWidth: 0 }}>
                         <div className={styles.brand}>
-                            Babu<em>Scale</em>
+                            Babu<em>Scales</em>
                         </div>
                         <div className={styles.site}>{siteLabel}</div>
                     </div>
