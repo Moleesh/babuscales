@@ -88,3 +88,19 @@
     margin: 0;
     line-height: 1.6;
 }
+
+/* Ported from the mock's own ".formula"/".formula em" — the derivation
+   text under the calc grid (Net/Charge/Value), demo/BabuScale-demo.html's
+   `renderCalc()`. */
+.formula {
+    margin-top: 10px;
+    display: grid;
+    gap: 4px;
+    font-size: 0.6875rem;
+    color: var(--dim);
+    font-family: var(--mono);
+}
+.formula em {
+    color: var(--text);
+    font-style: normal;
+}

@@ -7,6 +7,8 @@ import type { DataTableColumn } from "@components/DataTable";
 import { Field, FieldGrid } from "@components/Field";
 import { SegmentedControl } from "@components/SegmentedControl";
 import type { SegmentedOption } from "@components/SegmentedControl";
+import { formatMoney } from "@constants/numberFormat";
+import { getMaterialRate } from "@db/materialBody";
 import { isStoredTareBody, isStoredTareStale, storedTareAgeDays } from "@db/storedTare";
 import type { MasterKind, MasterRow } from "@db/types";
 import { useMasterCache } from "@db/useMasterCache";
@@ -22,6 +24,7 @@ interface MasterFormState {
     weightKg: string;
     capturedAt: string;
     partyName: string;
+    rate: string;
 }
 
 const emptyForm = (): MasterFormState => ({
@@ -30,6 +33,7 @@ const emptyForm = (): MasterFormState => ({
     weightKg: "",
     capturedAt: "",
     partyName: "",
+    rate: "",
 });
 
 const toDateTimeLocal = (iso: string): string => {
@@ -47,14 +51,17 @@ const formFromRow = (row: MasterRow): MasterFormState => {
             weightKg: String(row.Body.WeightKg),
             capturedAt: toDateTimeLocal(row.Body.CapturedAt),
             partyName: row.Body.PartyName ?? "",
+            rate: "",
         };
     }
+    const rate = getMaterialRate(row.Body);
     return {
         name: row.Name,
         notes: typeof row.Body.Notes === "string" ? row.Body.Notes : "",
         weightKg: "",
         capturedAt: "",
         partyName: "",
+        rate: rate !== null ? String(rate) : "",
     };
 };
 
@@ -111,7 +118,12 @@ export const MastersScreen = () => {
                               : new Date().toISOString(),
                           PartyName: form.partyName.trim() || undefined,
                       }
-                    : { Notes: form.notes.trim() || undefined };
+                    : activeKind === "Material"
+                      ? {
+                            Notes: form.notes.trim() || undefined,
+                            Rate: form.rate.trim() ? Number(form.rate) : undefined,
+                        }
+                      : { Notes: form.notes.trim() || undefined };
             const row = await save({
                 MasterId: selected?.MasterId,
                 MasterKind: activeKind,
@@ -182,11 +194,22 @@ export const MastersScreen = () => {
               ]
             : [
                   { key: "name", header: "Name", render: (row) => row.Name },
-                  {
-                      key: "notes",
-                      header: "Notes",
-                      render: (row) => (typeof row.Body.Notes === "string" ? row.Body.Notes : "—"),
-                  },
+                  activeKind === "Material"
+                      ? {
+                            key: "rate",
+                            header: "Rate / t",
+                            numeric: true,
+                            render: (row) => {
+                                const rate = getMaterialRate(row.Body);
+                                return rate !== null ? formatMoney(rate, 2) : "—";
+                            },
+                        }
+                      : {
+                            key: "notes",
+                            header: "Notes",
+                            render: (row) =>
+                                typeof row.Body.Notes === "string" ? row.Body.Notes : "—",
+                        },
                   {
                       key: "active",
                       header: "Status",
@@ -289,7 +312,7 @@ export const MastersScreen = () => {
                             </Field>
                         </FieldGrid>
                     ) : (
-                        <FieldGrid columns={2}>
+                        <FieldGrid columns={activeKind === "Material" ? 3 : 2}>
                             <Field id="mfName" label={{ en: "Name" }}>
                                 <input
                                     id="mfName"
@@ -310,6 +333,20 @@ export const MastersScreen = () => {
                                     autoComplete="off"
                                 />
                             </Field>
+                            {activeKind === "Material" && (
+                                <Field id="mfRate" label={{ en: "Rate / t" }}>
+                                    <input
+                                        id="mfRate"
+                                        type="number"
+                                        inputMode="decimal"
+                                        min={0}
+                                        value={form.rate}
+                                        onChange={(event) =>
+                                            setForm({ ...form, rate: event.target.value })
+                                        }
+                                    />
+                                </Field>
+                            )}
                         </FieldGrid>
                     )}
                     <div className={styles.formActions}>

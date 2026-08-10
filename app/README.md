@@ -286,6 +286,22 @@ on Reports and Dashboard).
     deferred template-list card would have been the other user). ✅ Verified in-browser: unlocked
     admin, turned WhatsApp off (badge disappeared, header flashed "WhatsApp disabled", button
     relabelled "Turn on"), clicked E-mail's Configure and confirmed the exact flash text.
+26. **Real "Value" — Material.Rate, and the formula breakdown that shows it.** The mock's own live
+    calc (`recalculate()`: `value: net != null && mat ? Math.round(net / 1000 * mat.rate) : null`)
+    turned out to be real too, same discovery as item 25's Integrations — it just isn't a fifth box
+    in the `.calc` grid, it lives in a `#formula` derivation paragraph underneath (`renderCalc()`),
+    ported here for the first time as `_private/CalcFormula.tsx`. Needed a real field to read:
+    Material master rows were Name/Notes only, so `MastersScreen.tsx` grew a Rate/t field and
+    table column for that one kind (`db/materialBody.ts`'s `getMaterialRate`), matching the mock's
+    own read-only `mTblMat` header exactly. `engines/billing/value.ts`'s `computeValue` is
+    hand-computed, not run through `engines/formulaEngine` on the schema's aspirational
+    `"Round(Net / 1000 * Material.Rate, 0)"` string — same precedent `computeCharge` already set
+    one file over, for the same reason: the mock's own runtime never interprets that formula
+    either. The Value line only appears once a Material with a real Rate is selected; most demo
+    tickets still show just Net and Charge, exactly like the mock. ✅ Verified in-browser: gave
+    M-Sand a ₹1,250/t rate in Masters, captured a real Tare (12,370 kg) and Gross (33,757 kg) on a
+    ticket with M-Sand selected, and confirmed all three derivation lines rendered correctly —
+    including `21.387 × ₹1,250 = ₹26,734.00`, the correct rounded result.
 
 ## Known gap
 
@@ -311,8 +327,11 @@ a different and bigger feature the mock itself never specifies, so nothing here 
 - **Masters** — client-side substring search over a per-kind cache, not FTS5; a plain table, not
   virtualised/keyset-paginated; no merge-duplicates or bulk import/export. Fine at demo/site scale,
   not at 100,000 rows.
-- **Master field richness** — generic Name/Notes only, except StoredTare. No GST fields on Party,
-  no Vehicle↔VehicleType linkage.
+- **Master field richness** — generic Name/Notes only, except StoredTare and now Material (item
+  26's Rate field). No GST fields on Party — the mock never defines one either (its static `PARTIES`
+  fixture carries no GST data, only the invoice header's own hardcoded GSTIN string); no
+  Vehicle↔VehicleType linkage — the mock's `VEHICLES` fixture has a `ty` string per row, but it's
+  never a real foreign key into a `VehicleType` master, just display text.
 - **Recall** (PLAN §9.2) — a simplified, statically-positioned inline banner (`RecallBanner`), not
   the mock's viewport-positioned popover.
 - **Reports has no date-range filter** — the mock's `rFrom`/`rTo` inputs weren't ported; both
@@ -330,12 +349,14 @@ a different and bigger feature the mock itself never specifies, so nothing here 
 - **Schema-driven rendering** — Weighing pulls field _labels_ from `DEFAULT_TICKET_SCHEMA` but
   does not render fields generically from schema/formula config; that needs a Settings pane to
   edit `Schema` rows first.
-- **Billing** — Charge is real now (item 20: `engines/billing`, wired into Weighing, Reports,
+- **Billing** — Charge is real (item 20: `engines/billing`, wired into Weighing, Reports,
   Dashboard, and the print slip), but flat and hardcoded (`TARE_CHARGE_INR` + `GROSS_CHARGE_INR`),
   matching the mock's own actual runtime behaviour rather than its schema's aspirational
-  vehicle-type formula. Not built: "Value" (a Material.Rate-based valuation, separate from
-  Charge) and any Settings-driven way to change the flat rate — both need Master body-field
-  editing UI that doesn't exist yet (see "Master field richness" above).
+  vehicle-type formula. Item 26 built Value (`computeValue`, Material.Rate-based) alongside it —
+  both stop at the "Captured & calculated" card's formula breakdown, though; neither reaches
+  Reports, Dashboard or the print slip the way Charge does (a real gap, not a deliberate one —
+  tracked here rather than silently left out). No Settings-driven way to change the flat Charge
+  rate exists either.
 - **Export** — Reports' Export PDF/Excel/CSV buttons are shown disabled rather than silently doing
   nothing, matching the mock's own dead buttons for the same three actions (no `id`, no click
   handler at all — see item 22). Both bulk print (item 22, the ticket register/summary) and

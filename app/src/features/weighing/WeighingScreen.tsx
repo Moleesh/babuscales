@@ -8,11 +8,12 @@ import { SegmentedControl } from "@components/SegmentedControl";
 import type { SegmentedOption } from "@components/SegmentedControl";
 import { StatusPill } from "@components/StatusPill";
 import { formatMoney, formatWeightKg } from "@constants/numberFormat";
+import { getMaterialRate } from "@db/materialBody";
 import type { CaptureType } from "@db/ticketBody";
 import type { DocRow } from "@db/types";
 import { useDataPort } from "@db/useDataPort";
 import { useMasterCache } from "@db/useMasterCache";
-import { computeCharge } from "@engines/billing";
+import { computeCharge, computeValue } from "@engines/billing";
 import { useIndicator, useIndicatorReading } from "@engines/indicator";
 import { buildSlipData } from "@engines/print";
 import { DEFAULT_TICKET_SCHEMA } from "@engines/schemaEngine";
@@ -20,6 +21,7 @@ import { computeCameraBurnIn, CAMERA_SLOTS, CameraGrid } from "@features/cameras
 import { useSettings } from "@features/settings";
 
 import { buildRecallOffers } from "./_private/buildRecallOffers";
+import { CalcFormula } from "./_private/CalcFormula";
 import { PrintPreviewModal } from "./_private/PrintPreviewModal";
 import { OpenTicketStrip } from "./OpenTicketStrip";
 import { listOpenTickets } from "./recall";
@@ -126,6 +128,10 @@ export const WeighingScreen = ({ ticket }: WeighingScreenProps) => {
     );
 
     const charge = computeCharge(ticket.weights.netKg !== null);
+    const materialRate = getMaterialRate(
+        materialCache.rows.find((row) => row.Name === ticket.fields.material)?.Body ?? {},
+    );
+    const value = computeValue(ticket.weights.netKg, materialRate);
 
     const slipData = useMemo(
         () =>
@@ -357,6 +363,15 @@ export const WeighingScreen = ({ ticket }: WeighingScreenProps) => {
                                 <div className={styles.calcStamp}>&nbsp;</div>
                             </div>
                         </div>
+                        <CalcFormula
+                            tareKg={ticket.weights.tareKg}
+                            grossKg={ticket.weights.grossKg}
+                            netKg={ticket.weights.netKg}
+                            charge={charge}
+                            materialRate={materialRate}
+                            value={value}
+                            amountDp={settings.Formats.AmountDp}
+                        />
                         <StatusPill
                             tareKg={ticket.weights.tareKg}
                             grossKg={ticket.weights.grossKg}
