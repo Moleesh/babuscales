@@ -9,11 +9,12 @@ import { DataPortProvider } from "@db/DataPortProvider";
 import type { DocRow } from "@db/types";
 import { useDataPort } from "@db/useDataPort";
 import {
-    createSimulatedIndicator,
     IndicatorProvider,
+    isSerialIndicatorSource,
     useIndicatorReading,
 } from "@engines/indicator";
-import type { SimulatedIndicatorSource } from "@engines/indicator";
+import type { IndicatorSource } from "@engines/indicator";
+import { createIndicatorSource } from "@engines/indicator/createIndicatorSource";
 import { DashboardScreen } from "@features/dashboard";
 import { MastersScreen } from "@features/masters";
 import { ReportsScreen } from "@features/reports";
@@ -199,19 +200,27 @@ const Shell = () => {
     );
 };
 
-interface StabilityGateSyncProps {
-    indicator: SimulatedIndicatorSource;
+interface IndicatorSyncProps {
+    indicator: IndicatorSource;
 }
 
-// Settings' Weighing pane (Stability gate) writes through to the simulated
-// indicator's live-updatable options — "Applied immediately", per the
-// mock's own card header. A real serial adapter has no `updateOptions` to
-// call (SimulatedIndicatorSource-only), so this bridge only exists here,
-// not inside IndicatorProvider/useIndicator's generic surface.
-const StabilityGateSync = ({ indicator }: StabilityGateSyncProps) => {
+// Settings' Weighing pane (Stability gate) writes through to whichever
+// indicator is live — the simulated one and the real serial one
+// (serialIndicator.ts) both implement `updateOptions` with the same
+// shape, "Applied immediately" per the mock's own card header. Nothing
+// to do for an adapter that doesn't implement it (none exists today, but
+// the interface doesn't require it — see IndicatorSource's own comment),
+// so this bridge only exists here, not inside
+// IndicatorProvider/useIndicator's generic surface.
+const StabilityGateSync = ({ indicator }: IndicatorSyncProps) => {
     const { settings } = useSettings();
     useEffect(() => {
-        indicator.updateOptions({
+        if (!("updateOptions" in indicator)) return;
+        (
+            indicator as IndicatorSource & {
+                updateOptions: (options: { settleTicks?: number; closeEnoughKg?: number }) => void;
+            }
+        ).updateOptions({
             settleTicks: settings.Stability.ReadingsInRow,
             closeEnoughKg: settings.Stability.BandKg,
         });
@@ -219,9 +228,34 @@ const StabilityGateSync = ({ indicator }: StabilityGateSyncProps) => {
     return null;
 };
 
+// Settings' Connections pane writes through to the real serial adapter the
+// same "Applied immediately" way — opens (or reopens, on a config change)
+// the configured port on every save, including the very first one after
+// app startup, so a desktop relaunch reconnects without the operator
+// re-visiting Settings. A blank port disconnects rather than attempting a
+// connection. No-op for the simulated adapter (isSerialIndicatorSource is
+// false), so this is inert everywhere except a real desktop build.
+const SerialConnectionSync = ({ indicator }: IndicatorSyncProps) => {
+    const { settings } = useSettings();
+    const conn = settings.Connections;
+    useEffect(() => {
+        if (!isSerialIndicatorSource(indicator)) return;
+        if (!conn.IndicatorPort) {
+            void indicator.disconnect();
+            return;
+        }
+        void indicator.connect({
+            port: conn.IndicatorPort,
+            baud: conn.IndicatorBaud,
+            pattern: conn.IndicatorPattern,
+        });
+    }, [indicator, conn.IndicatorPort, conn.IndicatorBaud, conn.IndicatorPattern]);
+    return null;
+};
+
 export const App = () => {
     const [db] = useState(() => createDataPort());
-    const [indicator] = useState(() => createSimulatedIndicator());
+    const [indicator] = useState(() => createIndicatorSource());
 
     return (
         <I18nProvider packs={[DEMO_TAMIL_PACK]}>
@@ -229,6 +263,7 @@ export const App = () => {
                 <SettingsProvider>
                     <IndicatorProvider source={indicator}>
                         <StabilityGateSync indicator={indicator} />
+                        <SerialConnectionSync indicator={indicator} />
                         <Shell />
                     </IndicatorProvider>
                 </SettingsProvider>

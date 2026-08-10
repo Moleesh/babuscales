@@ -42,11 +42,25 @@ const formatsSchema = z.object({
 });
 export type DisplayFormats = z.infer<typeof formatsSchema>;
 
+export const BAUD_RATE_OPTIONS = [1200, 2400, 4800, 9600, 19200, 38400, 57600, 115200] as const;
+
+// PLAN §17's setup wizard, scoped down (app/README.md known gap) to just
+// the fields a real connection needs — see settings/_private/ConnectionsPane.tsx.
+const connectionsSchema = z.object({
+    /** Empty = not configured yet — App.tsx's SerialConnectionSync leaves the indicator idle at a stable zero rather than attempting a connection. */
+    IndicatorPort: z.string(),
+    IndicatorBaud: z.number().int().positive(),
+    /** A regex with one capture group around the weight — PLAN §17's "custom-pattern fallback so any indicator works without a code change" (src-tauri/src/devices/indicator.rs's `parse_weight`). Empty uses that function's built-in numeric-extraction fallback instead. */
+    IndicatorPattern: z.string(),
+});
+export type ConnectionsConfig = z.infer<typeof connectionsSchema>;
+
 export const settingsBodySchema = z.object({
     Rules: rulesSchema,
     Stability: stabilitySchema,
     Numbering: numberingSchema,
     Formats: formatsSchema,
+    Connections: connectionsSchema,
     /** "Operator on duty" (mock's `#opChip`/Appearance pane `#setOp`) — a free-text label, not an account; deliberately not admin-gated. */
     OperatorName: z.string(),
     AdminPasswordHash: z.string(),
@@ -82,6 +96,12 @@ export const DEFAULT_FORMATS: DisplayFormats = {
     DateFmt: "dd MMM yyyy",
     TimeFmt: "24",
     AmountDp: 2,
+};
+
+export const DEFAULT_CONNECTIONS: ConnectionsConfig = {
+    IndicatorPort: "",
+    IndicatorBaud: 9600,
+    IndicatorPattern: "",
 };
 
 /** RULE_DEFS, verbatim — the one place a one-line note earns its keep. */

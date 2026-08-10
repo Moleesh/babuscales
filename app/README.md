@@ -128,8 +128,9 @@ on Reports and Dashboard).
 17. **Settings — the admin gate, for real.** `src/features/settings/` — a persisted `Settings`
     config row (weighing rules, stability gate, ticket numbering, date/time/amount formats, a
     salted-SHA-256 admin password hash), `SettingsProvider`/`useSettings`, and the mock's six-pane
-    split (`SettingsScreen`). Weighing and System are fully wired against that row; the other four
-    panes are documented placeholders (see Known gap). The top-bar admin chip
+    split (`SettingsScreen`). Weighing and System are fully wired against that row (Appearance and
+    Connections joined them later — items 18 and 21; Fields & language and Print & printers stay
+    documented placeholders — see Known gap). The top-bar admin chip
     (`AdminChip`) and unlock modal (`AppModal`, newly built — PLAN §10's deferred component,
     built now that a feature needs it) gate every pane's controls, with the mock's own 10-minute
     silent auto-lock. `Rules.TareFirst`/`StrictTare`/`AutoCapture` reach `useWeighingTicket` and
@@ -186,12 +187,54 @@ on Reports and Dashboard).
     views, on Dashboard's new tile, and on the A4 and thermal print previews (`Rs.250.00` on the
     latter); also confirmed the `buildRecallOffers` extraction still offers a correct "Resume" for
     an open ticket after the refactor.
+21. **Real serial-port indicator adapter.** `src-tauri/src/devices/indicator.rs` — the biggest
+    remaining zero, closed behind the same `IndicatorSource` interface Weighing has talked to
+    since Task 12, so nothing in `WeighingScreen.tsx` changed. A background thread (one `serialport`
+    connection at a time, reopened on a settings change without needing an explicit Disconnect —
+    Windows won't grant a second handle to a COM port the old thread still holds) reads lines and
+    emits a raw weight sample per line as a Tauri event; `parse_weight` turns a line into a number,
+    either via a custom regex the operator supplies (PLAN §17's "custom-pattern fallback so any
+    indicator works without a code change" — one capture group around the weight) or, with none
+    set, by stripping the line to `[0-9+\-.]` and parsing what's left. That fallback is _not_ true
+    multi-brand protocol auto-detection (PLAN §17's fuller ask) — it's one general parser plus a
+    manual override, which is what one iteration could actually deliver and mean it. The stability
+    gate deliberately isn't computed in Rust: `src/engines/indicator/serialIndicator.ts` applies
+    `Settings.Stability`'s two knobs (`ReadingsInRow`, `BandKg`) to the raw sample stream itself,
+    so a real device and the simulated one mean the same thing by "stable" — reusing the setting,
+    not the simulated engine's tick-physics code, which has no equivalent for hardware that sends
+    samples at its own cadence. `createIndicatorSource.ts` mirrors `db/createDataPort.ts`'s
+    build-time branch exactly (same literal `import.meta.env.VITE_DATA_ADAPTER === "tauri"` check,
+    same reason), and the type-level surface that discriminates the two adapters
+    (`isSerialIndicatorSource`, in `types.ts`) is kept Tauri-import-free and out of any code path
+    the memory build could pull in unintentionally. Settings' Connections pane (previously a
+    placeholder) is PLAN §17's setup wizard scoped down to one iteration: port + baud + optional
+    pattern, "Applied immediately" like the Weighing pane's Stability gate — not the full
+    "watch raw bytes live, confirm" wizard, which needs real hardware in hand to build against and
+    isn't (see Known gap). ✅ Verified: `cargo build`/`clippy -D warnings`/`fmt --check` clean; a
+    throwaway `cargo run --example` (deleted once it passed, same precedent as the store's own
+    Rust↔TS check) exercised `parse_weight` against ten cases — bare weights, a unit suffix, a
+    negative, empty/non-numeric input, a real custom-pattern frame, and the checksum-line case the
+    pattern exists for — all ten passed. Typecheck/lint/format clean; the memory build's
+    tree-shaking guarantee re-verified (`grep` for `TAURI_INTERNALS`, `tauri-apps`, and the new
+    command names in `dist/assets/*.js` finds nothing); the Tauri build's bundle confirmed to
+    contain them. In-browser: the Connections pane's "desktop app only" fallback renders correctly
+    on the memory/Pages build, and a full send-a-lorry → capture Tare regression confirmed the
+    simulated indicator is completely unaffected by `StabilityGateSync`'s move from a
+    simulated-only type to a duck-typed check. What's **not** verified — genuinely can't be, in
+    this environment — is a real connection to real hardware; see Known gap.
 
 ## Known gap
 
-**No real serial-port indicator adapter** — Weighing only ever talks to the simulated one
-(`src/engines/indicator/simulatedIndicator.ts`); a real adapter would live in
-`src-tauri/src/devices/` behind the same `IndicatorSource` interface.
+**Real serial-port indicator adapter, but not the full PLAN §17 wizard** — item 21 above built the
+adapter, the pure parser, and a scoped-down Connections pane; not built: the "watch raw bytes
+live, confirm" wizard steps, true multi-brand protocol auto-detection (one general fallback parser
+plus a manual regex override stands in for it), and everything past the indicator in PLAN §17's
+hardware list (LED display output, boom barrier/traffic light relays, presence sensor, TTS
+announcements, RFID/barcode, SMS via serial GSM modem). None of it has been run against a real
+indicator — no hardware exists in this environment to test against; only the parser (a throwaway
+example) and the port-listing/connect/disconnect plumbing (`cargo build`/`clippy`, code inspection)
+have been verified, the same category of gap as "no real Tauri GUI window in this environment"
+elsewhere in this project's history.
 
 **Not built at all yet, so the tab still says "— Phase 2":** Cameras. (Operator identity is now
 real, per item 18 — but it's a name, not an account: anyone can change it, there's no password.

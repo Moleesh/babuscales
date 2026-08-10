@@ -8,6 +8,7 @@ use std::sync::Mutex;
 
 use rusqlite::Connection;
 
+use crate::devices::indicator::IndicatorState;
 use crate::error::AppError;
 
 pub struct AppState {
@@ -16,6 +17,13 @@ pub struct AppState {
     /// (commands/backup.rs) don't need to re-derive the app data directory
     /// on every call.
     pub db_path: PathBuf,
+    /// The one open serial connection to the weight indicator, if any
+    /// (`devices::indicator`) — same "one thing every command shares"
+    /// shape as `conn` above, just for hardware instead of storage.
+    /// `pub(crate)`, not `pub` — `IndicatorState` is crate-internal (see
+    /// `devices::indicator`'s own comment), so this field can't be any
+    /// more visible than that without the compiler rightly complaining.
+    pub(crate) indicator: IndicatorState,
 }
 
 /// `unwrap()`/`expect()` are banned outside `main.rs` (docs/CodingStandards.md)

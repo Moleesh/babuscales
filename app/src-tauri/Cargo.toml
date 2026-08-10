@@ -28,6 +28,12 @@ chrono = "0.4"
 # Same strategy as the TS side's `ulid` package (src/db/id.ts) — every table
 # in PLAN §6.1 uses a ULID primary key.
 ulid = "1"
+# PLAN §17 — the real weight indicator. MIT/Apache-2.0, no system install
+# required (talks to the OS serial API directly).
+serialport = "4"
+# The custom-pattern fallback (PLAN §17's "so any indicator works without a
+# code change") — a per-brand frame format the operator supplies as a regex.
+regex = "1"
 
 [profile.release]
 # Smallest installer over fastest build — PLAN §5 targets a ~10MB MSI.

@@ -21,3 +21,43 @@ export interface IndicatorSource {
     loadLorry?: (kind: CaptureType) => void;
     reset?: () => void;
 }
+
+// The real serial adapter's shape (serialIndicator.ts) and the type guard
+// that discriminates it from the simulated one — deliberately kept in this
+// Tauri-import-free file, not in serialIndicator.ts itself. Settings'
+// ConnectionsPane and App.tsx's SerialConnectionSync bridge both need to
+// ask "is this the real adapter?", and if that question lived next to the
+// answer (in serialIndicator.ts, which imports @tauri-apps/api), importing
+// it from anywhere reachable by the memory/Pages build would risk pulling
+// Tauri code into a bundle that must never contain it — the same
+// tree-shaking guarantee db/createDataPort.ts's own comment explains.
+// Everything here is pure types plus one property-existence check: safe to
+// import unconditionally, because nothing here imports anything Tauri.
+
+export interface StabilityOptions {
+    /** "readings in a row" — Settings' Stability gate (`ReadingsInRow`). */
+    settleTicks?: number;
+    /** "within ± kg of each other" — Settings' Stability gate (`BandKg`). */
+    closeEnoughKg?: number;
+}
+
+export interface IndicatorConnectionConfig {
+    port: string;
+    baud: number;
+    /** Empty = the Rust side's built-in numeric-extraction fallback (src-tauri/src/devices/indicator.rs's `parse_weight`) rather than a per-brand pattern. */
+    pattern: string;
+}
+
+export interface SerialIndicatorSource extends IndicatorSource {
+    listPorts: () => Promise<string[]>;
+    connect: (config: IndicatorConnectionConfig) => Promise<void>;
+    disconnect: () => Promise<void>;
+    /** The last connection/read error from the Rust side (a dropped cable, a port already in use by another program) — surfaced, not thrown, so a hardware hiccup doesn't crash a ticket mid-capture. `null` once a connection is clean. */
+    getConnectionError: () => string | null;
+    /** Settings' Stability gate, applied identically to `simulatedIndicator.ts`'s own `updateOptions` — see that file's doc comment. */
+    updateOptions: (options: StabilityOptions) => void;
+}
+
+/** True only for the real adapter — the simulated one has neither `connect` nor `listPorts`. */
+export const isSerialIndicatorSource = (source: IndicatorSource): source is SerialIndicatorSource =>
+    "connect" in source && "listPorts" in source;

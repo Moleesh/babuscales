@@ -10,5 +10,6 @@ pub mod audit;
 pub mod backup;
 pub mod configs;
 pub mod docs;
+pub mod indicator;
 pub mod masters;
 pub mod outbox;

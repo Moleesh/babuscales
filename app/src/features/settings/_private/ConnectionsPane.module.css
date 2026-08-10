@@ -1,0 +1,60 @@
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 12px;
+    align-items: start;
+}
+
+.body {
+    display: grid;
+    gap: 12px;
+}
+
+.applied {
+    font-size: 0.6875rem;
+    color: var(--stable);
+}
+
+.mini {
+    padding: 3px 9px;
+    border-radius: 7px;
+    border: 1px solid var(--line);
+    background: var(--panel-2);
+    color: var(--text);
+    font: inherit;
+    font-size: 0.6875rem;
+    cursor: pointer;
+    white-space: nowrap;
+}
+.mini:hover:not(:disabled) {
+    border-color: var(--led-dim);
+    color: var(--led);
+}
+.mini:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
+.statusRow {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    font-size: 0.75rem;
+}
+
+.statusOk {
+    color: var(--stable);
+    font-variant-numeric: tabular-nums;
+}
+
+.statusBad {
+    color: var(--alert);
+}
+
+.hint {
+    font-size: 0.6875rem;
+    color: var(--dim);
+    margin: 0;
+    line-height: 1.6;
+}

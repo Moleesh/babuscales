@@ -32,6 +32,7 @@ pub fn run() -> tauri::Result<()> {
             app.manage(AppState {
                 conn: std::sync::Mutex::new(conn),
                 db_path,
+                indicator: devices::indicator::new_state(),
             });
             Ok(())
         })
@@ -41,6 +42,9 @@ pub fn run() -> tauri::Result<()> {
             commands::docs::save_doc,
             commands::docs::allocate_doc_seq,
             commands::docs::reset_doc_series,
+            commands::indicator::list_serial_ports,
+            commands::indicator::open_indicator_port,
+            commands::indicator::close_indicator_port,
             commands::masters::get_master,
             commands::masters::list_masters,
             commands::masters::save_master,

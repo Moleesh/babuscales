@@ -8,6 +8,7 @@ import { SettingsContext } from "./_private/SettingsContext";
 import type { SettingsContextValue } from "./_private/SettingsContext";
 import { DEFAULT_ADMIN_PASSWORD, hashAdminPassword, verifyAdminPassword } from "./adminAuth";
 import {
+    DEFAULT_CONNECTIONS,
     DEFAULT_FORMATS,
     DEFAULT_NUMBERING,
     DEFAULT_OPERATOR_NAME,
@@ -32,6 +33,7 @@ const SYNC_DEFAULT_BODY: SettingsBody = {
     Stability: DEFAULT_STABILITY,
     Numbering: DEFAULT_NUMBERING,
     Formats: DEFAULT_FORMATS,
+    Connections: DEFAULT_CONNECTIONS,
     OperatorName: DEFAULT_OPERATOR_NAME,
     AdminPasswordHash: "",
     AdminPasswordSalt: "",

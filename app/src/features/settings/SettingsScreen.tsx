@@ -4,6 +4,7 @@ import { SegmentedControl } from "@components/SegmentedControl";
 import type { SegmentedOption } from "@components/SegmentedControl";
 
 import { AppearancePane } from "./_private/AppearancePane";
+import { ConnectionsPane } from "./_private/ConnectionsPane";
 import { PlaceholderPane } from "./_private/PlaceholderPane";
 import { SystemPane } from "./_private/SystemPane";
 import { WeighingPane } from "./_private/WeighingPane";
@@ -27,9 +28,12 @@ export interface SettingsScreenProps {
 }
 
 // Six-pane split, ported from demo/BabuScale-demo.html's `#setTabs` +
-// `.pane[data-pane]`. Weighing and System are fully wired against a real
-// Settings config row (PLAN's "admin password to change configuration");
-// the other four stay documented placeholders — see PlaceholderPane.
+// `.pane[data-pane]`. Weighing, System and Connections are fully wired
+// against a real Settings config row (PLAN's "admin password to change
+// configuration"); Appearance is partly wired (Operator-on-duty is real,
+// Theme is still a placeholder — see AppearancePane); Fields & language
+// and Print & printers stay full documented placeholders — see
+// PlaceholderPane.
 export const SettingsScreen = ({ onResetTicketSeries }: SettingsScreenProps) => {
     const { unlocked } = useSettings();
     const [pane, setPane] = useState<PaneKey>("weigh");
@@ -67,12 +71,7 @@ export const SettingsScreen = ({ onResetTicketSeries }: SettingsScreenProps) => 
             )}
             {pane === "look" && <AppearancePane />}
             {pane === "weigh" && <WeighingPane />}
-            {pane === "conn" && (
-                <PlaceholderPane
-                    title="Connections"
-                    note="Serial port configuration and third-party integrations (WhatsApp, SMS, webhook, QR verification) depend on the real serial-port indicator adapter and PLAN §18's trust/integration work, neither built yet."
-                />
-            )}
+            {pane === "conn" && <ConnectionsPane />}
             {pane === "sys" && <SystemPane onResetTicketSeries={onResetTicketSeries} />}
         </div>
     );
