@@ -391,11 +391,12 @@ a different and bigger feature the mock itself never specifies, so nothing here 
 - **Billing** — Charge is real (item 20: `engines/billing`, wired into Weighing, Reports,
   Dashboard, and the print slip), but flat and hardcoded (`TARE_CHARGE_INR` + `GROSS_CHARGE_INR`),
   matching the mock's own actual runtime behaviour rather than its schema's aspirational
-  vehicle-type formula. Item 26 built Value (`computeValue`, Material.Rate-based) alongside it —
-  both stop at the "Captured & calculated" card's formula breakdown, though; neither reaches
-  Reports, Dashboard or the print slip the way Charge does (a real gap, not a deliberate one —
-  tracked here rather than silently left out). No Settings-driven way to change the flat Charge
-  rate exists either.
+  vehicle-type formula. Item 26 built Value (`computeValue`, Material.Rate-based) alongside it,
+  but only on Weighing's own formula breakdown — checked the mock itself before assuming this was
+  a gap: `p.value`/`c.value` never appears in any of its ticket-slip templates, report functions,
+  or dashboard KPIs either, only in `renderCalc()`'s `#formula` text. Value not reaching Reports,
+  Dashboard or the print slip therefore isn't an omission, it matches the reference spec's own
+  scope exactly. No Settings-driven way to change the flat Charge rate exists either.
 - **Export** — Reports' Export PDF/Excel/CSV buttons are shown disabled rather than silently doing
   nothing, matching the mock's own dead buttons for the same three actions (no `id`, no click
   handler at all — see item 22). Both bulk print (item 22, the ticket register/summary) and
