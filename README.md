@@ -10,15 +10,19 @@ office PC, with no internet, in English or Tamil.
 [![Platform](https://img.shields.io/badge/platform-Windows-informational)](#install)
 [![Licence](https://img.shields.io/badge/licence-proprietary-lightgrey)](#licence)
 
-> **Status: Phase 1 foundation underway.** The interactive mock in
-> **[`demo/BabuScales-demo.html`](demo/BabuScales-demo.html)** has been through four rounds of review
-> and is the reference specification. The application is being built in
-> **[`app/`](app/README.md)**, where the scaffold, the `DataPort` contract with a verified memory
-> adapter, the fixed SQLite schema with an idempotent patch runner, backup/restore, i18n with the
-> per-tab help drawer, and the CI/Pages/release workflows are done — see `app/README.md` for what's
-> next. The full technical plan is in **[PLAN.md](PLAN.md)**.
+> **Status: Phase 6 (Trust & release) underway — the 3.0 line PLAN.md marks as shippable.**
+> The interactive mock in **[`demo/BabuScales-demo.html`](demo/BabuScales-demo.html)** was the
+> reference spec for Phases 0–5, all of which are built: weighing, masters, printing, cameras,
+> reports/dashboard and backup/restore all run for real in **[`app/`](app/README.md)** against a
+> real SQLite database, not just the mock. Phase 6 has added a real audit hash chain with public QR
+> verification, offline licence activation, a Windows installer, and this pass of documentation —
+> see `app/README.md`'s own numbered list and "Known gap" section for exactly what's real versus
+> still aspirational. The full technical plan is in **[PLAN.md](PLAN.md)**.
 >
-> Open `demo/BabuScales-demo.html` in any browser — one file, no build, no dependencies, no database.
+> This repository hasn't been pushed to a public remote yet, so the *Open the demo* and *Releases*
+> links below aren't live — everything under `app/` runs locally today; open
+> `demo/BabuScales-demo.html` in any browser in the meantime for the original one-file, no-build,
+> no-database mock this application was built against.
 
 ---
 
@@ -78,17 +82,23 @@ LAN access from any phone (off by default) · runs entirely offline.
 
 ## Try it without installing
 
-The GitHub Pages build is **the real application running with no database** — same screens, same
-flow, a simulated indicator producing live weights. Not a mock-up.
+`.github/workflows/pages.yml` builds and deploys **the real application running with no
+database** — same screens, same flow, a simulated indicator producing live weights, the memory
+`DataPort` adapter standing in for SQLite. Not a mock-up; it's the same `app/` source everything
+else in this README describes.
 
-**[→ Open the demo](#)** *(available from Phase 0)*
+**→ Open the demo** — live once this repository is pushed to a public GitHub remote and the Pages
+workflow has run once (not yet — see the status note above).
 
 ---
 
 ## Install
 
-Download the `.msi` from [Releases](../../releases) and run it. Roughly 10MB, no prerequisites,
-no Java, no runtime to install.
+Download the `.msi` or the NSIS `.exe` from [Releases](../../releases) and run it — either does the
+same job. Around 200MB: the entire WebView2 Evergreen Runtime is baked into the installer itself so
+a site with no internet connection at install time still installs cleanly, rather than shipping the
+usual few-MB stub that fetches it separately. No Java, no separate runtime to install, no internet
+needed once the installer file itself is on the machine.
 
 **Requirements:** Windows 10 or 11 · 4GB RAM · a serial or USB weight indicator.
 Cameras, printers and network are all optional.
@@ -99,7 +109,7 @@ Cameras, printers and network are all optional.
 
 | | |
 |---|---|
-| **Tauri v2 + Rust** | ~10MB installer, ~70MB RAM, sub-second start, one codebase for the future Android app |
+| **Tauri v2 + Rust** | ~70MB RAM, sub-second start, one codebase for the future Android app — installer is ~200MB with the WebView2 runtime baked in for offline installs (see Install, above) |
 | **React 19 + TypeScript** | Same UI on desktop, LAN, phone and the browser demo |
 | **SQLite** | One file. Fixed tables, zero migrations, everything — including images — inside it |
 
@@ -112,6 +122,8 @@ Chosen deliberately for **4GB machines**: the whole application uses less memory
 | | |
 |---|---|
 | [PLAN.md](PLAN.md) | Full technical plan |
+| [docs/OperatorGuide.md](docs/OperatorGuide.md) | Day-to-day use, for whoever weighs vehicles |
+| [docs/AdminSetup.md](docs/AdminSetup.md) | Install, licence, configure — for whoever sets a site up |
 | [docs/CodingStandards.md](docs/CodingStandards.md) | How this codebase is written, and what CI enforces |
 | [docs/Terminology.md](docs/Terminology.md) | The words we use and why |
 | [docs/JsonConfig.md](docs/JsonConfig.md) | Schema, layout, template and settings contracts |
@@ -124,18 +136,25 @@ Chosen deliberately for **4GB machines**: the whole application uses less memory
 
 ## Roadmap
 
+PLAN.md's own phase table (§21), resequenced after review to remove forward dependencies — this is
+the live plan, not the original draft order:
+
 | Phase | | |
 |---|---|---|
-| 0 | Foundation | Shell, schema, component library, i18n, CI, live demo |
-| 1 | Core | Formula engine, capture model, masters, indicator |
-| 2 | Print | Three printer targets, templates, mass print |
-| 3 | Capture | Eight cameras, crop, overlay, retention |
-| 4 | Insight | Reports, dashboard, import/export, backup |
-| 5 | Designer | Visual template and schema editors |
-| 6 | Trust | Hash chain, QR verification, anomaly detection, ANPR |
-| 7 | **Release 3.0** | Licensing, installer, documentation |
-| 8 | Reach | Remote access, WhatsApp/SMS, multi-gross, Android, MiMaS |
-| 9 | Tests | Full suite |
+| 0 | Groundwork | Reverse-engineer the v1 site presets and hardest print format before the formula language locks |
+| 0.5 | Mock | **Done.** Four review rounds on `demo/BabuScales-demo.html` — the reference spec for Phase 1+ |
+| 1 | Foundation | Scaffold, schema, `DataPort` + adapters, component library, i18n, CI, live demo, backup/restore from day one |
+| 2 | Core | Schema engine, formula engine, capture model, masters + search, indicator, hash chain on `audit` |
+| 3 | Print | Content model, three layout engines, the six real v1 formats, printer capability profiles |
+| 4 | Capture | 4 cameras, crop, overlay, ONVIF/RTSP, retention, live view |
+| 5 | Insight | Reports, dashboard, Excel/CSV import-export, custom indexes, mass print |
+| 6 | **Trust & release** | QR verification, licensing, installer, docs, landing page — **3.0 ships** |
+| 7 | Reach | Remote access, WhatsApp/SMS, scheduled reports, multi-gross, legacy import, MiMaS, Android |
+| 8 | Deferred by decision | ANPR, visual template designer, anomaly detection — designed for, not built |
+| 9 | Tests | Full suite — last phase, by decision |
+
+Currently in **Phase 6**: QR verification, offline licensing and the Windows installer are done;
+this documentation pass is the last item before "3.0 ships".
 
 ---
 
@@ -145,7 +164,7 @@ Tamil Nadu has **mandated integration between the e-permit system and digital we
 all quarry and crusher units, to curb excess quarrying and unauthorised mineral transport.
 BabuScales is being designed for that requirement from the start — permit references, quantity
 balances and a durable submission queue are part of the core data model, with the
-**MiMaS** client landing in Phase 8.
+**MiMaS** client landing in Phase 7 — blocked today on an integration spec that doesn't exist yet.
 
 ---
 
