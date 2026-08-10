@@ -372,6 +372,35 @@ on Reports and Dashboard).
     relay and the desktop build to test against, neither available in this environment — not
     exercised end-to-end past the Rust compiling and the noop path's honest fallback, the same
     category of gap as the serial indicator and `window.print()` before it.
+30. **Real SMS delivery via serial GSM modem.** The second of Integrations' eight rows to move past
+    a persisted toggle, same scope call as item 29's e-mail. `src-tauri/src/net/sms.rs` — plain
+    AT commands (`AT+CMGF=1` text mode, `AT+CMGS="<number>"`, message body terminated with a lone
+    Ctrl+Z) over the same `serialport` crate `devices::indicator.rs` already depends on; no new
+    Cargo dependency needed. Unlike the indicator's continuously-open connection, a send opens the
+    port, walks the handshake, and closes it again — one blocking round trip per call, the same
+    "no `AppState` connection" shape as item 29's `net::email::send`. No secret to store here: AT
+    commands over a local serial port need no auth, so `src/engines/sms/` is smaller than
+    `engines/email` (no password methods), otherwise the same plain Tauri-vs-noop wrapper shape,
+    plus a `listPorts()` reusing `commands::indicator::list_serial_ports` (already a generic,
+    device-agnostic command — no new Rust command needed for that piece). Settings → Connections
+    gained a real **SMS delivery** card (serial port/baud select reusing `BAUD_RATE_OPTIONS`, a
+    "Send test SMS" button) — the Integrations row's own "Configure" now points there instead of
+    flashing the generic stub, and its decorative label was corrected from "Sender ID · API key"
+    (implying a cloud gateway) to "GSM modem · serial port" (what this build actually talks to).
+    Party masters gained a real `Phone` field, mirroring item 29's `Email` field exactly (form field,
+    table column, Parties only — `MastersScreen.tsx` already carried a forward-looking comment
+    anticipating this from item 29). `WeighingScreen`'s print flow looks the ticket's party up by
+    name, and when Integrations → SMS gateway is on and that party has a phone number on file,
+    enqueues a `Channel: "Sms"` outbox row and attempts the send immediately, reconciling it to
+    `Sent`/`Failed` right away — the same "drain of one" as e-mail, not the background worker every
+    Integrations channel still needs (see Known gap). ✅ Verified: `cargo check`/
+    `clippy --all-targets -- -D warnings`/`fmt --check` clean; typecheck/lint/build clean; in-browser
+    (memory adapter) confirmed the SMS delivery card saves port/baud and round-trips them, "Send
+    test" honestly reports "desktop app only, not available in this build" (the noop source), and a
+    new Party master saves and displays a real phone number in its own table column. Actually
+    sending a text needs a real GSM modem and the desktop build to test against, neither available
+    in this environment — not exercised end-to-end past the Rust compiling and the noop path's
+    honest fallback, the same category of gap as item 29's SMTP relay.
 
 ## Known gap
 
@@ -380,7 +409,8 @@ adapter, the pure parser, and a scoped-down Connections pane; not built: the "wa
 live, confirm" wizard steps, true multi-brand protocol auto-detection (one general fallback parser
 plus a manual regex override stands in for it), and everything past the indicator in PLAN §17's
 hardware list (LED display output, boom barrier/traffic light relays, presence sensor, TTS
-announcements, RFID/barcode, SMS via serial GSM modem). None of it has been run against a real
+announcements, RFID/barcode — SMS via serial GSM modem is no longer in this list, see item 30).
+None of it has been run against a real
 indicator — no hardware exists in this environment to test against; only the parser (a throwaway
 example) and the port-listing/connect/disconnect plumbing (`cargo build`/`clippy`, code inspection)
 have been verified, the same category of gap as "no real Tauri GUI window in this environment"
@@ -398,7 +428,8 @@ a different and bigger feature the mock itself never specifies, so nothing here 
   virtualised/keyset-paginated; no merge-duplicates or bulk import/export. Fine at demo/site scale,
   not at 100,000 rows.
 - **Master field richness** — generic Name/Notes only, except StoredTare, Material (item 26's Rate
-  field), and now Party (item 29's Email field). No GST fields on Party — the mock never defines
+  field), and now Party (item 29's Email field, item 30's Phone field). No GST fields on Party — the
+  mock never defines
   one either (its static `PARTIES`
   fixture carries no GST data, only the invoice header's own hardcoded GSTIN string); no
   Vehicle↔VehicleType linkage — the mock's `VEHICLES` fixture has a `ty` string per row, but it's
@@ -473,7 +504,8 @@ a different and bigger feature the mock itself never specifies, so nothing here 
   the ticket has no `DocId` yet, so there's never a job for a slip that carried no QR. Item 29 gave
   the `"Email"` channel a real, if minimal, consumer: the print flow itself attempts the send and
   reconciles the row to `Sent`/`Failed` synchronously — a "drain of one", not a background worker.
-  No worker drains any channel in the general case yet: WhatsApp/SMS delivery, webhook firing,
+  Item 30 gave the `"Sms"` channel the same real, minimal consumer, over a serial GSM modem instead
+  of SMTP. No worker drains any channel in the general case yet: WhatsApp delivery, webhook firing,
   cloud backup, and accounting-format export are all still unimplemented consumers, and no outdoor
   display board is driven. Anomaly detection is deferred by decision (PLAN §21 Phase 8); MiMaS is a
   Phase 7 item, not built, blocked on a spec that doesn't exist yet.

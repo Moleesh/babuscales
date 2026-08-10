@@ -9,6 +9,7 @@ import { computeCharge, computeValue } from "@engines/billing";
 import { createEmailSource } from "@engines/email/createEmailSource";
 import { useIndicator, useIndicatorReading } from "@engines/indicator";
 import { buildSlipData } from "@engines/print";
+import { createSmsSource } from "@engines/sms/createSmsSource";
 import { useVerificationUrl } from "@engines/verification";
 import { computeCameraBurnIn, CAMERA_SLOTS, CameraGrid } from "@features/cameras";
 import { useSettings } from "@features/settings";
@@ -59,6 +60,8 @@ export const WeighingScreen = ({ ticket, licenseGated }: WeighingScreenProps) =>
     // comment), so this is created once here exactly like @engines/print's
     // stateless helpers, not threaded through a Context.
     const [email] = useState(() => createEmailSource());
+    // Task #43 — same reasoning, one instance for this screen's lifetime.
+    const [sms] = useState(() => createSmsSource());
 
     const [allTicketDocs, setAllTicketDocs] = useState<DocRow[]>([]);
     const [refreshToken, setRefreshToken] = useState(0);
@@ -185,6 +188,36 @@ export const WeighingScreen = ({ ticket, licenseGated }: WeighingScreenProps) =>
         });
     };
 
+    // Task #43 — same "drain of one" shape as sendTicketEmail just above,
+    // over the GSM modem instead of SMTP. Only enqueued when the party has
+    // a Phone on file — same "no job, not a Failed one" rule as e-mail.
+    const sendTicketSms = async (): Promise<void> => {
+        if (!settings.Integrations.sms || !ticket.docId) return;
+        const party = partyCache.rows.find((row) => row.Name === ticket.fields.party);
+        const to = typeof party?.Body.Phone === "string" ? party.Body.Phone.trim() : "";
+        if (!to) return;
+        const ticketNo = formatTicketNo(ticket.docSeq);
+        const outboxRow = await db.enqueueOutbox({
+            Channel: "Sms",
+            Body: { DocId: ticket.docId, TicketNo: ticketNo, To: to },
+        });
+        const result = await sms.send({
+            port: settings.Connections.GsmPort,
+            baud: settings.Connections.GsmBaud,
+            to,
+            message: [
+                `BabuScales ticket ${ticketNo} — ${ticket.fields.vehicleNo || "—"} (${ticket.fields.material || "—"}).`,
+                ticket.weights.netKg !== null ? `Net: ${ticket.weights.netKg} kg.` : null,
+            ]
+                .filter(Boolean)
+                .join(" "),
+        });
+        await db.updateOutbox(outboxRow.OutboxId, {
+            State: result.Ok ? "Sent" : "Failed",
+            Attempts: outboxRow.Attempts + 1,
+        });
+    };
+
     const handlePrint = async (): Promise<void> => {
         await ticket.print();
         if (verifyUrl && ticket.docId) {
@@ -198,6 +231,7 @@ export const WeighingScreen = ({ ticket, licenseGated }: WeighingScreenProps) =>
             });
         }
         await sendTicketEmail();
+        await sendTicketSms();
         setRefreshToken((n) => n + 1);
     };
 

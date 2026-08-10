@@ -5,6 +5,7 @@ import { Field, FieldGrid } from "@components/Field";
 import { formatWeightKg } from "@constants/numberFormat";
 import { createEmailSource } from "@engines/email/createEmailSource";
 import { isSerialIndicatorSource, useIndicator, useIndicatorReading } from "@engines/indicator";
+import { createSmsSource } from "@engines/sms/createSmsSource";
 import { useTunnel } from "@engines/tunnel";
 import { useVerificationServer } from "@engines/verification";
 
@@ -74,11 +75,11 @@ const IntegrationsCard = () => {
         showFlash(`${name} ${next ? "enabled" : "disabled"}`);
     };
 
-    // Real for QR verification and e-mail — everything else stays the
+    // Real for QR verification, e-mail and SMS — everything else stays the
     // mock's own "here's where this would be configured" placeholder
-    // (app/README.md known gap): PLAN §23 items 4/5 leave WhatsApp/SMS
-    // providers and pricing undecided, so there's nothing real to wire
-    // those to yet.
+    // (app/README.md known gap): PLAN §23 item 4 leaves WhatsApp with no
+    // compliant free path (task #44), so there's nothing real to wire that
+    // one to yet.
     const configure = async (fixture: IntegrationFixture): Promise<void> => {
         if (fixture.key === "qr") {
             if (!settings.Integrations.qr) {
@@ -96,6 +97,10 @@ const IntegrationsCard = () => {
         }
         if (fixture.key === "email") {
             showFlash("E-mail — SMTP host, port, username and password set below, not here");
+            return;
+        }
+        if (fixture.key === "sms") {
+            showFlash("SMS gateway — modem port and baud rate set below, not here");
             return;
         }
         showFlash(`${fixture.name} · ${fixture.config} — stored in the settings table`);
@@ -464,6 +469,162 @@ const EmailCard = () => {
     );
 };
 
+// Task #43's real SMS delivery via a serial-attached GSM modem — the same
+// "own Card, not one of the mock's INTEGRATIONS fixtures" shape as
+// EmailCard just above, but with its own port/baud picker (like the
+// indicator's below, reusing BAUD_RATE_OPTIONS) instead of a password:
+// AT commands over a local serial port need no auth. "Send a test SMS" is
+// the same proof-it-works button as EmailCard's "Send test".
+const SmsCard = () => {
+    const { settings, unlocked, save } = useSettings();
+    const [sms] = useState(() => createSmsSource());
+    const [ports, setPorts] = useState<string[]>([]);
+    const [refreshing, setRefreshing] = useState(false);
+    const [testTo, setTestTo] = useState("");
+    const [sending, setSending] = useState(false);
+    const [flash, setFlash] = useState<string | null>(null);
+    const flashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    const conn = settings.Connections;
+
+    const refreshPorts = (): void => {
+        setRefreshing(true);
+        void sms
+            .listPorts()
+            .then(setPorts)
+            .finally(() => setRefreshing(false));
+    };
+
+    useEffect(() => {
+        refreshPorts();
+        // refreshPorts is stable enough for this — same one-shot-on-mount
+        // shape as ConnectionsPane's own port-scan effect below.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [sms]);
+
+    useEffect(
+        () => () => {
+            if (flashTimer.current) clearTimeout(flashTimer.current);
+        },
+        [],
+    );
+
+    const showFlash = (message: string): void => {
+        if (flashTimer.current) clearTimeout(flashTimer.current);
+        setFlash(message);
+        flashTimer.current = setTimeout(() => setFlash(null), FLASH_MS);
+    };
+
+    const sendTest = async (): Promise<void> => {
+        const to = testTo.trim();
+        if (!to) return;
+        setSending(true);
+        try {
+            const result = await sms.send({
+                port: conn.GsmPort,
+                baud: conn.GsmBaud,
+                to,
+                message:
+                    "BabuScales - test SMS. If this arrived, this GSM modem configuration works.",
+            });
+            showFlash(result.Ok ? `Test SMS sent to ${to}` : `Send failed — ${result.Error}`);
+        } finally {
+            setSending(false);
+        }
+    };
+
+    return (
+        <Card
+            title={<span className="lbl">SMS delivery</span>}
+            headerRight={flash ? <span className={styles.applied}>{flash}</span> : null}
+        >
+            <div className={styles.body}>
+                <FieldGrid columns={2}>
+                    <Field id="gsmPort" label={{ en: "Modem serial port" }}>
+                        <select
+                            id="gsmPort"
+                            value={conn.GsmPort}
+                            disabled={!unlocked}
+                            onChange={(event) =>
+                                void save({
+                                    ...settings,
+                                    Connections: { ...conn, GsmPort: event.target.value },
+                                })
+                            }
+                        >
+                            <option value="">Not connected</option>
+                            {ports.map((port) => (
+                                <option key={port} value={port}>
+                                    {port}
+                                </option>
+                            ))}
+                        </select>
+                    </Field>
+                    <Field id="gsmBaud" label={{ en: "Baud rate" }}>
+                        <select
+                            id="gsmBaud"
+                            value={conn.GsmBaud}
+                            disabled={!unlocked}
+                            onChange={(event) =>
+                                void save({
+                                    ...settings,
+                                    Connections: { ...conn, GsmBaud: Number(event.target.value) },
+                                })
+                            }
+                        >
+                            {BAUD_RATE_OPTIONS.map((baud) => (
+                                <option key={baud} value={baud}>
+                                    {baud}
+                                </option>
+                            ))}
+                        </select>
+                    </Field>
+                </FieldGrid>
+                <div className={styles.statusRow}>
+                    <button
+                        type="button"
+                        className={styles.mini}
+                        disabled={refreshing}
+                        onClick={refreshPorts}
+                    >
+                        {refreshing ? "Scanning…" : "Rescan ports"}
+                    </button>
+                    <span className={conn.GsmPort ? styles.statusOk : styles.hint}>
+                        {conn.GsmPort ? `Configured — ${conn.GsmPort}` : "No port selected."}
+                    </span>
+                </div>
+                <Field id="gsmTestTo" label={{ en: "Send a test SMS to" }}>
+                    <input
+                        id="gsmTestTo"
+                        type="tel"
+                        placeholder="+91XXXXXXXXXX"
+                        value={testTo}
+                        disabled={!unlocked}
+                        onChange={(event) => setTestTo(event.target.value)}
+                    />
+                </Field>
+                <div className={styles.statusRow}>
+                    <button
+                        type="button"
+                        className={styles.mini}
+                        disabled={!unlocked || sending || !testTo.trim()}
+                        onClick={() => void sendTest()}
+                    >
+                        {sending ? "Sending…" : "Send test"}
+                    </button>
+                </div>
+                <p className={styles.hint}>
+                    Read at print time when Integrations → SMS gateway is on: a ticket&apos;s party
+                    needs a Phone saved in Masters (Settings → Masters → Parties) to receive a text.
+                    Talks to the modem over plain AT commands (AT+CMGF, AT+CMGS) — any GSM modem or
+                    phone that exposes a serial/USB AT interface works, no cloud SMS-gateway account
+                    needed.
+                </p>
+            </div>
+        </Card>
+    );
+};
+
 // Connections pane (demo/BabuScales-demo.html's `data-pane="conn"`) — PLAN
 // §17's setup wizard, scoped down to what one iteration can actually
 // deliver and verify: choose a port and baud, an optional custom regex
@@ -508,6 +669,7 @@ export const ConnectionsPane = () => {
                 </Card>
                 <IntegrationsCard />
                 <EmailCard />
+                <SmsCard />
                 <RemoteAccessCard />
             </div>
         );
@@ -623,6 +785,7 @@ export const ConnectionsPane = () => {
             </Card>
             <IntegrationsCard />
             <EmailCard />
+            <SmsCard />
             <RemoteAccessCard />
         </div>
     );

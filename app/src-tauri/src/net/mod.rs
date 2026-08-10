@@ -20,6 +20,7 @@
 //! copies.
 
 pub mod email;
+pub mod sms;
 pub mod tunnel;
 
 use std::net::UdpSocket;

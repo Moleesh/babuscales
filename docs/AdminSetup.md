@@ -76,17 +76,22 @@ doesn't yet change how the app looks.
 **Weighing** — *Weighing rules* and *Fixed policy* configure capture behaviour: the stability gate
 before a reading is accepted, and similar fixed policy toggles. Applies immediately.
 
-**Connections** — five cards:
+**Connections** — six cards:
 - *Integrations* — eight on/off toggles (WhatsApp, SMS gateway, e-mail, cloud backup, webhook/REST,
-  QR verification page, accounting export, outdoor display board). **QR verification** and
-  **e-mail** are real, working integrations; the other six persist as a setting but have nothing
-  behind them yet (no provider, no worker draining the queue) — turning them on doesn't send
+  QR verification page, accounting export, outdoor display board). **QR verification**, **e-mail**
+  and **SMS gateway** are real, working integrations; the other five persist as a setting but have
+  nothing behind them yet (no provider, no worker draining the queue) — turning them on doesn't send
   anything anywhere.
 - *E-mail delivery* — SMTP host, port, username and password (the password goes to Windows
   Credential Manager, same as the tunnel token below), plus a "Send test e-mail" button. When
   Integrations → E-mail is on and a ticket's party has an **E-mail** saved in Masters, printing
   that ticket sends it a copy immediately and reports success or failure — there's no retry queue
   yet, just the one attempt at print time.
+- *SMS delivery* — serial port and baud rate for a GSM modem (a SIM-equipped modem or phone that
+  exposes a plain AT-command serial/USB interface — no cloud SMS-gateway account, no per-message
+  cost beyond your SIM's own), plus a "Send test SMS" button. Same trigger as e-mail: Integrations →
+  SMS gateway on, and a ticket's party has a **Phone** saved in Masters, and printing sends it a text
+  immediately — same "one attempt at print time, no retry queue" honesty as e-mail.
 - *Remote access* — a Cloudflare Tunnel connector token, stored in Windows Credential Manager, never
   in the settings table or the database. This app never talks to the Cloudflare API and never
   learns a public hostname — creating the tunnel and pointing a hostname at this machine is a
@@ -146,9 +151,9 @@ for an admin deciding what to promise a site:
   scale, not at 100,000+ rows).
 - Reports has no date-range filter and no PDF/Excel/CSV export (buttons are shown disabled, not
   hidden — matching the reference spec's own dead buttons rather than pretending they work).
-- Of the eight Integrations toggles, only QR verification actually does anything yet — WhatsApp,
-  SMS, e-mail, cloud backup, webhook, accounting export and the outdoor display board all persist
-  as a setting with no worker behind them.
+- Of the eight Integrations toggles, only QR verification, e-mail and SMS gateway actually do
+  anything yet — WhatsApp, cloud backup, webhook, accounting export and the outdoor display board
+  all persist as a setting with no worker behind them.
 - Billing (`Charge`) is a flat, hardcoded rate — there's no Settings screen to change it.
 - MiMaS integration is blocked on an external specification that doesn't exist yet; not a bug, not
   in progress.

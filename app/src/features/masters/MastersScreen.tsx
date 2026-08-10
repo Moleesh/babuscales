@@ -26,6 +26,7 @@ interface MasterFormState {
     partyName: string;
     rate: string;
     email: string;
+    phone: string;
 }
 
 const emptyForm = (): MasterFormState => ({
@@ -36,6 +37,7 @@ const emptyForm = (): MasterFormState => ({
     partyName: "",
     rate: "",
     email: "",
+    phone: "",
 });
 
 const toDateTimeLocal = (iso: string): string => {
@@ -55,6 +57,7 @@ const formFromRow = (row: MasterRow): MasterFormState => {
             partyName: row.Body.PartyName ?? "",
             rate: "",
             email: "",
+            phone: "",
         };
     }
     const rate = getMaterialRate(row.Body);
@@ -66,6 +69,7 @@ const formFromRow = (row: MasterRow): MasterFormState => {
         partyName: "",
         rate: rate !== null ? String(rate) : "",
         email: typeof row.Body.Email === "string" ? row.Body.Email : "",
+        phone: typeof row.Body.Phone === "string" ? row.Body.Phone : "",
     };
 };
 
@@ -136,6 +140,9 @@ export const MastersScreen = () => {
                               // same "skip quietly" shape as an empty
                               // PartyName on a stored tare above.
                               Email: form.email.trim() || undefined,
+                              // Task #43 — same lookup, for SMS via the
+                              // GSM modem instead of SMTP.
+                              Phone: form.phone.trim() || undefined,
                           }
                         : { Notes: form.notes.trim() || undefined };
             const row = await save({
@@ -231,6 +238,16 @@ export const MastersScreen = () => {
                               render: (row) =>
                                   typeof row.Body.Notes === "string" ? row.Body.Notes : "—",
                           },
+                  ...(activeKind === "Party"
+                      ? [
+                            {
+                                key: "phone",
+                                header: "Phone",
+                                render: (row: MasterRow) =>
+                                    typeof row.Body.Phone === "string" ? row.Body.Phone : "—",
+                            } satisfies DataTableColumn<MasterRow>,
+                        ]
+                      : []),
                   {
                       key: "active",
                       header: "Status",
@@ -334,7 +351,13 @@ export const MastersScreen = () => {
                         </FieldGrid>
                     ) : (
                         <FieldGrid
-                            columns={activeKind === "Material" || activeKind === "Party" ? 3 : 2}
+                            columns={
+                                activeKind === "Party"
+                                    ? 4
+                                    : activeKind === "Material"
+                                      ? 3
+                                      : 2
+                            }
                         >
                             <Field id="mfName" label={{ en: "Name" }}>
                                 <input
@@ -384,6 +407,23 @@ export const MastersScreen = () => {
                                         value={form.email}
                                         onChange={(event) =>
                                             setForm({ ...form, email: event.target.value })
+                                        }
+                                        autoComplete="off"
+                                    />
+                                </Field>
+                            )}
+                            {activeKind === "Party" && (
+                                // Task #43 — read at print time so "Send a
+                                // copy by SMS" has somewhere to send to.
+                                // Optional, same "skip quietly" shape as
+                                // an empty E-mail above.
+                                <Field id="mfPhone" label={{ en: "Phone" }}>
+                                    <input
+                                        id="mfPhone"
+                                        type="tel"
+                                        value={form.phone}
+                                        onChange={(event) =>
+                                            setForm({ ...form, phone: event.target.value })
                                         }
                                         autoComplete="off"
                                     />

@@ -98,7 +98,7 @@ export interface IntegrationFixture {
 }
 export const INTEGRATION_FIXTURES: readonly IntegrationFixture[] = [
     { key: "whatsapp", name: "WhatsApp", config: "Business API token" },
-    { key: "sms", name: "SMS gateway", config: "Sender ID · API key" },
+    { key: "sms", name: "SMS gateway", config: "GSM modem · serial port" },
     { key: "email", name: "E-mail", config: "SMTP host · port · user" },
     { key: "backup", name: "Cloud backup", config: "Provider · schedule" },
     { key: "webhook", name: "Webhook / REST", config: "Endpoint · secret" },
@@ -151,6 +151,9 @@ const connectionsSchema = z.object({
     IndicatorBaud: z.number().int().positive(),
     /** A regex with one capture group around the weight — PLAN §17's "custom-pattern fallback so any indicator works without a code change" (src-tauri/src/devices/indicator.rs's `parse_weight`). Empty uses that function's built-in numeric-extraction fallback instead. */
     IndicatorPattern: z.string(),
+    /** Task #43's GSM modem, on its own serial port — same "empty = not configured yet" shape as `IndicatorPort`, checked the same way before a send is attempted. */
+    GsmPort: z.string(),
+    GsmBaud: z.number().int().positive(),
 });
 export type ConnectionsConfig = z.infer<typeof connectionsSchema>;
 
@@ -205,6 +208,8 @@ export const DEFAULT_CONNECTIONS: ConnectionsConfig = {
     IndicatorPort: "",
     IndicatorBaud: 9600,
     IndicatorPattern: "",
+    GsmPort: "",
+    GsmBaud: 9600,
 };
 
 /** The mock's own `cfg.prn` default, verbatim. */
