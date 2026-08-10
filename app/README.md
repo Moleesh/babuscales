@@ -273,6 +273,19 @@ on Reports and Dashboard).
     from HP LaserJet M1005 to Canon LBP2900B, switched panes and back, and confirmed the new value
     round-tripped through `db.saveConfig`/`SettingsProvider` rather than just sitting in local DOM
     state.
+25. **Settings — Integrations, the Connections pane's second card.**
+    `src/features/settings/_private/ConnectionsPane.tsx`'s new `IntegrationsCard` — turns out this
+    one bit of the mock's Settings screen isn't decorative like Export or the template wizard:
+    `renderInts` really does flip `x.on` and re-render on click, so it earned a real, persisted
+    `Integrations: {whatsapp, sms, email, backup, webhook, qr, tally, board}` config row
+    (`INTEGRATION_FIXTURES`, ported verbatim from the mock's own `INTEGRATIONS` array, including
+    its exact default on/off flags) rather than a placeholder note. "Configure" stays decorative on
+    both sides — the mock's own version never opens a real per-channel form (SMTP host, API token,
+    ...), just flashes `"<name> · <cfg> — stored in the settings table"`, ported unchanged. Reused
+    the mock's own `.tpl`/`.badge` row styling (nothing else in this codebase had built it yet — the
+    deferred template-list card would have been the other user). ✅ Verified in-browser: unlocked
+    admin, turned WhatsApp off (badge disappeared, header flashed "WhatsApp disabled", button
+    relabelled "Turn on"), clicked E-mail's Configure and confirmed the exact flash text.
 
 ## Known gap
 
@@ -338,8 +351,15 @@ a different and bigger feature the mock itself never specifies, so nothing here 
 - **`CaptureTimeline`** (named in PLAN's architecture list) was not built — Weighing's "Captured &
   calculated" card uses the mock's `.calc` three-box grid instead.
 - **Dashboard's hourly window** (06:00–20:00) is a fixed default; there is no site-hours Setting.
-- **Trust and integrations** (PLAN §18) — the hash chain, QR verification, anomaly detection,
-  WhatsApp/SMS delivery, Cloudflare Tunnel/Tailscale remote access, MiMaS: none of it is built.
+- **Trust and integrations** (PLAN §18) — the hash chain is real (`db/hash.ts`, `audit`-only,
+  verified against a real chain in item 20). Item 25 built the Integrations pane's on/off toggles
+  as real, persisted settings, but nothing behind any of those eight switches actually sends
+  anything: no outbox worker delivers WhatsApp/SMS/e-mail, no public QR-verification page exists
+  (the mock's own thermal-slip QR is decorative text — `[ QR ]  <ticket no>` — not a real code or
+  URL, and a genuinely public verification page needs a hosting story this project doesn't have
+  yet), no webhook fires, no cloud backup provider is wired, no accounting-format export runs, no
+  outdoor display board is driven. Anomaly detection is deferred by decision (PLAN §21 Phase 8),
+  Cloudflare Tunnel/Tailscale remote access and MiMaS are Phase 7 items, neither built.
 
 ## Carried over from the mock, verbatim
 

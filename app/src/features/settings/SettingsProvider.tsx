@@ -10,6 +10,7 @@ import { DEFAULT_ADMIN_PASSWORD, hashAdminPassword, verifyAdminPassword } from "
 import {
     DEFAULT_CONNECTIONS,
     DEFAULT_FORMATS,
+    DEFAULT_INTEGRATIONS,
     DEFAULT_NUMBERING,
     DEFAULT_OPERATOR_NAME,
     DEFAULT_PRINTERS,
@@ -36,6 +37,7 @@ const SYNC_DEFAULT_BODY: SettingsBody = {
     Formats: DEFAULT_FORMATS,
     Connections: DEFAULT_CONNECTIONS,
     Printers: DEFAULT_PRINTERS,
+    Integrations: DEFAULT_INTEGRATIONS,
     OperatorName: DEFAULT_OPERATOR_NAME,
     AdminPasswordHash: "",
     AdminPasswordSalt: "",

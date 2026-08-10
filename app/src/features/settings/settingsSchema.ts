@@ -73,6 +73,52 @@ const printersSchema = z.object({
 });
 export type PrintersConfig = z.infer<typeof printersSchema>;
 
+// demo/BabuScale-demo.html's INTEGRATIONS fixture, verbatim — the mock's
+// own `renderInts` toggles `x.on` and re-renders for real (unlike the
+// Export buttons or the New-template wizard, this bit of the mock is
+// genuinely interactive), so this is a persisted on/off, not a display-only
+// placeholder. "Configure" stays decorative in the mock too — it never
+// opens a real per-channel form (SMTP host, API token, ...), just flashes
+// "<name> · <cfg> — stored in the settings table" — ported the same way.
+export const INTEGRATION_KEYS = [
+    "whatsapp",
+    "sms",
+    "email",
+    "backup",
+    "webhook",
+    "qr",
+    "tally",
+    "board",
+] as const;
+export type IntegrationKey = (typeof INTEGRATION_KEYS)[number];
+export interface IntegrationFixture {
+    key: IntegrationKey;
+    name: string;
+    config: string;
+}
+export const INTEGRATION_FIXTURES: readonly IntegrationFixture[] = [
+    { key: "whatsapp", name: "WhatsApp", config: "Business API token" },
+    { key: "sms", name: "SMS gateway", config: "Sender ID · API key" },
+    { key: "email", name: "E-mail", config: "SMTP host · port · user" },
+    { key: "backup", name: "Cloud backup", config: "Provider · schedule" },
+    { key: "webhook", name: "Webhook / REST", config: "Endpoint · secret" },
+    { key: "qr", name: "QR verification page", config: "Public URL" },
+    { key: "tally", name: "Accounting export", config: "Format · folder" },
+    { key: "board", name: "Outdoor display board", config: "Port · protocol" },
+];
+
+const integrationsSchema = z.object({
+    whatsapp: z.boolean(),
+    sms: z.boolean(),
+    email: z.boolean(),
+    backup: z.boolean(),
+    webhook: z.boolean(),
+    qr: z.boolean(),
+    tally: z.boolean(),
+    board: z.boolean(),
+});
+export type IntegrationsConfig = z.infer<typeof integrationsSchema>;
+
 // PLAN §17's setup wizard, scoped down (app/README.md known gap) to just
 // the fields a real connection needs — see settings/_private/ConnectionsPane.tsx.
 const connectionsSchema = z.object({
@@ -91,6 +137,7 @@ export const settingsBodySchema = z.object({
     Formats: formatsSchema,
     Connections: connectionsSchema,
     Printers: printersSchema,
+    Integrations: integrationsSchema,
     /** "Operator on duty" (mock's `#opChip`/Appearance pane `#setOp`) — a free-text label, not an account; deliberately not admin-gated. */
     OperatorName: z.string(),
     AdminPasswordHash: z.string(),
@@ -139,6 +186,18 @@ export const DEFAULT_PRINTERS: PrintersConfig = {
     A4: "HP LaserJet M1005",
     Mx: "Epson LX-310",
     Th: "TVS RP 3200 Star",
+};
+
+/** INTEGRATIONS' own `on:` flags, verbatim. */
+export const DEFAULT_INTEGRATIONS: IntegrationsConfig = {
+    whatsapp: true,
+    sms: false,
+    email: true,
+    backup: true,
+    webhook: false,
+    qr: true,
+    tally: false,
+    board: false,
 };
 
 /** RULE_DEFS, verbatim — the one place a one-line note earns its keep. */

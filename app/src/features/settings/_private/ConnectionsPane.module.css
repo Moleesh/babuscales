@@ -58,3 +58,54 @@
     margin: 0;
     line-height: 1.6;
 }
+
+/* Integrations list — mock's own `.tpls`/`.tpl`/`.badge` (demo/BabuScale-demo.html), reused here since nothing else in this codebase built the template-list look yet. */
+.tpls {
+    display: grid;
+    gap: 7px;
+}
+
+.tpl {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 11px;
+    border: 1px solid var(--line);
+    border-radius: 9px;
+    background: var(--panel-2);
+    flex-wrap: wrap;
+}
+
+.tplOn {
+    border-color: var(--led-dim);
+    background: var(--led-ghost);
+}
+
+.tplName {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    min-width: 0;
+}
+
+.tplMeta {
+    font-size: 0.6875rem;
+    color: var(--dim);
+    font-family: var(--mono);
+}
+
+.tplActs {
+    margin-left: auto;
+    display: flex;
+    gap: 5px;
+    flex-wrap: wrap;
+}
+
+.badge {
+    font-size: 0.5625rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: var(--led-ghost);
+    color: var(--led);
+}
