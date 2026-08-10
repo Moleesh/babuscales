@@ -8,7 +8,7 @@ import styles from "./SlipA4.module.css";
 // gap), so this and that prop are the one place it lives, kept in sync by
 // hand until a real Settings pane owns it.
 const SITE_NAME = "SRI LAKSHMI BLUE METALS";
-const SITE_ADDRESS = "Kottaram Road, Nagercoil 629001 · GSTIN 33ABCDE1234F1Z5";
+const SITE_ADDRESS = "Babulens Enterprises, Nagercoil";
 
 export interface SlipA4Props {
     data: SlipData;
