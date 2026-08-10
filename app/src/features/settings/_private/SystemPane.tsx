@@ -14,6 +14,7 @@ import { useLicense } from "@features/licensing/useLicense";
 import { RESET_EVERY_OPTIONS } from "../settingsSchema";
 import type { ResetEvery } from "../settingsSchema";
 import { useSettings } from "../useSettings";
+import { BackupRestoreCard } from "./BackupRestoreCard";
 import styles from "./SystemPane.module.css";
 
 // Mock's own `flash()` timing, reused from ConnectionsPane's RemoteAccessCard.
@@ -415,6 +416,8 @@ export const SystemPane = ({ onResetTicketSeries }: SystemPaneProps) => {
                     </p>
                 </div>
             </Card>
+
+            <BackupRestoreCard />
 
             <LicenceCard />
         </div>

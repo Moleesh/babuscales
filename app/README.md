@@ -77,7 +77,11 @@ the frontend, via throwaway `cargo run` examples for the Rust store, deleted onc
 6. **Backup and restore** — from day one. Real data must never exist without backup. ✅ Memory
    adapter covered in step 2. `store::backup_database`/`restore_database` (`src-tauri/src/store/backup.rs`)
    use `VACUUM INTO`, an integrity check, and a SHA-256 checksum — verified: a corrupt backup is
-   rejected, a valid one restores real data into a fresh file.
+   rejected, a valid one restores real data into a fresh file. `DataPort.exportBackup`/`importBackup`
+   sat unwired to any UI until task #40's docs pass surfaced the gap — Settings → System now has a
+   real **Backup & restore** card (`features/settings/_private/BackupRestoreCard.tsx`): Save works
+   even locked (a plain Blob download), Restore needs the admin password and a confirm step since
+   it replaces every ticket, master and setting with the file's contents.
 7. **CI gates + README + Pages demo live.** ✅ `.github/workflows/{ci,pages,release}.yml`
    authored per PLAN §20, `eslint.config.js` rule severities corrected to match
    `docs/CodingStandards.md`'s blocking/advisory split exactly, `npm run size:report` is a real
