@@ -178,8 +178,9 @@ on Reports and Dashboard).
     `p.chg.replace("₹ ", "Rs.")`. Charge is now wired end to end: the Weighing "Captured &
     calculated" card's 4th box, Reports' Tickets and Summary columns, Dashboard's "Charge collected
     today" KPI tile, and the real Charge field on all three print layouts. Deliberately does not
-    build "Value" (material-rate-based valuation) — that needs Master body-field editing UI that
-    doesn't exist yet (see Known gap). Along the way, `WeighingScreen.tsx`'s recall-offer logic
+    build "Value" (material-rate-based valuation) at this point — that needed Master body-field
+    editing UI that didn't exist yet; item 26 built both once it did. Along the way,
+    `WeighingScreen.tsx`'s recall-offer logic
     (resume/stored-tare/fill-from-last-ticket) was extracted into `_private/buildRecallOffers.ts`,
     a pure function with no JSX — the screen had grown past this project's 300-line file-split
     convention (`docs/CodingStandards.md`) while this item was being wired in. ✅ Verified
@@ -302,6 +303,21 @@ on Reports and Dashboard).
     M-Sand a ₹1,250/t rate in Masters, captured a real Tare (12,370 kg) and Gross (33,757 kg) on a
     ticket with M-Sand selected, and confirmed all three derivation lines rendered correctly —
     including `21.387 × ₹1,250 = ₹26,734.00`, the correct rounded result.
+27. **Split `WeighingScreen.tsx` back under the 300-line budget.** Grown to 500 lines across items
+    19–26's own additions (the Charge box, the Cameras sidebar card, Value's formula breakdown) —
+    tracked as its own task rather than fixed inline each time, so feature work didn't keep
+    stalling on a refactor. Three self-contained pieces came out: `_private/TicketFieldsCard.tsx`
+    (the four SearchableDropdown fields + Challan No + the recall banner), `_private/CalcCard.tsx`
+    (the "Captured & calculated" card — item 26's own note called this "the cleanest candidate",
+    and it stayed that way: only `weights`/`captures`/`charge`/`materialRate`/`value`/`amountDp`,
+    no cache or DataPort deps), and `_private/ActionsCard.tsx` (the button stack + status hint).
+    `WeighingScreen.tsx` itself is 218 lines now — state, effects and the four cards' wiring, same
+    shape as `buildRecallOffers.ts`'s extraction one item back, just three cards' worth instead of
+    one function. ✅ Verified: pure refactor, no behaviour change — typecheck/lint/format clean (no
+    new warnings beyond the already-established per-file 60-line function threshold, which nearly
+    every screen in this codebase already carries), both builds succeed, tree-shake grep still
+    passes, and in-browser: captured a real Tare through the split screen and confirmed every card
+    (Ticket fields, calc grid, Actions, Cameras) still renders and updates exactly as before.
 
 ## Known gap
 

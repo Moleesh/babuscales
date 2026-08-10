@@ -1,43 +1,27 @@
 import { useEffect, useMemo, useState } from "react";
 
-import { Button } from "@components/Button";
 import { Card } from "@components/Card";
-import { Field, FieldGrid } from "@components/Field";
-import { SearchableDropdown } from "@components/SearchableDropdown";
-import { SegmentedControl } from "@components/SegmentedControl";
-import type { SegmentedOption } from "@components/SegmentedControl";
-import { StatusPill } from "@components/StatusPill";
-import { formatMoney, formatWeightKg } from "@constants/numberFormat";
 import { getMaterialRate } from "@db/materialBody";
-import type { CaptureType } from "@db/ticketBody";
 import type { DocRow } from "@db/types";
 import { useDataPort } from "@db/useDataPort";
 import { useMasterCache } from "@db/useMasterCache";
 import { computeCharge, computeValue } from "@engines/billing";
 import { useIndicator, useIndicatorReading } from "@engines/indicator";
 import { buildSlipData } from "@engines/print";
-import { DEFAULT_TICKET_SCHEMA } from "@engines/schemaEngine";
 import { computeCameraBurnIn, CAMERA_SLOTS, CameraGrid } from "@features/cameras";
 import { useSettings } from "@features/settings";
 
+import { ActionsCard } from "./_private/ActionsCard";
 import { buildRecallOffers } from "./_private/buildRecallOffers";
-import { CalcFormula } from "./_private/CalcFormula";
+import { CalcCard } from "./_private/CalcCard";
 import { PrintPreviewModal } from "./_private/PrintPreviewModal";
+import { TicketFieldsCard } from "./_private/TicketFieldsCard";
 import { OpenTicketStrip } from "./OpenTicketStrip";
 import { listOpenTickets } from "./recall";
 import type { OpenTicketSummary } from "./recall";
-import { RecallBanner } from "./RecallBanner";
 import { formatTicketNo } from "./ticketNumber";
 import type { UseWeighingTicket } from "./useWeighingTicket";
 import styles from "./WeighingScreen.module.css";
-
-const fieldLabel = (fieldId: string): string =>
-    DEFAULT_TICKET_SCHEMA.Fields.find((field) => field.FieldId === fieldId)?.Label.en ?? fieldId;
-
-const KIND_OPTIONS: SegmentedOption<CaptureType>[] = [
-    { value: "Tare", label: "Tare" },
-    { value: "Gross", label: "Gross" },
-];
 
 const formatStamp = (iso: string | undefined): string =>
     iso ? new Date(iso).toLocaleString() : "—";
@@ -175,302 +159,36 @@ export const WeighingScreen = ({ ticket }: WeighingScreenProps) => {
             <OpenTicketStrip tickets={openTickets} onResume={handleResume} />
             <div className={styles.layout}>
                 <div className={styles.col}>
-                    <Card
-                        title={<span className="lbl">Ticket</span>}
-                        headerRight={
-                            <span className="chip num">{formatTicketNo(ticket.docSeq)}</span>
-                        }
-                    >
-                        <FieldGrid columns={2}>
-                            <Field
-                                id="fVeh"
-                                label={{ en: fieldLabel("VehicleNo") }}
-                                searchTitle={{ en: "Searches the Vehicles master" }}
-                            >
-                                <SearchableDropdown
-                                    id="fVeh"
-                                    value={ticket.fields.vehicleNo}
-                                    onChange={(value) => ticket.setField("vehicleNo", value)}
-                                    onSearch={(query) =>
-                                        vehicleCache.search(query).map((row) => ({
-                                            Value: row.MasterId,
-                                            Label: row.Name,
-                                        }))
-                                    }
-                                    onAddNew={(query) =>
-                                        void vehicleCache.save({
-                                            MasterKind: "Vehicle",
-                                            Name: query.trim(),
-                                            Body: {},
-                                        })
-                                    }
-                                    readOnly={ticket.isLocked}
-                                    spellCheck={false}
-                                />
-                            </Field>
-                            <Field id="fDate" label={{ en: "Ticket Date" }}>
-                                <input
-                                    id="fDate"
-                                    readOnly
-                                    value={ticketDate}
-                                    className={styles.dateField}
-                                />
-                            </Field>
-                        </FieldGrid>
-                        <FieldGrid columns={2}>
-                            <Field
-                                id="fParty"
-                                label={{ en: fieldLabel("Party") }}
-                                searchTitle={{ en: "Searches the Parties master" }}
-                                recalled={ticket.recalledFields.has("party")}
-                            >
-                                <SearchableDropdown
-                                    id="fParty"
-                                    value={ticket.fields.party}
-                                    onChange={(value) => ticket.setField("party", value)}
-                                    onSearch={(query) =>
-                                        partyCache.search(query).map((row) => ({
-                                            Value: row.MasterId,
-                                            Label: row.Name,
-                                        }))
-                                    }
-                                    onAddNew={(query) =>
-                                        void partyCache.save({
-                                            MasterKind: "Party",
-                                            Name: query.trim(),
-                                            Body: {},
-                                        })
-                                    }
-                                    readOnly={ticket.isLocked}
-                                />
-                            </Field>
-                            <Field
-                                id="fMat"
-                                label={{ en: fieldLabel("Material") }}
-                                searchTitle={{ en: "Searches the Materials master" }}
-                                recalled={ticket.recalledFields.has("material")}
-                            >
-                                <SearchableDropdown
-                                    id="fMat"
-                                    value={ticket.fields.material}
-                                    onChange={(value) => ticket.setField("material", value)}
-                                    onSearch={(query) =>
-                                        materialCache.search(query).map((row) => ({
-                                            Value: row.MasterId,
-                                            Label: row.Name,
-                                        }))
-                                    }
-                                    onAddNew={(query) =>
-                                        void materialCache.save({
-                                            MasterKind: "Material",
-                                            Name: query.trim(),
-                                            Body: {},
-                                        })
-                                    }
-                                    readOnly={ticket.isLocked}
-                                />
-                            </Field>
-                        </FieldGrid>
-                        <RecallBanner offers={recallOffers} />
-                        <FieldGrid columns={2}>
-                            <Field id="fChal" label={{ en: "Challan No" }}>
-                                <input
-                                    id="fChal"
-                                    value={ticket.fields.challanNo}
-                                    onChange={(event) =>
-                                        ticket.setField("challanNo", event.target.value)
-                                    }
-                                    readOnly={ticket.isLocked}
-                                    autoComplete="off"
-                                />
-                            </Field>
-                            <Field
-                                id="fTrans"
-                                label={{ en: fieldLabel("Transporter") }}
-                                recalled={ticket.recalledFields.has("transporter")}
-                            >
-                                <SearchableDropdown
-                                    id="fTrans"
-                                    value={ticket.fields.transporter}
-                                    onChange={(value) => ticket.setField("transporter", value)}
-                                    onSearch={(query) =>
-                                        transporterCache.search(query).map((row) => ({
-                                            Value: row.MasterId,
-                                            Label: row.Name,
-                                        }))
-                                    }
-                                    onAddNew={(query) =>
-                                        void transporterCache.save({
-                                            MasterKind: "Transporter",
-                                            Name: query.trim(),
-                                            Body: {},
-                                        })
-                                    }
-                                    readOnly={ticket.isLocked}
-                                />
-                            </Field>
-                        </FieldGrid>
-                    </Card>
-
-                    <Card title={<span className="lbl">Captured &amp; calculated</span>}>
-                        <div className={styles.calc}>
-                            <div className={styles.calcBox}>
-                                <span className="lbl">Tare</span>
-                                <b className={styles.calcValue}>
-                                    {ticket.weights.tareKg !== null
-                                        ? formatWeightKg(ticket.weights.tareKg)
-                                        : "—"}
-                                </b>
-                                <div className={styles.calcStamp}>
-                                    {formatStamp(
-                                        ticket.captures.find((c) => c.Type === "Tare")?.At,
-                                    )}
-                                </div>
-                            </div>
-                            <div className={styles.calcBox}>
-                                <span className="lbl">Gross</span>
-                                <b className={styles.calcValue}>
-                                    {ticket.weights.grossKg !== null
-                                        ? formatWeightKg(ticket.weights.grossKg)
-                                        : "—"}
-                                </b>
-                                <div className={styles.calcStamp}>
-                                    {formatStamp(
-                                        ticket.captures.find((c) => c.Type === "Gross")?.At,
-                                    )}
-                                </div>
-                            </div>
-                            <div
-                                className={`${styles.calcBox} ${ticket.weights.netKg !== null ? styles.calcLead : ""}`}
-                            >
-                                <span className="lbl">Net</span>
-                                <b className={styles.calcValue}>
-                                    {ticket.weights.netKg !== null
-                                        ? formatWeightKg(ticket.weights.netKg)
-                                        : "—"}
-                                </b>
-                                <div className={styles.calcStamp}>&nbsp;</div>
-                            </div>
-                            <div
-                                className={`${styles.calcBox} ${charge === null ? styles.calcPending : ""}`}
-                            >
-                                <span className="lbl">Charge</span>
-                                <b className={styles.calcValue}>
-                                    {charge === null
-                                        ? "—"
-                                        : formatMoney(charge, settings.Formats.AmountDp)}
-                                </b>
-                                <div className={styles.calcStamp}>&nbsp;</div>
-                            </div>
-                        </div>
-                        <CalcFormula
-                            tareKg={ticket.weights.tareKg}
-                            grossKg={ticket.weights.grossKg}
-                            netKg={ticket.weights.netKg}
-                            charge={charge}
-                            materialRate={materialRate}
-                            value={value}
-                            amountDp={settings.Formats.AmountDp}
-                        />
-                        <StatusPill
-                            tareKg={ticket.weights.tareKg}
-                            grossKg={ticket.weights.grossKg}
-                        />
-                    </Card>
+                    <TicketFieldsCard
+                        ticket={ticket}
+                        ticketDate={ticketDate}
+                        recallOffers={recallOffers}
+                        vehicleCache={vehicleCache}
+                        partyCache={partyCache}
+                        materialCache={materialCache}
+                        transporterCache={transporterCache}
+                    />
+                    <CalcCard
+                        weights={ticket.weights}
+                        captures={ticket.captures}
+                        charge={charge}
+                        materialRate={materialRate}
+                        value={value}
+                        amountDp={settings.Formats.AmountDp}
+                    />
                 </div>
 
                 <div className={styles.col}>
-                    <Card
-                        title={<span className="lbl">Actions</span>}
-                        headerRight={<span className="chip num">{ticket.printCount} prints</span>}
-                    >
-                        <div style={{ display: "grid", gap: 9 }}>
-                            <SegmentedControl
-                                options={KIND_OPTIONS.map((option) => ({
-                                    ...option,
-                                    disabled:
-                                        ticket.captures.some((c) => c.Type === option.value) ||
-                                        ticket.isLocked,
-                                }))}
-                                value={ticket.kind ?? "Tare"}
-                                onChange={ticket.setKind}
-                                size="big"
-                                ariaLabel="Capture as"
-                            />
-                            <Button
-                                variant="primary"
-                                size="large"
-                                disabled={!armed}
-                                caption={captureHint}
-                                onClick={() => ticket.capture(reading.WeightKg)}
-                            >
-                                {captureLabel}
-                            </Button>
-                            <div className={styles.actions}>
-                                <Button
-                                    disabled={
-                                        ticket.isLocked ||
-                                        ticket.captures.length === 0 ||
-                                        ticket.saving
-                                    }
-                                    onClick={() => void handleSave()}
-                                >
-                                    {ticket.isComplete ? "Save" : "Save & park"}
-                                </Button>
-                                <Button
-                                    disabled={!ticket.isLocked || ticket.printCount > 0}
-                                    onClick={() => setPrintModalOpen(true)}
-                                >
-                                    Print
-                                </Button>
-                            </div>
-                            <div className={styles.actions}>
-                                <Button
-                                    disabled={ticket.printCount === 0}
-                                    onClick={() => setPrintModalOpen(true)}
-                                >
-                                    Reprint
-                                </Button>
-                                <Button onClick={ticket.startNew}>New ticket</Button>
-                            </div>
-                            <div className={styles.actions}>
-                                <Button
-                                    variant="danger"
-                                    disabled={ticket.isLocked}
-                                    onClick={ticket.clear}
-                                >
-                                    Clear
-                                </Button>
-                                {indicator.loadLorry && (
-                                    <Button
-                                        disabled={
-                                            ticket.captures.length >= 2 ||
-                                            ticket.isLocked ||
-                                            !ticket.kind
-                                        }
-                                        onClick={() =>
-                                            ticket.kind && indicator.loadLorry?.(ticket.kind)
-                                        }
-                                    >
-                                        Send a lorry
-                                    </Button>
-                                )}
-                            </div>
-                            <p className={styles.hint}>
-                                {ticket.isLocked
-                                    ? ticket.printCount > 0
-                                        ? "Printed."
-                                        : "Saved — ready to print."
-                                    : ticket.isComplete
-                                      ? "Both weights captured — Save to finish."
-                                      : reading.WeightKg === 0 && reading.Stable
-                                        ? "Deck empty. Send a lorry to begin."
-                                        : armed
-                                          ? "Stable — capture now."
-                                          : "Weight in motion — capture is locked until it settles."}
-                            </p>
-                        </div>
-                    </Card>
+                    <ActionsCard
+                        ticket={ticket}
+                        reading={reading}
+                        loadLorry={indicator.loadLorry}
+                        armed={armed}
+                        captureLabel={captureLabel}
+                        captureHint={captureHint}
+                        onSave={() => void handleSave()}
+                        onOpenPrintModal={() => setPrintModalOpen(true)}
+                    />
 
                     <Card
                         title={<span className="lbl">Cameras</span>}
