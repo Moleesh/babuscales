@@ -152,8 +152,14 @@ for an admin deciding what to promise a site:
 - Reports has no date-range filter and no PDF/Excel/CSV export (buttons are shown disabled, not
   hidden — matching the reference spec's own dead buttons rather than pretending they work).
 - Of the eight Integrations toggles, only QR verification, e-mail and SMS gateway actually do
-  anything yet — WhatsApp, cloud backup, webhook, accounting export and the outdoor display board
-  all persist as a setting with no worker behind them.
+  anything yet — cloud backup, webhook, accounting export and the outdoor display board persist
+  as a setting with no worker behind them, pending future work.
+- WhatsApp is the one toggle that will *stay* decorative — a deliberate decision, not a queued gap.
+  It only has two paths in: Meta's official Cloud API, which needs a paid, Meta-approved business
+  account and a per-message cost, or unofficial libraries that impersonate a WhatsApp Web session,
+  which violate WhatsApp's Terms of Service and risk the site's own number getting banned. Neither
+  is something to ship into a paid product, unlike SMS (§4 above), which sidesteps any such cost or
+  risk entirely by talking to a plain serial GSM modem instead of a cloud provider.
 - Billing (`Charge`) is a flat, hardcoded rate — there's no Settings screen to change it.
 - MiMaS integration is blocked on an external specification that doesn't exist yet; not a bug, not
   in progress.

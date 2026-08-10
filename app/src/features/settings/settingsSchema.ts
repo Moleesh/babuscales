@@ -97,6 +97,18 @@ export interface IntegrationFixture {
     config: string;
 }
 export const INTEGRATION_FIXTURES: readonly IntegrationFixture[] = [
+    // Task #44 — WhatsApp stays decorative by decision, not oversight, and
+    // unlike every other still-decorative row here it never will get a real
+    // worker: WhatsApp only has two paths in, and neither is a fit. (1) Meta's
+    // official Cloud API needs a paid, Meta-approved business account and a
+    // per-message cost — the thing PLAN.md §23 open question 5 flags as "the
+    // only per-message cost" left once SMS (task #43) sidestepped it via a
+    // bring-your-own serial GSM modem. WhatsApp has no serial/AT-command
+    // equivalent — it's a proprietary end-to-end-encrypted app protocol, not
+    // a modem you can talk to over a COM port. (2) The unofficial libraries
+    // that impersonate a WhatsApp Web session (Baileys, whatsapp-web.js) are
+    // free but violate WhatsApp's Terms of Service and risk the site's own
+    // number getting banned — not something to ship into a paid product.
     { key: "whatsapp", name: "WhatsApp", config: "Business API token" },
     { key: "sms", name: "SMS gateway", config: "GSM modem · serial port" },
     { key: "email", name: "E-mail", config: "SMTP host · port · user" },

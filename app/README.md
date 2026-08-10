@@ -401,6 +401,20 @@ on Reports and Dashboard).
     sending a text needs a real GSM modem and the desktop build to test against, neither available
     in this environment — not exercised end-to-end past the Rust compiling and the noop path's
     honest fallback, the same category of gap as item 29's SMTP relay.
+31. **Leave WhatsApp decorative — by decision, not oversight.** Unlike items 29 and 30, this one
+    shipped no code: it's the record of *why* Integrations' `whatsapp` row is the one toggle that
+    will never get item 29/30's treatment. WhatsApp only has two paths in, and neither belongs in a
+    product sold to sites: Meta's official Cloud API needs a paid, Meta-approved business account
+    and a per-message cost — the exact thing PLAN §23 open question 5 flagged as "the only
+    per-message cost" once item 30 sidestepped it for SMS via a bring-your-own serial modem — and
+    WhatsApp has no serial/AT-command equivalent to sidestep it with, being a proprietary
+    end-to-end-encrypted app protocol rather than a modem on a COM port. The other path, unofficial
+    libraries that impersonate a WhatsApp Web session (Baileys, whatsapp-web.js), is free but
+    violates WhatsApp's own Terms of Service and risks the site's number getting banned. The
+    reasoning now lives in three places so it survives independently of any one of them: a comment
+    directly above `INTEGRATION_FIXTURES`'s `whatsapp` entry in `settingsSchema.ts`, `AdminSetup.md`
+    §8, and this item. ✅ Nothing to verify — no runtime behaviour changed; the toggle persists and
+    "Configure" flashes the same decorative stub it always has (see item 25).
 
 ## Known gap
 
@@ -505,10 +519,12 @@ a different and bigger feature the mock itself never specifies, so nothing here 
   the `"Email"` channel a real, if minimal, consumer: the print flow itself attempts the send and
   reconciles the row to `Sent`/`Failed` synchronously — a "drain of one", not a background worker.
   Item 30 gave the `"Sms"` channel the same real, minimal consumer, over a serial GSM modem instead
-  of SMTP. No worker drains any channel in the general case yet: WhatsApp delivery, webhook firing,
-  cloud backup, and accounting-format export are all still unimplemented consumers, and no outdoor
-  display board is driven. Anomaly detection is deferred by decision (PLAN §21 Phase 8); MiMaS is a
-  Phase 7 item, not built, blocked on a spec that doesn't exist yet.
+  of SMTP. No worker drains any channel in the general case yet: webhook firing, cloud backup, and
+  accounting-format export are all still unimplemented consumers pending future work, and no
+  outdoor display board is driven. WhatsApp delivery is different from that list — item 31 records
+  the decision to leave it decorative permanently, not queued: it has no free, ToS-compliant path.
+  Anomaly detection is deferred by decision (PLAN §21 Phase 8); MiMaS is a Phase 7 item, not built,
+  blocked on a spec that doesn't exist yet.
 - **Licensing** (PLAN §4.10/§12/§23 item 4, tasks #37/#38) — the offline activation-code format and
   its verification are real and exercised end to end (see `tools/license-format`'s own module doc
   for the full design and the "why asymmetric signing at all" reasoning): a ~15-character request

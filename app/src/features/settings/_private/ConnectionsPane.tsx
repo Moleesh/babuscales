@@ -77,9 +77,11 @@ const IntegrationsCard = () => {
 
     // Real for QR verification, e-mail and SMS — everything else stays the
     // mock's own "here's where this would be configured" placeholder
-    // (app/README.md known gap): PLAN §23 item 4 leaves WhatsApp with no
-    // compliant free path (task #44), so there's nothing real to wire that
-    // one to yet.
+    // (app/README.md known gap). WhatsApp specifically will never join that
+    // list: PLAN §23 open item 5 flags it as "the only per-message cost",
+    // and task #44 (app/README.md item 31) recorded why there's no
+    // compliant free path to wire it to — Meta's Cloud API is paid, and the
+    // unofficial alternative violates WhatsApp's own Terms of Service.
     const configure = async (fixture: IntegrationFixture): Promise<void> => {
         if (fixture.key === "qr") {
             if (!settings.Integrations.qr) {
