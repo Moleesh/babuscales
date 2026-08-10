@@ -6,6 +6,7 @@ import type { SegmentedOption } from "@components/SegmentedControl";
 import { AppearancePane } from "./_private/AppearancePane";
 import { ConnectionsPane } from "./_private/ConnectionsPane";
 import { PlaceholderPane } from "./_private/PlaceholderPane";
+import { PrintPane } from "./_private/PrintPane";
 import { SystemPane } from "./_private/SystemPane";
 import { WeighingPane } from "./_private/WeighingPane";
 import styles from "./SettingsScreen.module.css";
@@ -28,12 +29,12 @@ export interface SettingsScreenProps {
 }
 
 // Six-pane split, ported from demo/BabuScale-demo.html's `#setTabs` +
-// `.pane[data-pane]`. Weighing, System and Connections are fully wired
-// against a real Settings config row (PLAN's "admin password to change
-// configuration"); Appearance is partly wired (Operator-on-duty is real,
-// Theme is still a placeholder — see AppearancePane); Fields & language
-// and Print & printers stay full documented placeholders — see
-// PlaceholderPane.
+// `.pane[data-pane]`. Weighing, System, Connections and Print & printers
+// are fully wired against a real Settings config row (PLAN's "admin
+// password to change configuration"); Appearance is partly wired
+// (Operator-on-duty is real, Theme is still a placeholder — see
+// AppearancePane); Fields & language stays a full documented placeholder
+// — see PlaceholderPane.
 export const SettingsScreen = ({ onResetTicketSeries }: SettingsScreenProps) => {
     const { unlocked } = useSettings();
     const [pane, setPane] = useState<PaneKey>("weigh");
@@ -63,12 +64,7 @@ export const SettingsScreen = ({ onResetTicketSeries }: SettingsScreenProps) => 
                     note="Editing DEFAULT_TICKET_SCHEMA's field labels and required-ness, and managing uploaded language packs, needs a Schema-config editor that isn't built yet (app/README.md known gap: schema-driven rendering)."
                 />
             )}
-            {pane === "print" && (
-                <PlaceholderPane
-                    title="Print & printers"
-                    note="Printer selection and print-template editing depend on the print/export engine, which isn't built yet (app/README.md known gap: Print/export)."
-                />
-            )}
+            {pane === "print" && <PrintPane />}
             {pane === "look" && <AppearancePane />}
             {pane === "weigh" && <WeighingPane />}
             {pane === "conn" && <ConnectionsPane />}

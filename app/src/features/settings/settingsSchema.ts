@@ -44,6 +44,35 @@ export type DisplayFormats = z.infer<typeof formatsSchema>;
 
 export const BAUD_RATE_OPTIONS = [1200, 2400, 4800, 9600, 19200, 38400, 57600, 115200] as const;
 
+// demo/BabuScale-demo.html's PRINTERS fixture, verbatim — there is no
+// driver-level printer enumeration here (or in the mock): the browser
+// print dialog (window.print(), engines/print) always lets the operator
+// pick the real target printer themselves, on both the demo and the
+// desktop build. This list is a stated *preference*, exactly like the
+// mock's — not a live driver binding.
+export const PRINTER_KINDS = ["a4", "mx", "th"] as const;
+export type PrinterKind = (typeof PRINTER_KINDS)[number];
+export interface PrinterFixture {
+    name: string;
+    kind: PrinterKind;
+}
+export const PRINTER_FIXTURES: readonly PrinterFixture[] = [
+    { name: "HP LaserJet M1005", kind: "a4" },
+    { name: "Canon LBP2900B", kind: "a4" },
+    { name: "Microsoft Print to PDF", kind: "a4" },
+    { name: "Epson LX-310", kind: "mx" },
+    { name: "TVS MSP 250 Star", kind: "mx" },
+    { name: "TVS RP 3200 Star", kind: "th" },
+    { name: "Everycom 58 mm", kind: "th" },
+];
+
+const printersSchema = z.object({
+    A4: z.string(),
+    Mx: z.string(),
+    Th: z.string(),
+});
+export type PrintersConfig = z.infer<typeof printersSchema>;
+
 // PLAN §17's setup wizard, scoped down (app/README.md known gap) to just
 // the fields a real connection needs — see settings/_private/ConnectionsPane.tsx.
 const connectionsSchema = z.object({
@@ -61,6 +90,7 @@ export const settingsBodySchema = z.object({
     Numbering: numberingSchema,
     Formats: formatsSchema,
     Connections: connectionsSchema,
+    Printers: printersSchema,
     /** "Operator on duty" (mock's `#opChip`/Appearance pane `#setOp`) — a free-text label, not an account; deliberately not admin-gated. */
     OperatorName: z.string(),
     AdminPasswordHash: z.string(),
@@ -102,6 +132,13 @@ export const DEFAULT_CONNECTIONS: ConnectionsConfig = {
     IndicatorPort: "",
     IndicatorBaud: 9600,
     IndicatorPattern: "",
+};
+
+/** The mock's own `cfg.prn` default, verbatim. */
+export const DEFAULT_PRINTERS: PrintersConfig = {
+    A4: "HP LaserJet M1005",
+    Mx: "Epson LX-310",
+    Th: "TVS RP 3200 Star",
 };
 
 /** RULE_DEFS, verbatim — the one place a one-line note earns its keep. */

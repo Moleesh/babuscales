@@ -128,9 +128,9 @@ on Reports and Dashboard).
 17. **Settings — the admin gate, for real.** `src/features/settings/` — a persisted `Settings`
     config row (weighing rules, stability gate, ticket numbering, date/time/amount formats, a
     salted-SHA-256 admin password hash), `SettingsProvider`/`useSettings`, and the mock's six-pane
-    split (`SettingsScreen`). Weighing and System are fully wired against that row (Appearance and
-    Connections joined them later — items 18 and 21; Fields & language and Print & printers stay
-    documented placeholders — see Known gap). The top-bar admin chip
+    split (`SettingsScreen`). Weighing and System are fully wired against that row (Appearance,
+    Connections and Print & printers joined them later — items 18, 21 and 24; Fields & language
+    stays a documented placeholder — see Known gap). The top-bar admin chip
     (`AdminChip`) and unlock modal (`AppModal`, newly built — PLAN §10's deferred component,
     built now that a feature needs it) gate every pane's controls, with the mock's own 10-minute
     silent auto-lock. `Rules.TareFirst`/`StrictTare`/`AutoCapture` reach `useWeighingTicket` and
@@ -258,6 +258,21 @@ on Reports and Dashboard).
     Weighing sidebar and the full tab; captured a Tare and watched the burn-in mark
     (`Draft · 12,376 kg · 7:09:52 AM`) appear identically in both places, confirming the shared
     `CameraGrid` behaves the same at both sizes.
+24. **Settings — Print & printers, the Printers half.** `src/features/settings/_private/PrintPane.tsx`
+    replaces that pane's placeholder with the mock's own `PRINTERS` fixture (`settingsSchema.ts`'s
+    `PRINTER_FIXTURES`) and a real `Printers: {A4, Mx, Th}` config row, wired the same
+    save-on-change, "Applied immediately" way as Connections (item 21). Deliberately not a live
+    driver binding — `window.print()` (both per-ticket and bulk-report slips) always opens the real
+    OS print dialog, where the operator picks the actual target printer; neither this app nor the
+    mock can select one silently, so this is a stated preference, exactly like the mock's own
+    `cfg.prn`. The mock's other card on this pane — a three-step "New template" wizard for
+    uploading custom HTML layouts — was deliberately not ported: PLAN §21's own roadmap table names
+    the visual template designer as a Phase 8 item, "designed for, not built," so it's out of scope
+    even though the mock itself demonstrates it. That card stays a documented note instead (see
+    Known gap's "Print templates"). ✅ Verified in-browser: unlocked admin, changed the A4 default
+    from HP LaserJet M1005 to Canon LBP2900B, switched panes and back, and confirmed the new value
+    round-tripped through `db.saveConfig`/`SettingsProvider` rather than just sitting in local DOM
+    state.
 
 ## Known gap
 
@@ -290,10 +305,10 @@ a different and bigger feature the mock itself never specifies, so nothing here 
 - **Reports has no date-range filter** — the mock's `rFrom`/`rTo` inputs weren't ported; both
   views always show every ticket. Item 22's bulk print substitutes a real, data-derived date range
   (the printed rows' own earliest–latest timestamp) rather than fabricating one.
-- **Settings** — Weighing, System and Connections are fully wired (items 17, 21); Appearance is
-  partly wired (Operator-on-duty is real, Theme is a placeholder — item 18); Fields & language and
-  Print & printers still render as named placeholders, each pending the feature it would
-  configure. Within System, ticket
+- **Settings** — Weighing, System, Connections and Print & printers are fully wired (items 17, 21,
+  24); Appearance is partly wired (Operator-on-duty is real, Theme is a placeholder — item 18);
+  Fields & language still renders as a named placeholder, pending the Schema-config editor it
+  would need (see "Schema-driven rendering" below). Within System, ticket
   numbering is live and `Formats.AmountDp` now reaches every money display (item 20); date/time
   formats are still only persisted, unread elsewhere. The stale-tare threshold
   (`STORED_TARE_STALE_AFTER_DAYS` in `src/db/storedTare.ts`) stays a fixed constant — the mock
@@ -314,8 +329,12 @@ a different and bigger feature the mock itself never specifies, so nothing here 
   per-ticket print (item 19) are real; only PDF/Excel/CSV file export has nothing to port from the
   reference spec.
 - **Print templates** — the mock's three-step template wizard (upload custom HTML with
-  `{{Placeholders}}`, multiple named templates per paper size, per-kind default printers) wasn't
-  ported; Phase-2 item 19 built the three built-in layouts only, not the editor around them.
+  `{{Placeholders}}`, multiple named templates per paper size) wasn't ported: PLAN §21's roadmap
+  table names the visual template designer as a Phase 8 item, deferred by decision, "designed for,
+  not built" — so building it would be scope creep past this app's own "keep going until phase 8"
+  boundary, not just past the mock's decorative features. Item 19 built the three built-in layouts
+  (A4/thermal/dot-matrix); item 24 built per-kind default-printer selection (a config row, not a
+  driver binding); the editor around custom layouts is what stays undone.
 - **`CaptureTimeline`** (named in PLAN's architecture list) was not built — Weighing's "Captured &
   calculated" card uses the mock's `.calc` three-box grid instead.
 - **Dashboard's hourly window** (06:00–20:00) is a fixed default; there is no site-hours Setting.
