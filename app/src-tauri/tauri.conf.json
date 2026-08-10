@@ -1,8 +1,8 @@
 {
     "$schema": "https://schema.tauri.app/config/2",
-    "productName": "BabuScale",
+    "productName": "BabuScales",
     "version": "0.1.0",
-    "identifier": "com.babulens.babuscale",
+    "identifier": "com.babulens.babuscales",
     "build": {
         "beforeDevCommand": "npm run dev:tauri",
         "beforeBuildCommand": "npm run build:tauri",
@@ -12,7 +12,7 @@
     "app": {
         "windows": [
             {
-                "title": "BabuScale",
+                "title": "BabuScales",
                 "width": 1280,
                 "height": 800,
                 "minWidth": 1024,

@@ -1,7 +1,7 @@
-# BabuScale — application
+# BabuScales — application
 
 The build. Planning lives one level up in [`../PLAN.md`](../PLAN.md); the approved interactive mock
-is [`../demo/BabuScale-demo.html`](../demo/BabuScale-demo.html).
+is [`../demo/BabuScales-demo.html`](../demo/BabuScales-demo.html).
 
 > **The mock is the specification.** Four review rounds are locked into it. Where this folder and
 > `PLAN.md` disagree about how something looks or behaves, the mock is what was reviewed and
@@ -159,7 +159,7 @@ on Reports and Dashboard).
     which gained a `size` prop for it) lets the operator switch papers before committing; "Send to
     printer" calls `window.print()` scoped to just the rendered slip via a `#print-slip` id and an
     `@media print` rule, then commits the existing `PrintCount` increment. Deliberately drops the
-    mock's "Verify: babuscale.app/v/…" footer line — that URL doesn't resolve to anything (no QR
+    mock's "Verify: babuscales.app/v/…" footer line — that URL doesn't resolve to anything (no QR
     verification hosting — see Known gap), and a dead link on an actual printed business document
     would be worse than the mock's own fake demo copy. Charge read "—" at the time this item
     landed — item 20 below made it real. ✅ Verified: all three papers render real ticket data
@@ -225,7 +225,7 @@ on Reports and Dashboard).
     this environment — is a real connection to real hardware; see Known gap.
 22. **Bulk report print.** `src/features/reports/reportPrintRows.ts` + `src/engines/print/` —
     the mock's `btnRPrint` (real) alongside its Export PDF/Excel/CSV buttons (dead: no `id`, no
-    click handler at all in `demo/BabuScale-demo.html` — not a corner this app cut, the reference
+    click handler at all in `demo/BabuScales-demo.html` — not a corner this app cut, the reference
     spec's own buttons don't do anything either). Ported `reportA4`/`reportMx`/`reportTh` faithfully:
     `reportPrintRows.ts` reduces `TicketRow[]`/`SummaryRow[]` to the mock's own narrower,
     print-specific column set (Ticket/Vehicle/Party/Net kg for the register — no Charge column,

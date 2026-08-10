@@ -1,4 +1,4 @@
-/* Ported from demo/BabuScale-demo.html ".head"/".readout"/".lamps" rules. */
+/* Ported from demo/BabuScales-demo.html ".head"/".readout"/".lamps" rules. */
 .head {
     border: 1px solid var(--line);
     border-radius: var(--radius);

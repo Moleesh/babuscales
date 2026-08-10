@@ -26,7 +26,7 @@ export interface SystemPaneProps {
     onResetTicketSeries: () => Promise<void>;
 }
 
-// System pane (demo/BabuScale-demo.html's `data-pane="sys"`) — ticket
+// System pane (demo/BabuScales-demo.html's `data-pane="sys"`) — ticket
 // numbering (live: prefix/width write straight through `formatTicketNo`,
 // Reset actually calls `DataPort.resetDocSeries`), the admin password, and
 // date/time/amount format preferences. The last three are persisted and

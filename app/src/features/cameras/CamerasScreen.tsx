@@ -10,7 +10,7 @@ export interface CamerasScreenProps {
     ticket: UseWeighingTicket;
 }
 
-// Ported from the mock's full-page camGrid (demo/BabuScale-demo.html,
+// Ported from the mock's full-page camGrid (demo/BabuScales-demo.html,
 // `data-screen="cameras"`) — a fixed 4-slot fixture (cameraFixtures.ts),
 // no real video anywhere in the reference spec either. Real capture
 // (USB/IP/RTSP/ONVIF, overlay burn-in on an actual frame, retention, ANPR)

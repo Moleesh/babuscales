@@ -1,4 +1,4 @@
-/* Ported from demo/BabuScale-demo.html's ".card"/".card>header"/".card>.body". */
+/* Ported from demo/BabuScales-demo.html's ".card"/".card>header"/".card>.body". */
 .card {
     border: 1px solid var(--line);
     border-radius: var(--radius);

@@ -31,7 +31,7 @@ interface FlashMessage {
     bad: boolean;
 }
 
-// Fields & language pane (demo/BabuScale-demo.html's `data-pane="fields"`)
+// Fields & language pane (demo/BabuScales-demo.html's `data-pane="fields"`)
 // — the Language packs half only. "Field schema" (drop a schema .json to
 // change field labels/required-ness live) stays a documented placeholder:
 // it needs schema-driven field rendering, a separate and much larger

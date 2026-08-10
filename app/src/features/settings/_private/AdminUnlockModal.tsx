@@ -12,7 +12,7 @@ export interface AdminUnlockModalProps {
     onClose: () => void;
 }
 
-// Ported from demo/BabuScale-demo.html's `#admModal` — "a session unlock,
+// Ported from demo/BabuScales-demo.html's `#admModal` — "a session unlock,
 // not a second login" (the mock's own comment). Mounted once at Shell level
 // (App.tsx), not inside SettingsScreen, because the mock's own admin chip
 // that opens it is in the top bar, reachable from every tab.

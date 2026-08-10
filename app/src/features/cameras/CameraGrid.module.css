@@ -1,4 +1,4 @@
-/* Ported from demo/BabuScale-demo.html's ".cams" (sidebar's fixed 2-column
+/* Ported from demo/BabuScales-demo.html's ".cams" (sidebar's fixed 2-column
    default) and the full tab's own inline override
    (`grid-template-columns:repeat(auto-fit,minmax(210px,1fr))`). */
 .sidebar {

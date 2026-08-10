@@ -1,6 +1,6 @@
 # Coding Standards
 
-How BabuScale code is written. **Most of this is guidance, not a gate.**
+How BabuScales code is written. **Most of this is guidance, not a gate.**
 
 The previous version was 12,070 lines in one file — these conventions exist to make that
 impossible. But a build that fails over style is a build that gets bypassed, and a solo developer

@@ -3,5 +3,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
-    babuscale_lib::run().expect("error while running BabuScale");
+    babuscales_lib::run().expect("error while running BabuScales");
 }

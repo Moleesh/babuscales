@@ -3,7 +3,7 @@
     gap: 13px;
 }
 
-/* Ported from demo/BabuScale-demo.html's ".kpis"/".kpi"/".kpi.accent"/".kpi .v"/".kpi .d". */
+/* Ported from demo/BabuScales-demo.html's ".kpis"/".kpi"/".kpi.accent"/".kpi .v"/".kpi .d". */
 .kpis {
     display: grid;
     grid-template-columns: repeat(4, 1fr);

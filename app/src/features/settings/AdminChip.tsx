@@ -3,7 +3,7 @@ import { useState } from "react";
 import { AdminUnlockModal } from "./_private/AdminUnlockModal";
 import { useSettings } from "./useSettings";
 
-// The top-bar `#admChip` (demo/BabuScale-demo.html) — reachable from every
+// The top-bar `#admChip` (demo/BabuScales-demo.html) — reachable from every
 // tab, not just Settings. Unlocked → clicking locks immediately (no
 // confirmation, same as the mock's `askAdmin`); locked → opens the unlock
 // modal.

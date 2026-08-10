@@ -4,7 +4,7 @@ import { Field } from "@components/Field";
 import { useSettings } from "../useSettings";
 import styles from "./AppearancePane.module.css";
 
-// Appearance pane (demo/BabuScale-demo.html's `data-pane="look"`) — the
+// Appearance pane (demo/BabuScales-demo.html's `data-pane="look"`) — the
 // mock's own comment marks this whole pane "not admin-gated: this is
 // operator comfort", unlike every other pane. "Operator on duty" is real —
 // nothing else here is yet: the six skins are already ported verbatim to

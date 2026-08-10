@@ -1,4 +1,4 @@
-/* Ported from demo/BabuScale-demo.html ".f"/".lbl"/".mst"/".tag"/".recalled"
+/* Ported from demo/BabuScales-demo.html ".f"/".lbl"/".mst"/".tag"/".recalled"
    rules. Scoped to this component (CSS Modules) rather than left as global
    utility classes — everything else in src/components follows that pattern. */
 .f {

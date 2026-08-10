@@ -27,7 +27,7 @@ pub fn run() -> tauri::Result<()> {
             // One file, in the app's own data directory — not a project
             // path, not a temp dir (PLAN §6.4). `store::open` creates it
             // (and its parent) if this is the first run.
-            let db_path = app.path().app_data_dir()?.join("babuscale.db");
+            let db_path = app.path().app_data_dir()?.join("babuscales.db");
             let conn = store::open(&db_path)?;
             app.manage(AppState {
                 conn: std::sync::Mutex::new(conn),

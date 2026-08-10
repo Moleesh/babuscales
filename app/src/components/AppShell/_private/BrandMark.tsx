@@ -4,7 +4,7 @@ import styles from "../AppShell.module.css";
 // load cells carry the deck. BLS is a constant maker's mark, not the real
 // logo — the real one is a deferred action item (PLAN §23, item 1).
 export const BrandMark = () => (
-    <svg className={styles.mark} viewBox="0 0 38 32" role="img" aria-label="BabuScale by Babulens">
+    <svg className={styles.mark} viewBox="0 0 38 32" role="img" aria-label="BabuScales by Babulens">
         <text className={styles.markLetters} x="19" y="16.5" textAnchor="middle" fontSize="13.5">
             BLS
         </text>

@@ -59,7 +59,7 @@
     line-height: 1.6;
 }
 
-/* Integrations list — mock's own `.tpls`/`.tpl`/`.badge` (demo/BabuScale-demo.html), reused here since nothing else in this codebase built the template-list look yet. */
+/* Integrations list — mock's own `.tpls`/`.tpl`/`.badge` (demo/BabuScales-demo.html), reused here since nothing else in this codebase built the template-list look yet. */
 .tpls {
     display: grid;
     gap: 7px;

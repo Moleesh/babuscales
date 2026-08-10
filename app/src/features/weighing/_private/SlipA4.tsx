@@ -15,7 +15,7 @@ export interface SlipA4Props {
 
 // Ported from the mock's `ticketA4` — real JSX rather than an HTML string,
 // so React escapes every field automatically instead of needing the mock's
-// own `esc()` calls. Deliberately drops the mock's "Verify: babuscale.app/v/…"
+// own `esc()` calls. Deliberately drops the mock's "Verify: babuscales.app/v/…"
 // footer line: that URL doesn't resolve to anything real (no QR-verification
 // hosting yet — app/README.md known gap), and printing a dead link on an
 // actual business document would be worse than the mock's own fake demo copy.

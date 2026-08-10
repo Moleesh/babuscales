@@ -5,7 +5,7 @@ export interface CameraSlot {
     configured: boolean;
 }
 
-// Ported verbatim from the mock's own CAMS fixture (demo/BabuScale-demo.html)
+// Ported verbatim from the mock's own CAMS fixture (demo/BabuScales-demo.html)
 // — a fixed 4-slot layout, not master-driven, not a Settings row. The mock
 // itself never wires these to real video: no getUserMedia, no RTSP, no
 // ONVIF, nothing captured or stored. Every tile is decorative, showing only

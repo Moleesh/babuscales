@@ -48,6 +48,6 @@ jobs:
         with:
           projectPath: app
           tagName: ${{ github.ref_name }}
-          releaseName: "BabuScale ${{ github.ref_name }}"
+          releaseName: "BabuScales ${{ github.ref_name }}"
           releaseDraft: true
           args: --bundles msi,nsis

@@ -22,7 +22,7 @@ import {
 import type { SettingsBody } from "./settingsSchema";
 
 // Mock's own admin session: a silent 10-minute auto-lock rather than a
-// second login (demo/BabuScale-demo.html's `admTimer`, `10 * 60 * 1000`ms).
+// second login (demo/BabuScales-demo.html's `admTimer`, `10 * 60 * 1000`ms).
 const ADMIN_UNLOCK_MS = 10 * 60 * 1000;
 
 // Rendered before the real row has loaded (or on a brand-new install, before

@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import styles from "./OperatorChip.module.css";
 import { useSettings } from "./useSettings";
 
-// The top-bar `#opChip`/`#opEdit` (demo/BabuScale-demo.html) — click the
+// The top-bar `#opChip`/`#opEdit` (demo/BabuScales-demo.html) — click the
 // chip, it becomes a text input pre-filled and selected, blur or Enter
 // commits. Not admin-gated: the mock's own comment calls this "operator
 // comfort", not configuration — anyone on shift can say who they are.

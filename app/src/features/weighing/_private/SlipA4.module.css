@@ -1,4 +1,4 @@
-/* Ported from demo/BabuScale-demo.html's ".paper"/".slip-h"/".slip-g"/".slip-w" —
+/* Ported from demo/BabuScales-demo.html's ".paper"/".slip-h"/".slip-g"/".slip-w" —
    deliberately hardcoded to light, near-black-on-cream ink regardless of the
    active skin: this is what actually prints, not a themed screen surface. */
 .paper {

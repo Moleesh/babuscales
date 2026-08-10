@@ -11,7 +11,7 @@ const clampInt = (value: string, min: number, max: number, fallback: number): nu
     return Math.min(max, Math.max(min, n));
 };
 
-// Weighing pane (demo/BabuScale-demo.html's `data-pane="weigh"`) — the three
+// Weighing pane (demo/BabuScales-demo.html's `data-pane="weigh"`) — the three
 // surviving rules (RULE_DEFS), the stability gate, and the read-only "Fixed
 // policy" table. Every control writes through `save()` immediately on
 // change — there is no separate Save button here, matching the mock's own

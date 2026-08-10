@@ -31,7 +31,7 @@ pub use outbox::{enqueue_outbox, list_outbox, update_outbox};
 
 const SCHEMA_SQL: &str = include_str!("schema.sql");
 
-/// Opens (creating if absent) the single BabuScale database file, applies
+/// Opens (creating if absent) the single BabuScales database file, applies
 /// the fixed schema, then any additive column patches. Safe to call on
 /// every startup — every statement in `schema.sql` is `IF NOT EXISTS` and
 /// every patch checks before it writes.

@@ -1,4 +1,4 @@
-/* Ported from demo/BabuScale-demo.html — the app frame: top bar, tabs,
+/* Ported from demo/BabuScales-demo.html — the app frame: top bar, tabs,
    status chips and the scrolling main area (PLAN §13.1). */
 .app {
     display: flex;

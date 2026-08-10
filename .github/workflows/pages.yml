@@ -35,7 +35,7 @@ jobs:
         working-directory: app
         env:
           VITE_DATA_ADAPTER: memory
-          VITE_BASE: /babuscale/
+          VITE_BASE: /babuscales/
 
       - name: SPA fallback for deep links
         run: cp dist/index.html dist/404.html

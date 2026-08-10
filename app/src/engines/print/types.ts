@@ -1,5 +1,5 @@
 // "One content model, three layout engines" — the mock's own comment
-// (demo/BabuScale-demo.html, just above `ticketA4`). `SlipData` is that one
+// (demo/BabuScales-demo.html, just above `ticketA4`). `SlipData` is that one
 // content model: everything a printed ticket needs, already formatted to
 // strings so the render functions do no further rounding/locale work.
 export interface SlipData {

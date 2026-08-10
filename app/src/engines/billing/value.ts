@@ -1,4 +1,4 @@
-// Ported from the mock's own live calc (demo/BabuScale-demo.html's
+// Ported from the mock's own live calc (demo/BabuScales-demo.html's
 // `recalculate()`: `value: net != null && mat ? Math.round(net / 1000 * mat.rate) : null`)
 // — the schema's own `Value` field (src/engines/schemaEngine's
 // DEFAULT_TICKET_SCHEMA doesn't carry it; the mock's aspirational

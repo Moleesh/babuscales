@@ -31,7 +31,7 @@ export interface SettingsScreenProps {
     onAddLanguagePack: (pack: LanguagePack) => Promise<void>;
 }
 
-// Six-pane split, ported from demo/BabuScale-demo.html's `#setTabs` +
+// Six-pane split, ported from demo/BabuScales-demo.html's `#setTabs` +
 // `.pane[data-pane]`. Weighing, System, Connections and Print & printers
 // are fully wired against a real Settings config row (PLAN's "admin
 // password to change configuration"); Appearance is partly wired

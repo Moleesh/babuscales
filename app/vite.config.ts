@@ -3,7 +3,7 @@ import { fileURLToPath, URL } from "node:url";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 
-// The GitHub Pages build serves from /babuscale/; the Tauri build and local
+// The GitHub Pages build serves from /babuscales/; the Tauri build and local
 // dev both serve from /. Only VITE_BASE changes between them — see
 // PLAN §20.2 and app/README.md.
 const alias = (path: string) => fileURLToPath(new URL(path, import.meta.url));

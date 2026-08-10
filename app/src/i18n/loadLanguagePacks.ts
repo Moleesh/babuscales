@@ -4,7 +4,7 @@ import { languagePackSchema } from "./schemas";
 import type { LanguagePack } from "./types";
 
 // "A language pack is a row in the database, not a file and not a code
-// change" (demo/BabuScale-demo.html's own comment above its PACKS
+// change" (demo/BabuScales-demo.html's own comment above its PACKS
 // fixture) — every pack gets its own `config` row, keyed off its language
 // `Code` so a re-upload updates in place rather than duplicating.
 // I18nProvider's own doc comment already called this out: "loading is the

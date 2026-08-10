@@ -1,5 +1,5 @@
 [package]
-name = "babuscale"
+name = "babuscales"
 version = "0.1.0"
 description = "Weighbridge management software that a quarry can actually run."
 authors = ["Babulens"]
@@ -9,7 +9,7 @@ rust-version = "1.77"
 [lib]
 # Required by the mobile targets (Android/iOS) that Tauri v2 adds later —
 # see PLAN §21 Phase 8. Desktop and mobile share this crate.
-name = "babuscale_lib"
+name = "babuscales_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]

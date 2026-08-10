@@ -12,7 +12,7 @@ const PRINTER_ROWS: readonly [key: keyof PrintersConfig, kind: PrinterKind, labe
     ["Th", "th", "Default · thermal roll"],
 ];
 
-// Print & printers pane (demo/BabuScale-demo.html's `data-pane="print"`) —
+// Print & printers pane (demo/BabuScales-demo.html's `data-pane="print"`) —
 // the Printers section only. This is a stated preference, same as the
 // mock's own: window.print() (engines/print's per-ticket and bulk-report
 // slips both use it) always opens the real OS print dialog, where the

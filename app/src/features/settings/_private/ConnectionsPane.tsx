@@ -95,7 +95,7 @@ const IntegrationsCard = () => {
     );
 };
 
-// Connections pane (demo/BabuScale-demo.html's `data-pane="conn"`) — PLAN
+// Connections pane (demo/BabuScales-demo.html's `data-pane="conn"`) — PLAN
 // §17's setup wizard, scoped down to what one iteration can actually
 // deliver and verify: choose a port and baud, an optional custom regex
 // pattern for indicators the built-in numeric fallback can't parse

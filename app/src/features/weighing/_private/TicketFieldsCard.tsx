@@ -25,7 +25,7 @@ export interface TicketFieldsCardProps {
 
 // Split out of WeighingScreen (over the 300-line budget — docs/CodingStandards.md)
 // — the "Ticket" card's four SearchableDropdown fields plus Challan No and
-// the read-only date, exactly as laid out in demo/BabuScale-demo.html's
+// the read-only date, exactly as laid out in demo/BabuScales-demo.html's
 // `.grid2` field rows. Self-contained: everything it needs comes in as
 // props, nothing here reaches back into WeighingScreen's own state.
 export const TicketFieldsCard = ({

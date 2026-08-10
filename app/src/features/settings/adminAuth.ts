@@ -1,6 +1,6 @@
 import { sha256Hex } from "@db/hash";
 
-// The mock's own default (demo/BabuScale-demo.html's `cfg.admPw = "1234"`) —
+// The mock's own default (demo/BabuScales-demo.html's `cfg.admPw = "1234"`) —
 // what a fresh install's Settings row is created with, changeable from the
 // System pane once unlocked.
 export const DEFAULT_ADMIN_PASSWORD = "1234";

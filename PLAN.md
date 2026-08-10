@@ -1,4 +1,4 @@
-# BabuScale — Technical Plan (v3.0)
+# BabuScales — Technical Plan (v3.0)
 
 > Weighbridge management software, designed from first principles.
 > **Status:** planning. **Owner:** Moleesh / Babulens.
@@ -7,14 +7,14 @@
 
 ## 1. Name and terminology
 
-**BabuScale** — `Babu` + `Scale`. *"Truck scale"* is the standard international term for a
+**BabuScales** — `Babu` + `Scale`. *"Truck scale"* is the standard international term for a
 weighbridge, so the name reads correctly in India and abroad, and carries a second meaning:
 the system scales across sites.
 
 Terminology is inherited from the weighbridge trade, corrected where the old naming was unclear.
 **These names are used everywhere — code, database, UI, templates, documentation.**
 
-| BabuScale term | Old term | Why |
+| BabuScales term | Old term | Why |
 |---|---|---|
 | **Ticket** | Weighing / SLNO row | The whole transaction. "Weighing" was used for both the record and the act |
 | **Capture** | Gross Wt / Tare Wt | A single weight reading with its own time, operator and photos |
@@ -52,7 +52,7 @@ Terminology is inherited from the weighbridge trade, corrected where the old nam
 
 | Area | Decision |
 |---|---|
-| Name | **BabuScale** |
+| Name | **BabuScales** |
 | Stack | **Tauri v2 + Rust + React 19 + TypeScript + SQLite** |
 | Schema | **Fixed tables, never altered.** All variability in JSON (§6) |
 | Indexes | **Expression indexes** — user-definable, no table change (§6.3) |
@@ -212,7 +212,7 @@ logic. Only the Rust I/O layer is genuinely new work. Extracting those engines i
 
 ## 6. Data platform — fixed tables, zero migrations
 
-v1's `update.sql` is a hundred `ALTER TABLE ... ADD COLUMN` statements. **BabuScale will never
+v1's `update.sql` is a hundred `ALTER TABLE ... ADD COLUMN` statements. **BabuScales will never
 alter a table.** The tables below are created once, at first run, and never change again.
 
 ### 6.1 The complete, final schema
@@ -438,7 +438,7 @@ makes the timeline display in §7.3 possible and audit meaningful.
 ### 7.3 Date and time, made clear
 
 The old system stored gross and tare dates and times in separate columns and displayed them
-inconsistently. BabuScale shows a **capture timeline**:
+inconsistently. BabuScales shows a **capture timeline**:
 
 ```
   Tare    12,340 kg    Fri 08 Aug 2026   09:14 AM   Ravi    📷 2
@@ -1131,12 +1131,12 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tagName: ${{ github.ref_name }}
-          releaseName: 'BabuScale ${{ github.ref_name }}'
+          releaseName: 'BabuScales ${{ github.ref_name }}'
           releaseDraft: true
           args: --bundles msi,nsis
 ```
 
-Produces `BabuScale_x.y.z_x64_en-US.msi` (~10MB) plus an NSIS `.exe`, attached to a draft release.
+Produces `BabuScales_x.y.z_x64_en-US.msi` (~10MB) plus an NSIS `.exe`, attached to a draft release.
 `tauri.conf.json` sets `webviewInstallMode: offlineInstaller` so sites with no internet install
 cleanly. Code signing later is two secrets and no restructuring.
 
@@ -1179,7 +1179,7 @@ jobs:
         run: npm run build
         env:
           VITE_DATA_ADAPTER: memory
-          VITE_BASE: /babuscale/
+          VITE_BASE: /babuscales/
 
       - name: SPA fallback for deep links
         run: cp dist/index.html dist/404.html
@@ -1223,7 +1223,7 @@ Resequenced after review, to remove dependencies on work scheduled later.
 | Phase | Scope |
 |---|---|
 | **0 Groundwork** | **Rotate the ngrok token (today).** Reverse-engineer and document the four v1 site presets — Kotta, Godown, Estimated-weight, Ice-water — **before** the formula language is designed, since they determine whether it is expressive enough. Model the hardest print format (`Pre Print 1`, three carbon columns) on paper to validate the block set. Prove the WebView2 → pdfium → spooler path end-to-end as a spike |
-| **0.5 Mock** | **Done.** Four review rounds on `demo/BabuScale-demo.html`. It is now the reference specification for Phase 1 — see §22 |
+| **0.5 Mock** | **Done.** Four review rounds on `demo/BabuScales-demo.html`. It is now the reference specification for Phase 1 — see §22 |
 | **1 Foundation** | `app/` scaffold, Tauri shell, fixed schema, `DataPort` + memory/SQLite adapters, component library **built against the mock**, i18n with language packs, help framework, CI gates, README, Pages demo live, **and backup/restore from day one** — real data must never exist without backup |
 | **2 Core** | Schema engine, formula engine, capture model (§7.1, one status per §7.4 — no state machine), masters + search, indicator + wizard, **hash chain on `audit` now** (cheap on day one, impossible to retrofit once history exists) |
 | **3 Print** | Content model, three layout engines, the six real v1 formats, per-target preview, printer capability profiles |
@@ -1245,7 +1245,7 @@ to, and **every print target has an on-screen preview** so output is verifiable 
 
 ## 22. The interactive mock — the reference specification
 
-**Status: locked, four rounds of review complete.** `demo/BabuScale-demo.html` is a single
+**Status: locked, four rounds of review complete.** `demo/BabuScales-demo.html` is a single
 self-contained file, no build step, no dependencies, no database. It is the **visual and behavioural
 specification** for Phase 1: where a disagreement arises between this document and the mock, the
 mock is what was actually reviewed and approved.

@@ -1,4 +1,4 @@
-/* Ported from demo/BabuScale-demo.html ".wst" rules — PLAN §7.4:
+/* Ported from demo/BabuScales-demo.html ".wst" rules — PLAN §7.4:
    "there is only one status, and it is the weights." */
 .pill {
     display: inline-flex;

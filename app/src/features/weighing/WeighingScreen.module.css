@@ -3,7 +3,7 @@
     gap: 12px;
 }
 
-/* Ported from demo/BabuScale-demo.html's ".grid2"/".col" (Weighing's own
+/* Ported from demo/BabuScales-demo.html's ".grid2"/".col" (Weighing's own
    330px action-column layout — distinct from Field's generic FieldGrid). */
 .layout {
     display: grid;
@@ -90,7 +90,7 @@
 }
 
 /* Ported from the mock's own ".formula"/".formula em" — the derivation
-   text under the calc grid (Net/Charge/Value), demo/BabuScale-demo.html's
+   text under the calc grid (Net/Charge/Value), demo/BabuScales-demo.html's
    `renderCalc()`. */
 .formula {
     margin-top: 10px;

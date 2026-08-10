@@ -3,13 +3,13 @@ import { z } from "zod";
 // One row, one ConfigId, `ConfigKind: "Settings"` (already in `CONFIG_KINDS`
 // — src/db/types.ts). Everything on this screen is a row in the database,
 // same as the mock's own "Fixed policy" says it should be — see
-// demo/BabuScale-demo.html's POLICY array, item 3.
+// demo/BabuScales-demo.html's POLICY array, item 3.
 export const SETTINGS_CONFIG_ID = "settings";
 
 export const RESET_EVERY_OPTIONS = ["year", "cal", "month", "day"] as const;
 export type ResetEvery = (typeof RESET_EVERY_OPTIONS)[number];
 
-// Mock's own comment (demo/BabuScale-demo.html, just above RULE_DEFS):
+// Mock's own comment (demo/BabuScales-demo.html, just above RULE_DEFS):
 // "Only three rules survive. Required-ness moved into the schema JSON;
 // reprint stamping and the cancellation reason are fixed policy, not
 // toggles." — those three are exactly what's here.
@@ -44,7 +44,7 @@ export type DisplayFormats = z.infer<typeof formatsSchema>;
 
 export const BAUD_RATE_OPTIONS = [1200, 2400, 4800, 9600, 19200, 38400, 57600, 115200] as const;
 
-// demo/BabuScale-demo.html's PRINTERS fixture, verbatim — there is no
+// demo/BabuScales-demo.html's PRINTERS fixture, verbatim — there is no
 // driver-level printer enumeration here (or in the mock): the browser
 // print dialog (window.print(), engines/print) always lets the operator
 // pick the real target printer themselves, on both the demo and the
@@ -73,7 +73,7 @@ const printersSchema = z.object({
 });
 export type PrintersConfig = z.infer<typeof printersSchema>;
 
-// demo/BabuScale-demo.html's INTEGRATIONS fixture, verbatim — the mock's
+// demo/BabuScales-demo.html's INTEGRATIONS fixture, verbatim — the mock's
 // own `renderInts` toggles `x.on` and re-renders for real (unlike the
 // Export buttons or the New-template wizard, this bit of the mock is
 // genuinely interactive), so this is a persisted on/off, not a display-only
@@ -145,7 +145,7 @@ export const settingsBodySchema = z.object({
 });
 export type SettingsBody = z.infer<typeof settingsBodySchema>;
 
-// The mock's own form defaults (demo/BabuScale-demo.html's `cfg`/`rules`
+// The mock's own form defaults (demo/BabuScales-demo.html's `cfg`/`rules`
 // objects and the Weighing pane's `#setReads`/`#setBand` input `value=`s).
 export const DEFAULT_RULES: WeighingRules = {
     TareFirst: true,

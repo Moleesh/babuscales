@@ -13,7 +13,7 @@ export interface CalcFormulaProps {
     amountDp: 0 | 2;
 }
 
-// Ported from the mock's own `#formula` derivation text (demo/BabuScale-demo.html's
+// Ported from the mock's own `#formula` derivation text (demo/BabuScales-demo.html's
 // `renderCalc()`) — sits under the calc grid, not a fifth box in it (the
 // grid stays Tare/Gross/Net/Charge, exactly as the mock's own `.calc` does).
 // Net and Charge lines show once both weights are in, matching the mock's

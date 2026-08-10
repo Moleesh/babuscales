@@ -1,4 +1,4 @@
-/* Ported from demo/BabuScale-demo.html ".pop" rules. Positioned relative
+/* Ported from demo/BabuScales-demo.html ".pop" rules. Positioned relative
    to the wrapper rather than the viewport (the mock used `position:fixed`
    with computed coordinates) — simpler, and correct under scroll without
    a resize/scroll listener. */

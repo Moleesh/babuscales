@@ -1,4 +1,4 @@
-/* Ported from demo/BabuScale-demo.html's ".grid2"/".checks"/".ck"/".inline"/".tw". */
+/* Ported from demo/BabuScales-demo.html's ".grid2"/".checks"/".ck"/".inline"/".tw". */
 .grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));

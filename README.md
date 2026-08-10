@@ -1,4 +1,4 @@
-# BabuScale
+# BabuScales
 
 **Weighbridge management software that a quarry can actually run.**
 
@@ -11,30 +11,30 @@ office PC, with no internet, in English or Tamil.
 [![Licence](https://img.shields.io/badge/licence-proprietary-lightgrey)](#licence)
 
 > **Status: Phase 1 foundation underway.** The interactive mock in
-> **[`demo/BabuScale-demo.html`](demo/BabuScale-demo.html)** has been through four rounds of review
+> **[`demo/BabuScales-demo.html`](demo/BabuScales-demo.html)** has been through four rounds of review
 > and is the reference specification. The application is being built in
 > **[`app/`](app/README.md)**, where the scaffold, the `DataPort` contract with a verified memory
 > adapter, the fixed SQLite schema with an idempotent patch runner, backup/restore, i18n with the
 > per-tab help drawer, and the CI/Pages/release workflows are done — see `app/README.md` for what's
 > next. The full technical plan is in **[PLAN.md](PLAN.md)**.
 >
-> Open `demo/BabuScale-demo.html` in any browser — one file, no build, no dependencies, no database.
+> Open `demo/BabuScales-demo.html` in any browser — one file, no build, no dependencies, no database.
 
 ---
 
-## Why BabuScale exists
+## Why BabuScales exists
 
 A weighbridge is a machine that turns trust into money. The number on the ticket settles what a
 buyer pays, what a transporter is owed, and what a department is told. Everyone at the bridge has
 a reason to want that number to move.
 
-Most weighbridge software treats this as a data-entry problem. BabuScale treats it as an
+Most weighbridge software treats this as a data-entry problem. BabuScales treats it as an
 **evidence** problem — every weight is captured from the indicator only when stable, photographed
 from every angle, stamped with the operator who took it, and written into a hash-chained record
 that cannot be quietly edited afterwards.
 
 And every customer's ticket looks different. Historically that meant a code change and a new
-release for each site. In BabuScale, **a customer's fields, screen layout, ticket design, charging
+release for each site. In BabuScales, **a customer's fields, screen layout, ticket design, charging
 rules and numbering are all configuration** — onboarding a new site is an afternoon, not a build.
 
 ---
@@ -143,7 +143,7 @@ Chosen deliberately for **4GB machines**: the whole application uses less memory
 
 Tamil Nadu has **mandated integration between the e-permit system and digital weighbridges** for
 all quarry and crusher units, to curb excess quarrying and unauthorised mineral transport.
-BabuScale is being designed for that requirement from the start — permit references, quantity
+BabuScales is being designed for that requirement from the start — permit references, quantity
 balances and a durable submission queue are part of the core data model, with the
 **MiMaS** client landing in Phase 8.
 
