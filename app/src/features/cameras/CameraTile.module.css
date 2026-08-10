@@ -1,0 +1,56 @@
+/* Ported verbatim from demo/BabuScale-demo.html's ".cam"/".cam .nm"/
+   ".cam .burn"/".cam .plate"/".cam.off"/".cam.off span". The diagonal
+   stripe background stands in for a live feed there is none of — see
+   cameraFixtures.ts's own comment. */
+.cam {
+    position: relative;
+    aspect-ratio: 4 / 3;
+    border-radius: 9px;
+    border: 1px solid var(--line);
+    overflow: hidden;
+    background: repeating-linear-gradient(115deg, var(--panel-2) 0 9px, var(--panel) 9px 18px);
+}
+.name {
+    position: absolute;
+    top: 6px;
+    left: 7px;
+    font-size: 0.5625rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--dim);
+}
+.burn {
+    position: absolute;
+    left: 6px;
+    right: 6px;
+    bottom: 5px;
+    font-family: var(--mono);
+    font-size: 0.5625rem;
+    color: var(--led);
+    text-shadow: 0 1px 3px #000;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.plate {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    padding: 3px 8px;
+    border-radius: 4px;
+    background: #f2f2f0;
+    color: #111;
+    letter-spacing: 0.06em;
+}
+.off {
+    opacity: 0.4;
+    display: grid;
+    place-items: center;
+}
+.off span {
+    font-size: 0.625rem;
+    color: var(--faint);
+}

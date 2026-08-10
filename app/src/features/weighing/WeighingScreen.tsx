@@ -16,6 +16,7 @@ import { computeCharge } from "@engines/billing";
 import { useIndicator, useIndicatorReading } from "@engines/indicator";
 import { buildSlipData } from "@engines/print";
 import { DEFAULT_TICKET_SCHEMA } from "@engines/schemaEngine";
+import { computeCameraBurnIn, CAMERA_SLOTS, CameraGrid } from "@features/cameras";
 import { useSettings } from "@features/settings";
 
 import { buildRecallOffers } from "./_private/buildRecallOffers";
@@ -46,10 +47,11 @@ export interface WeighingScreenProps {
 
 // PLAN §7 end to end: an ordered capture array (§7.1), a stability-gated
 // deck (§13), one status derived from the weights (§7.4), the open-ticket
-// strip so many lorries can be in flight at once (§7.5), and a simplified
-// recall banner (§9.2). Cameras and print templates are separate,
-// not-yet-built features (app/README.md known gaps) — this screen does not
-// render either.
+// strip so many lorries can be in flight at once (§7.5), a simplified
+// recall banner (§9.2), and the mock's own `camCard` sidebar (a decorative
+// preview tied to this same ticket state — @features/cameras). Real
+// print-template editing is a separate, not-yet-built feature
+// (app/README.md known gap) — this screen does not render it.
 export const WeighingScreen = ({ ticket }: WeighingScreenProps) => {
     const db = useDataPort();
     const indicator = useIndicator();
@@ -146,6 +148,9 @@ export const WeighingScreen = ({ ticket }: WeighingScreenProps) => {
             }),
         [ticket, settings.OperatorName, settings.Formats.AmountDp, charge],
     );
+
+    const cameraBurnIn = computeCameraBurnIn(ticket.docSeq, ticket.captures);
+    const configuredCameraCount = CAMERA_SLOTS.filter((slot) => slot.configured).length;
 
     const ticketDate = formatStamp(ticket.captures[0]?.At);
     const captureLabel = ticket.isComplete
@@ -450,6 +455,21 @@ export const WeighingScreen = ({ ticket }: WeighingScreenProps) => {
                                           : "Weight in motion — capture is locked until it settles."}
                             </p>
                         </div>
+                    </Card>
+
+                    <Card
+                        title={<span className="lbl">Cameras</span>}
+                        headerRight={
+                            <span className="chip">
+                                {configuredCameraCount} of {CAMERA_SLOTS.length} configured
+                            </span>
+                        }
+                    >
+                        <CameraGrid
+                            vehicleNo={ticket.fields.vehicleNo}
+                            burnIn={cameraBurnIn}
+                            variant="sidebar"
+                        />
                     </Card>
                 </div>
             </div>

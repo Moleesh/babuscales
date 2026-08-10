@@ -15,6 +15,7 @@ import {
 } from "@engines/indicator";
 import type { IndicatorSource } from "@engines/indicator";
 import { createIndicatorSource } from "@engines/indicator/createIndicatorSource";
+import { CamerasScreen } from "@features/cameras";
 import { DashboardScreen } from "@features/dashboard";
 import { MastersScreen } from "@features/masters";
 import { ReportsScreen } from "@features/reports";
@@ -92,7 +93,6 @@ const TopBarActions = ({
 
 interface TabContentProps {
     tab: (typeof TAB_KEYS)[number];
-    label: string;
     ticket: UseWeighingTicket;
     onOpenTicket: (doc: DocRow) => void;
     onNavigateToReports: () => void;
@@ -104,7 +104,6 @@ interface TabContentProps {
 // across a tab switch — see @features/weighing's UseWeighingTicket.
 const TabContent = ({
     tab,
-    label,
     ticket,
     onOpenTicket,
     onNavigateToReports,
@@ -122,7 +121,7 @@ const TabContent = ({
         case "settings":
             return <SettingsScreen onResetTicketSeries={onResetTicketSeries} />;
         case "cameras":
-            return <p className="lbl">{label} — Phase 2</p>;
+            return <CamerasScreen ticket={ticket} />;
     }
 };
 
@@ -183,7 +182,6 @@ const Shell = () => {
         >
             <TabContent
                 tab={activeTab}
-                label={tabs.find((tab) => tab.key === activeTab)?.label ?? ""}
                 ticket={ticket}
                 onOpenTicket={openTicket}
                 onNavigateToReports={() => setActiveTab("reports")}

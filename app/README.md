@@ -240,6 +240,24 @@ on Reports and Dashboard).
     Tickets and Summary views. ✅ Verified in-browser: captured a ticket, opened Reports, and
     confirmed all three papers render real data for both views (six renders total) — including the
     real computed date range on A4 and the correct column-dropping on Thermal/Matrix.
+23. **Cameras — the mock's own fixture, ported faithfully.** `src/features/cameras/` — turns out
+    the reference spec's Cameras tab has no real video anywhere either: `CAMS` is a fixed 4-slot
+    array (Front/Rear/Plate/Driver), `renderCams` never touches `getUserMedia`/RTSP/ONVIF, every
+    tile is decorative text laid over a striped placeholder background, driven entirely by the
+    current ticket's own state (the typed vehicle number, the last capture's mark). Porting PLAN
+    §16 for real — actual USB/IP capture, overlay burn-in on a real frame, retention, ANPR — would
+    be building past what even the mock demonstrates; that stays a documented gap. What's real
+    here: `cameraFixtures.ts` (`CAMERA_SLOTS`, verbatim from the mock's `CAMS`), `CameraTile.tsx` +
+    `CameraGrid.tsx` (one component, two layouts — `variant="sidebar"`/`"page"` — shared by both
+    surfaces exactly as the mock's own `camGrid`/`camSide` render identical markup), and
+    `cameraBurnIn.ts` (ports `renderCams`'s own mark string:
+    `` `${ticketNo} · ${weight} kg · ${time}` ``). `CamerasScreen` replaces the tab's old
+    "— Phase 2" placeholder; `WeighingScreen` gained the mock's `camCard` sidebar card, which it
+    never had before this item (a real gap against the reference spec, not a deliberate omission).
+    ✅ Verified in-browser: typed a vehicle number and watched Front/Plate update live in both the
+    Weighing sidebar and the full tab; captured a Tare and watched the burn-in mark
+    (`Draft · 12,376 kg · 7:09:52 AM`) appear identically in both places, confirming the shared
+    `CameraGrid` behaves the same at both sizes.
 
 ## Known gap
 
@@ -254,10 +272,11 @@ example) and the port-listing/connect/disconnect plumbing (`cargo build`/`clippy
 have been verified, the same category of gap as "no real Tauri GUI window in this environment"
 elsewhere in this project's history.
 
-**Not built at all yet, so the tab still says "— Phase 2":** Cameras. (Operator identity is now
-real, per item 18 — but it's a name, not an account: anyone can change it, there's no password.
-A real per-operator login, if ever wanted, is a different and bigger feature the mock itself
-never specifies, so nothing here invents one.)
+**Not built at all yet:** real camera capture (item 23 built the mock's own decorative fixture, not
+PLAN §16's actual USB/IP/RTSP/ONVIF capture, overlay-stamped frames, retention, or ANPR — ANPR is
+deferred by decision regardless, PLAN §21 Phase 8). Operator identity (item 18) is a name, not an
+account — anyone can change it, there's no password. A real per-operator login, if ever wanted, is
+a different and bigger feature the mock itself never specifies, so nothing here invents one.
 
 **Built, but deliberately smaller than the PLAN §9.1/§18 spec:**
 

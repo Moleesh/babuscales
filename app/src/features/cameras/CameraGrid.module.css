@@ -1,0 +1,13 @@
+/* Ported from demo/BabuScale-demo.html's ".cams" (sidebar's fixed 2-column
+   default) and the full tab's own inline override
+   (`grid-template-columns:repeat(auto-fit,minmax(210px,1fr))`). */
+.sidebar {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 9px;
+}
+.page {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 9px;
+}
