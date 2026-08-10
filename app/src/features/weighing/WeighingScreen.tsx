@@ -6,6 +6,7 @@ import type { DocRow } from "@db/types";
 import { useDataPort } from "@db/useDataPort";
 import { useMasterCache } from "@db/useMasterCache";
 import { computeCharge, computeValue } from "@engines/billing";
+import { createEmailSource } from "@engines/email/createEmailSource";
 import { useIndicator, useIndicatorReading } from "@engines/indicator";
 import { buildSlipData } from "@engines/print";
 import { useVerificationUrl } from "@engines/verification";
@@ -54,6 +55,10 @@ export const WeighingScreen = ({ ticket, licenseGated }: WeighingScreenProps) =>
     const indicator = useIndicator();
     const reading = useIndicatorReading();
     const { settings } = useSettings();
+    // Task #42 — no shared status to poll (see @engines/email's own
+    // comment), so this is created once here exactly like @engines/print's
+    // stateless helpers, not threaded through a Context.
+    const [email] = useState(() => createEmailSource());
 
     const [allTicketDocs, setAllTicketDocs] = useState<DocRow[]>([]);
     const [refreshToken, setRefreshToken] = useState(0);
@@ -143,6 +148,43 @@ export const WeighingScreen = ({ ticket, licenseGated }: WeighingScreenProps) =>
     // ticket had a DocId). No worker drains this channel yet
     // (app/README.md known gap, same as the other seven Integrations
     // rows).
+    // Task #42 — same outbox-first shape as the Verification job above, but
+    // this channel doesn't wait for a worker: it attempts the send right
+    // away and immediately reconciles the row to Sent/Failed, a "drain of
+    // one" rather than the full background worker every Integrations
+    // channel still needs (app/README.md known gap). Only enqueued when the
+    // party actually has an e-mail on file — an empty Masters record just
+    // means no job, not a Failed one.
+    const sendTicketEmail = async (): Promise<void> => {
+        if (!settings.Integrations.email || !ticket.docId) return;
+        const party = partyCache.rows.find((row) => row.Name === ticket.fields.party);
+        const to = typeof party?.Body.Email === "string" ? party.Body.Email.trim() : "";
+        if (!to) return;
+        const ticketNo = formatTicketNo(ticket.docSeq);
+        const outboxRow = await db.enqueueOutbox({
+            Channel: "Email",
+            Body: { DocId: ticket.docId, TicketNo: ticketNo, To: to },
+        });
+        const result = await email.send({
+            host: settings.Smtp.Host,
+            port: settings.Smtp.Port,
+            username: settings.Smtp.Username,
+            to,
+            subject: `BabuScales ticket ${ticketNo}`,
+            body: [
+                `Ticket ${ticketNo} for ${ticket.fields.vehicleNo || "—"} (${ticket.fields.material || "—"}).`,
+                ticket.weights.netKg !== null ? `Net weight: ${ticket.weights.netKg} kg.` : null,
+                verifyUrl ? `Verify: ${verifyUrl}` : null,
+            ]
+                .filter(Boolean)
+                .join("\n"),
+        });
+        await db.updateOutbox(outboxRow.OutboxId, {
+            State: result.Ok ? "Sent" : "Failed",
+            Attempts: outboxRow.Attempts + 1,
+        });
+    };
+
     const handlePrint = async (): Promise<void> => {
         await ticket.print();
         if (verifyUrl && ticket.docId) {
@@ -155,6 +197,7 @@ export const WeighingScreen = ({ ticket, licenseGated }: WeighingScreenProps) =>
                 },
             });
         }
+        await sendTicketEmail();
         setRefreshToken((n) => n + 1);
     };
 

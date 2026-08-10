@@ -76,6 +76,10 @@ pub fn run() -> tauri::Result<()> {
             commands::tunnel::tunnel_status,
             commands::licensing::license_request_code,
             commands::licensing::evaluate_license,
+            commands::email::save_smtp_password,
+            commands::email::clear_smtp_password,
+            commands::email::has_smtp_password,
+            commands::email::send_ticket_email,
         ])
         .run(tauri::generate_context!())
 }

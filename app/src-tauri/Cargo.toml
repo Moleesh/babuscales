@@ -50,9 +50,25 @@ license-format = { path = "../../tools/license-format" }
 # PLAN §4.10's "UID machine binding" — reads the OS's own stable machine
 # identifier (Windows: registry `MachineGuid`) with no admin rights needed.
 machine-uid = "0.6"
+# Task #42's real Email/SMTP delivery. rustls-tls (not native-tls) so this
+# never needs a system OpenSSL install on the target machine — consistent
+# with PLAN's own "no prerequisites" installer goal, same reasoning as
+# rusqlite's "bundled-full" above. default-features off: this app sends one
+# message at a time from a single blocking command, so the async/tokio
+# transport and connection-pool machinery default-on upstream are dead
+# weight here.
+lettre = { version = "0.11", default-features = false, features = [
+    "builder",
+    "smtp-transport",
+    "rustls-tls",
+    "hostname",
+] }
 
 [profile.release]
-# Smallest installer over fastest build — PLAN §5 targets a ~10MB MSI.
+# Smallest installer over fastest build — the installer itself runs ~200MB
+# regardless (see README's Install section) because it bakes in the WebView2
+# Evergreen Runtime for offline installs; this profile is about the app
+# binary inside it, not the installer total.
 panic = "abort"
 codegen-units = 1
 lto = true

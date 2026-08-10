@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { Card } from "@components/Card";
 import { Field, FieldGrid } from "@components/Field";
 import { formatWeightKg } from "@constants/numberFormat";
+import { createEmailSource } from "@engines/email/createEmailSource";
 import { isSerialIndicatorSource, useIndicator, useIndicatorReading } from "@engines/indicator";
 import { useTunnel } from "@engines/tunnel";
 import { useVerificationServer } from "@engines/verification";
@@ -73,10 +74,11 @@ const IntegrationsCard = () => {
         showFlash(`${name} ${next ? "enabled" : "disabled"}`);
     };
 
-    // Real for QR verification — everything else stays the mock's own
-    // "here's where this would be configured" placeholder (app/README.md
-    // known gap): PLAN §23 items 4/5 leave WhatsApp/SMS providers and
-    // pricing undecided, so there's nothing real to wire those to yet.
+    // Real for QR verification and e-mail — everything else stays the
+    // mock's own "here's where this would be configured" placeholder
+    // (app/README.md known gap): PLAN §23 items 4/5 leave WhatsApp/SMS
+    // providers and pricing undecided, so there's nothing real to wire
+    // those to yet.
     const configure = async (fixture: IntegrationFixture): Promise<void> => {
         if (fixture.key === "qr") {
             if (!settings.Integrations.qr) {
@@ -90,6 +92,10 @@ const IntegrationsCard = () => {
                     ? `QR verification page — ${status.LanUrl ?? status.LoopbackUrl}`
                     : "QR verification page — desktop app only, not available in this build",
             );
+            return;
+        }
+        if (fixture.key === "email") {
+            showFlash("E-mail — SMTP host, port, username and password set below, not here");
             return;
         }
         showFlash(`${fixture.name} · ${fixture.config} — stored in the settings table`);
@@ -264,6 +270,200 @@ const RemoteAccessCard = () => {
     );
 };
 
+// Task #42's real Email/SMTP ticket delivery — not one of the mock's
+// INTEGRATIONS fixtures either (its own "Configure" there stays a stub, see
+// `configure` above), same reasoning as RemoteAccessCard just above: the
+// host/port/username are ordinary Settings config (`settings.Smtp`), the
+// password goes straight to `email.savePassword` (Windows Credential
+// Manager), and only `hasPassword` (never the value) stays in local state.
+// "Send a test e-mail" is the one way to actually prove a relay works
+// short of printing a real ticket — same value as RemoteAccessCard's
+// "Check status" button.
+const EmailCard = () => {
+    const { settings, unlocked, save } = useSettings();
+    const [email] = useState(() => createEmailSource());
+    const [passwordInput, setPasswordInput] = useState("");
+    const [hasPassword, setHasPassword] = useState(false);
+    const [testTo, setTestTo] = useState("");
+    const [sending, setSending] = useState(false);
+    const [flash, setFlash] = useState<string | null>(null);
+    const flashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    useEffect(() => {
+        void email.hasPassword().then(setHasPassword);
+    }, [email]);
+
+    useEffect(
+        () => () => {
+            if (flashTimer.current) clearTimeout(flashTimer.current);
+        },
+        [],
+    );
+
+    const showFlash = (message: string): void => {
+        if (flashTimer.current) clearTimeout(flashTimer.current);
+        setFlash(message);
+        flashTimer.current = setTimeout(() => setFlash(null), FLASH_MS);
+    };
+
+    const smtp = settings.Smtp;
+
+    const savePassword = async (): Promise<void> => {
+        const trimmed = passwordInput.trim();
+        if (!trimmed) return;
+        await email.savePassword(trimmed);
+        setPasswordInput("");
+        setHasPassword(true);
+        showFlash("SMTP password saved");
+    };
+
+    const clearPassword = async (): Promise<void> => {
+        await email.clearPassword();
+        setHasPassword(false);
+        showFlash("SMTP password cleared");
+    };
+
+    const sendTest = async (): Promise<void> => {
+        const to = testTo.trim();
+        if (!to) return;
+        setSending(true);
+        try {
+            const result = await email.send({
+                host: smtp.Host,
+                port: smtp.Port,
+                username: smtp.Username,
+                to,
+                subject: "BabuScales — test e-mail",
+                body: "This is a test message from BabuScales' Settings → Connections pane. If it arrived, this SMTP configuration works.",
+            });
+            showFlash(result.Ok ? `Test e-mail sent to ${to}` : `Send failed — ${result.Error}`);
+        } finally {
+            setSending(false);
+        }
+    };
+
+    return (
+        <Card
+            title={<span className="lbl">E-mail delivery</span>}
+            headerRight={flash ? <span className={styles.applied}>{flash}</span> : null}
+        >
+            <div className={styles.body}>
+                <FieldGrid columns={2}>
+                    <Field id="smtpHost" label={{ en: "SMTP host" }}>
+                        <input
+                            id="smtpHost"
+                            placeholder="smtp.example.com"
+                            value={smtp.Host}
+                            disabled={!unlocked}
+                            onChange={(event) =>
+                                void save({
+                                    ...settings,
+                                    Smtp: { ...smtp, Host: event.target.value },
+                                })
+                            }
+                        />
+                    </Field>
+                    <Field id="smtpPort" label={{ en: "Port" }}>
+                        <input
+                            id="smtpPort"
+                            type="number"
+                            inputMode="numeric"
+                            min={1}
+                            max={65535}
+                            value={smtp.Port}
+                            disabled={!unlocked}
+                            onChange={(event) =>
+                                void save({
+                                    ...settings,
+                                    Smtp: { ...smtp, Port: Number(event.target.value) || 587 },
+                                })
+                            }
+                        />
+                    </Field>
+                </FieldGrid>
+                <Field id="smtpUsername" label={{ en: "Username / from address" }}>
+                    <input
+                        id="smtpUsername"
+                        type="email"
+                        placeholder="tickets@example.com"
+                        value={smtp.Username}
+                        disabled={!unlocked}
+                        onChange={(event) =>
+                            void save({
+                                ...settings,
+                                Smtp: { ...smtp, Username: event.target.value },
+                            })
+                        }
+                    />
+                </Field>
+                <Field id="smtpPassword" label={{ en: "Password" }}>
+                    <input
+                        id="smtpPassword"
+                        type="password"
+                        autoComplete="off"
+                        placeholder={
+                            hasPassword
+                                ? "•••••••• saved — type a new one to replace it"
+                                : "SMTP account password"
+                        }
+                        value={passwordInput}
+                        disabled={!unlocked}
+                        onChange={(event) => setPasswordInput(event.target.value)}
+                    />
+                </Field>
+                <div className={styles.statusRow}>
+                    <button
+                        type="button"
+                        className={styles.mini}
+                        disabled={!unlocked || !passwordInput.trim()}
+                        onClick={() => void savePassword()}
+                    >
+                        Save password
+                    </button>
+                    <button
+                        type="button"
+                        className={styles.mini}
+                        disabled={!unlocked || !hasPassword}
+                        onClick={() => void clearPassword()}
+                    >
+                        Clear password
+                    </button>
+                    <span className={hasPassword ? styles.statusOk : styles.hint}>
+                        {hasPassword ? "Password saved" : "No password saved"}
+                    </span>
+                </div>
+                <Field id="smtpTestTo" label={{ en: "Send a test e-mail to" }}>
+                    <input
+                        id="smtpTestTo"
+                        type="email"
+                        placeholder="you@example.com"
+                        value={testTo}
+                        disabled={!unlocked}
+                        onChange={(event) => setTestTo(event.target.value)}
+                    />
+                </Field>
+                <div className={styles.statusRow}>
+                    <button
+                        type="button"
+                        className={styles.mini}
+                        disabled={!unlocked || sending || !testTo.trim()}
+                        onClick={() => void sendTest()}
+                    >
+                        {sending ? "Sending…" : "Send test"}
+                    </button>
+                </div>
+                <p className={styles.hint}>
+                    Read at print time when Integrations → E-mail is on: a ticket&apos;s party
+                    needs an E-mail saved in Masters (Settings → Masters → Parties) to receive a
+                    copy. Most providers want port 587 with STARTTLS and an app-specific password
+                    rather than your normal login password — check your provider&apos;s SMTP
+                    documentation if the test above fails.
+                </p>
+            </div>
+        </Card>
+    );
+};
+
 // Connections pane (demo/BabuScales-demo.html's `data-pane="conn"`) — PLAN
 // §17's setup wizard, scoped down to what one iteration can actually
 // deliver and verify: choose a port and baud, an optional custom regex
@@ -307,6 +507,7 @@ export const ConnectionsPane = () => {
                     </p>
                 </Card>
                 <IntegrationsCard />
+                <EmailCard />
                 <RemoteAccessCard />
             </div>
         );
@@ -421,6 +622,7 @@ export const ConnectionsPane = () => {
                 </div>
             </Card>
             <IntegrationsCard />
+            <EmailCard />
             <RemoteAccessCard />
         </div>
     );

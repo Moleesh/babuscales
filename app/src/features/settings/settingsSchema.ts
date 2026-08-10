@@ -131,6 +131,18 @@ const integrationsSchema = z.object({
 });
 export type IntegrationsConfig = z.infer<typeof integrationsSchema>;
 
+// Task #42's real Email/SMTP ticket delivery — non-secret relay settings
+// only. The password never lives here: it goes straight to the Windows
+// Credential Manager (src-tauri/src/security/mod.rs), same "never a config
+// file, never the repository" split as RemoteAccessConfig's `Enabled`
+// versus the tunnel token above.
+const smtpSchema = z.object({
+    Host: z.string(),
+    Port: z.number().int().min(1).max(65535),
+    Username: z.string(),
+});
+export type SmtpConfig = z.infer<typeof smtpSchema>;
+
 // PLAN §17's setup wizard, scoped down (app/README.md known gap) to just
 // the fields a real connection needs — see settings/_private/ConnectionsPane.tsx.
 const connectionsSchema = z.object({
@@ -151,6 +163,7 @@ export const settingsBodySchema = z.object({
     Printers: printersSchema,
     Integrations: integrationsSchema,
     RemoteAccess: remoteAccessSchema,
+    Smtp: smtpSchema,
     /** "Operator on duty" (mock's `#opChip`/Appearance pane `#setOp`) — a free-text label, not an account; deliberately not admin-gated. */
     OperatorName: z.string(),
     AdminPasswordHash: z.string(),
@@ -204,6 +217,13 @@ export const DEFAULT_PRINTERS: PrintersConfig = {
 /** Opt-in, off by default (PLAN §18's own words, verbatim). */
 export const DEFAULT_REMOTE_ACCESS: RemoteAccessConfig = {
     Enabled: false,
+};
+
+/** Empty — same "not configured yet" shape as `DEFAULT_CONNECTIONS.IndicatorPort`; the password lives in the OS credential store, not here. */
+export const DEFAULT_SMTP: SmtpConfig = {
+    Host: "",
+    Port: 587,
+    Username: "",
 };
 
 /** INTEGRATIONS' own `on:` flags, verbatim. */

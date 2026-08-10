@@ -10,6 +10,7 @@ pub mod audit;
 pub mod backup;
 pub mod configs;
 pub mod docs;
+pub mod email;
 pub mod indicator;
 pub mod licensing;
 pub mod masters;

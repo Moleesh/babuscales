@@ -25,6 +25,7 @@ interface MasterFormState {
     capturedAt: string;
     partyName: string;
     rate: string;
+    email: string;
 }
 
 const emptyForm = (): MasterFormState => ({
@@ -34,6 +35,7 @@ const emptyForm = (): MasterFormState => ({
     capturedAt: "",
     partyName: "",
     rate: "",
+    email: "",
 });
 
 const toDateTimeLocal = (iso: string): string => {
@@ -52,6 +54,7 @@ const formFromRow = (row: MasterRow): MasterFormState => {
             capturedAt: toDateTimeLocal(row.Body.CapturedAt),
             partyName: row.Body.PartyName ?? "",
             rate: "",
+            email: "",
         };
     }
     const rate = getMaterialRate(row.Body);
@@ -62,6 +65,7 @@ const formFromRow = (row: MasterRow): MasterFormState => {
         capturedAt: "",
         partyName: "",
         rate: rate !== null ? String(rate) : "",
+        email: typeof row.Body.Email === "string" ? row.Body.Email : "",
     };
 };
 
@@ -123,7 +127,17 @@ export const MastersScreen = () => {
                             Notes: form.notes.trim() || undefined,
                             Rate: form.rate.trim() ? Number(form.rate) : undefined,
                         }
-                      : { Notes: form.notes.trim() || undefined };
+                      : activeKind === "Party"
+                        ? {
+                              Notes: form.notes.trim() || undefined,
+                              // Task #42 — real e-mail delivery looks a
+                              // ticket's party up by name and reads this
+                              // field; empty means "no e-mail on file",
+                              // same "skip quietly" shape as an empty
+                              // PartyName on a stored tare above.
+                              Email: form.email.trim() || undefined,
+                          }
+                        : { Notes: form.notes.trim() || undefined };
             const row = await save({
                 MasterId: selected?.MasterId,
                 MasterKind: activeKind,
@@ -204,12 +218,19 @@ export const MastersScreen = () => {
                                 return rate !== null ? formatMoney(rate, 2) : "—";
                             },
                         }
-                      : {
-                            key: "notes",
-                            header: "Notes",
-                            render: (row) =>
-                                typeof row.Body.Notes === "string" ? row.Body.Notes : "—",
-                        },
+                      : activeKind === "Party"
+                        ? {
+                              key: "email",
+                              header: "E-mail",
+                              render: (row) =>
+                                  typeof row.Body.Email === "string" ? row.Body.Email : "—",
+                          }
+                        : {
+                              key: "notes",
+                              header: "Notes",
+                              render: (row) =>
+                                  typeof row.Body.Notes === "string" ? row.Body.Notes : "—",
+                          },
                   {
                       key: "active",
                       header: "Status",
@@ -312,7 +333,9 @@ export const MastersScreen = () => {
                             </Field>
                         </FieldGrid>
                     ) : (
-                        <FieldGrid columns={activeKind === "Material" ? 3 : 2}>
+                        <FieldGrid
+                            columns={activeKind === "Material" || activeKind === "Party" ? 3 : 2}
+                        >
                             <Field id="mfName" label={{ en: "Name" }}>
                                 <input
                                     id="mfName"
@@ -344,6 +367,25 @@ export const MastersScreen = () => {
                                         onChange={(event) =>
                                             setForm({ ...form, rate: event.target.value })
                                         }
+                                    />
+                                </Field>
+                            )}
+                            {activeKind === "Party" && (
+                                // Task #42 — read at print time so "Send a
+                                // copy by e-mail" has somewhere to send to.
+                                // Optional: an empty Masters record just
+                                // means that party's tickets never enqueue
+                                // an Email outbox row, same as no phone
+                                // number means no SMS.
+                                <Field id="mfEmail" label={{ en: "E-mail" }}>
+                                    <input
+                                        id="mfEmail"
+                                        type="email"
+                                        value={form.email}
+                                        onChange={(event) =>
+                                            setForm({ ...form, email: event.target.value })
+                                        }
+                                        autoComplete="off"
                                     />
                                 </Field>
                             )}

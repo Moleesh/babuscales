@@ -293,7 +293,8 @@ on Reports and Dashboard).
     the mock's own `.tpl`/`.badge` row styling (nothing else in this codebase had built it yet — the
     deferred template-list card would have been the other user). ✅ Verified in-browser: unlocked
     admin, turned WhatsApp off (badge disappeared, header flashed "WhatsApp disabled", button
-    relabelled "Turn on"), clicked E-mail's Configure and confirmed the exact flash text.
+    relabelled "Turn on"), clicked WhatsApp's Configure and confirmed the exact flash text
+    (E-mail's own Configure later gained real behaviour of its own — see item 29).
 26. **Real "Value" — Material.Rate, and the formula breakdown that shows it.** The mock's own live
     calc (`recalculate()`: `value: net != null && mat ? Math.round(net / 1000 * mat.rate) : null`)
     turned out to be real too, same discovery as item 25's Integrations — it just isn't a fifth box
@@ -347,6 +348,30 @@ on Reports and Dashboard).
     pack via a dispatched `change` event on the file input and confirmed the flash message
     ("Applied · Français · 2 strings"), the installed-packs table gaining a row, and — separately —
     a malformed-JSON upload producing the correct "Not valid JSON" error flash rather than a crash.
+29. **Real Email/SMTP ticket delivery.** The first of Integrations' eight rows to move past a
+    persisted toggle with nothing behind it (item 25's own note). `src-tauri/src/net/email.rs` —
+    `lettre` over STARTTLS (`rustls-tls`, no system OpenSSL dependency, same reasoning as
+    `rusqlite`'s bundled SQLite) — sends one message per call; the SMTP password is a secret
+    (`security::set_secret`, same Windows Credential Manager store as the tunnel connector token),
+    host/port/username are an ordinary `Smtp` config row. `src/engines/email/` mirrors
+    `engines/licensing`'s shape, not `engines/tunnel`'s: a plain Tauri-vs-noop wrapper with no
+    Context/Provider, since a send is one stateless round trip, not a connection with live status
+    to poll. Settings → Connections gained a real **E-mail delivery** card (host/port/username/
+    password fields, a "Send test e-mail" button) — the Integrations row's own "Configure" now
+    points there instead of flashing the generic stub. Party masters gained a real `Email` field
+    (`MastersScreen.tsx` — form field and table column, Parties only); `WeighingScreen`'s print flow
+    looks the ticket's party up by name, and when Integrations → E-mail is on and that party has an
+    address on file, enqueues a `Channel: "Email"` outbox row and attempts the send immediately,
+    reconciling it to `Sent`/`Failed` right away — a "drain of one" rather than the background
+    worker every Integrations channel still needs (see Known gap), same scope call as the QR
+    verification job before it. ✅ Verified: `cargo check`/`clippy -D warnings`/`fmt --check` clean;
+    typecheck/lint/build clean; in-browser (memory adapter) confirmed the E-mail delivery card
+    saves host/port/username/password and round-trips them, "Send test" honestly reports "desktop
+    app only, not available in this build" (the noop source), and a new Party master saves and
+    displays a real e-mail address in its own table column. Actually sending mail needs a real SMTP
+    relay and the desktop build to test against, neither available in this environment — not
+    exercised end-to-end past the Rust compiling and the noop path's honest fallback, the same
+    category of gap as the serial indicator and `window.print()` before it.
 
 ## Known gap
 
@@ -372,8 +397,9 @@ a different and bigger feature the mock itself never specifies, so nothing here 
 - **Masters** — client-side substring search over a per-kind cache, not FTS5; a plain table, not
   virtualised/keyset-paginated; no merge-duplicates or bulk import/export. Fine at demo/site scale,
   not at 100,000 rows.
-- **Master field richness** — generic Name/Notes only, except StoredTare and now Material (item
-  26's Rate field). No GST fields on Party — the mock never defines one either (its static `PARTIES`
+- **Master field richness** — generic Name/Notes only, except StoredTare, Material (item 26's Rate
+  field), and now Party (item 29's Email field). No GST fields on Party — the mock never defines
+  one either (its static `PARTIES`
   fixture carries no GST data, only the invoice header's own hardcoded GSTIN string); no
   Vehicle↔VehicleType linkage — the mock's `VEHICLES` fixture has a `ty` string per row, but it's
   never a real foreign key into a `VehicleType` master, just display text.
@@ -444,11 +470,13 @@ a different and bigger feature the mock itself never specifies, so nothing here 
   first real producer: printing a slip that actually carries a `VerifyUrl` enqueues one
   `Channel: "Verification"` row (`DocId`, `TicketNo`, `VerifyUrl`) for whatever eventually makes
   that page reachable off the LAN to consume — nothing is enqueued when the integration is off or
-  the ticket has no `DocId` yet, so there's never a job for a slip that carried no QR. No worker
-  drains this or any other channel yet: WhatsApp/SMS/e-mail delivery, webhook firing, cloud backup,
-  and accounting-format export are all still unimplemented consumers, and no outdoor display board
-  is driven. Anomaly detection is deferred by decision (PLAN §21 Phase 8); MiMaS is a Phase 7 item,
-  not built, blocked on a spec that doesn't exist yet.
+  the ticket has no `DocId` yet, so there's never a job for a slip that carried no QR. Item 29 gave
+  the `"Email"` channel a real, if minimal, consumer: the print flow itself attempts the send and
+  reconciles the row to `Sent`/`Failed` synchronously — a "drain of one", not a background worker.
+  No worker drains any channel in the general case yet: WhatsApp/SMS delivery, webhook firing,
+  cloud backup, and accounting-format export are all still unimplemented consumers, and no outdoor
+  display board is driven. Anomaly detection is deferred by decision (PLAN §21 Phase 8); MiMaS is a
+  Phase 7 item, not built, blocked on a spec that doesn't exist yet.
 - **Licensing** (PLAN §4.10/§12/§23 item 4, tasks #37/#38) — the offline activation-code format and
   its verification are real and exercised end to end (see `tools/license-format`'s own module doc
   for the full design and the "why asymmetric signing at all" reasoning): a ~15-character request

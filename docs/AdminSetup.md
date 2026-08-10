@@ -76,12 +76,17 @@ doesn't yet change how the app looks.
 **Weighing** — *Weighing rules* and *Fixed policy* configure capture behaviour: the stability gate
 before a reading is accepted, and similar fixed policy toggles. Applies immediately.
 
-**Connections** — four cards:
+**Connections** — five cards:
 - *Integrations* — eight on/off toggles (WhatsApp, SMS gateway, e-mail, cloud backup, webhook/REST,
-  QR verification page, accounting export, outdoor display board). Only **QR verification** is a
-  real, working integration end to end; the other seven persist as a setting but have nothing
+  QR verification page, accounting export, outdoor display board). **QR verification** and
+  **e-mail** are real, working integrations; the other six persist as a setting but have nothing
   behind them yet (no provider, no worker draining the queue) — turning them on doesn't send
   anything anywhere.
+- *E-mail delivery* — SMTP host, port, username and password (the password goes to Windows
+  Credential Manager, same as the tunnel token below), plus a "Send test e-mail" button. When
+  Integrations → E-mail is on and a ticket's party has an **E-mail** saved in Masters, printing
+  that ticket sends it a copy immediately and reports success or failure — there's no retry queue
+  yet, just the one attempt at print time.
 - *Remote access* — a Cloudflare Tunnel connector token, stored in Windows Credential Manager, never
   in the settings table or the database. This app never talks to the Cloudflare API and never
   learns a public hostname — creating the tunnel and pointing a hostname at this machine is a

@@ -19,6 +19,7 @@
 //! the shared "one background thread, a stop flag it polls" shape this
 //! copies.
 
+pub mod email;
 pub mod tunnel;
 
 use std::net::UdpSocket;
