@@ -577,6 +577,33 @@ on Reports and Dashboard).
     whole UI's root font-size (16px → 20.48px, i.e. × 1.28), `aria-pressed` tracks the active skin
     correctly, and both controls work while Settings sits locked — confirming neither is admin-gated,
     as the pane's own design requires.
+37. **Reports: Excel/CSV export.** Item 15's ReportsScreen computes `reportSlipData` (Head/Rows/Title)
+    for the Print button; Export PDF/Excel/CSV sat disabled next to it with no engine behind them (see
+    "Export" under Known gap, below item 22's own note). This wires CSV and Excel up for real, reusing
+    `reportSlipData` directly so an exported file can never drift from what Print sends to the slip.
+    Rather than add a zip/xlsx dependency (this app has none for export today) or the lower-fidelity
+    CSV-renamed-`.xls` trick (rejected — modern Excel shows a format-mismatch warning for that), the
+    new `engines/export/` module hand-rolls a genuine minimal `.xlsx`: `crc32.ts` (table-based IEEE
+    802.3 CRC-32), `zip.ts` (a dependency-free ZIP writer — local/central file headers + end-of-central-
+    directory record, entries stored uncompressed since the OOXML parts involved are a few KB each,
+    not worth a deflate implementation), and `xlsx.ts` (five OOXML SpreadsheetML parts — `workbook.xml`,
+    both `.rels` files, `[Content_Types].xml`, `worksheets/sheet1.xml` — every cell written as
+    `t="inlineStr"` since every value reaching it is already a formatted display string, matching
+    `engines/print/types.ts`'s own `SlipData` convention). `csv.ts` builds RFC 4180-shaped CSV (quote
+    escaping, CRLF lines) with a leading UTF-8 BOM — without it Excel guesses the system codepage and
+    garbles this app's Tamil text and the ₹ symbol. `ReportsScreen.tsx` gets real `onClick` handlers for
+    Export Excel/CSV (a local `downloadBlob` helper, the same `URL.createObjectURL`/`<a>`/`.click()`
+    pattern as item 6's `BackupRestoreCard.tsx`) and a filename convention of
+    `babuscales-report-<slugified-title>-<YYYYMMDD-HHMM>.csv`/`.xlsx`. Export PDF stays disabled with
+    an honest caption — the OS print dialog's own "Save as PDF", already reachable via the Print
+    button, covers it, so a distinct PDF export path wasn't built. ✅ Verified: typecheck/lint/build
+    clean; in-browser (dev server, memory adapter), hooked `URL.createObjectURL` to capture both
+    generated blobs and inspected their bytes directly (no real Excel available in this environment) —
+    the CSV blob starts with the UTF-8 BOM (`EF BB BF`) followed by the correct comma-joined header
+    row; the xlsx blob starts with the ZIP signature (`50 4B 03 04`), and hand-parsing its end-of-
+    central-directory record and all five central-directory entries confirmed every local-header offset
+    points to the right entry, every CRC-32 is present, and `xl/worksheets/sheet1.xml` decodes to
+    well-formed XML with the header row's cells correctly at `A1`/`B1`/`C1`/`D1`.
 
 ## Known gap
 
@@ -641,11 +668,10 @@ a different and bigger feature the mock itself never specifies, so nothing here 
   or dashboard KPIs either, only in `renderCalc()`'s `#formula` text. Value not reaching Reports,
   Dashboard or the print slip therefore isn't an omission, it matches the reference spec's own
   scope exactly. No Settings-driven way to change the flat Charge rate exists either.
-- **Export** — Reports' Export PDF/Excel/CSV buttons are shown disabled rather than silently doing
-  nothing, matching the mock's own dead buttons for the same three actions (no `id`, no click
-  handler at all — see item 22). Both bulk print (item 22, the ticket register/summary) and
-  per-ticket print (item 19) are real; only PDF/Excel/CSV file export has nothing to port from the
-  reference spec.
+- **Export** — Excel and CSV are real (item 37, `engines/export/` — a hand-rolled, dependency-free
+  `.xlsx`/OOXML writer and an RFC-4180 CSV writer, both reusing Reports' own `reportSlipData`). Export
+  PDF stays disabled: the OS print dialog's own "Save as PDF", already reachable via the Print button,
+  covers that case, so a distinct PDF export path wasn't built.
 - **Print templates** — the mock's three-step template wizard (upload custom HTML with
   `{{Placeholders}}`, multiple named templates per paper size) wasn't ported: PLAN §21's roadmap
   table names the visual template designer as a Phase 8 item, deferred by decision, "designed for,

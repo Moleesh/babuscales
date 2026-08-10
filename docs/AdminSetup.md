@@ -187,8 +187,9 @@ for an admin deciding what to promise a site:
 
 - No real camera capture, per-operator login, or FTS5-scale Masters search (fine at single-site
   scale, not at 100,000+ rows).
-- Reports has no date-range filter and no PDF/Excel/CSV export (buttons are shown disabled, not
-  hidden — matching the reference spec's own dead buttons rather than pretending they work).
+- Reports has no date-range filter. Excel and CSV export are real (hand-rolled, no third-party
+  dependency); PDF export stays disabled on purpose — the OS print dialog's own "Save as PDF",
+  already reachable via the Print button, covers that case.
 - Of the eight Integrations toggles, only QR verification, e-mail and SMS gateway actually do
   anything yet — cloud backup, webhook, accounting export and the outdoor display board persist
   as a setting with no worker behind them, pending future work.

@@ -10,6 +10,7 @@ import type { SegmentedOption } from "@components/SegmentedControl";
 import { formatMoney, formatWeightKg } from "@constants/numberFormat";
 import type { DocRow } from "@db/types";
 import { useDataPort } from "@db/useDataPort";
+import { toCsvBlob, toXlsxBlob } from "@engines/export";
 import { buildReportSlipData } from "@engines/print";
 import { useSettings } from "@features/settings";
 import { formatTicketNo } from "@features/weighing";
@@ -51,14 +52,40 @@ const groupLabel = (key: GroupKey): string =>
 const formatWeightCell = (kg: number | null): string =>
     kg === null ? "—" : `${formatWeightKg(kg)} kg`;
 
+// Same `YYYYMMDD-HHMM` shape as settings/_private/BackupRestoreCard.tsx's
+// own timestampForFilename — not imported from there since that module
+// lives in settings' `_private` folder (feature-private by convention);
+// two lines of duplication beats reaching across that boundary.
+const timestampForFilename = (): string => {
+    const now = new Date();
+    const pad = (n: number): string => String(n).padStart(2, "0");
+    return `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}`;
+};
+
+const slugifyTitle = (title: string): string => title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+
+// Same plain Blob-download mechanism as BackupRestoreCard.tsx's
+// handleExport — browser-native, works identically in the web demo and
+// the real Tauri build, no dialog plugin needed.
+const downloadBlob = (blob: Blob, filename: string): void => {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    link.click();
+    URL.revokeObjectURL(url);
+};
+
 // PLAN §13.1 — "there is no Tickets tab... a ticket list is a report that
 // has not been grouped yet." One dataset (reportRows.ts), one toggle
 // between the flat Tickets view and the grouped Summary view. Print is real
 // (reportPrintRows.ts + ReportPrintModal, mirroring the per-ticket print
-// engine — Phase-2 item 19/23). Export PDF/Excel/CSV are shown disabled
-// rather than silently doing nothing — the mock's own buttons for these
-// have no click handler at all (dead UI, not a corner this app cut), so
-// there's nothing here to port yet (app/README.md known gap).
+// engine — Phase-2 item 19/23). Export CSV/Excel are real too
+// (engines/export — hand-rolled CSV and OOXML .xlsx writers, task #53),
+// reusing reportSlipData's own Head/Rows so an export can never drift from
+// what Print sends to the slip. Export PDF stays disabled: the OS print
+// dialog's own "Save as PDF" already covers it via the Print button, so a
+// distinct PDF export path wasn't built.
 export const ReportsScreen = ({ onOpenTicket }: ReportsScreenProps) => {
     const db = useDataPort();
     const { settings } = useSettings();
@@ -117,6 +144,22 @@ export const ReportsScreen = ({ onOpenTicket }: ReportsScreenProps) => {
     const showWaiting = (): void => {
         setView("tickets");
         setFilter("half");
+    };
+
+    // Reuses reportSlipData's own Head/Rows/Title — the same data the
+    // Print button sends to the slip renderer — so an exported file can
+    // never drift from what gets printed.
+    const exportFilenameBase = `babuscales-report-${slugifyTitle(reportSlipData.Title)}-${timestampForFilename()}`;
+
+    const handleExportCsv = (): void => {
+        downloadBlob(toCsvBlob(reportSlipData.Head, reportSlipData.Rows), `${exportFilenameBase}.csv`);
+    };
+
+    const handleExportXlsx = (): void => {
+        downloadBlob(
+            toXlsxBlob(reportSlipData.Title, reportSlipData.Head, reportSlipData.Rows),
+            `${exportFilenameBase}.xlsx`,
+        );
     };
 
     const ticketColumns: DataTableColumn<TicketRow>[] = [
@@ -270,15 +313,11 @@ export const ReportsScreen = ({ onOpenTicket }: ReportsScreenProps) => {
                         <Button variant="primary" onClick={() => setPrintOpen(true)}>
                             Print
                         </Button>
-                        <Button disabled caption="Needs the print/export engine">
+                        <Button disabled caption="Use Print → Save as PDF from the OS print dialog">
                             Export PDF
                         </Button>
-                        <Button disabled caption="Needs the print/export engine">
-                            Export Excel
-                        </Button>
-                        <Button disabled caption="Needs the print/export engine">
-                            Export CSV
-                        </Button>
+                        <Button onClick={handleExportXlsx}>Export Excel</Button>
+                        <Button onClick={handleExportCsv}>Export CSV</Button>
                     </div>
                 </div>
             </Card>
