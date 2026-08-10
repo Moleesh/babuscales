@@ -73,8 +73,10 @@ the OS's own print dialog (`window.print()`), where the operator picks the physi
 app never routes output silently. *Print templates* — a visual layout designer — isn't built; the
 three built-in layouts are the only ones available.
 
-**Appearance** — *Operator on duty* is real (see above). *Theme* is a placeholder; switching it
-doesn't yet change how the app looks.
+**Appearance** — *Operator on duty* is real (see above). *Theme* is real too: pick any of six skins
+(Indicator, Graphite, Night shift, Paper, Daylight, High contrast) or a text size (A− through A++)
+and it applies immediately across the whole app, no restart, no admin unlock needed — same "operator
+comfort" reasoning as Operator on duty.
 
 **Weighing** — *Weighing rules* and *Fixed policy* configure capture behaviour: the stability gate
 before a reading is accepted, and similar fixed policy toggles. Applies immediately. **Multi-gross**

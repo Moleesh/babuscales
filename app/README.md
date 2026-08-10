@@ -549,6 +549,34 @@ on Reports and Dashboard).
     reworded); malformed JSON was rejected with a clear message and left the prior schema intact;
     Reset to default restored the built-in labels; the upload control and Reset button are both
     gated behind Settings being unlocked.
+36. **Settings: real Appearance theme switching.** Item 18's Appearance pane had a working
+    Operator-on-duty card and a Theme card that was pure placeholder text — the six skins
+    (`indicator`/`graphite`/`night`/`paper`/`daylight`/`contrast`) already existed verbatim in
+    `styles/tokens.css` as `[data-skin="…"]` blocks, and the text-scale custom property (`--s`) was
+    already read by `html{font-size:calc(16px * var(--s))}`, but nothing in the app ever set either
+    one — there was no picker. This wires both up for real: `settingsSchema.ts` gains `Skin`
+    (`SKIN_KEYS`, a fixed six-value enum) and `TextScale` (`TEXT_SCALE_OPTIONS`, the mock's own four
+    steps `.9`/`1`/`1.12`/`1.28`) on `SettingsBody`, plus `SKIN_FIXTURES` (name + four-colour swatch
+    per skin, ported verbatim from the mock's own `SKINS` array) for the picker to render from.
+    `SettingsProvider.tsx` adds `setSkin`/`setTextScale`, both following `setOperatorName`'s own
+    precedent exactly — an ungated `persist()` call, not gated behind `save()`/`unlocked`, because
+    (the pane's own header comment, unchanged since item 18) Appearance is "operator comfort, not
+    configuration". A new effect applies `settings.Skin`/`settings.TextScale` to
+    `document.documentElement` (`data-skin` attribute, `--s` custom property) globally, from
+    `SettingsProvider` itself rather than only while the Appearance pane happens to be mounted — so
+    a Theme choice affects the whole app immediately, survives navigating away from Settings, and
+    reloads to whatever was last saved. `AppearancePane.tsx`'s Theme card is now a real picker: six
+    swatch buttons (ported from the mock's `.skin`/`.sw` markup and styling) plus a
+    `SegmentedControl` (item 11's existing, generic, already-built component — needed no changes) for
+    text size. The mock's own Language picker, which lives in this same pane in the reference spec,
+    is deliberately not re-added here — this app made an earlier, documented choice to put language
+    selection in the top-bar chip instead (`AppearancePane.tsx`'s own header comment, predating this
+    item). ✅ Verified: typecheck/lint/build clean; in-browser (dev server, memory adapter) confirmed
+    each of the six skin buttons actually repaints the app (checked `data-skin` and the resolved
+    `--panel` colour via computed style after clicking Graphite), the A++ text-size button scales the
+    whole UI's root font-size (16px → 20.48px, i.e. × 1.28), `aria-pressed` tracks the active skin
+    correctly, and both controls work while Settings sits locked — confirming neither is admin-gated,
+    as the pane's own design requires.
 
 ## Known gap
 
@@ -588,7 +616,8 @@ a different and bigger feature the mock itself never specifies, so nothing here 
   views always show every ticket. Item 22's bulk print substitutes a real, data-derived date range
   (the printed rows' own earliest–latest timestamp) rather than fabricating one.
 - **Settings** — Weighing, System, Connections and Print & printers are fully wired (items 17, 21,
-  24); Appearance is partly wired (Operator-on-duty is real, Theme is a placeholder — item 18);
+  24); Appearance is now fully wired too (Operator-on-duty was already real — item 18; Theme is now
+  real as well — item 36: skin and text-scale both persist and apply globally, not admin-gated);
   Fields & language is now fully wired (item 28: Language packs; item 35: Field schema — labels and
   reordering/indexing are real and persisted, though see "Schema-driven rendering" below for what's
   still not built). Within System, ticket numbering is live and `Formats.AmountDp` now reaches

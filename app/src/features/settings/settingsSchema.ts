@@ -135,6 +135,33 @@ const remoteAccessSchema = z.object({
 });
 export type RemoteAccessConfig = z.infer<typeof remoteAccessSchema>;
 
+// Task #51 — Appearance pane's `SKINS` array (demo/BabuScales-demo.html),
+// verbatim keys/names/swatch colours. The skins themselves already live in
+// styles/tokens.css as `[data-skin="…"]` blocks (ported in an earlier
+// task); this is just the picker's own fixture list, same "fixed list, no
+// admin-authoring UI" shape as PRINTER_FIXTURES/INTEGRATION_FIXTURES above.
+export const SKIN_KEYS = ["indicator", "graphite", "night", "paper", "daylight", "contrast"] as const;
+export type SkinKey = (typeof SKIN_KEYS)[number];
+export interface SkinFixture {
+    key: SkinKey;
+    name: string;
+    /** Four swatch colours, mock order: void, panel, accent (led), stable. */
+    swatch: readonly [string, string, string, string];
+}
+export const SKIN_FIXTURES: readonly SkinFixture[] = [
+    { key: "indicator", name: "Indicator", swatch: ["#0B0E0F", "#1B2325", "#FFA92E", "#3ECF8E"] },
+    { key: "graphite", name: "Graphite", swatch: ["#0C1013", "#1C242B", "#4FD6C9", "#5FD08A"] },
+    { key: "night", name: "Night shift", swatch: ["#0A0705", "#1D1710", "#FF7A1A", "#B7C24E"] },
+    { key: "paper", name: "Paper", swatch: ["#EDE8DE", "#FFFDF8", "#9A3412", "#14733F"] },
+    { key: "daylight", name: "Daylight", swatch: ["#E8EDF2", "#FFFFFF", "#0B5FBF", "#0E7C4F"] },
+    { key: "contrast", name: "High contrast", swatch: ["#000000", "#141414", "#FFD400", "#00E07A"] },
+];
+
+// Mock's own `#fsBar` — four fixed steps, not a free slider (`cfg.fs`
+// stores the raw multiplier, applied to `--s` in tokens.css).
+export const TEXT_SCALE_OPTIONS = [0.9, 1, 1.12, 1.28] as const;
+export type TextScale = (typeof TEXT_SCALE_OPTIONS)[number];
+
 const integrationsSchema = z.object({
     whatsapp: z.boolean(),
     sms: z.boolean(),
@@ -203,6 +230,9 @@ export const settingsBodySchema = z.object({
     DailySummary: dailySummarySchema,
     /** "Operator on duty" (mock's `#opChip`/Appearance pane `#setOp`) — a free-text label, not an account; deliberately not admin-gated. */
     OperatorName: z.string(),
+    /** Task #51 — Appearance pane's Theme picker. Neither field is admin-gated, same reasoning as `OperatorName`. */
+    Skin: z.enum(SKIN_KEYS),
+    TextScale: z.union([z.literal(0.9), z.literal(1), z.literal(1.12), z.literal(1.28)]),
     AdminPasswordHash: z.string(),
     AdminPasswordSalt: z.string(),
 });
@@ -224,6 +254,10 @@ export const DEFAULT_STABILITY: StabilityGate = {
 
 /** The mock's own fallback (`setOperator`: `(v || "").trim() || "Operator"`) — what an empty name reverts to. */
 export const DEFAULT_OPERATOR_NAME = "Operator";
+
+/** Mock's own `setSkin("indicator")`/`setFs(1)` startup calls, verbatim. */
+export const DEFAULT_SKIN: SkinKey = "indicator";
+export const DEFAULT_TEXT_SCALE: TextScale = 1;
 
 export const DEFAULT_NUMBERING: TicketNumbering = {
     Prefix: "TKT-",

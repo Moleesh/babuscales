@@ -1,6 +1,6 @@
 import { createContext } from "react";
 
-import type { SettingsBody } from "../settingsSchema";
+import type { SettingsBody, SkinKey, TextScale } from "../settingsSchema";
 
 export interface SettingsContextValue {
     settings: SettingsBody;
@@ -15,6 +15,9 @@ export interface SettingsContextValue {
     changeAdminPassword: (newPassword: string) => Promise<void>;
     /** "Operator on duty" — deliberately NOT gated by `unlocked` (mock's own comment: "appearance is not admin-gated: this is operator comfort"). Empty/whitespace reverts to `DEFAULT_OPERATOR_NAME`. */
     setOperatorName: (name: string) => Promise<void>;
+    /** Task #51 — Appearance pane's Theme picker. Same "operator comfort" reasoning as `setOperatorName`, deliberately NOT gated by `unlocked`. */
+    setSkin: (skin: SkinKey) => Promise<void>;
+    setTextScale: (scale: TextScale) => Promise<void>;
     /** Task #45 — records that today's scheduled summary went out (sent or failed, one attempt either way), so `DailySummarySync`/`DailySummaryCard` don't re-send it. Bookkeeping, not admin configuration — deliberately NOT gated by `unlocked`, same reasoning as `setOperatorName`: this can fire while Settings sits locked, same as any other automatic background behaviour in this app. */
     recordDailySummarySent: (dateIso: string) => Promise<void>;
 }

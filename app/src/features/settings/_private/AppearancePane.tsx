@@ -1,21 +1,66 @@
 import { Card } from "@components/Card";
 import { Field } from "@components/Field";
+import { SegmentedControl } from "@components/SegmentedControl";
+import type { SegmentedOption } from "@components/SegmentedControl";
 
+import { SKIN_FIXTURES, TEXT_SCALE_OPTIONS } from "../settingsSchema";
+import type { TextScale } from "../settingsSchema";
 import { useSettings } from "../useSettings";
 import styles from "./AppearancePane.module.css";
 
 // Appearance pane (demo/BabuScales-demo.html's `data-pane="look"`) — the
 // mock's own comment marks this whole pane "not admin-gated: this is
-// operator comfort", unlike every other pane. "Operator on duty" is real —
-// nothing else here is yet: the six skins are already ported verbatim to
-// styles/tokens.css (app/README.md's "Carried over from the mock,
-// verbatim"), but there's no picker UI to switch `data-skin` at runtime,
-// and text size/language live under I18nProvider, not Settings.
+// operator comfort", unlike every other pane. Task #51 wires up the last
+// placeholder here: the six skins (already ported verbatim to
+// styles/tokens.css) now have a real picker, and the mock's four-step text
+// size row is ported via the existing SegmentedControl component. Language
+// is a deliberate divergence from the mock, kept out of this pane — it
+// lives in the top-bar chip instead (see I18nProvider), not duplicated here.
+const TEXT_SCALE_LABELS: Record<TextScale, string> = { 0.9: "A−", 1: "A", 1.12: "A+", 1.28: "A++" };
+const textScaleOptions: SegmentedOption<string>[] = TEXT_SCALE_OPTIONS.map((scale) => ({
+    value: String(scale),
+    label: TEXT_SCALE_LABELS[scale],
+}));
+
 export const AppearancePane = () => {
-    const { settings, setOperatorName } = useSettings();
+    const { settings, setOperatorName, setSkin, setTextScale } = useSettings();
 
     return (
         <div className={styles.grid}>
+            <Card title={<span className="lbl">Theme</span>}>
+                <div className={styles.themeBody}>
+                    <div className={styles.skins} role="group" aria-label="Theme">
+                        {SKIN_FIXTURES.map((skin) => (
+                            <button
+                                key={skin.key}
+                                type="button"
+                                className={styles.skin}
+                                aria-pressed={settings.Skin === skin.key}
+                                onClick={() => void setSkin(skin.key)}
+                            >
+                                <span className={styles.swatch}>
+                                    {skin.swatch.map((color, i) => (
+                                        <i
+                                            key={color}
+                                            className={i === 2 ? styles.accent : undefined}
+                                            style={{ background: color }}
+                                        />
+                                    ))}
+                                </span>
+                                {skin.name}
+                            </button>
+                        ))}
+                    </div>
+                    <Field id="setFs" label={{ en: "Text size" }}>
+                        <SegmentedControl
+                            options={textScaleOptions}
+                            value={String(settings.TextScale)}
+                            onChange={(value) => void setTextScale(Number(value) as TextScale)}
+                            ariaLabel="Text size"
+                        />
+                    </Field>
+                </div>
+            </Card>
             <Card title={<span className="lbl">Operator on duty</span>}>
                 <Field id="setOp" label={{ en: "Name" }}>
                     <input
@@ -28,12 +73,6 @@ export const AppearancePane = () => {
                         }}
                     />
                 </Field>
-            </Card>
-            <Card title={<span className="lbl">Theme</span>}>
-                <p className={styles.note}>
-                    The six skins and the text-size control aren&apos;t wired up as a picker here
-                    yet — this pane will get one once it&apos;s built (app/README.md known gap).
-                </p>
             </Card>
         </div>
     );

@@ -10,3 +10,53 @@
     color: var(--dim);
     line-height: 1.6;
 }
+
+.themeBody {
+    display: grid;
+    gap: 12px;
+}
+
+/* Compact appearance picker — a swatch and a name, nothing more. Ported
+   verbatim from demo/BabuScales-demo.html's `.skins`/`.skin`/`.sw`. */
+.skins {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+}
+
+.skin {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 11px 4px 4px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--panel-2);
+    cursor: pointer;
+    font: inherit;
+    font-size: 0.75rem;
+    color: var(--text);
+}
+
+.skin[aria-pressed="true"] {
+    border-color: var(--led);
+    color: var(--led);
+}
+
+.swatch {
+    display: flex;
+    width: 34px;
+    height: 18px;
+    border-radius: 999px;
+    overflow: hidden;
+    flex: none;
+    border: 1px solid rgba(128, 128, 128, 0.3);
+}
+
+.swatch i {
+    flex: 1;
+}
+
+.swatch i.accent {
+    flex: 1.7;
+}

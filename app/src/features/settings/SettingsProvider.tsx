@@ -17,12 +17,14 @@ import {
     DEFAULT_PRINTERS,
     DEFAULT_REMOTE_ACCESS,
     DEFAULT_RULES,
+    DEFAULT_SKIN,
     DEFAULT_SMTP,
     DEFAULT_STABILITY,
+    DEFAULT_TEXT_SCALE,
     SETTINGS_CONFIG_ID,
     settingsBodySchema,
 } from "./settingsSchema";
-import type { SettingsBody } from "./settingsSchema";
+import type { SettingsBody, SkinKey, TextScale } from "./settingsSchema";
 
 // Mock's own admin session: a silent 10-minute auto-lock rather than a
 // second login (demo/BabuScales-demo.html's `admTimer`, `10 * 60 * 1000`ms).
@@ -45,6 +47,8 @@ const SYNC_DEFAULT_BODY: SettingsBody = {
     Smtp: DEFAULT_SMTP,
     DailySummary: DEFAULT_DAILY_SUMMARY,
     OperatorName: DEFAULT_OPERATOR_NAME,
+    Skin: DEFAULT_SKIN,
+    TextScale: DEFAULT_TEXT_SCALE,
     AdminPasswordHash: "",
     AdminPasswordSalt: "",
 };
@@ -106,6 +110,17 @@ export const SettingsProvider = ({ children }: SettingsProviderProps) => {
             width: settings.Numbering.Width,
         });
     }, [settings.Numbering.Prefix, settings.Numbering.Width]);
+
+    // Task #51 — applies the Theme pick to the live DOM globally (not just
+    // while the Appearance pane is mounted), same `data-skin`/`--s` targets
+    // as the mock's own `setSkin`/`setFs` (demo/BabuScales-demo.html).
+    // Deliberately not `loading`-gated: SYNC_DEFAULT_BODY's own Skin/TextScale
+    // are real defaults, so applying them before the row loads just means
+    // the default theme paints first rather than a flash of unstyled root.
+    useEffect(() => {
+        document.documentElement.setAttribute("data-skin", settings.Skin);
+        document.documentElement.style.setProperty("--s", String(settings.TextScale));
+    }, [settings.Skin, settings.TextScale]);
 
     const lock = useCallback(() => {
         if (lockTimer.current) clearTimeout(lockTimer.current);
@@ -184,6 +199,26 @@ export const SettingsProvider = ({ children }: SettingsProviderProps) => {
         [settings, persist],
     );
 
+    // Task #51 — same ungated `persist()` pattern as `setOperatorName`
+    // immediately above (Appearance is "operator comfort", not admin
+    // configuration). No trim/fallback needed: both setters only ever
+    // receive one of the fixture's own fixed values, never free text.
+    const setSkin = useCallback(
+        async (skin: SkinKey): Promise<void> => {
+            if (skin === settings.Skin) return;
+            await persist({ ...settings, Skin: skin });
+        },
+        [settings, persist],
+    );
+
+    const setTextScale = useCallback(
+        async (scale: TextScale): Promise<void> => {
+            if (scale === settings.TextScale) return;
+            await persist({ ...settings, TextScale: scale });
+        },
+        [settings, persist],
+    );
+
     // Task #45 — see SettingsContext.ts's own doc comment on why this
     // bypasses `unlocked`: it's the scheduler (`DailySummarySync`, App.tsx)
     // recording its own automatic behaviour, not an admin editing a setting.
@@ -208,6 +243,8 @@ export const SettingsProvider = ({ children }: SettingsProviderProps) => {
             save,
             changeAdminPassword,
             setOperatorName,
+            setSkin,
+            setTextScale,
             recordDailySummarySent,
         }),
         [
@@ -219,6 +256,8 @@ export const SettingsProvider = ({ children }: SettingsProviderProps) => {
             save,
             changeAdminPassword,
             setOperatorName,
+            setSkin,
+            setTextScale,
             recordDailySummarySent,
         ],
     );
