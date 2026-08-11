@@ -53,3 +53,32 @@ export const computeDashboardKpis = (rows: TicketRow[], referenceIso: string): D
         chargeToday: completedToday.reduce((sum, row) => sum + (row.charge ?? 0), 0),
     };
 };
+
+export interface MaterialSplitEntry {
+    material: string;
+    tonnes: number;
+    share: number;
+}
+
+// PLAN §18 "where the tonnage is coming from" — today's completed tickets,
+// grouped by Material and sorted heaviest-first, capped to `limit` entries
+// so the card doesn't grow unbounded on a busy day with many materials.
+export const computeMaterialSplit = (
+    rows: TicketRow[],
+    referenceIso: string,
+    limit: number,
+): MaterialSplitEntry[] => {
+    const today = rows.filter(
+        (row) => !row.isCancelled && row.netKg !== null && isSameDay(row.at, referenceIso),
+    );
+    const totals = new Map<string, number>();
+    for (const row of today) {
+        const key = row.material || "—";
+        totals.set(key, (totals.get(key) ?? 0) + (row.netKg ?? 0) / 1000);
+    }
+    const totalTonnes = Array.from(totals.values()).reduce((a, b) => a + b, 0) || 1;
+    return Array.from(totals.entries())
+        .map(([material, tonnes]) => ({ material, tonnes, share: tonnes / totalTonnes }))
+        .sort((a, b) => b.tonnes - a.tonnes)
+        .slice(0, limit);
+};
