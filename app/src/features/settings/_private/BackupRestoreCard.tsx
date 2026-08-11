@@ -1,19 +1,11 @@
-import { useRef, useState } from "react";
-
 import { Card } from "@components/Card";
-import { timestampForFilename } from "@constants/timestampForFilename";
 import { useDataPort } from "@db/useDataPort";
 
 import { useSettings } from "../useSettings";
+import { BackupActionsRow } from "./BackupActionsRow";
+import { RestoreConfirmRow } from "./RestoreConfirmRow";
 import styles from "./SystemPane.module.css";
-
-// Mock's own `flash()` timing, reused from SystemPane's LicenceCard.
-const FLASH_MS = 3000;
-
-interface FlashMessage {
-    text: string;
-    bad: boolean;
-}
+import { useBackupRestoreActions } from "./useBackupRestoreActions";
 
 // PLAN §14 "real data must never exist without a way out of the file it
 // lives in" — item 6 built DataPort.exportBackup/importBackup and the real
@@ -32,114 +24,32 @@ interface FlashMessage {
 export const BackupRestoreCard = () => {
     const db = useDataPort();
     const { unlocked } = useSettings();
-    const [message, setMessage] = useState<FlashMessage | null>(null);
-    const [busy, setBusy] = useState(false);
-    const [confirmingRestore, setConfirmingRestore] = useState(false);
-    const pendingFile = useRef<File | null>(null);
-    const flashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-    const showFlash = (text: string, bad = false): void => {
-        if (flashTimer.current) clearTimeout(flashTimer.current);
-        setMessage({ text, bad });
-        flashTimer.current = setTimeout(() => setMessage(null), FLASH_MS);
-    };
-
-    const handleExport = async (): Promise<void> => {
-        setBusy(true);
-        try {
-            const bytes = await db.exportBackup();
-            // `Uint8Array<ArrayBufferLike>` isn't assignable to `BlobPart` under
-            // this project's TS/DOM lib version — a fresh copy backed by a
-            // plain `ArrayBuffer` satisfies it without changing the bytes.
-            const blob = new Blob([new Uint8Array(bytes)], { type: "application/octet-stream" });
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement("a");
-            link.href = url;
-            link.download = `babuscales-backup-${timestampForFilename()}.bak`;
-            link.click();
-            URL.revokeObjectURL(url);
-            showFlash(`Backup saved · ${(bytes.byteLength / 1024).toFixed(0)} KB`);
-        } catch (err) {
-            showFlash(`Backup failed — ${err instanceof Error ? err.message : String(err)}`, true);
-        } finally {
-            setBusy(false);
-        }
-    };
-
-    const handleRestore = async (): Promise<void> => {
-        const file = pendingFile.current;
-        if (!file) return;
-        setConfirmingRestore(false);
-        setBusy(true);
-        try {
-            const bytes = new Uint8Array(await file.arrayBuffer());
-            await db.importBackup(bytes);
-            showFlash("Restored — this file's data replaced everything that was here.");
-        } catch (err) {
-            showFlash(`Restore failed — ${err instanceof Error ? err.message : String(err)}`, true);
-        } finally {
-            setBusy(false);
-            pendingFile.current = null;
-        }
-    };
+    const {
+        message,
+        busy,
+        confirmingRestore,
+        pendingFileName,
+        handleExport,
+        selectFile,
+        handleRestore,
+        cancelRestore,
+    } = useBackupRestoreActions(db);
 
     return (
         <Card title={<span className="lbl">Backup &amp; restore</span>}>
             <div className={styles.body}>
-                <div className={styles.statusRow}>
-                    <button
-                        type="button"
-                        className={styles.mini}
-                        disabled={busy}
-                        onClick={() => void handleExport()}
-                    >
-                        {busy ? "Working…" : "Save a backup"}
-                    </button>
-                    <label
-                        className={`${styles.mini} ${!unlocked || busy ? styles.miniLabelDisabled : ""}`}
-                    >
-                        Restore from a backup…
-                        <input
-                            type="file"
-                            accept=".bak,.db"
-                            hidden
-                            disabled={!unlocked || busy}
-                            onChange={(event) => {
-                                const file = event.target.files?.[0];
-                                event.target.value = "";
-                                if (file) {
-                                    pendingFile.current = file;
-                                    setConfirmingRestore(true);
-                                }
-                            }}
-                        />
-                    </label>
-                </div>
+                <BackupActionsRow
+                    busy={busy}
+                    unlocked={unlocked}
+                    onExport={() => void handleExport()}
+                    onSelectFile={selectFile}
+                />
                 {confirmingRestore && (
-                    <div className={styles.confirmRow}>
-                        <span>
-                            Restore &quot;{pendingFile.current?.name}&quot;? Everything currently
-                            saved here — every ticket, master and setting — is replaced. This
-                            can&apos;t be undone.
-                        </span>
-                        <button
-                            type="button"
-                            className={`${styles.mini} ${styles.danger}`}
-                            onClick={() => void handleRestore()}
-                        >
-                            Yes, restore
-                        </button>
-                        <button
-                            type="button"
-                            className={styles.mini}
-                            onClick={() => {
-                                setConfirmingRestore(false);
-                                pendingFile.current = null;
-                            }}
-                        >
-                            Cancel
-                        </button>
-                    </div>
+                    <RestoreConfirmRow
+                        fileName={pendingFileName}
+                        onConfirm={() => void handleRestore()}
+                        onCancel={cancelRestore}
+                    />
                 )}
                 {message && <p className={message.bad ? styles.bad : styles.applied}>{message.text}</p>}
                 <p className={styles.hint}>
