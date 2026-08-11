@@ -37,17 +37,24 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
-      # Blocking on warnings too, not just errors (--max-warnings=0). Task #60
-      # drove the repo to 0 warnings with zero suppressions; this keeps it
-      # there, so a warning can't quietly accumulate again.
-      - name: Lint (zero warnings)
+      - name: Lint (errors only)
+        run: npm run lint:errors
+
+      # Non-blocking for now (2026-08-11, user request) — task #61's test
+      # suite and the zero-warnings lint gate are still young; both steps
+      # still run and report on every PR/push, they just don't fail the
+      # build yet. Revisit turning these blocking once the suite has had
+      # more time to prove itself out. `lint:errors` above stays the real
+      # blocking lint gate in the meantime.
+      - name: Lint (zero warnings, advisory)
         run: npm run lint:strict
+        continue-on-error: true
 
       # Task #61 — Vitest suite (src/components/ design-system library,
-      # engines/formulaEngine, constants/). Blocking: same tier as
-      # typecheck/lint above, not advisory.
-      - name: Unit tests
+      # engines/formulaEngine, constants/).
+      - name: Unit tests (advisory)
         run: npm run test:run
+        continue-on-error: true
 
       - name: Secret scan
         run: npm run scan:secrets
