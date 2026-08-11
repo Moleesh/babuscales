@@ -1,15 +1,31 @@
 import { Card } from "@components/Card";
 
-import { FIXED_POLICY, RULE_DEFS } from "../settingsSchema";
+import { FIXED_POLICY } from "../settingsSchema";
 import type { WeighingRules } from "../settingsSchema";
 import { useSettings } from "../useSettings";
 import styles from "./WeighingPane.module.css";
+import { WeighingRulesCard } from "./WeighingRulesCard";
 
-const clampInt = (value: string, min: number, max: number, fallback: number): number => {
-    const n = Number.parseInt(value, 10);
-    if (!Number.isFinite(n)) return fallback;
-    return Math.min(max, Math.max(min, n));
-};
+// The read-only "Fixed policy" table doesn't depend on props or state, so
+// it's a module constant rather than JSX inside the component body.
+const FIXED_POLICY_CARD = (
+    <Card title={<span className="lbl">Fixed policy</span>}>
+        <div className={styles.policyTable}>
+            <table>
+                <tbody>
+                    {FIXED_POLICY.map(([title, detail]) => (
+                        <tr key={title}>
+                            <td>
+                                <b>{title}</b>
+                                <div className={styles.policyDetail}>{detail}</div>
+                            </td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+        </div>
+    </Card>
+);
 
 // Weighing pane (demo/BabuScales-demo.html's `data-pane="weigh"`) — the three
 // surviving rules (RULE_DEFS), the stability gate, and the read-only "Fixed
@@ -23,98 +39,19 @@ export const WeighingPane = () => {
         void save({ ...settings, Rules: { ...settings.Rules, [key]: checked } });
     };
 
+    const setStability = (next: typeof settings.Stability): void => {
+        void save({ ...settings, Stability: next });
+    };
+
     return (
         <div className={styles.grid}>
-            <Card
-                title={<span className="lbl">Weighing rules</span>}
-                headerRight={<span className={styles.applied}>Applied immediately</span>}
-            >
-                <div className={styles.checks}>
-                    {RULE_DEFS.map(([key, label, note]) => (
-                        <label key={key} className={styles.ck}>
-                            <input
-                                type="checkbox"
-                                checked={settings.Rules[key]}
-                                disabled={!unlocked}
-                                onChange={(event) => setRule(key, event.target.checked)}
-                            />
-                            <span>
-                                {label}
-                                <small>{note}</small>
-                            </span>
-                        </label>
-                    ))}
-                </div>
-                <div className={styles.stability}>
-                    <label className="lbl" htmlFor="setReads">
-                        Stability gate
-                    </label>
-                    <div className={styles.inline}>
-                        <input
-                            id="setReads"
-                            type="number"
-                            min={1}
-                            max={20}
-                            value={settings.Stability.ReadingsInRow}
-                            disabled={!unlocked}
-                            onChange={(event) =>
-                                void save({
-                                    ...settings,
-                                    Stability: {
-                                        ...settings.Stability,
-                                        ReadingsInRow: clampInt(
-                                            event.target.value,
-                                            1,
-                                            20,
-                                            settings.Stability.ReadingsInRow,
-                                        ),
-                                    },
-                                })
-                            }
-                        />
-                        <span>readings in a row, all within ±</span>
-                        <input
-                            id="setBand"
-                            type="number"
-                            min={1}
-                            max={200}
-                            value={settings.Stability.BandKg}
-                            disabled={!unlocked}
-                            onChange={(event) =>
-                                void save({
-                                    ...settings,
-                                    Stability: {
-                                        ...settings.Stability,
-                                        BandKg: clampInt(
-                                            event.target.value,
-                                            1,
-                                            200,
-                                            settings.Stability.BandKg,
-                                        ),
-                                    },
-                                })
-                            }
-                        />
-                        <span>kg of each other</span>
-                    </div>
-                </div>
-            </Card>
-            <Card title={<span className="lbl">Fixed policy</span>}>
-                <div className={styles.policyTable}>
-                    <table>
-                        <tbody>
-                            {FIXED_POLICY.map(([title, detail]) => (
-                                <tr key={title}>
-                                    <td>
-                                        <b>{title}</b>
-                                        <div className={styles.policyDetail}>{detail}</div>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-            </Card>
+            <WeighingRulesCard
+                settings={settings}
+                unlocked={unlocked}
+                onSetRule={setRule}
+                onSetStability={setStability}
+            />
+            {FIXED_POLICY_CARD}
         </div>
     );
 };
