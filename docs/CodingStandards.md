@@ -341,12 +341,17 @@ Every pull request:
 **Blocking — correctness and security only:**
 
 ```
-typecheck      tsc --noEmit
-lint:errors    eslint --quiet          only `error`-severity rules; see §0
+typecheck      tsc -b
+lint:strict    eslint --max-warnings=0  warnings block too, not just errors
+test:run       vitest run               unit suite; a failing test fails CI
 clippy         cargo clippy -- -D warnings::correctness -D warnings::suspicious
 scan:secrets   no credentials in the tree
 build          debug build on windows-latest
 ```
+
+`lint:strict` replaced `lint:errors` as the CI gate once task #60 drove the repo to zero warnings
+with zero suppressions — holding that line is cheap now, and lets a warning fail fast instead of
+quietly accumulating. `lint:errors` (`--quiet`) is still there for a fast errors-only local check.
 
 **Auto-applied — runs `--write`, cannot fail a build:**
 

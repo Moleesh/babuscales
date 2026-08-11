@@ -62,14 +62,22 @@ export const div = (
     const numAbs = a.mantissa < 0n ? -a.mantissa : a.mantissa;
     const denAbs = b.mantissa < 0n ? -b.mantissa : b.mantissa;
 
+    // Bug fix (found writing task #61's Decimal.test.ts — Round(1.005, 2) was
+    // returning 1.00, not 1.01): when `shift` is negative, the target scale
+    // asks for *fewer* fractional digits than the operands already carry, so
+    // we must scale the denominator UP, never the numerator DOWN — dividing
+    // the numerator down first (the old `numAbs / pow10(-shift)`) truncates
+    // it with plain integer division before the remainder-based rounding
+    // below ever runs, silently discarding the exact digit HalfUp/Up need.
     const shift = resultScale + b.scale - a.scale;
-    const scaledNumerator = shift >= 0 ? numAbs * pow10(shift) : numAbs / pow10(-shift);
+    const [scaledNumerator, scaledDenominator] =
+        shift >= 0 ? [numAbs * pow10(shift), denAbs] : [numAbs, denAbs * pow10(-shift)];
 
-    let quotient = scaledNumerator / denAbs;
-    const remainder = scaledNumerator % denAbs;
+    let quotient = scaledNumerator / scaledDenominator;
+    const remainder = scaledNumerator % scaledDenominator;
     if (remainder !== 0n) {
         if (mode === "Up") quotient += 1n;
-        else if (mode === "HalfUp" && remainder * 2n >= denAbs) quotient += 1n;
+        else if (mode === "HalfUp" && remainder * 2n >= scaledDenominator) quotient += 1n;
     }
     return { mantissa: negative ? -quotient : quotient, scale: resultScale };
 };

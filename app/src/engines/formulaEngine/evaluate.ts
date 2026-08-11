@@ -10,6 +10,7 @@ import {
     round,
     fromString,
     negate,
+    toDecimalString,
 } from "./Decimal";
 import type { Decimal } from "./Decimal";
 import type { FormulaExpr } from "./parse";
@@ -26,13 +27,21 @@ export interface FormulaContext {
     callFunction?: (name: string, args: FormulaValue[]) => FormulaValue;
 }
 
+// Bug fix (found writing task #61's evaluate.test.ts): plain `JSON.stringify(v)`
+// crashes with "Do not know how to serialize a BigInt" the moment `v` is a
+// Decimal (its `mantissa` field is a bigint) — exactly the case `asBoolean`
+// hits on a formula mistake like `If(Gross, ...)`. That crash replaced the
+// intended "expected a boolean" message with an unrelated one.
+const describeValue = (v: FormulaValue): string =>
+    typeof v === "object" ? `Decimal(${toDecimalString(v)})` : JSON.stringify(v);
+
 const asDecimal = (v: FormulaValue, where: string): Decimal => {
     if (typeof v === "object") return v;
-    throw new Error(`Formula error: expected a number in ${where}, got ${JSON.stringify(v)}`);
+    throw new Error(`Formula error: expected a number in ${where}, got ${describeValue(v)}`);
 };
 const asBoolean = (v: FormulaValue, where: string): boolean => {
     if (typeof v === "boolean") return v;
-    throw new Error(`Formula error: expected a boolean in ${where}, got ${JSON.stringify(v)}`);
+    throw new Error(`Formula error: expected a boolean in ${where}, got ${describeValue(v)}`);
 };
 
 // The division default when a formula doesn't ask for a specific rounding
