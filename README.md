@@ -2,25 +2,27 @@
 
 **Weighbridge management software that a quarry can actually run.**
 
-Live weight from the indicator, photographic evidence from up to four cameras, a ticket that
-prints on whatever printer the site already owns, and reports the owner can trust — on a 4GB
-office PC, with no internet, in English or Tamil.
+Live weight from the indicator, a hash-chained, QR-verifiable ticket that prints on whatever
+printer the site already owns, and reports the owner can trust — on a 4GB office PC, with no
+internet, in English or Tamil.
 
-[![Release](https://img.shields.io/badge/release-planning-blue)](#roadmap)
+[![Release](https://img.shields.io/badge/release-phase_8%2F9_remaining-blue)](#roadmap)
 [![Platform](https://img.shields.io/badge/platform-Windows-informational)](#install)
 [![Licence](https://img.shields.io/badge/licence-proprietary-lightgrey)](#licence)
 
-> **Status: Phase 6 (Trust & release) underway — the 3.0 line PLAN.md marks as shippable.**
-> The interactive mock in **[`demo/BabuScales-demo.html`](demo/BabuScales-demo.html)** was the
-> reference spec for Phases 0–5, all of which are built: weighing, masters, printing, cameras,
-> reports/dashboard and backup/restore all run for real in **[`app/`](app/README.md)** against a
-> real SQLite database, not just the mock. Phase 6 has added a real audit hash chain with public QR
-> verification, offline licence activation, a Windows installer, and this pass of documentation —
-> see `app/README.md`'s own numbered list and "Known gap" section for exactly what's real versus
-> still aspirational. The full technical plan is in **[PLAN.md](PLAN.md)**.
+> **Status (2026-08-11): Phases 0–7 are built** — weighing, masters, printing, reports/dashboard,
+> backup/restore, the audit hash chain with public QR verification, offline licence activation, a
+> Windows installer, remote access, email/SMS delivery and Android packaging all run for real in
+> **[`app/`](app/README.md)** against a real SQLite database, not just the mock. What's left is
+> Phase 8 (ANPR, visual template designer, anomaly detection — deferred by decision, not started),
+> Phase 9 (a full test suite — in progress, currently paused by request), MiMaS (blocked on a spec
+> that doesn't exist yet), and a short list of real, known gaps — see
+> **[`docs/Features.md`](docs/Features.md)** for the current feature-by-feature state, or
+> `app/README.md`'s "Known gap" section for the full narrative. The full technical plan is in
+> **[PLAN.md](PLAN.md)**.
 >
-> This repository hasn't been pushed to a public remote yet, so the *Open the demo* and *Releases*
-> links below aren't live — everything under `app/` runs locally today; open
+> This repository has a GitHub remote configured but hasn't been pushed yet, so the *Open the demo*
+> and *Releases* links below aren't live — everything under `app/` runs locally today; open
 > `demo/BabuScales-demo.html` in any browser in the meantime for the original one-file, no-build,
 > no-database mock this application was built against.
 
@@ -55,28 +57,29 @@ rules and numbering are all configuration** — onboarding a new site is an afte
   returns. Nobody queues behind the last vehicle
 
 ### Evidence
-- Up to **4 cameras** — USB, IP, RTSP, ONVIF — with per-camera crop and auto-capture
-- **ANPR** reads the number plate offline and flags mismatches with what was typed
-- Ticket number, weight and time **burned into the image**, so a photo explains itself
 - **Public QR verification** — anyone can scan a ticket and confirm it is genuine
 - Hash-chained audit: altering history breaks the chain and is detected
+- Camera tiles beside the weight, driven by live ticket state — real USB/IP/RTSP/ONVIF capture,
+  per-camera crop, burned-in overlays and offline ANPR are designed for but not built yet (see
+  [`docs/Features.md`](docs/Features.md))
 
 ### Printing
-One design, three printer classes — because sites own what they own.
+One content model, three printer classes — because sites own what they own.
 
 | | |
 |---|---|
-| **Dot matrix** | Raw ESC/P. Instant, driver-free, continuous stationery, carbon copies |
-| **A4 / A5** | Full typography, logo, QR, photographs |
-| **Thermal** | ESC-POS tokens and gate passes |
+| **Dot matrix** | Raw text via the OS print dialog. Continuous stationery, carbon copies |
+| **A4 / A5** | Full typography, logo, QR, print preview before committing |
+| **Thermal** | ESC-POS-style tokens and gate passes |
 
-Plus pre-printed stationery with on-screen alignment, multi-copy watermarks, mass print, and a
-**visual designer** so you never hand-edit a template.
+Multi-copy DUPLICATE watermarking and mass print from Reports are built; a visual designer for
+custom layouts, pre-printed-stationery alignment, and a true RAW/ESC-P spooler path (bypassing the
+OS print dialog) are designed for but not built yet.
 
 ### Everything else
-Formula-driven charging · searchable masters that stay instant at 100,000 rows · report builder
-with Excel/CSV/PDF export · verified scheduled backups · English and **தமிழ்** ·
-LAN access from any phone (off by default) · runs entirely offline.
+Real billing (flat, configurable-later rate) · searchable masters · report builder with
+Excel/CSV export · verified manual backups · English and **தமிழ்**, keyboard-first navigation ·
+optional LAN/public access via Cloudflare Tunnel (off by default) · runs entirely offline.
 
 ---
 
@@ -122,39 +125,38 @@ Chosen deliberately for **4GB machines**: the whole application uses less memory
 | | |
 |---|---|
 | [PLAN.md](PLAN.md) | Full technical plan |
+| [docs/Features.md](docs/Features.md) | Current feature inventory — what's real, partial or not built, today |
 | [docs/OperatorGuide.md](docs/OperatorGuide.md) | Day-to-day use, for whoever weighs vehicles |
 | [docs/AdminSetup.md](docs/AdminSetup.md) | Install, licence, configure — for whoever sets a site up |
 | [docs/CodingStandards.md](docs/CodingStandards.md) | How this codebase is written, and what CI enforces |
 | [docs/Terminology.md](docs/Terminology.md) | The words we use and why |
-| [docs/JsonConfig.md](docs/JsonConfig.md) | Schema, layout, template and settings contracts |
-| [docs/PrintTemplate.md](docs/PrintTemplate.md) | Template model and placeholders |
-| [docs/FormulaNotes.md](docs/FormulaNotes.md) | Formula language and decimal policy |
-| [docs/Security.md](docs/Security.md) | Threat model, secrets, audit chain |
-| [docs/DecisionLog.md](docs/DecisionLog.md) | Every significant decision, and what was rejected |
+
+`docs/JsonConfig.md`, `docs/PrintTemplate.md`, `docs/FormulaNotes.md`, `docs/Security.md` and
+`docs/DecisionLog.md` are named in `PLAN.md` §19 as intended documentation but don't exist yet —
+a real, tracked gap, not a broken link to ignore.
 
 ---
 
 ## Roadmap
 
-PLAN.md's own phase table (§21), resequenced after review to remove forward dependencies — this is
-the live plan, not the original draft order:
+`PLAN.md`'s own phase table (§21) — this is the live status, not the original draft order:
 
 | Phase | | |
 |---|---|---|
-| 0 | Groundwork | Reverse-engineer the v1 site presets and hardest print format before the formula language locks |
+| 0 | Groundwork | Superseded — shipped without the site-preset/pdfium spike; printing goes through the OS dialog instead |
 | 0.5 | Mock | **Done.** Four review rounds on `demo/BabuScales-demo.html` — the reference spec for Phase 1+ |
-| 1 | Foundation | Scaffold, schema, `DataPort` + adapters, component library, i18n, CI, live demo, backup/restore from day one |
-| 2 | Core | Schema engine, formula engine, capture model, masters + search, indicator, hash chain on `audit` |
-| 3 | Print | Content model, three layout engines, the six real v1 formats, printer capability profiles |
-| 4 | Capture | 4 cameras, crop, overlay, ONVIF/RTSP, retention, live view |
-| 5 | Insight | Reports, dashboard, Excel/CSV import-export, custom indexes, mass print |
-| 6 | **Trust & release** | QR verification, licensing, installer, docs, landing page — **3.0 ships** |
-| 7 | Reach | Remote access, WhatsApp/SMS, scheduled reports, multi-gross, legacy import, MiMaS, Android |
-| 8 | Deferred by decision | ANPR, visual template designer, anomaly detection — designed for, not built |
-| 9 | Tests | Full suite — last phase, by decision |
+| 1 | Foundation | **Done.** Scaffold, schema, `DataPort` + adapters, component library, i18n, CI, backup/restore |
+| 2 | Core | **Done.** Schema + formula engines, capture model, masters + search, indicator, hash chain |
+| 3 | Print | **Done, scoped down.** No Windows RAW/ESC-P spooler path yet |
+| 4 | Capture | **Not really done.** Cameras are the mock's own decorative fixture — no real capture |
+| 5 | Insight | **Done.** Reports, dashboard, Excel/CSV export, mass print |
+| 6 | Trust & release | **Done.** QR verification, offline licensing, Windows installer |
+| 7 | Reach | **Done except MiMaS** (blocked, no spec) **and WhatsApp** (permanently decorative, by decision) |
+| 8 | Deferred by decision | Not started — ANPR, visual template designer, anomaly detection |
+| 9 | Tests | Paused mid-flight — `components/`, `constants/`, `formulaEngine/` covered (114 tests), rest on hold |
 
-Currently in **Phase 6**: QR verification, offline licensing and the Windows installer are done;
-this documentation pass is the last item before "3.0 ships".
+See [`docs/Features.md`](docs/Features.md) for the feature-level detail behind each phase, and
+`PLAN.md` §21's "What's left" for the concrete backlog.
 
 ---
 

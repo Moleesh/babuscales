@@ -1,7 +1,11 @@
 # BabuScales — Technical Plan (v3.0)
 
 > Weighbridge management software, designed from first principles.
-> **Status:** planning. **Owner:** Moleesh / Babulens.
+> **Status (2026-08-11):** Phases 0–7 are built and running against a real SQLite database — not
+> planning anymore. What's actually left is §21's "What's left" list, §23's open items, and the
+> Phase 8/9 work this plan always deferred by decision. For the full current-state feature-by-feature
+> breakdown, see [`docs/Features.md`](docs/Features.md); for the task-by-task build log, see
+> [`app/README.md`](app/README.md). **Owner:** Moleesh / Babulens.
 
 ---
 
@@ -1227,21 +1231,54 @@ ESLint and clippy, none of which can be tripped by writing good documentation.
 
 ## 21. Roadmap
 
-Resequenced after review, to remove dependencies on work scheduled later.
+**Phases 0–7 are built**, cross-checked against the code, not aspirational. This table records
+final status per phase; the real backlog is the "What's left" list right after it. Full task-by-task
+narrative — what shipped, what was cut and why — lives in `app/README.md`'s numbered "Where to
+start" list and its "Known gap" section; per-feature current state lives in `docs/Features.md`.
 
-| Phase | Scope |
-|---|---|
-| **0 Groundwork** | **Rotate the ngrok token (today).** Reverse-engineer and document the four v1 site presets — Kotta, Godown, Estimated-weight, Ice-water — **before** the formula language is designed, since they determine whether it is expressive enough. Model the hardest print format (`Pre Print 1`, three carbon columns) on paper to validate the block set. Prove the WebView2 → pdfium → spooler path end-to-end as a spike |
-| **0.5 Mock** | **Done.** Four review rounds on `demo/BabuScales-demo.html`. It is now the reference specification for Phase 1 — see §22 |
-| **1 Foundation** | `app/` scaffold, Tauri shell, fixed schema, `DataPort` + memory/SQLite adapters, component library **built against the mock**, i18n with language packs, help framework, CI gates, README, Pages demo live, **and backup/restore from day one** — real data must never exist without backup |
-| **2 Core** | Schema engine, formula engine, capture model (§7.1, one status per §7.4 — no state machine), masters + search, indicator + wizard, **hash chain on `audit` now** (cheap on day one, impossible to retrofit once history exists) |
-| **3 Print** | Content model, three layout engines, the six real v1 formats, per-target preview, printer capability profiles |
-| **4 Capture** | 4 cameras, crop, overlay, ONVIF/RTSP, clips, retention, live view |
-| **5 Insight** | Reports, dashboard, Excel/CSV import-export, custom indexes, mass print |
-| **6 Trust & release** | QR verification, licensing, installer, docs, landing page — **3.0 ships** |
-| **7 Reach** | Remote access, WhatsApp/SMS, scheduled reports, **multi-gross**, legacy v1/v2 import, MiMaS, Android |
-| **8 Deferred by decision** | **ANPR** · **visual template designer** · **anomaly detection**. Designed for, not built. Templates until then are authored as files with live preview |
-| **9 Tests** | Full suite — **last phase, by decision** |
+| Phase | Scope | Status |
+|---|---|---|
+| **0 Groundwork** | Site presets, hardest print format, WebView2→pdfium spike | Superseded — shipped without the presets/pdfium spike; printing goes through the OS dialog instead (see "What's left") |
+| **0.5 Mock** | Four review rounds on `demo/BabuScales-demo.html`, the reference spec for Phase 1 (§22) | **Done** |
+| **1 Foundation** | Scaffold, fixed schema, `DataPort` + adapters, component library, i18n, help framework, CI gates, backup/restore from day one | **Done** |
+| **2 Core** | Schema engine, formula engine, capture model (§7.1/§7.4/§7.5), masters + search, indicator, hash chain on `audit` | **Done** — formula engine is built and tested but not yet wired to live billing (Charge/Value are hand-computed) |
+| **3 Print** | Content model, three layout engines, six real v1 formats, printer capability profiles | **Done, scoped down** — no Windows RAW/ESC-P spooler path (§15.2); printer profiles are a curated fixture list, not per-printer capability lookups |
+| **4 Capture** | 4(→8) cameras, crop, overlay, ONVIF/RTSP, clips, retention, live view | **Not really done** — cameras are the reference mock's own decorative fixture; no real USB/IP/RTSP capture exists |
+| **5 Insight** | Reports, dashboard, Excel/CSV export, custom indexes, mass print | **Done** — "custom indexes" are named report-view presets, not real expression indexes (`indexEngine` is an empty stub) |
+| **6 Trust & release** | QR verification, licensing, installer, docs, landing page | **Done** — not yet pushed to a remote, so CI and the Pages demo have never actually run |
+| **7 Reach** | Remote access, email/SMS, scheduled reports, multi-gross, legacy v1/v2 import, MiMaS, Android | **Done except MiMaS** (blocked, no spec) **and WhatsApp** (permanently decorative, by decision — no compliant free delivery path) |
+| **8 Deferred by decision** | **ANPR** · **visual template designer** · **anomaly detection**. Designed for, not built | Correctly still untouched |
+| **9 Tests** | Full suite — last phase, by decision | **Paused mid-flight** — `src/components/`, `src/constants/`, `src/engines/formulaEngine/` covered (114 tests); rest on hold by explicit request |
+
+### What's left
+
+**Ship it**
+- Push to the configured GitHub remote and confirm CI and the Pages demo actually run (§23.10).
+- Replace the throwaway Ed25519 vendor signing key (`tools/license-format`) before any real licence
+  goes out; confirm pricing/licence tiers and trial length (currently a 14-day placeholder, §23.4).
+- Replace the placeholder `BS` logo with real brand identity (§23.1).
+
+**Real gaps against this plan**
+- Real camera capture (USB/IP/RTSP/ONVIF) — cameras are currently decorative (Phase 4).
+- Windows RAW/ESC-P spooler path (§15.2) — all printing still goes through the OS print dialog.
+- Schema-driven generic field rendering, and `VisibleWhen`/`RequiredWhen`/`ReadOnlyWhen`/`Validate`
+  formula evaluation against the ticket (§8) — a custom field validates and saves but renders no input.
+- Wire the formula engine to live billing — `Charge`/`Value` are hand-computed, not formula-evaluated.
+- Expression-index manager (§6.3) — `indexEngine` is an empty stub.
+- A background outbox worker — webhook, cloud backup, Tally export and the outdoor display board
+  toggles persist with no worker draining them; email/SMS/verification are a synchronous "drain of
+  one" at print time, not a retry queue.
+- An OS-level scheduler for the daily summary — it's currently an in-app `setInterval`, so a machine
+  asleep at the scheduled time sends nothing until next opened.
+- FTS5 + virtualised/keyset-paginated Masters search at scale (fine today, not at 100,000+ rows).
+- Reports date-range filter.
+- i18n content coverage — only ~19 keys are actually routed through translation; most on-screen text
+  is still hardcoded English.
+- Multi-gross: an itemised per-load print line, and the ability to park a ticket mid-sequence.
+
+**Deferred by decision (Phase 8, unchanged)** — ANPR, visual template designer, anomaly detection.
+
+**Blocked externally** — MiMaS, no spec yet.
 
 **On tests.** Your call stands and I will not revisit it. Recorded once so the trade is explicit:
 the risk is not retrofit effort — `engines/` are pure, so tests drop in cleanly — it is that silent
@@ -1282,22 +1319,23 @@ the hash chain, and the formula parser (the mock hard-codes three formulas).
 
 ## 23. Open items
 
-1. **The logo.** The current mark — `BLS` on a weighbridge deck — is a **placeholder** standing in
-   as the constant Babulens maker's mark. It now also exists as the generated Tauri app icon set
-   (`app/src-tauri/icons/`), not only the demo's SVG — same placeholder, two places, so it is one
-   swap when the real design lands, not two. Proper identity design is deferred by decision and is
-   an action item in its own right, not a Phase 1 blocker.
-2. Starter templates — which 5–8 designs ship in Phase 2.
-3. MiMaS specification — obtain when available.
-4. Pricing and licence tiers.
-5. WhatsApp/SMS provider — the only per-message cost.
-6. QR verification hosting — LAN-only or public.
-7. **Rotate the ngrok authtoken** still committed in v2's `ngrok.yml`.
-8. Admin unlock window — ten minutes in the mock; confirm before Phase 6.
-9. **Tauri commands + the `tauri` `DataPort` adapter** — `src-tauri/src/commands/` and
-   `src/db/adapters/tauri/` don't exist yet. The store, schema and backup code are real and
-   verified (§21 Phase 1), but nothing wires them to the frontend yet. Phase 2 work, alongside
-   whichever feature first needs a live desktop database.
-10. **The Pages demo isn't live.** `app/` has no GitHub remote yet — `.github/workflows/pages.yml`
-    is authored and its YAML is valid, but it has never run. Needs `git init`, a GitHub repo, a
-    push, and Pages set to "GitHub Actions" as its source.
+Resolved items removed rather than left checked off — see git history if the earlier record is
+ever needed. What's genuinely still open:
+
+1. **The logo.** The current mark — `BS` on a weighbridge deck — is a **placeholder** standing in
+   as the constant Babulens maker's mark, both in `demo/`'s SVG and the generated Tauri app icon
+   set (`app/src-tauri/icons/`) — one swap, two places, when the real design lands. Proper identity
+   design is deferred by decision, not a blocker.
+2. Starter print templates — which 5–8 designs ship, and the visual designer to author them
+   (Phase 8, deferred by decision — the three built-in layouts are all that exist today).
+3. MiMaS specification — obtain when available; task #48 is blocked on it, not in progress.
+4. Pricing and licence tiers — the 14-day trial length and the vendor Ed25519 signing key are both
+   explicit placeholders pending this decision.
+5. Admin unlock window — ten minutes, implemented and confirmed as-is; revisit only if a site asks.
+6. **Rotate the ngrok authtoken committed in v2's `ngrok.yml`** — inherited from the prior product,
+   not present in this repo; confirm and rotate on whatever system still holds v2's history.
+7. **This repo has never been pushed to its configured GitHub remote.** `origin` is set
+   (`git@github.com:Moleesh/babuscales.git`), `.github/workflows/{ci,pages,release}.yml` are
+   authored and valid, but none has ever run — CI has never checked a real push, and the Pages
+   demo has never deployed. Needs an explicit go-ahead to push (standing project rule), then
+   confirm the three workflows go green and Pages serves the memory-adapter build.
