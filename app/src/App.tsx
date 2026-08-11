@@ -157,6 +157,57 @@ const TabContent = ({
     }
 };
 
+// The mock's own weight readout — full-size on Weighing, compact as a
+// glance-only strip everywhere else (AppShell's `header` slot). Pulled out
+// of Shell so its own prop wiring doesn't count against Shell's budget.
+const ShellWeightHeader = ({
+    reading,
+    compact,
+    t,
+}: {
+    reading: ReturnType<typeof useIndicatorReading>;
+    compact: boolean;
+    t: ReturnType<typeof useTranslation>["t"];
+}) => (
+    <WeightDisplay
+        weightKg={reading.WeightKg}
+        capacityKg={60000}
+        stable={reading.Stable}
+        motion={!reading.Stable}
+        mode={compact ? "compact" : "full"}
+        labels={{
+            indicator: t("ind"),
+            stable: t("stable"),
+            motion: t("motion"),
+            unit: t("kg"),
+        }}
+    />
+);
+
+const buildNavTabs = (t: ReturnType<typeof useTranslation>["t"]): AppShellTab[] =>
+    TAB_KEYS.map((key) => ({ key, label: t(`nav.${key}`), icon: TAB_ICONS[key] }));
+
+// The two handlers TabContent needs that reach outside its own props (resume
+// a ticket from Reports by switching tabs; reset the doc series from
+// Settings) — pulled out of Shell's body so Shell itself stays under the
+// line budget.
+const useShellTicketActions = (
+    ticket: UseWeighingTicket,
+    db: ReturnType<typeof useDataPort>,
+    setActiveTab: (tab: (typeof TAB_KEYS)[number]) => void,
+) => {
+    const openTicket = (doc: DocRow): void => {
+        ticket.resume(doc);
+        setActiveTab("weigh");
+    };
+
+    const resetTicketSeries = async (): Promise<void> => {
+        await db.resetDocSeries("Ticket", "default");
+    };
+
+    return { openTicket, resetTicketSeries };
+};
+
 interface ShellProps {
     /** Owned at App level — the loaded/live pack list lives above I18nProvider, which is above Shell. */
     onAddLanguagePack: (pack: LanguagePack) => Promise<void>;
@@ -176,26 +227,12 @@ const Shell = ({ onAddLanguagePack }: ShellProps) => {
         settings.Rules.MultiGross,
     );
     const otherPack = packs.find((pack) => pack.Code !== "en") ?? null;
-
-    const openTicket = (doc: DocRow): void => {
-        ticket.resume(doc);
-        setActiveTab("weigh");
-    };
-
-    const resetTicketSeries = async (): Promise<void> => {
-        await db.resetDocSeries("Ticket", "default");
-    };
-
-    const tabs: AppShellTab[] = TAB_KEYS.map((key) => ({
-        key,
-        label: t(`nav.${key}`),
-        icon: TAB_ICONS[key],
-    }));
+    const { openTicket, resetTicketSeries } = useShellTicketActions(ticket, db, setActiveTab);
 
     return (
         <AppShell
             siteLabel="Sri Lakshmi Blue Metals · Nagercoil · Bridge 1"
-            tabs={tabs}
+            tabs={buildNavTabs(t)}
             activeTab={activeTab}
             onNavigate={(key) => setActiveTab(key as (typeof TAB_KEYS)[number])}
             topRight={
@@ -210,21 +247,7 @@ const Shell = ({ onAddLanguagePack }: ShellProps) => {
                     helpTitle={t("nav.help")}
                 />
             }
-            header={
-                <WeightDisplay
-                    weightKg={reading.WeightKg}
-                    capacityKg={60000}
-                    stable={reading.Stable}
-                    motion={!reading.Stable}
-                    mode={activeTab === "weigh" ? "full" : "compact"}
-                    labels={{
-                        indicator: t("ind"),
-                        stable: t("stable"),
-                        motion: t("motion"),
-                        unit: t("kg"),
-                    }}
-                />
-            }
+            header={<ShellWeightHeader reading={reading} compact={activeTab !== "weigh"} t={t} />}
             banner={renderLicenseBanner(license.state, license.isGated)}
         >
             <TabContent
@@ -406,21 +429,14 @@ const DailySummarySync = () => {
     return null;
 };
 
-export const App = () => {
-    const [db] = useState(() => createDataPort());
-    const [indicator] = useState(() => createIndicatorSource());
-    const [verificationServer] = useState(() => createVerificationServerSource());
-    const [tunnel] = useState(() => createTunnelSource());
-    const [licensing] = useState(() => createLicensingSource());
+// Loaded from `config` (ConfigKind: "LanguagePack") — I18nProvider's own doc
+// comment: "loading is the caller's job", this is that job. A fresh install
+// has no rows yet, so the one pack this build ships with is seeded as a real
+// row rather than kept as a hardcoded prop — same "create the default row on
+// first run" shape SettingsProvider already uses for its own config row.
+const useAppLanguagePacks = (db: ReturnType<typeof useDataPort>) => {
     const [packs, setPacks] = useState<LanguagePack[]>([]);
-    const [ticketSchema, setTicketSchemaState] = useState<Schema>(DEFAULT_TICKET_SCHEMA);
 
-    // Loaded from `config` (ConfigKind: "LanguagePack") — I18nProvider's own
-    // doc comment: "loading is the caller's job", this is that job. A fresh
-    // install has no rows yet, so the one pack this build ships with is
-    // seeded as a real row rather than kept as a hardcoded prop — same
-    // "create the default row on first run" shape SettingsProvider already
-    // uses for its own config row.
     useEffect(() => {
         let cancelled = false;
         void loadLanguagePacks(db).then(async (loaded) => {
@@ -438,18 +454,24 @@ export const App = () => {
     }, [db]);
 
     // Settings' Fields & language pane calls this on a successful upload —
-    // persists, then updates the live list the same render pass, so the
-    // new pack is immediately selectable without a reload.
+    // persists, then updates the live list the same render pass, so the new
+    // pack is immediately selectable without a reload.
     const addLanguagePack = async (pack: LanguagePack): Promise<void> => {
         await saveLanguagePack(db, pack);
         setPacks((prev) => [...prev.filter((existing) => existing.Code !== pack.Code), pack]);
     };
 
-    // Loaded from `config` (ConfigKind: "Schema") — same "caller loads,
-    // provider just wires it up" split as `packs` above. A fresh install has
-    // no row yet, so `loadTicketSchema` itself falls back to
-    // `DEFAULT_TICKET_SCHEMA` (db/schema.ts) rather than seeding a row here;
-    // the schema only gets persisted once a site actually saves its own.
+    return { packs, addLanguagePack };
+};
+
+// Loaded from `config` (ConfigKind: "Schema") — same "caller loads, provider
+// just wires it up" split as useAppLanguagePacks above. A fresh install has
+// no row yet, so `loadTicketSchema` itself falls back to
+// `DEFAULT_TICKET_SCHEMA` (db/schema.ts) rather than seeding a row here; the
+// schema only gets persisted once a site actually saves its own.
+const useAppTicketSchema = (db: ReturnType<typeof useDataPort>) => {
+    const [ticketSchema, setTicketSchemaState] = useState<Schema>(DEFAULT_TICKET_SCHEMA);
+
     useEffect(() => {
         let cancelled = false;
         void loadTicketSchema(db).then((loaded) => {
@@ -467,6 +489,18 @@ export const App = () => {
         await saveTicketSchema(db, schema);
         setTicketSchemaState(schema);
     };
+
+    return { ticketSchema, setTicketSchema };
+};
+
+export const App = () => {
+    const [db] = useState(() => createDataPort());
+    const [indicator] = useState(() => createIndicatorSource());
+    const [verificationServer] = useState(() => createVerificationServerSource());
+    const [tunnel] = useState(() => createTunnelSource());
+    const [licensing] = useState(() => createLicensingSource());
+    const { packs, addLanguagePack } = useAppLanguagePacks(db);
+    const { ticketSchema, setTicketSchema } = useAppTicketSchema(db);
 
     return (
         <I18nProvider packs={packs}>

@@ -31,79 +31,99 @@ export interface SimulatedIndicatorSource extends IndicatorSource {
 const randomInRange = ([lo, hi]: readonly [number, number]): number =>
     lo + Math.random() * (hi - lo);
 
+// The factory's mutable state, bundled so the settle physics below can live
+// as a plain function instead of a closure nested inside the factory —
+// that's what keeps createSimulatedIndicator itself short.
+interface SimulatedIndicatorState {
+    settleTicks: number;
+    closeEnoughKg: number;
+    reading: IndicatorReading;
+    target: number;
+    settleCount: number;
+    timer: ReturnType<typeof setInterval> | null;
+    listeners: Set<IndicatorListener>;
+}
+
+const notifyAll = (state: SimulatedIndicatorState): void => {
+    for (const listener of state.listeners) listener(state.reading);
+};
+
+const stopSimulated = (state: SimulatedIndicatorState): void => {
+    if (state.timer === null) return;
+    clearInterval(state.timer);
+    state.timer = null;
+};
+
+// The mock's settle physics (a real deck's damped bounce) rather than just
+// snapping to the target, so the stability gate has something real to gate
+// on: overshoot-and-settle while far away, a shrinking wobble as it nears
+// `target`, then a hard stop once `settleTicks` consecutive close-enough
+// ticks have passed.
+const tickSimulated = (state: SimulatedIndicatorState): void => {
+    const delta = state.target - state.reading.WeightKg;
+    if (Math.abs(delta) > state.closeEnoughKg) {
+        state.reading = {
+            WeightKg: state.reading.WeightKg + delta * 0.14 + (Math.random() - 0.5) * 260,
+            Stable: false,
+        };
+        state.settleCount = 0;
+    } else if (state.settleCount < state.settleTicks) {
+        state.reading = {
+            WeightKg: state.target + (Math.random() - 0.5) * (30 - state.settleCount * 2),
+            Stable: false,
+        };
+        state.settleCount += 1;
+    } else {
+        state.reading = { WeightKg: state.target, Stable: true };
+        stopSimulated(state);
+    }
+    notifyAll(state);
+};
+
 // No hardware yet is not a reason the demo, training or development should
 // stall (PLAN §4.8's "simulated indicator"). This reproduces the mock's
-// settle physics (a real deck's damped bounce) rather than just snapping to
-// the target, so the stability gate above has something real to gate on.
+// settle physics (see tickSimulated above) rather than just snapping to the
+// target, so the stability gate above has something real to gate on.
 export const createSimulatedIndicator = (
     options: SimulatedIndicatorOptions = {},
 ): SimulatedIndicatorSource => {
     const tareRange = options.tareRangeKg ?? DEFAULT_TARE_RANGE_KG;
     const grossRange = options.grossRangeKg ?? DEFAULT_GROSS_RANGE_KG;
-    let settleTicks = options.settleTicks ?? DEFAULT_SETTLE_TICKS;
-    let closeEnoughKg = options.closeEnoughKg ?? DEFAULT_CLOSE_ENOUGH_KG;
 
-    let reading: IndicatorReading = { WeightKg: 0, Stable: true };
-    let target = 0;
-    let settleCount = 0;
-    let timer: ReturnType<typeof setInterval> | null = null;
-    const listeners = new Set<IndicatorListener>();
-
-    const notify = (): void => {
-        for (const listener of listeners) listener(reading);
-    };
-
-    const stop = (): void => {
-        if (timer === null) return;
-        clearInterval(timer);
-        timer = null;
-    };
-
-    const tick = (): void => {
-        const delta = target - reading.WeightKg;
-        if (Math.abs(delta) > closeEnoughKg) {
-            reading = {
-                WeightKg: reading.WeightKg + delta * 0.14 + (Math.random() - 0.5) * 260,
-                Stable: false,
-            };
-            settleCount = 0;
-        } else if (settleCount < settleTicks) {
-            reading = {
-                WeightKg: target + (Math.random() - 0.5) * (30 - settleCount * 2),
-                Stable: false,
-            };
-            settleCount += 1;
-        } else {
-            reading = { WeightKg: target, Stable: true };
-            stop();
-        }
-        notify();
+    const state: SimulatedIndicatorState = {
+        settleTicks: options.settleTicks ?? DEFAULT_SETTLE_TICKS,
+        closeEnoughKg: options.closeEnoughKg ?? DEFAULT_CLOSE_ENOUGH_KG,
+        reading: { WeightKg: 0, Stable: true },
+        target: 0,
+        settleCount: 0,
+        timer: null,
+        listeners: new Set<IndicatorListener>(),
     };
 
     return {
-        getReading: () => reading,
+        getReading: () => state.reading,
         subscribe: (listener) => {
-            listeners.add(listener);
-            return () => listeners.delete(listener);
+            state.listeners.add(listener);
+            return () => state.listeners.delete(listener);
         },
         loadLorry: (kind) => {
-            target = Math.round(randomInRange(kind === "Tare" ? tareRange : grossRange));
-            settleCount = 0;
-            reading = { ...reading, Stable: false };
-            stop();
-            timer = setInterval(tick, TICK_MS);
-            notify();
+            state.target = Math.round(randomInRange(kind === "Tare" ? tareRange : grossRange));
+            state.settleCount = 0;
+            state.reading = { ...state.reading, Stable: false };
+            stopSimulated(state);
+            state.timer = setInterval(() => tickSimulated(state), TICK_MS);
+            notifyAll(state);
         },
         reset: () => {
-            stop();
-            target = 0;
-            settleCount = 0;
-            reading = { WeightKg: 0, Stable: true };
-            notify();
+            stopSimulated(state);
+            state.target = 0;
+            state.settleCount = 0;
+            state.reading = { WeightKg: 0, Stable: true };
+            notifyAll(state);
         },
         updateOptions: (next) => {
-            if (next.settleTicks !== undefined) settleTicks = next.settleTicks;
-            if (next.closeEnoughKg !== undefined) closeEnoughKg = next.closeEnoughKg;
+            if (next.settleTicks !== undefined) state.settleTicks = next.settleTicks;
+            if (next.closeEnoughKg !== undefined) state.closeEnoughKg = next.closeEnoughKg;
         },
     };
 };

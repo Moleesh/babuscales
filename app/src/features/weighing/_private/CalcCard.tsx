@@ -10,6 +10,27 @@ import styles from "../WeighingScreen.module.css";
 const formatStamp = (iso: string | undefined): string =>
     iso ? new Date(iso).toLocaleString() : "—";
 
+interface CalcBoxProps {
+    label: string;
+    value: string;
+    lead?: boolean;
+    pending?: boolean;
+    stamp?: string;
+}
+
+// The mock's own `.calc` box, repeated four times (Tare/Gross/Net/Charge)
+// with only the label/value/modifier changing — pulled out so CalcCard's
+// own body reads as "four boxes" instead of four near-identical blocks.
+const CalcBox = ({ label, value, lead, pending, stamp }: CalcBoxProps) => (
+    <div
+        className={`${styles.calcBox} ${lead ? styles.calcLead : ""} ${pending ? styles.calcPending : ""}`}
+    >
+        <span className="lbl">{label}</span>
+        <b className={styles.calcValue}>{value}</b>
+        <div className={styles.calcStamp}>{stamp ?? <>&nbsp;</>}</div>
+    </div>
+);
+
 export interface CalcCardProps {
     weights: DerivedWeights;
     captures: Capture[];
@@ -40,41 +61,29 @@ export const CalcCard = ({
     return (
         <Card title={<span className="lbl">Captured &amp; calculated</span>}>
             <div className={styles.calc}>
-                <div className={styles.calcBox}>
-                    <span className="lbl">Tare</span>
-                    <b className={styles.calcValue}>
-                        {weights.tareKg !== null ? formatWeightKg(weights.tareKg) : "—"}
-                    </b>
-                    <div className={styles.calcStamp}>
-                        {formatStamp(captures.find((c) => c.Type === "Tare")?.At)}
-                    </div>
-                </div>
-                <div className={styles.calcBox}>
-                    <span className="lbl">Gross</span>
-                    <b className={styles.calcValue}>
-                        {weights.grossKg !== null ? formatWeightKg(weights.grossKg) : "—"}
-                    </b>
-                    <div className={styles.calcStamp}>
-                        {formatStamp(grossCaptures[grossCaptures.length - 1]?.At)}
-                        {grossCaptures.length > 1 ? ` · ${grossCaptures.length} loads` : ""}
-                    </div>
-                </div>
-                <div
-                    className={`${styles.calcBox} ${weights.netKg !== null ? styles.calcLead : ""}`}
-                >
-                    <span className="lbl">Net</span>
-                    <b className={styles.calcValue}>
-                        {weights.netKg !== null ? formatWeightKg(weights.netKg) : "—"}
-                    </b>
-                    <div className={styles.calcStamp}>&nbsp;</div>
-                </div>
-                <div className={`${styles.calcBox} ${charge === null ? styles.calcPending : ""}`}>
-                    <span className="lbl">Charge</span>
-                    <b className={styles.calcValue}>
-                        {charge === null ? "—" : formatMoney(charge, amountDp)}
-                    </b>
-                    <div className={styles.calcStamp}>&nbsp;</div>
-                </div>
+                <CalcBox
+                    label="Tare"
+                    value={weights.tareKg !== null ? formatWeightKg(weights.tareKg) : "—"}
+                    stamp={formatStamp(captures.find((c) => c.Type === "Tare")?.At)}
+                />
+                <CalcBox
+                    label="Gross"
+                    value={weights.grossKg !== null ? formatWeightKg(weights.grossKg) : "—"}
+                    stamp={
+                        formatStamp(grossCaptures[grossCaptures.length - 1]?.At) +
+                        (grossCaptures.length > 1 ? ` · ${grossCaptures.length} loads` : "")
+                    }
+                />
+                <CalcBox
+                    label="Net"
+                    value={weights.netKg !== null ? formatWeightKg(weights.netKg) : "—"}
+                    lead={weights.netKg !== null}
+                />
+                <CalcBox
+                    label="Charge"
+                    value={charge === null ? "—" : formatMoney(charge, amountDp)}
+                    pending={charge === null}
+                />
             </div>
             <CalcFormula
                 tareKg={weights.tareKg}

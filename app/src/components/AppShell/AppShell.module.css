@@ -158,6 +158,54 @@
     flex: none;
 }
 
+/* Responsive top bar (task #58): below ~880px, brandbox (site label) +
+   6 labelled tabs + topRight chips no longer fit on one 52px row — the
+   `.tabs` nav (flex:1, min-width:0, overflow-x:auto) would silently shrink
+   to a sliver showing one tab with no visible hint that the rest are a
+   swipe away, and on a phone-width screen it can shrink to 0 entirely
+   (topRight's fixed-width chips alone are wider than a phone). Two-step
+   fix: go icon-only first to reclaim space, then let the bar wrap onto a
+   second full-width row for the tabs once even that's too tight. */
+@media (max-width: 880px) {
+    .site {
+        display: none;
+    }
+    .tab {
+        padding: 7px 9px;
+    }
+    .tabLabel {
+        display: none;
+    }
+}
+
+@media (max-width: 560px) {
+    .top {
+        flex-wrap: wrap;
+        height: auto;
+        min-height: 52px;
+        row-gap: 6px;
+        padding: 8px 10px;
+    }
+    .brandbox {
+        order: 1;
+    }
+    .topRight {
+        order: 2;
+        margin-left: auto;
+        max-width: 60%;
+        overflow-x: auto;
+        scrollbar-width: none;
+    }
+    .topRight::-webkit-scrollbar {
+        display: none;
+    }
+    .tabs {
+        order: 3;
+        flex: 1 1 100%;
+        width: 100%;
+    }
+}
+
 .main {
     flex: 1;
     min-height: 0;

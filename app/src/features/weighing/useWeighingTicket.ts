@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from "react";
+import type { Dispatch } from "react";
+import { useCallback, useEffect, useReducer } from "react";
 
 import { newId } from "@db/id";
 import {
@@ -57,6 +58,381 @@ export interface UseWeighingTicket {
     print: () => Promise<void>;
 }
 
+// --- State + reducer -------------------------------------------------------
+//
+// One useReducer instead of nine useState calls: every transition below
+// used to be a short but separate setXxx sequence inlined into whatever
+// callback triggered it, which is what pushed this hook's own body well
+// over the line budget. Collapsing them into a pure, named reducer (a) cuts
+// the hook body to mostly one-line `dispatch(...)` calls and (b) gives
+// task #61 a plain function to unit-test without touching React at all.
+interface TicketState {
+    docId: string | null;
+    docSeq: number | null;
+    fields: TicketFormFields;
+    recalledFields: Set<RecalledField>;
+    captures: Capture[];
+    kind: CaptureType | null;
+    isLocked: boolean;
+    printCount: number;
+    saving: boolean;
+}
+
+const fieldsFromBody = (body: TicketBody): TicketFormFields => ({
+    vehicleNo: body.VehicleNo ?? "",
+    party: body.Party ?? "",
+    material: body.Material ?? "",
+    transporter: body.Transporter ?? "",
+    challanNo: body.ChallanNo ?? "",
+});
+
+const buildTicketBody = (
+    fields: TicketFormFields,
+    captures: Capture[],
+    printCount: number,
+): TicketBody => ({
+    ...emptyTicketBody(),
+    VehicleNo: fields.vehicleNo.trim() || undefined,
+    Party: fields.party.trim() || undefined,
+    Material: fields.material.trim() || undefined,
+    Transporter: fields.transporter.trim() || undefined,
+    ChallanNo: fields.challanNo.trim() || undefined,
+    Captures: captures,
+    PrintCount: printCount,
+});
+
+const initialTicketState = (tareFirst: boolean, multiGross: boolean): TicketState => ({
+    docId: null,
+    docSeq: null,
+    fields: emptyFields(),
+    recalledFields: new Set(),
+    captures: [],
+    kind: defaultCaptureKind([], tareFirst, multiGross),
+    isLocked: false,
+    printCount: 0,
+    saving: false,
+});
+
+type TicketAction =
+    | { type: "SetField"; key: keyof TicketFormFields; value: string }
+    | { type: "ApplyRecalled"; values: Partial<Pick<TicketFormFields, RecalledField>> }
+    | { type: "SetKind"; kind: CaptureType | null }
+    | { type: "AddCapture"; capture: Capture }
+    | { type: "ResetToNew"; tareFirst: boolean; multiGross: boolean }
+    | { type: "SetSaving"; saving: boolean }
+    | { type: "Saved"; docId: string; docSeq: number | null }
+    | { type: "Lock" }
+    | { type: "Resumed"; doc: DocRow; tareFirst: boolean; multiGross: boolean }
+    | { type: "Printed" };
+
+const ticketReducer = (state: TicketState, action: TicketAction): TicketState => {
+    switch (action.type) {
+        case "SetField":
+            return { ...state, fields: { ...state.fields, [action.key]: action.value } };
+        case "ApplyRecalled": {
+            const recalledFields = new Set(state.recalledFields);
+            for (const key of Object.keys(action.values) as RecalledField[]) recalledFields.add(key);
+            return { ...state, fields: { ...state.fields, ...action.values }, recalledFields };
+        }
+        case "SetKind":
+            return { ...state, kind: action.kind };
+        case "AddCapture":
+            return { ...state, captures: [...state.captures, action.capture] };
+        case "ResetToNew":
+            return initialTicketState(action.tareFirst, action.multiGross);
+        case "SetSaving":
+            return { ...state, saving: action.saving };
+        case "Saved":
+            return { ...state, docId: action.docId, docSeq: action.docSeq };
+        case "Lock":
+            return { ...state, isLocked: true };
+        case "Resumed": {
+            const body = parseTicketBody(action.doc.Body);
+            return {
+                docId: action.doc.DocId,
+                docSeq: action.doc.DocSeq,
+                fields: fieldsFromBody(body),
+                recalledFields: new Set(),
+                captures: body.Captures,
+                kind: defaultCaptureKind(body.Captures, action.tareFirst, action.multiGross),
+                // Mirrors save()'s own rule: two-or-more captures in means the
+                // ticket is already finalised — `save()` is the only path that
+                // ever locks a ticket (task #46: still triggered at
+                // captures.length>=2 regardless of how many Gross captures that
+                // includes), so anything resumed at that length was already
+                // locked when it was saved. Only PLAN §7.5's open (one-weight)
+                // tickets should come back editable — a completed ticket resumed
+                // from Reports must stay locked, not reopen for editing.
+                isLocked: body.Captures.length >= 2,
+                printCount: body.PrintCount ?? 0,
+                saving: false,
+            };
+        }
+        case "Printed":
+            return { ...state, printCount: state.printCount + 1 };
+        default: {
+            const exhaustive: never = action;
+            return exhaustive;
+        }
+    }
+};
+
+// --- Sub-hooks ---------------------------------------------------------
+//
+// Each groups one cohesive slice of the dispatch surface — field edits,
+// capturing a weight, persistence (save/print) — behind a small returned
+// object, so the top-level hook below reads as "wire these three groups
+// together" instead of housing every callback itself.
+
+const useTicketFieldActions = (dispatch: Dispatch<TicketAction>) => ({
+    setField: useCallback(
+        (key: keyof TicketFormFields, value: string) => dispatch({ type: "SetField", key, value }),
+        [dispatch],
+    ),
+    applyRecalledFields: useCallback(
+        (values: Partial<Pick<TicketFormFields, RecalledField>>) =>
+            dispatch({ type: "ApplyRecalled", values }),
+        [dispatch],
+    ),
+    setKind: useCallback(
+        (next: CaptureType) => dispatch({ type: "SetKind", kind: next }),
+        [dispatch],
+    ),
+});
+
+interface TicketCaptureDeps {
+    state: Pick<TicketState, "kind" | "isLocked" | "captures">;
+    dispatch: Dispatch<TicketAction>;
+    indicator: ReturnType<typeof useIndicator>;
+    operatorName: string;
+    multiGross: boolean;
+}
+
+const useTicketCaptureActions = ({
+    state,
+    dispatch,
+    indicator,
+    operatorName,
+    multiGross,
+}: TicketCaptureDeps) => {
+    const { kind, isLocked, captures } = state;
+
+    const pushCapture = useCallback(
+        (weightKg: number, source: Capture["Source"], capturedAtIso?: string) => {
+            if (!kind || isLocked) return;
+            // Task #46: a repeat "Gross" is the one case `hasCapture` must not
+            // block once MultiGross is on — everything else (a second Tare)
+            // still refuses exactly as before.
+            const blocked = hasCapture(captures, kind) && !(multiGross && kind === "Gross");
+            if (blocked) return;
+            const capture: Capture = {
+                CaptureId: newId(),
+                Type: kind,
+                WeightKg: Math.round(weightKg),
+                At: capturedAtIso ?? new Date().toISOString(),
+                Operator: operatorName,
+                Source: source,
+                Images: [],
+            };
+            dispatch({ type: "AddCapture", capture });
+            if (source === "Indicator") indicator.reset?.();
+        },
+        [captures, indicator, isLocked, kind, multiGross, operatorName, dispatch],
+    );
+
+    return {
+        capture: useCallback((weightKg: number) => pushCapture(weightKg, "Indicator"), [pushCapture]),
+        useStoredTare: useCallback(
+            (weightKg: number, capturedAtIso: string) =>
+                pushCapture(weightKg, "StoredTare", capturedAtIso),
+            [pushCapture],
+        ),
+    };
+};
+
+interface TicketPersistenceDeps {
+    docId: string | null;
+    captures: Capture[];
+    fields: TicketFormFields;
+    printCount: number;
+    isLocked: boolean;
+    db: ReturnType<typeof useDataPort>;
+    dispatch: Dispatch<TicketAction>;
+    resetToNew: () => void;
+}
+
+const useTicketPersistenceActions = ({
+    docId,
+    captures,
+    fields,
+    printCount,
+    isLocked,
+    db,
+    dispatch,
+    resetToNew,
+}: TicketPersistenceDeps) => {
+    const save = useCallback(async () => {
+        if (isLocked || captures.length === 0) return;
+        dispatch({ type: "SetSaving", saving: true });
+        try {
+            const row = await db.saveDoc({
+                DocId: docId ?? undefined,
+                DocKind: "Ticket",
+                Body: buildTicketBody(fields, captures, printCount),
+            });
+            let seq = row.DocSeq;
+            if (seq === null) {
+                const numbered = await db.allocateDocSeq(row.DocId);
+                seq = numbered.DocSeq;
+            }
+            dispatch({ type: "Saved", docId: row.DocId, docSeq: seq });
+            if (captures.length >= 2) {
+                dispatch({ type: "Lock" });
+            } else {
+                resetToNew();
+            }
+        } finally {
+            dispatch({ type: "SetSaving", saving: false });
+        }
+    }, [captures, db, docId, fields, isLocked, printCount, resetToNew, dispatch]);
+
+    const print = useCallback(async () => {
+        if (!isLocked || !docId) return;
+        dispatch({ type: "SetSaving", saving: true });
+        try {
+            const nextCount = printCount + 1;
+            dispatch({ type: "Printed" });
+            await db.saveDoc({
+                DocId: docId,
+                DocKind: "Ticket",
+                Body: { ...buildTicketBody(fields, captures, printCount), PrintCount: nextCount },
+            });
+        } finally {
+            dispatch({ type: "SetSaving", saving: false });
+        }
+    }, [captures, db, docId, fields, isLocked, printCount, dispatch]);
+
+    return { save, print };
+};
+
+interface TicketLifecycleDeps {
+    captures: Capture[];
+    isLocked: boolean;
+    resetToNew: () => void;
+    save: () => Promise<void>;
+    dispatch: Dispatch<TicketAction>;
+    indicator: ReturnType<typeof useIndicator>;
+    tareFirst: boolean;
+    multiGross: boolean;
+}
+
+// startNew/clear/resume: the three ways a ticket's identity changes out from
+// under the form — parking the current one and moving on, discarding it, or
+// swapping in a different saved one entirely.
+const useTicketLifecycleActions = ({
+    captures,
+    isLocked,
+    resetToNew,
+    save,
+    dispatch,
+    indicator,
+    tareFirst,
+    multiGross,
+}: TicketLifecycleDeps) => {
+    // PLAN mock parity: the first "New ticket" click while work is unsaved
+    // saves (and, with both weights in, locks) it rather than discarding it;
+    // a second click then actually starts fresh.
+    const startNew = useCallback(() => {
+        if (captures.length > 0 && !isLocked) {
+            void save();
+        } else {
+            resetToNew();
+        }
+    }, [captures.length, isLocked, resetToNew, save]);
+
+    const clear = useCallback(() => {
+        if (!isLocked) resetToNew();
+    }, [isLocked, resetToNew]);
+
+    const resume = useCallback(
+        (doc: DocRow) => {
+            dispatch({ type: "Resumed", doc, tareFirst, multiGross });
+            indicator.reset?.();
+        },
+        [dispatch, indicator, tareFirst, multiGross],
+    );
+
+    return { startNew, clear, resume };
+};
+
+// The reducer itself plus the one derived effect that keeps `kind` in sync
+// with `captures`/tareFirst/multiGross, and the `resetToNew` action every
+// other sub-hook above needs a reference to — kept together since they all
+// revolve around the same `dispatch`.
+const useTicketState = (
+    tareFirst: boolean,
+    multiGross: boolean,
+    indicator: ReturnType<typeof useIndicator>,
+) => {
+    const [state, dispatch] = useReducer(ticketReducer, undefined, () =>
+        initialTicketState(tareFirst, multiGross),
+    );
+
+    useEffect(() => {
+        const next = defaultCaptureKind(state.captures, tareFirst, multiGross);
+        if (next !== state.kind) dispatch({ type: "SetKind", kind: next });
+    }, [state.captures, state.kind, tareFirst, multiGross]);
+
+    const resetToNew = useCallback(() => {
+        dispatch({ type: "ResetToNew", tareFirst, multiGross });
+        indicator.reset?.();
+    }, [indicator, tareFirst, multiGross]);
+
+    return { state, dispatch, resetToNew };
+};
+
+interface AssembleTicketArgs {
+    state: TicketState;
+    fieldActions: ReturnType<typeof useTicketFieldActions>;
+    captureActions: ReturnType<typeof useTicketCaptureActions>;
+    persistenceActions: ReturnType<typeof useTicketPersistenceActions>;
+    lifecycleActions: ReturnType<typeof useTicketLifecycleActions>;
+}
+
+// The public shape the hook returns, assembled from `state` plus the four
+// action groups above — a pure mapping with no hooks of its own, so it can
+// live outside useWeighingTicket's own body instead of being one long
+// object literal inside it.
+const assembleTicket = ({
+    state,
+    fieldActions,
+    captureActions,
+    persistenceActions,
+    lifecycleActions,
+}: AssembleTicketArgs): UseWeighingTicket => ({
+    docId: state.docId,
+    docSeq: state.docSeq,
+    fields: state.fields,
+    setField: fieldActions.setField,
+    recalledFields: state.recalledFields,
+    applyRecalledFields: fieldActions.applyRecalledFields,
+    captures: state.captures,
+    weights: deriveWeights(state.captures),
+    kind: state.kind,
+    setKind: fieldActions.setKind,
+    isComplete: state.captures.length >= 2,
+    isLocked: state.isLocked,
+    printCount: state.printCount,
+    saving: state.saving,
+    capture: captureActions.capture,
+    useStoredTare: captureActions.useStoredTare,
+    save: persistenceActions.save,
+    startNew: lifecycleActions.startNew,
+    clear: lifecycleActions.clear,
+    resume: lifecycleActions.resume,
+    print: persistenceActions.print,
+});
+
 // `tareFirst` (Settings, Weighing pane — "Applied immediately" per the
 // mock's own card header) only sets which weight is offered first; it can
 // change mid-session, so every place it decides the default kind re-derives
@@ -76,210 +452,35 @@ export const useWeighingTicket = (
     const db = useDataPort();
     const indicator = useIndicator();
 
-    const [docId, setDocId] = useState<string | null>(null);
-    const [docSeq, setDocSeq] = useState<number | null>(null);
-    const [fields, setFields] = useState<TicketFormFields>(emptyFields());
-    const [recalledFields, setRecalledFields] = useState<Set<RecalledField>>(new Set());
-    const [captures, setCaptures] = useState<Capture[]>([]);
-    const [kind, setKindState] = useState<CaptureType | null>(
-        defaultCaptureKind([], tareFirst, multiGross),
-    );
-    const [isLocked, setIsLocked] = useState(false);
-    const [printCount, setPrintCount] = useState(0);
-    const [saving, setSaving] = useState(false);
+    const { state, dispatch, resetToNew } = useTicketState(tareFirst, multiGross, indicator);
+    const fieldActions = useTicketFieldActions(dispatch);
+    const captureActions = useTicketCaptureActions({
+        state: { kind: state.kind, isLocked: state.isLocked, captures: state.captures },
+        dispatch,
+        indicator,
+        operatorName,
+        multiGross,
+    });
+    const persistenceActions = useTicketPersistenceActions({
+        docId: state.docId,
+        captures: state.captures,
+        fields: state.fields,
+        printCount: state.printCount,
+        isLocked: state.isLocked,
+        db,
+        dispatch,
+        resetToNew,
+    });
+    const lifecycleActions = useTicketLifecycleActions({
+        captures: state.captures,
+        isLocked: state.isLocked,
+        resetToNew,
+        save: persistenceActions.save,
+        dispatch,
+        indicator,
+        tareFirst,
+        multiGross,
+    });
 
-    useEffect(() => {
-        setKindState((current) => {
-            const next = defaultCaptureKind(captures, tareFirst, multiGross);
-            return current !== next ? next : current;
-        });
-    }, [captures, tareFirst, multiGross]);
-
-    const setField = useCallback((key: keyof TicketFormFields, value: string) => {
-        setFields((prev) => ({ ...prev, [key]: value }));
-    }, []);
-
-    const applyRecalledFields = useCallback(
-        (values: Partial<Pick<TicketFormFields, RecalledField>>) => {
-            setFields((prev) => ({ ...prev, ...values }));
-            setRecalledFields((prev) => {
-                const next = new Set(prev);
-                for (const key of Object.keys(values) as RecalledField[]) next.add(key);
-                return next;
-            });
-        },
-        [],
-    );
-
-    const resetToNew = useCallback(() => {
-        setDocId(null);
-        setDocSeq(null);
-        setFields(emptyFields());
-        setRecalledFields(new Set());
-        setCaptures([]);
-        setKindState(defaultCaptureKind([], tareFirst, multiGross));
-        setIsLocked(false);
-        setPrintCount(0);
-        indicator.reset?.();
-    }, [indicator, tareFirst, multiGross]);
-
-    const pushCapture = useCallback(
-        (weightKg: number, source: Capture["Source"], capturedAtIso?: string) => {
-            if (!kind || isLocked) return;
-            // Task #46: a repeat "Gross" is the one case `hasCapture` must not
-            // block once MultiGross is on — everything else (a second Tare)
-            // still refuses exactly as before.
-            const blocked = hasCapture(captures, kind) && !(multiGross && kind === "Gross");
-            if (blocked) return;
-            const capture: Capture = {
-                CaptureId: newId(),
-                Type: kind,
-                WeightKg: Math.round(weightKg),
-                At: capturedAtIso ?? new Date().toISOString(),
-                Operator: operatorName,
-                Source: source,
-                Images: [],
-            };
-            setCaptures((prev) => [...prev, capture]);
-            if (source === "Indicator") indicator.reset?.();
-        },
-        [captures, indicator, isLocked, kind, multiGross, operatorName],
-    );
-
-    const capture = useCallback(
-        (weightKg: number) => pushCapture(weightKg, "Indicator"),
-        [pushCapture],
-    );
-
-    const useStoredTare = useCallback(
-        (weightKg: number, capturedAtIso: string) =>
-            pushCapture(weightKg, "StoredTare", capturedAtIso),
-        [pushCapture],
-    );
-
-    const buildBody = useCallback((): TicketBody => {
-        const body = emptyTicketBody();
-        return {
-            ...body,
-            VehicleNo: fields.vehicleNo.trim() || undefined,
-            Party: fields.party.trim() || undefined,
-            Material: fields.material.trim() || undefined,
-            Transporter: fields.transporter.trim() || undefined,
-            ChallanNo: fields.challanNo.trim() || undefined,
-            Captures: captures,
-            PrintCount: printCount,
-        };
-    }, [captures, fields, printCount]);
-
-    const save = useCallback(async () => {
-        if (isLocked || captures.length === 0) return;
-        setSaving(true);
-        try {
-            const row = await db.saveDoc({
-                DocId: docId ?? undefined,
-                DocKind: "Ticket",
-                Body: buildBody(),
-            });
-            let seq = row.DocSeq;
-            if (seq === null) {
-                const numbered = await db.allocateDocSeq(row.DocId);
-                seq = numbered.DocSeq;
-            }
-            setDocId(row.DocId);
-            setDocSeq(seq);
-
-            if (captures.length >= 2) {
-                setIsLocked(true);
-            } else {
-                resetToNew();
-            }
-        } finally {
-            setSaving(false);
-        }
-    }, [buildBody, captures.length, db, docId, isLocked, resetToNew]);
-
-    // PLAN mock parity: the first "New ticket" click while work is unsaved
-    // saves (and, with both weights in, locks) it rather than discarding it;
-    // a second click then actually starts fresh.
-    const startNew = useCallback(() => {
-        if (captures.length > 0 && !isLocked) {
-            void save();
-        } else {
-            resetToNew();
-        }
-    }, [captures.length, isLocked, resetToNew, save]);
-
-    const clear = useCallback(() => {
-        if (!isLocked) resetToNew();
-    }, [isLocked, resetToNew]);
-
-    const resume = useCallback(
-        (doc: DocRow) => {
-            const body = parseTicketBody(doc.Body);
-            setDocId(doc.DocId);
-            setDocSeq(doc.DocSeq);
-            setFields({
-                vehicleNo: body.VehicleNo ?? "",
-                party: body.Party ?? "",
-                material: body.Material ?? "",
-                transporter: body.Transporter ?? "",
-                challanNo: body.ChallanNo ?? "",
-            });
-            setRecalledFields(new Set());
-            setCaptures(body.Captures);
-            setKindState(defaultCaptureKind(body.Captures, tareFirst, multiGross));
-            // Mirrors save()'s own rule: two-or-more captures in means the
-            // ticket is already finalised — `save()` is the only path that
-            // ever locks a ticket (task #46: still triggered at
-            // captures.length>=2 regardless of how many Gross captures that
-            // includes), so anything resumed at that length was already
-            // locked when it was saved. Only PLAN §7.5's open (one-weight)
-            // tickets should come back editable — a completed ticket resumed
-            // from Reports must stay locked, not reopen for editing.
-            setIsLocked(body.Captures.length >= 2);
-            setPrintCount(body.PrintCount ?? 0);
-            indicator.reset?.();
-        },
-        [indicator, tareFirst, multiGross],
-    );
-
-    const print = useCallback(async () => {
-        if (!isLocked || !docId) return;
-        setSaving(true);
-        try {
-            const nextCount = printCount + 1;
-            setPrintCount(nextCount);
-            await db.saveDoc({
-                DocId: docId,
-                DocKind: "Ticket",
-                Body: { ...buildBody(), PrintCount: nextCount },
-            });
-        } finally {
-            setSaving(false);
-        }
-    }, [buildBody, db, docId, isLocked, printCount]);
-
-    return {
-        docId,
-        docSeq,
-        fields,
-        setField,
-        recalledFields,
-        applyRecalledFields,
-        captures,
-        weights: deriveWeights(captures),
-        kind,
-        setKind: setKindState,
-        isComplete: captures.length >= 2,
-        isLocked,
-        printCount,
-        saving,
-        capture,
-        useStoredTare,
-        save,
-        startNew,
-        clear,
-        resume,
-        print,
-    };
+    return assembleTicket({ state, fieldActions, captureActions, persistenceActions, lifecycleActions });
 };

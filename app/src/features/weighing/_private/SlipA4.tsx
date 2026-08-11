@@ -14,6 +14,22 @@ export interface SlipA4Props {
     data: SlipData;
 }
 
+// The two repeated row shapes in the slip's grids — "label value" and the
+// TARE/GROSS/NET boxes — pulled out so the six-field/three-box blocks below
+// read as data, not six/three near-identical hand-written divs.
+const SlipField = ({ label, value }: { label: string; value: string }) => (
+    <div>
+        <b>{label}</b> {value}
+    </div>
+);
+
+const SlipWeightBox = ({ label, kg }: { label: string; kg: string }) => (
+    <div>
+        {label}
+        <b>{kg}</b>kg
+    </div>
+);
+
 // Ported from the mock's `ticketA4` — real JSX rather than an HTML string,
 // so React escapes every field automatically instead of needing the mock's
 // own `esc()` calls. The mock's own "Verify: babuscales.app/v/…" footer line
@@ -36,46 +52,21 @@ export const SlipA4 = ({ data }: SlipA4Props) => (
             </div>
         </div>
         <div className={styles.grid}>
-            <div>
-                <b>Vehicle</b> {data.VehicleNo}
-            </div>
-            <div>
-                <b>Challan</b> {data.ChallanNo}
-            </div>
-            <div>
-                <b>Party</b> {data.Party}
-            </div>
-            <div>
-                <b>Material</b> {data.Material}
-            </div>
-            <div>
-                <b>Tare at</b> {data.TareAt}
-            </div>
-            <div>
-                <b>Gross at</b> {data.GrossAt}
-            </div>
+            <SlipField label="Vehicle" value={data.VehicleNo} />
+            <SlipField label="Challan" value={data.ChallanNo} />
+            <SlipField label="Party" value={data.Party} />
+            <SlipField label="Material" value={data.Material} />
+            <SlipField label="Tare at" value={data.TareAt} />
+            <SlipField label="Gross at" value={data.GrossAt} />
         </div>
         <div className={styles.weights}>
-            <div>
-                TARE
-                <b>{data.TareKg}</b>kg
-            </div>
-            <div>
-                GROSS
-                <b>{data.GrossKg}</b>kg
-            </div>
-            <div>
-                NET
-                <b>{data.NetKg}</b>kg
-            </div>
+            <SlipWeightBox label="TARE" kg={data.TareKg} />
+            <SlipWeightBox label="GROSS" kg={data.GrossKg} />
+            <SlipWeightBox label="NET" kg={data.NetKg} />
         </div>
         <div className={styles.grid}>
-            <div>
-                <b>Charge</b> {data.Charge}
-            </div>
-            <div>
-                <b>Operator</b> {data.Operator}
-            </div>
+            <SlipField label="Charge" value={data.Charge} />
+            <SlipField label="Operator" value={data.Operator} />
         </div>
         <div className={styles.footer}>
             <span>Printed {new Date().toLocaleString()}</span>

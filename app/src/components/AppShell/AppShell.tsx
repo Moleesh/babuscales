@@ -60,10 +60,15 @@ export const AppShell = ({
                             key={tab.key}
                             className={`${styles.tab} ${tab.key === activeTab ? styles.active : ""}`}
                             aria-current={tab.key === activeTab ? "page" : undefined}
+                            aria-label={tab.label}
+                            title={tab.label}
                             onClick={() => onNavigate(tab.key)}
                         >
                             <span className={styles.tabIcon}>{tab.icon}</span>
-                            <span>{tab.label}</span>
+                            {/* Hidden below the tablet breakpoint (icon-only tabs) —
+                                `aria-label`/`title` above keep the button named either
+                                way. See AppShell.module.css's responsive rules. */}
+                            <span className={styles.tabLabel}>{tab.label}</span>
                         </button>
                     ))}
                 </nav>

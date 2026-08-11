@@ -13,6 +13,101 @@ const KIND_OPTIONS: SegmentedOption<CaptureType>[] = [
     { value: "Gross", label: "Gross" },
 ];
 
+// Task #46: with MultiGross on, a Gross that's already been captured once
+// stays selectable (there's still exactly one Tare per ticket either way).
+const kindOptionDisabled = (
+    ticket: UseWeighingTicket,
+    optionValue: CaptureType,
+    multiGross: boolean,
+): boolean =>
+    (ticket.captures.some((c) => c.Type === optionValue) &&
+        !(multiGross && optionValue === "Gross")) ||
+    ticket.isLocked;
+
+interface ActionsHintArgs {
+    ticket: UseWeighingTicket;
+    reading: IndicatorReading;
+    armed: boolean;
+    gated: boolean;
+    multiGross: boolean;
+}
+
+// The bottom-of-card status line — a straight run of "which situation are we
+// in" checks rather than a nested ternary, so each case reads (and counts
+// toward cognitive complexity) on its own instead of stacking with the ones
+// around it. Args bundled into one object (rather than five positional
+// params) to stay under the params budget too.
+const actionsHint = ({ ticket, reading, armed, gated, multiGross }: ActionsHintArgs): string => {
+    if (gated && !ticket.isLocked) {
+        return "Licence needs attention — see the banner above. Activate in Settings → System to resume.";
+    }
+    if (ticket.isLocked) return ticket.printCount > 0 ? "Printed." : "Saved — ready to print.";
+    if (ticket.isComplete) {
+        return multiGross
+            ? "Capture another Gross to add a load, or Save to finish this ticket."
+            : "Both weights captured — Save to finish.";
+    }
+    if (reading.WeightKg === 0 && reading.Stable) return "Deck empty. Send a lorry to begin.";
+    return armed ? "Stable — capture now." : "Weight in motion — capture is locked until it settles.";
+};
+
+// The three fixed button rows below the capture button — pulled out so the
+// card's own body reads as "toggle, capture button, three rows, hint" at a
+// glance instead of each row's markup inline.
+const SaveAndPrintRow = ({
+    ticket,
+    gated,
+    onSave,
+    onOpenPrintModal,
+}: Pick<ActionsCardProps, "ticket" | "gated" | "onSave" | "onOpenPrintModal">) => (
+    <div className={styles.actions}>
+        <Button
+            disabled={ticket.isLocked || ticket.captures.length === 0 || ticket.saving || gated}
+            onClick={onSave}
+        >
+            {ticket.isComplete ? "Save" : "Save & park"}
+        </Button>
+        <Button disabled={!ticket.isLocked || ticket.printCount > 0} onClick={onOpenPrintModal}>
+            Print
+        </Button>
+    </div>
+);
+
+const ReprintRow = ({
+    ticket,
+    onOpenPrintModal,
+}: Pick<ActionsCardProps, "ticket" | "onOpenPrintModal">) => (
+    <div className={styles.actions}>
+        <Button disabled={ticket.printCount === 0} onClick={onOpenPrintModal}>
+            Reprint
+        </Button>
+        <Button onClick={ticket.startNew}>New ticket</Button>
+    </div>
+);
+
+const ClearAndSendRow = ({
+    ticket,
+    loadLorry,
+}: Pick<ActionsCardProps, "ticket" | "loadLorry">) => (
+    <div className={styles.actions}>
+        <Button variant="danger" disabled={ticket.isLocked} onClick={ticket.clear}>
+            Clear
+        </Button>
+        {loadLorry && (
+            <Button
+                // Task #46: `!ticket.kind` alone is the correct gate now — `defaultCaptureKind`
+                // already returns null exactly when nothing more should be captured (the old
+                // `captures.length >= 2` check would have blocked a second Gross under
+                // MultiGross even though `kind` still offers one).
+                disabled={ticket.isLocked || !ticket.kind}
+                onClick={() => ticket.kind && loadLorry(ticket.kind)}
+            >
+                Send a lorry
+            </Button>
+        )}
+    </div>
+);
+
 export interface ActionsCardProps {
     ticket: UseWeighingTicket;
     reading: IndicatorReading;
@@ -53,13 +148,7 @@ export const ActionsCard = ({
             <SegmentedControl
                 options={KIND_OPTIONS.map((option) => ({
                     ...option,
-                    // Task #46: with MultiGross on, a Gross that's already
-                    // been captured once stays selectable (there's still
-                    // exactly one Tare per ticket either way).
-                    disabled:
-                        (ticket.captures.some((c) => c.Type === option.value) &&
-                            !(multiGross && option.value === "Gross")) ||
-                        ticket.isLocked,
+                    disabled: kindOptionDisabled(ticket, option.value, multiGross),
                 }))}
                 value={ticket.kind ?? "Tare"}
                 onChange={ticket.setKind}
@@ -75,63 +164,16 @@ export const ActionsCard = ({
             >
                 {captureLabel}
             </Button>
-            <div className={styles.actions}>
-                <Button
-                    disabled={
-                        ticket.isLocked || ticket.captures.length === 0 || ticket.saving || gated
-                    }
-                    onClick={onSave}
-                >
-                    {ticket.isComplete ? "Save" : "Save & park"}
-                </Button>
-                <Button
-                    disabled={!ticket.isLocked || ticket.printCount > 0}
-                    onClick={onOpenPrintModal}
-                >
-                    Print
-                </Button>
-            </div>
-            <div className={styles.actions}>
-                <Button disabled={ticket.printCount === 0} onClick={onOpenPrintModal}>
-                    Reprint
-                </Button>
-                <Button onClick={ticket.startNew}>New ticket</Button>
-            </div>
-            <div className={styles.actions}>
-                <Button variant="danger" disabled={ticket.isLocked} onClick={ticket.clear}>
-                    Clear
-                </Button>
-                {loadLorry && (
-                    <Button
-                        // Task #46: `!ticket.kind` alone is the correct gate now
-                        // — `defaultCaptureKind` already returns null exactly
-                        // when nothing more should be captured (the old
-                        // `captures.length >= 2` check would have blocked a
-                        // second Gross under MultiGross even though `kind`
-                        // still offers one).
-                        disabled={ticket.isLocked || !ticket.kind}
-                        onClick={() => ticket.kind && loadLorry(ticket.kind)}
-                    >
-                        Send a lorry
-                    </Button>
-                )}
-            </div>
+            <SaveAndPrintRow
+                ticket={ticket}
+                gated={gated}
+                onSave={onSave}
+                onOpenPrintModal={onOpenPrintModal}
+            />
+            <ReprintRow ticket={ticket} onOpenPrintModal={onOpenPrintModal} />
+            <ClearAndSendRow ticket={ticket} loadLorry={loadLorry} />
             <p className={styles.hint}>
-                {gated && !ticket.isLocked
-                    ? "Licence needs attention — see the banner above. Activate in Settings → System to resume."
-                    : ticket.isLocked
-                      ? ticket.printCount > 0
-                          ? "Printed."
-                          : "Saved — ready to print."
-                      : ticket.isComplete
-                        ? multiGross
-                            ? "Capture another Gross to add a load, or Save to finish this ticket."
-                            : "Both weights captured — Save to finish."
-                        : reading.WeightKg === 0 && reading.Stable
-                          ? "Deck empty. Send a lorry to begin."
-                          : armed
-                            ? "Stable — capture now."
-                            : "Weight in motion — capture is locked until it settles."}
+                {actionsHint({ ticket, reading, armed, gated, multiGross })}
             </p>
         </div>
     </Card>

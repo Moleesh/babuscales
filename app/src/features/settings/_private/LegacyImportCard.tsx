@@ -1,13 +1,13 @@
 import { useRef, useState } from "react";
 
 import { Card } from "@components/Card";
+import { timestampForFilename } from "@constants/timestampForFilename";
 import { useDataPort } from "@db/useDataPort";
 import { parseLegacyBundle } from "@engines/importEngine/legacyImportBundle";
 import { planLegacyImport } from "@engines/importEngine/legacyImportPlan";
 import type { LegacyImportPlan } from "@engines/importEngine/legacyImportPlan";
 
 import { useSettings } from "../useSettings";
-import { timestampForFilename } from "./BackupRestoreCard";
 import { commitLegacyImport, loadExistingState } from "./legacyImportRun";
 import type { LegacyImportRunResult } from "./legacyImportRun";
 import styles from "./SystemPane.module.css";

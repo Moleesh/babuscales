@@ -40,21 +40,26 @@ const asBoolean = (v: FormulaValue, where: string): boolean => {
 // following Ceil/Round is exact, not the final precision itself.
 const DIVISION_WORKING_SCALE = 6;
 
-const evalBinary = (op: string, left: FormulaValue, right: FormulaValue): FormulaValue => {
-    if (op === "==" || op === "!=") {
-        const equal =
-            typeof left === "object" && typeof right === "object"
-                ? compare(left, right) === 0
-                : left === right;
-        return op === "==" ? equal : !equal;
-    }
-    if (["<", ">", "<=", ">="].includes(op)) {
-        const cmp = compare(asDecimal(left, op), asDecimal(right, op));
-        if (op === "<") return cmp < 0;
-        if (op === ">") return cmp > 0;
-        if (op === "<=") return cmp <= 0;
-        return cmp >= 0;
-    }
+const EQUALITY_OPS = new Set(["==", "!="]);
+const COMPARISON_OPS = new Set(["<", ">", "<=", ">="]);
+
+const evalEquality = (op: string, left: FormulaValue, right: FormulaValue): boolean => {
+    const equal =
+        typeof left === "object" && typeof right === "object"
+            ? compare(left, right) === 0
+            : left === right;
+    return op === "==" ? equal : !equal;
+};
+
+const evalComparison = (op: string, left: FormulaValue, right: FormulaValue): boolean => {
+    const cmp = compare(asDecimal(left, op), asDecimal(right, op));
+    if (op === "<") return cmp < 0;
+    if (op === ">") return cmp > 0;
+    if (op === "<=") return cmp <= 0;
+    return cmp >= 0;
+};
+
+const evalArithmetic = (op: string, left: FormulaValue, right: FormulaValue): FormulaValue => {
     const l = asDecimal(left, op);
     const r = asDecimal(right, op);
     if (op === "+") return add(l, r);
@@ -62,6 +67,16 @@ const evalBinary = (op: string, left: FormulaValue, right: FormulaValue): Formul
     if (op === "*") return mul(l, r);
     if (op === "/") return div(l, r, DIVISION_WORKING_SCALE);
     throw new Error(`Formula error: unknown operator "${op}"`);
+};
+
+// Dispatch by op-kind rather than one flat if-chain — each kind's own
+// complexity (equality's type-branch, comparison's cmp-branch, arithmetic's
+// operator-branch) stays isolated instead of stacking into a single
+// function's cognitive-complexity score.
+const evalBinary = (op: string, left: FormulaValue, right: FormulaValue): FormulaValue => {
+    if (EQUALITY_OPS.has(op)) return evalEquality(op, left, right);
+    if (COMPARISON_OPS.has(op)) return evalComparison(op, left, right);
+    return evalArithmetic(op, left, right);
 };
 
 const BUILTINS: Record<string, (args: FormulaValue[]) => FormulaValue> = {

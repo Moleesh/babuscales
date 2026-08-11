@@ -8,6 +8,7 @@ import { Field, FieldGrid } from "@components/Field";
 import { SegmentedControl } from "@components/SegmentedControl";
 import type { SegmentedOption } from "@components/SegmentedControl";
 import { formatMoney, formatWeightKg } from "@constants/numberFormat";
+import { timestampForFilename } from "@constants/timestampForFilename";
 import { addReportDef, deleteReportDef, loadReportDefs } from "@db/reportDefs";
 import type { ReportDefinition } from "@db/reportDefs";
 import type { DocRow } from "@db/types";
@@ -54,16 +55,6 @@ const groupLabel = (key: GroupKey): string =>
 
 const formatWeightCell = (kg: number | null): string =>
     kg === null ? "—" : `${formatWeightKg(kg)} kg`;
-
-// Same `YYYYMMDD-HHMM` shape as settings/_private/BackupRestoreCard.tsx's
-// own timestampForFilename — not imported from there since that module
-// lives in settings' `_private` folder (feature-private by convention);
-// two lines of duplication beats reaching across that boundary.
-const timestampForFilename = (): string => {
-    const now = new Date();
-    const pad = (n: number): string => String(n).padStart(2, "0");
-    return `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}`;
-};
 
 const slugifyTitle = (title: string): string => title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 

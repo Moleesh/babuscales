@@ -22,6 +22,24 @@ const PAPER_META: Record<PaperKind, string> = {
     mx: "Continuous dot-matrix",
 };
 
+// The three paper renderers, switched on the live SegmentedControl choice —
+// pulled out of the modal body so that function reads as "the chrome around
+// a preview" rather than the preview's own if/else ladder.
+const PrintSlipPreview = ({ paper, data }: { paper: PaperKind; data: SlipData }) => {
+    if (paper === "a4") {
+        return (
+            <div id="print-slip">
+                <SlipA4 data={data} />
+            </div>
+        );
+    }
+    return (
+        <pre id="print-slip" className={`${styles.mono} ${paper === "th" ? styles.thermal : ""}`}>
+            {paper === "th" ? renderThermalSlip(data) : renderMatrixSlip(data)}
+        </pre>
+    );
+};
+
 export interface PrintPreviewModalProps {
     open: boolean;
     onClose: () => void;
@@ -71,21 +89,7 @@ export const PrintPreviewModal = ({
                     onChange={setPaper}
                     ariaLabel="Paper size"
                 />
-                {paper === "a4" && (
-                    <div id="print-slip">
-                        <SlipA4 data={data} />
-                    </div>
-                )}
-                {paper === "th" && (
-                    <pre id="print-slip" className={`${styles.mono} ${styles.thermal}`}>
-                        {renderThermalSlip(data)}
-                    </pre>
-                )}
-                {paper === "mx" && (
-                    <pre id="print-slip" className={styles.mono}>
-                        {renderMatrixSlip(data)}
-                    </pre>
-                )}
+                <PrintSlipPreview paper={paper} data={data} />
                 <div className={styles.footer}>
                     <span className={styles.meta}>{PAPER_META[paper]}</span>
                     <div className={styles.actions}>
