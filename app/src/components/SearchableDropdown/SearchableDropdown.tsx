@@ -91,7 +91,9 @@ export const SearchableDropdown = ({
 }: SearchableDropdownProps) => {
     const [open, setOpen] = useState(false);
     const results = open ? onSearch(value) : [];
-    const showAddNew = open && onAddNew && value.trim() && !results.some((r) => r.Label === value);
+    const showAddNew = Boolean(
+        open && onAddNew && value.trim() && !results.some((r) => r.Label === value),
+    );
 
     const pick = (option: SearchableDropdownOption) => {
         onChange(option.Label);
