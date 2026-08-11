@@ -1,6 +1,8 @@
+import type { SegmentedOption } from "@components/SegmentedControl";
 import { MASTER_KINDS } from "@db/types";
 import type { MasterKind } from "@db/types";
 import type { Localized } from "@i18n/types";
+import { resolveLocalized } from "@i18n/types";
 
 export interface MasterKindMeta {
     Kind: MasterKind;
@@ -64,3 +66,13 @@ export const MASTER_KIND_META: Record<MasterKind, MasterKindMeta> = {
         AddNewLabel: { en: "Add stored tare" },
     },
 };
+
+// Split out of MastersScreen (over the line/complexity budget —
+// docs/CodingStandards.md) — the MASTER_KIND_ORDER -> SegmentedOption[]
+// mapping for the kind switcher, unchanged from the inline version it
+// replaces.
+export const buildKindOptions = (lang: string): SegmentedOption<MasterKind>[] =>
+    MASTER_KIND_ORDER.map((kind) => ({
+        value: kind,
+        label: resolveLocalized(MASTER_KIND_META[kind].Label, lang),
+    }));
