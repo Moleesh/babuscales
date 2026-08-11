@@ -16,6 +16,8 @@
 //! matching the number floated for task #38 but never confirmed. Changing
 //! [`TRIAL_DAYS`] is the whole blast radius when that's settled.
 
+use std::path::Path;
+
 use chrono::NaiveDate;
 use serde::Serialize;
 use sha2::{Digest, Sha256};
@@ -25,20 +27,55 @@ use crate::error::AppError;
 /// Placeholder pending PLAN §23 item 4 (see this module's own doc comment).
 pub const TRIAL_DAYS: i64 = 14;
 
-/// Reads the OS's own stable per-installation identifier (Windows: the
-/// registry `MachineGuid` under `HKLM\SOFTWARE\Microsoft\Cryptography`,
-/// via the `machine-uid` crate) and hashes it down to the `u64` that both
-/// a request code and an activation code carry. Hashing rather than
-/// embedding the raw UID means a request code never leaks the underlying
-/// machine identifier to whoever reads it in transit — only Babulens'
+/// Reads this installation's stable identifier and hashes it down to the
+/// `u64` that both a request code and an activation code carry. Hashing
+/// rather than embedding the raw ID means a request code never leaks the
+/// underlying identifier to whoever reads it in transit — only Babulens'
 /// signed reply, bound to that hash, matters to this app.
-pub fn machine_id_hash() -> Result<u64, AppError> {
-    let raw = machine_uid::get()
-        .map_err(|e| AppError::Message(format!("could not read this machine's ID: {e}")))?;
+///
+/// `app_data_dir` is only read on the [`raw_machine_id`] fallback path
+/// (task #49, Android) — Windows's real ID comes from the registry and
+/// ignores it, but every caller has one on hand already (task #6's own
+/// `app.path().app_data_dir()`), so there's no reason to make it optional.
+pub fn machine_id_hash(app_data_dir: &Path) -> Result<u64, AppError> {
+    let raw = raw_machine_id(app_data_dir)?;
     let digest = Sha256::digest(raw.as_bytes());
     let mut bytes = [0u8; 8];
     bytes.copy_from_slice(&digest[..8]);
     Ok(u64::from_be_bytes(bytes))
+}
+
+/// Windows: the registry `MachineGuid` under
+/// `HKLM\SOFTWARE\Microsoft\Cryptography`, via the `machine-uid` crate —
+/// this app's real, hardware-bound machine identity.
+#[cfg(target_os = "windows")]
+fn raw_machine_id(_app_data_dir: &Path) -> Result<String, AppError> {
+    machine_uid::get()
+        .map_err(|e| AppError::Message(format!("could not read this machine's ID: {e}")))
+}
+
+/// Every other target this crate builds for (task #49: Android) — the
+/// `machine-uid` crate has no backend there (it doesn't even compile:
+/// `machine_id` has no Android module), and there's no hardware ID
+/// reachable without extra JNI/Context plumbing this app doesn't have.
+/// A ULID is generated once and persisted next to this app's own SQLite
+/// file (task #6's `app_data_dir`), so it survives app restarts the same
+/// way the real machine ID would — still a stable per-install identifier,
+/// which is everything `machine_id_hash` actually promises callers.
+#[cfg(not(target_os = "windows"))]
+fn raw_machine_id(app_data_dir: &Path) -> Result<String, AppError> {
+    let path = app_data_dir.join("install-id");
+    if let Ok(existing) = std::fs::read_to_string(&path) {
+        let trimmed = existing.trim();
+        if !trimmed.is_empty() {
+            return Ok(trimmed.to_string());
+        }
+    }
+    let id = ulid::Ulid::new().to_string();
+    std::fs::create_dir_all(app_data_dir)
+        .and_then(|()| std::fs::write(&path, &id))
+        .map_err(|e| AppError::Message(format!("could not persist install ID: {e}")))?;
+    Ok(id)
 }
 
 /// What today's date and a (possible) activation code, taken together,

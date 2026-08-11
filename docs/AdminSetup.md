@@ -210,6 +210,14 @@ for an admin deciding what to promise a site:
   be parked mid-sequence — all of a ticket's loads need capturing in one sitting before Save.
 - MiMaS integration is blocked on an external specification that doesn't exist yet; not a bug, not
   in progress.
+- Android: the Rust crate now compiles and links for `aarch64-linux-android` (hardware-specific bits
+  — printer enumeration, credential storage, the machine ID used for licensing — fall back to honest
+  platform-appropriate behaviour there, the same way they already do for the browser/Pages demo
+  build). Producing an actual installable `.apk` needs one more step this machine can't do on its
+  own: Windows requires Developer Mode enabled to create the symlink Tauri's Android build uses to
+  stage the compiled library, and that's an OS setting, not something automated here. Turning it on
+  (Settings → Privacy & security → For developers) and re-running the build is the entire remaining
+  step — nothing in the app itself is blocking it.
 - Legacy import (§5 above) reads a documented JSON bundle, not a VaultBill database file directly —
   there's no native v1/v2 reader. Converting a site's real old data into that bundle shape is a
   manual or scripted step outside this tool's scope.

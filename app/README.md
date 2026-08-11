@@ -647,6 +647,35 @@ on Reports and Dashboard).
     tickets"), confirmed the chip appeared with no console errors; switched the Filter back to "All",
     clicked the saved chip, and confirmed (via `aria-pressed`) both View and Filter snapped back to
     the saved values; clicked the chip's delete button and confirmed it was removed from the DOM.
+40. **Android — the Rust crate now actually compiles for it (task #49).** §5's own decision table
+    promised "native APK, same code" and named Rust's cross-platform confinement to "hardware,
+    storage and transport" as the reason; nothing before this task had ever tried building
+    `src-tauri` for an Android target, and three dependencies turned out to be silently Windows-only:
+    `machine-uid` (no Android backend exists in the crate at all — it fails to compile there),
+    `keyring`'s `windows-native` feature, and `devices/printers.rs`'s direct `EnumPrintersW` calls.
+    All three are now target-gated in `Cargo.toml` (`[target.'cfg(windows)'.dependencies]` /
+    `[target.'cfg(not(windows))'.dependencies]`) with honest non-Windows fallbacks, not stubs bolted
+    on afterward: `devices/printers.rs` gets a `#[cfg(not(target_os = "windows"))]` sibling
+    `list_printers()` returning an empty list (Android has no Win32 print spooler to ask — same "noop
+    is honest" convention as every browser/Pages noop source); `keyring` compiles everywhere but only
+    gets its `windows-native` backend feature on Windows, so `Entry::new()` on Android returns a
+    graceful "no backend configured" error that `security/mod.rs` already turns into an ordinary
+    `AppError` with no code change; `licensing::machine_id_hash` grew a `raw_machine_id` split — the
+    real registry `MachineGuid` on Windows, a ULID generated once and persisted to a file in
+    `app_data_dir()` on every other target (still a stable per-install identifier, which is all the
+    licence wire format actually needs), which is why `license_request_code`/`evaluate_license` now
+    take an `AppHandle` param (Tauri auto-injects it — no frontend change). ✅ Verified:
+    `cargo check`/`clippy -D warnings`/`fmt --check` still clean on the Windows target (no
+    regression); `npx tauri android build --target aarch64 --debug` — using the Android SDK/NDK
+    27.3.13750724 already present on this machine — compiled and linked the whole crate for
+    `aarch64-linux-android` cleanly, proving every cfg-gate above actually resolves. **Not
+    completed:** the final "symlink the built `.so` into `gen/android`'s `jniLibs`" step in that same
+    command fails on this machine with `Creation symbolic link is not allowed for this system` —
+    Windows requires either Developer Mode or `SeCreateSymbolicLinkPrivilege` to create symlinks, and
+    modifying that OS-level setting isn't something this assistant does on its own (see this repo's
+    own operating rules on system-setting changes). Enabling Developer Mode
+    (Settings → Privacy & security → For developers) and re-running the same command is the whole
+    remaining step to a real, installable `.apk` — nothing else in the pipeline is blocked.
 
 ## Known gap
 

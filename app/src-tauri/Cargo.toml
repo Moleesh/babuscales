@@ -41,15 +41,11 @@ regex = "1"
 # dependency-light HTTP server rather than pulling in tokio/axum for one
 # small always-on listener. MIT licensed, ~4 small transitive deps.
 tiny_http = "0.12"
-keyring = { version = "3", features = ["windows-native"] }
 # Licence activation codes (PLAN §4.10/§12/§23 item 4, task #37) — the wire
 # format, base32 grouping and Ed25519 verification all live in this sibling
 # crate so the app (verify-only) and the never-shipped `tools/licensegen`
 # (sign-only) can't drift apart. See its own module doc for the full design.
 license-format = { path = "../../tools/license-format" }
-# PLAN §4.10's "UID machine binding" — reads the OS's own stable machine
-# identifier (Windows: registry `MachineGuid`) with no admin rights needed.
-machine-uid = "0.6"
 # Task #42's real Email/SMTP delivery. rustls-tls (not native-tls) so this
 # never needs a system OpenSSL install on the target machine — consistent
 # with PLAN's own "no prerequisites" installer goal, same reasoning as
@@ -63,11 +59,35 @@ lettre = { version = "0.11", default-features = false, features = [
     "rustls-tls",
     "hostname",
 ] }
-# Task #52's real printer enumeration (devices/printers.rs) — unconditional,
-# same as keyring's "windows-native" feature and machine-uid above: this app
-# only ships for Windows (README's Install section; CI/release both build
-# on windows-latest), so there's no cross-platform stub to keep in sync.
+# `keyring`'s backend is genuinely platform-specific (see the two
+# `target.*.dependencies` sections below) — everything else above this line
+# is a pure-Rust or self-contained-C dependency that's the same crate/feature
+# set on every target this app builds for (Windows and, since task #49,
+# Android).
+
+[target.'cfg(windows)'.dependencies]
+# PLAN §4.10's "UID machine binding" — reads the OS's own stable machine
+# identifier (registry `MachineGuid`) with no admin rights needed. No
+# Android backend exists for this crate at all (task #49's
+# `licensing::raw_machine_id` covers that target instead).
+machine-uid = "0.6"
+# Task #52's real printer enumeration (devices/printers.rs) — Win32-only by
+# construction (EnumPrintersW). Task #49 gated the module itself to match;
+# see devices/printers.rs's own doc comment for the Android side.
 windows = { version = "0.58", features = ["Win32_Graphics_Printing", "Win32_Foundation"] }
+# Windows Credential Manager backend.
+keyring = { version = "3", features = ["windows-native"] }
+
+[target.'cfg(not(windows))'.dependencies]
+# Task #49 (Android): `keyring` compiles on every target but needs a
+# backend feature to actually store anything; none is enabled here (no
+# site ships on Linux/macOS yet, and Android's backend is a whole JNI
+# integration — the Activity's `Context` has to be handed to the crate at
+# startup — this app doesn't have). `Entry::new()`/`.set_password()` etc.
+# return a graceful "platform doesn't support persistent credential
+# storage" error instead, which `security/mod.rs` already turns into an
+# ordinary `AppError` — no code change needed there for this to be honest.
+keyring = { version = "3", default-features = false }
 
 [profile.release]
 # Smallest installer over fastest build — the installer itself runs ~200MB

@@ -1,14 +1,21 @@
 use chrono::NaiveDate;
+use tauri::{AppHandle, Manager};
 
 use crate::error::AppError;
 use crate::licensing::{self, LicenseState};
 
 /// The ~15-character code an operator reads or pastes to Babulens to get
 /// an activation code back — see `licensing`'s own module doc. No DB
-/// access: it's derived purely from this machine's own identity.
+/// access: it's derived purely from this machine's own identity (`app` is
+/// only used for its `app_data_dir()`, on the non-Windows fallback path —
+/// see `licensing::machine_id_hash`'s own doc comment).
 #[tauri::command]
-pub fn license_request_code() -> Result<String, AppError> {
-    let hash = licensing::machine_id_hash()?;
+pub fn license_request_code(app: AppHandle) -> Result<String, AppError> {
+    let dir = app
+        .path()
+        .app_data_dir()
+        .map_err(|e| AppError::Message(format!("could not resolve app data dir: {e}")))?;
+    let hash = licensing::machine_id_hash(&dir)?;
     Ok(license_format::encode_request_code(hash))
 }
 
@@ -22,6 +29,7 @@ pub fn license_request_code() -> Result<String, AppError> {
 /// reading the machine ID and verifying an Ed25519 signature.
 #[tauri::command]
 pub fn evaluate_license(
+    app: AppHandle,
     trial_started_on: String,
     activation_code: Option<String>,
 ) -> Result<LicenseState, AppError> {
@@ -30,7 +38,11 @@ pub fn evaluate_license(
             AppError::Message(format!("bad TrialStartedOn date ({trial_started_on}): {e}"))
         })?;
     let today = chrono::Utc::now().date_naive();
-    let machine_hash = licensing::machine_id_hash()?;
+    let dir = app
+        .path()
+        .app_data_dir()
+        .map_err(|e| AppError::Message(format!("could not resolve app data dir: {e}")))?;
+    let machine_hash = licensing::machine_id_hash(&dir)?;
     Ok(licensing::evaluate(
         today,
         trial_started_on,

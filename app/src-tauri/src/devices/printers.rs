@@ -2,16 +2,29 @@
 // devices/indicator.rs's `list_ports()`: a stateless OS-enumeration call,
 // no connection to manage, nothing to hold in AppState.
 //
-// Phase 1 only (this file): the printer *names* Windows already knows
-// about (Settings → Printers & scanners), via `EnumPrintersW`. This is
-// deliberately NOT paper-size/DPI capability lookup (`DeviceCapabilitiesW`)
-// — PRINTER_FIXTURES (settingsSchema.ts) already covers "what capabilities
-// does an A4/thermal/matrix printer have" as a curated, editable list; what
-// was actually missing was "which printers does this machine have plugged
-// in right now", so that's the one real gap this closes. Every `unsafe`
-// block below is commented with its invariant (docs/CodingStandards.md).
+// Phase 1 only (Windows path below): the printer *names* Windows already
+// knows about (Settings → Printers & scanners), via `EnumPrintersW`. This
+// is deliberately NOT paper-size/DPI capability lookup
+// (`DeviceCapabilitiesW`) — PRINTER_FIXTURES (settingsSchema.ts) already
+// covers "what capabilities does an A4/thermal/matrix printer have" as a
+// curated, editable list; what was actually missing was "which printers
+// does this machine have plugged in right now", so that's the one real gap
+// this closes. Every `unsafe` block below is commented with its invariant
+// (docs/CodingStandards.md).
+//
+// Task #49 (Android): `EnumPrintersW` is Win32-only by construction — an
+// Android build has no equivalent OS-level printer spooler to ask (Android
+// printing goes through the OS's own Print Framework/PrintManager, a
+// different, much larger API this app doesn't integrate — same "not what
+// this closes" scoping as the DeviceCapabilitiesW cut above). The
+// non-Windows path below returns an honest empty list, the same "noop is
+// honest" convention as every other hardware source in this codebase that
+// has nothing to enumerate on a given target (compare `engines/printers/
+// noopPrinters.ts` on the TS side, for the browser/Pages build).
 
+#[cfg(target_os = "windows")]
 use windows::core::PCWSTR;
+#[cfg(target_os = "windows")]
 use windows::Win32::Graphics::Printing::{
     EnumPrintersW, PRINTER_ENUM_CONNECTIONS, PRINTER_ENUM_LOCAL, PRINTER_INFO_4W,
 };
@@ -26,6 +39,7 @@ pub struct DetectedPrinter {
 /// ones connected via a print server, same set the OS's own print dialog
 /// offers. Level 4 (`PRINTER_INFO_4W`) is the cheapest info level that still
 /// carries the printer name, which is all this needs.
+#[cfg(target_os = "windows")]
 pub fn list_printers() -> Result<Vec<DetectedPrinter>, AppError> {
     const LEVEL: u32 = 4;
     let flags = PRINTER_ENUM_LOCAL | PRINTER_ENUM_CONNECTIONS;
@@ -95,4 +109,12 @@ pub fn list_printers() -> Result<Vec<DetectedPrinter>, AppError> {
         }
     }
     Ok(result)
+}
+
+/// Android has no OS-level printer spooler this app can enumerate (see this
+/// module's own doc comment) — an honest empty list, same shape as every
+/// other noop hardware source in this codebase.
+#[cfg(not(target_os = "windows"))]
+pub fn list_printers() -> Result<Vec<DetectedPrinter>, AppError> {
+    Ok(Vec::new())
 }
