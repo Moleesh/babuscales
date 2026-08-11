@@ -1,7 +1,9 @@
 import { fileURLToPath, URL } from "node:url";
 
 import react from "@vitejs/plugin-react";
-import { defineConfig } from "vite";
+// vitest/config re-exports Vite's defineConfig with an extra `test` key —
+// one config file for both, no duplicated aliases (task #61).
+import { defineConfig } from "vitest/config";
 
 // The GitHub Pages build serves from /babuscales/; the Tauri build and local
 // dev both serve from /. Only VITE_BASE changes between them — see
@@ -31,5 +33,17 @@ export default defineConfig({
     build: {
         outDir: "dist",
         emptyOutDir: true,
+    },
+    test: {
+        environment: "jsdom",
+        globals: false,
+        setupFiles: ["./src/testSetup.ts"],
+        css: true,
+        coverage: {
+            provider: "v8",
+            reporter: ["text", "html"],
+            include: ["src/**/*.{ts,tsx}"],
+            exclude: ["src/**/*.d.ts", "src/**/*.test.{ts,tsx}", "src/testSetup.ts"],
+        },
     },
 });
