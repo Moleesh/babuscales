@@ -3,3 +3,4 @@
 //! stability gate itself is a pure function in `engines/`, not here.
 
 pub mod indicator;
+pub mod printers;

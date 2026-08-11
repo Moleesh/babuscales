@@ -16,5 +16,6 @@ pub mod licensing;
 pub mod masters;
 pub mod net;
 pub mod outbox;
+pub mod printers;
 pub mod sms;
 pub mod tunnel;

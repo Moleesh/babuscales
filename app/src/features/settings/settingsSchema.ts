@@ -48,12 +48,14 @@ export type DisplayFormats = z.infer<typeof formatsSchema>;
 
 export const BAUD_RATE_OPTIONS = [1200, 2400, 4800, 9600, 19200, 38400, 57600, 115200] as const;
 
-// demo/BabuScales-demo.html's PRINTERS fixture, verbatim — there is no
-// driver-level printer enumeration here (or in the mock): the browser
-// print dialog (window.print(), engines/print) always lets the operator
-// pick the real target printer themselves, on both the demo and the
-// desktop build. This list is a stated *preference*, exactly like the
-// mock's — not a live driver binding.
+// demo/BabuScales-demo.html's PRINTERS fixture, verbatim. The browser print
+// dialog (window.print(), engines/print) always lets the operator pick the
+// real target printer themselves, on both the demo and the desktop build —
+// so this list stays a stated *preference* (which detected printer plays
+// the "A4"/"Mx"/"Th" role), not a live binding, same as the mock. Task #52
+// added real driver-level enumeration (@engines/printers, PrintPane.tsx's
+// "Detected printers" card) so an admin can see what's actually plugged in
+// while choosing a preference here — the mock never had that.
 export const PRINTER_KINDS = ["a4", "mx", "th"] as const;
 export type PrinterKind = (typeof PRINTER_KINDS)[number];
 export interface PrinterFixture {

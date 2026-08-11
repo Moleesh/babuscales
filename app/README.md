@@ -604,6 +604,29 @@ on Reports and Dashboard).
     central-directory record and all five central-directory entries confirmed every local-header offset
     points to the right entry, every CRC-32 is present, and `xl/worksheets/sheet1.xml` decodes to
     well-formed XML with the header row's cells correctly at `A1`/`B1`/`C1`/`D1`.
+38. **Printer capability profiles — real installed-printer detection.** Item 24's `PRINTER_FIXTURES`
+    was always a stated preference, never a live driver binding — that stays true; `window.print()`
+    still owns the actual target-printer choice via the OS's own dialog. What was missing is what
+    task #52 adds: knowing what's actually plugged into this machine while picking that preference.
+    Rust's `devices/printers.rs` calls `EnumPrintersW` (level 4, the `windows` crate, PRINTER_ENUM_LOCAL
+    | PRINTER_ENUM_CONNECTIONS) the same two-pass way every Win32 enumeration API works — a sizing
+    call with a `None` buffer, then the real call into a buffer sized to what the first call reported
+    — and returns just the printer names, following `devices/indicator.rs`'s `list_ports()` shape
+    (a stateless command, nothing in `AppState`). `commands/printers.rs` wraps it as `list_printers`,
+    a new PascalCase `DetectedPrinterDto`. The TS side is `engines/printers/` — `types.ts`,
+    `tauriPrinters.ts` (the real `invoke`), `noopPrinters.ts` (empty list — no OS print spooler to ask
+    from a browser tab, same honesty as every other noop source in this codebase), and
+    `createPrinterSource.ts` doing the same direct in-place `VITE_DATA_ADAPTER === "tauri"` build-time
+    branch as `@engines/sms`/`@engines/email`, for the same Rollup tree-shaking reason. `PrintPane.tsx`
+    gained a "Detected printers" card (rescan button + a plain list of names) above the existing
+    per-kind default dropdowns. Deliberately Phase 1 only: `DeviceCapabilitiesW`-based paper-size/DPI
+    capability lookups were considered and dropped — `PRINTER_FIXTURES` already covers "what can an
+    A4/thermal/matrix printer do" as a curated, editable list, so the one real gap was "which printers
+    does this machine have," not per-printer capability data. ✅ Verified: `cargo check`/`cargo clippy
+    -D warnings`/`cargo fmt --check` clean; `npm run typecheck`/`lint`/`build` clean; in-browser (memory
+    adapter/noop build) the "Detected printers" card renders its hint text, a working Rescan button,
+    and a `0` count with no console errors — confirming the noop path is honest and crash-free on the
+    web/Pages build, which is the only build this sandbox can exercise end-to-end.
 
 ## Known gap
 

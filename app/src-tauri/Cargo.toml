@@ -63,6 +63,11 @@ lettre = { version = "0.11", default-features = false, features = [
     "rustls-tls",
     "hostname",
 ] }
+# Task #52's real printer enumeration (devices/printers.rs) — unconditional,
+# same as keyring's "windows-native" feature and machine-uid above: this app
+# only ships for Windows (README's Install section; CI/release both build
+# on windows-latest), so there's no cross-platform stub to keep in sync.
+windows = { version = "0.58", features = ["Win32_Graphics_Printing", "Win32_Foundation"] }
 
 [profile.release]
 # Smallest installer over fastest build — the installer itself runs ~200MB

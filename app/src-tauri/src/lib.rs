@@ -81,6 +81,7 @@ pub fn run() -> tauri::Result<()> {
             commands::email::has_smtp_password,
             commands::email::send_ticket_email,
             commands::sms::send_ticket_sms,
+            commands::printers::list_printers,
         ])
         .run(tauri::generate_context!())
 }

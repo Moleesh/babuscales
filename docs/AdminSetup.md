@@ -70,8 +70,10 @@ labelled) stays fixed regardless of what's uploaded here.
 **Print & printers** — *Printers* picks which registered printer each paper size (A4, dot-matrix,
 thermal) prints to; the change applies immediately, no save button. Every ticket print goes through
 the OS's own print dialog (`window.print()`), where the operator picks the physical printer — this
-app never routes output silently. *Print templates* — a visual layout designer — isn't built; the
-three built-in layouts are the only ones available.
+app never routes output silently. *Detected printers* (below it) reads the actual list Windows has
+installed, straight from the print spooler, so picking a preference above doesn't mean guessing a
+name — "Rescan" refreshes it if a printer was just plugged in or set up. *Print templates* — a
+visual layout designer — isn't built; the three built-in layouts are the only ones available.
 
 **Appearance** — *Operator on duty* is real (see above). *Theme* is real too: pick any of six skins
 (Indicator, Graphite, Night shift, Paper, Daylight, High contrast) or a text size (A− through A++)

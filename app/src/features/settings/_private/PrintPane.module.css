@@ -16,3 +16,47 @@
     margin: 0;
     line-height: 1.6;
 }
+
+.body {
+    display: grid;
+    gap: 12px;
+}
+
+/* Same button look as ConnectionsPane.module.css's own `.mini` — "Rescan"
+   here is the printers equivalent of that pane's "Rescan ports". */
+.mini {
+    padding: 3px 9px;
+    border-radius: 7px;
+    border: 1px solid var(--line);
+    background: var(--panel-2);
+    color: var(--text);
+    font: inherit;
+    font-size: 0.6875rem;
+    cursor: pointer;
+    white-space: nowrap;
+    justify-self: start;
+}
+.mini:hover:not(:disabled) {
+    border-color: var(--led-dim);
+    color: var(--led);
+}
+.mini:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
+.detectedList {
+    display: grid;
+    gap: 4px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-size: 0.75rem;
+    font-family: var(--mono);
+}
+.detectedList li {
+    padding: 6px 10px;
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    background: var(--panel-2);
+}
