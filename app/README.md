@@ -666,16 +666,19 @@ on Reports and Dashboard).
     licence wire format actually needs), which is why `license_request_code`/`evaluate_license` now
     take an `AppHandle` param (Tauri auto-injects it — no frontend change). ✅ Verified:
     `cargo check`/`clippy -D warnings`/`fmt --check` still clean on the Windows target (no
-    regression); `npx tauri android build --target aarch64 --debug` — using the Android SDK/NDK
-    27.3.13750724 already present on this machine — compiled and linked the whole crate for
-    `aarch64-linux-android` cleanly, proving every cfg-gate above actually resolves. **Not
-    completed:** the final "symlink the built `.so` into `gen/android`'s `jniLibs`" step in that same
-    command fails on this machine with `Creation symbolic link is not allowed for this system` —
-    Windows requires either Developer Mode or `SeCreateSymbolicLinkPrivilege` to create symlinks, and
-    modifying that OS-level setting isn't something this assistant does on its own (see this repo's
-    own operating rules on system-setting changes). Enabling Developer Mode
-    (Settings → Privacy & security → For developers) and re-running the same command is the whole
-    remaining step to a real, installable `.apk` — nothing else in the pipeline is blocked.
+    regression); with Windows Developer Mode enabled (the machine initially lacked
+    `SeCreateSymbolicLinkPrivilege`, which the Android build's `.so`→`jniLibs` symlink step needs —
+    not something changed without being asked), `npx tauri android build --target aarch64 --debug`
+    ran end to end: compiled and linked the whole crate for `aarch64-linux-android`, symlinked
+    `libbabuscales_lib.so` into `gen/android`'s `jniLibs/arm64-v8a`, and Gradle assembled a real
+    181MB `app-universal-debug.apk` (+ a `.aab`) at
+    `src-tauri/gen/android/app/build/outputs/apk/universal/debug/`. `aapt dump badging` confirms the
+    package (`com.babulens.babuscales`, versionCode 1000, targetSdk 36) and permissions
+    (`INTERNET`); unzipping the APK confirms `lib/arm64-v8a/libbabuscales_lib.so` and `classes.dex`
+    are both actually inside it — not just a build log claiming success. This build isn't signed for
+    the Play Store or run on a device/emulator in this pass (no Android device or emulator available
+    in this environment) — it's a debug build proving the packaging pipeline and every cfg-gate
+    above genuinely produce an installable artifact, not just a compiling one.
 
 ## Known gap
 
