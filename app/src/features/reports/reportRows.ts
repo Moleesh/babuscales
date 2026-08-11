@@ -55,6 +55,13 @@ export const buildTicketRows = (docs: DocRow[]): TicketRow[] =>
         })
         .sort((a, b) => b.at.localeCompare(a.at));
 
+export type ReportView = "tickets" | "summary";
+
+export const VIEW_OPTIONS: { value: ReportView; label: string }[] = [
+    { value: "tickets", label: "Tickets" },
+    { value: "summary", label: "Summary" },
+];
+
 export type TicketRowFilter = "all" | "half" | "both";
 
 export const filterTicketRows = (
@@ -75,7 +82,23 @@ export const filterTicketRows = (
     });
 };
 
+export const FILTER_OPTIONS: { value: TicketRowFilter; label: string }[] = [
+    { value: "all", label: "All" },
+    { value: "half", label: "Waiting for the second weight" },
+    { value: "both", label: "Both weights" },
+];
+
 export type GroupKey = "material" | "party" | "vehicleNo" | "transporter";
+
+export const GROUP_OPTIONS: { value: GroupKey; label: string }[] = [
+    { value: "material", label: "Material" },
+    { value: "party", label: "Party" },
+    { value: "vehicleNo", label: "Vehicle" },
+    { value: "transporter", label: "Transporter" },
+];
+
+export const groupLabel = (key: GroupKey): string =>
+    GROUP_OPTIONS.find((option) => option.value === key)?.label ?? "Group";
 
 export interface SummaryRow {
     key: string;
