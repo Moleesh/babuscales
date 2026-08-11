@@ -1,0 +1,62 @@
+.row {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    flex-wrap: wrap;
+}
+
+.chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+}
+
+.delete {
+    padding: 0 5px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--panel-2);
+    color: var(--dim);
+    font: inherit;
+    line-height: 1.6;
+    cursor: pointer;
+}
+.delete:hover {
+    color: var(--alert);
+    border-color: var(--alert);
+}
+
+.input {
+    padding: 4px 9px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background: var(--panel-2);
+    color: var(--text);
+    font: inherit;
+    font-size: 0.6875rem;
+    min-width: 160px;
+}
+.input:focus {
+    border-color: var(--led);
+    outline: none;
+}
+
+.mini {
+    padding: 3px 9px;
+    border-radius: 7px;
+    border: 1px solid var(--line);
+    background: var(--panel-2);
+    color: var(--text);
+    font: inherit;
+    font-size: 0.6875rem;
+    cursor: pointer;
+    white-space: nowrap;
+}
+.mini:hover:not(:disabled) {
+    border-color: var(--led-dim);
+    color: var(--led);
+}
+.mini:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}

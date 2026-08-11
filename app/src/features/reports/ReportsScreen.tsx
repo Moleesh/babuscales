@@ -8,6 +8,8 @@ import { Field, FieldGrid } from "@components/Field";
 import { SegmentedControl } from "@components/SegmentedControl";
 import type { SegmentedOption } from "@components/SegmentedControl";
 import { formatMoney, formatWeightKg } from "@constants/numberFormat";
+import { addReportDef, deleteReportDef, loadReportDefs } from "@db/reportDefs";
+import type { ReportDefinition } from "@db/reportDefs";
 import type { DocRow } from "@db/types";
 import { useDataPort } from "@db/useDataPort";
 import { toCsvBlob, toXlsxBlob } from "@engines/export";
@@ -16,6 +18,7 @@ import { useSettings } from "@features/settings";
 import { formatTicketNo } from "@features/weighing";
 
 import { ReportPrintModal } from "./_private/ReportPrintModal";
+import { SavedReportsRow } from "./_private/SavedReportsRow";
 import { buildSummaryPrintRows, buildTicketPrintRows } from "./reportPrintRows";
 import { buildTicketRows, filterTicketRows, summarizeTicketRows } from "./reportRows";
 import type { GroupKey, SummaryRow, TicketRow, TicketRowFilter } from "./reportRows";
@@ -86,6 +89,14 @@ const downloadBlob = (blob: Blob, filename: string): void => {
 // what Print sends to the slip. Export PDF stays disabled: the OS print
 // dialog's own "Save as PDF" already covers it via the Print button, so a
 // distinct PDF export path wasn't built.
+//
+// Saved report definitions (task #54, db/reportDefs.ts) — name the current
+// (view, group-by, filter) combination and recall it later with one click.
+// Deliberately not the fuller "visual query builder over the dynamic
+// schema" PLAN §18 describes — reportDefs.ts's own comment has the full
+// reasoning; the short version is task #50 never built schema-driven field
+// rendering, so there's no dynamic field data yet to build a query builder
+// over, and the reference mock never built one either.
 export const ReportsScreen = ({ onOpenTicket }: ReportsScreenProps) => {
     const db = useDataPort();
     const { settings } = useSettings();
@@ -95,11 +106,23 @@ export const ReportsScreen = ({ onOpenTicket }: ReportsScreenProps) => {
     const [filter, setFilter] = useState<TicketRowFilter>("all");
     const [groupBy, setGroupBy] = useState<GroupKey>("material");
     const [printOpen, setPrintOpen] = useState(false);
+    const [savedReports, setSavedReports] = useState<ReportDefinition[]>([]);
+    const [newReportName, setNewReportName] = useState("");
 
     useEffect(() => {
         let cancelled = false;
         void db.listDocs({ DocKind: "Ticket" }).then((rows) => {
             if (!cancelled) setDocs(rows);
+        });
+        return () => {
+            cancelled = true;
+        };
+    }, [db]);
+
+    useEffect(() => {
+        let cancelled = false;
+        void loadReportDefs(db).then((defs) => {
+            if (!cancelled) setSavedReports(defs);
         });
         return () => {
             cancelled = true;
@@ -144,6 +167,33 @@ export const ReportsScreen = ({ onOpenTicket }: ReportsScreenProps) => {
     const showWaiting = (): void => {
         setView("tickets");
         setFilter("half");
+    };
+
+    const handleSaveReport = (): void => {
+        const name = newReportName.trim();
+        if (!name) return;
+        void addReportDef(db, { Name: name, View: view, GroupBy: groupBy, Filter: filter })
+            .then(() => loadReportDefs(db))
+            .then((defs) => {
+                setSavedReports(defs);
+                setNewReportName("");
+            });
+    };
+
+    const handleRecallReport = (def: ReportDefinition): void => {
+        if (def.View === "tickets" || def.View === "summary") setView(def.View);
+        if (GROUP_OPTIONS.some((option) => option.value === def.GroupBy)) {
+            setGroupBy(def.GroupBy as GroupKey);
+        }
+        if (FILTER_OPTIONS.some((option) => option.value === def.Filter)) {
+            setFilter(def.Filter as TicketRowFilter);
+        }
+    };
+
+    const handleDeleteReport = (id: string): void => {
+        void deleteReportDef(db, id)
+            .then(() => loadReportDefs(db))
+            .then(setSavedReports);
     };
 
     // Reuses reportSlipData's own Head/Rows/Title — the same data the
@@ -260,6 +310,14 @@ export const ReportsScreen = ({ onOpenTicket }: ReportsScreenProps) => {
                 }
             >
                 <div className={styles.body}>
+                    <SavedReportsRow
+                        savedReports={savedReports}
+                        newName={newReportName}
+                        onNewNameChange={setNewReportName}
+                        onSave={handleSaveReport}
+                        onRecall={handleRecallReport}
+                        onDelete={handleDeleteReport}
+                    />
                     {view === "tickets" ? (
                         <>
                             <input

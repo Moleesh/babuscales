@@ -627,6 +627,26 @@ on Reports and Dashboard).
     adapter/noop build) the "Detected printers" card renders its hint text, a working Rescan button,
     and a `0` count with no console errors — confirming the noop path is honest and crash-free on the
     web/Pages build, which is the only build this sandbox can exercise end-to-end.
+39. **Reports: custom report indexes — named saved views.** `db/reportDefs.ts` adds a `ConfigKind:
+    "Preset"` row (`report-defs-Ticket`, one row holding the whole named list — no per-definition query
+    this app needs) storing named `(View, GroupBy, Filter)` triples, mirroring `schema.ts`'s own
+    load/save shape. Deliberately scoped down from PLAN §18's fuller "visual query builder over the
+    dynamic schema": task #50 left schema-driven field *rendering* unbuilt (custom FieldIds validate
+    and save but never reach the ticket form or ticket data), so there's no dynamic field data anywhere
+    in this app to group or filter by beyond what `reportRows.ts`'s `GroupKey`/`TicketRowFilter` already
+    cover — and the reference mock never built a query builder either (its own `#rGroup` select is the
+    same four-option static list this app has). What's real: naming and recalling a View/GroupBy/Filter
+    combination, an honest match for "custom report indexes" without a dynamic schema underneath it.
+    `View`/`GroupBy`/`Filter` are stored as plain strings, not the real union types, respecting the
+    project's "`db/` doesn't import from `features/`" layering rule; `ReportsScreen.tsx` narrows them
+    back on recall. The new save/recall/delete row was split into its own
+    `features/reports/_private/SavedReportsRow.tsx` (+ CSS module) from the start, following item 27's
+    `WeighingScreen.tsx`-split precedent, to keep `ReportsScreen.tsx` from growing past its component
+    budget. ✅ Verified: `npm run typecheck`/`lint`/`build` clean; in-browser (memory adapter) round
+    trip — changed the Filter to "Waiting for the second weight", named and saved a view ("Waiting
+    tickets"), confirmed the chip appeared with no console errors; switched the Filter back to "All",
+    clicked the saved chip, and confirmed (via `aria-pressed`) both View and Filter snapped back to
+    the saved values; clicked the chip's delete button and confirmed it was removed from the DOM.
 
 ## Known gap
 

@@ -191,7 +191,11 @@ for an admin deciding what to promise a site:
   scale, not at 100,000+ rows).
 - Reports has no date-range filter. Excel and CSV export are real (hand-rolled, no third-party
   dependency); PDF export stays disabled on purpose — the OS print dialog's own "Save as PDF",
-  already reachable via the Print button, covers that case.
+  already reachable via the Print button, covers that case. Reports can save and recall named
+  View/Group/Filter combinations (a "saved view" chip row above the filters) — this is not a
+  full query builder over custom fields, since custom field *values* aren't rendered anywhere in
+  the app yet (custom fields validate and save from Settings → Fields & language, but don't reach
+  the ticket form or ticket data).
 - Of the eight Integrations toggles, only QR verification, e-mail and SMS gateway actually do
   anything yet — cloud backup, webhook, accounting export and the outdoor display board persist
   as a setting with no worker behind them, pending future work.
