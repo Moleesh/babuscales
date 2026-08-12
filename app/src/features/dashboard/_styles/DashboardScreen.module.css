@@ -8,15 +8,37 @@
     justify-content: flex-end;
 }
 
-/* Ported from demo/BabuScales-demo.html's ".kpis"/".kpi"/".kpi.accent"/".kpi .v"/".kpi .d". */
+/*
+ * Ported from demo/BabuScales-demo.html's ".kpis"/".kpi"/".kpi.accent"/".kpi .v"/".kpi .d",
+ * then reworked (2 complaints about a lopsided "4 then 1 alone" row) to keep 5 cards
+ * balanced at every width: one even row of 5 when there's room, an even 3+2 wrap in
+ * between, and — once even 3-up won't fit — the 5th card (Avg Net/Ticket) spans full
+ * width as a compact summary bar instead of sitting alone as a stray 5th square.
+ */
 .kpis {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(5, 1fr);
     gap: 12px;
+}
+@media (max-width: 1099px) {
+    .kpis {
+        grid-template-columns: repeat(3, 1fr);
+    }
 }
 @media (max-width: 899px) {
     .kpis {
         grid-template-columns: 1fr 1fr;
+    }
+    .kpis > .kpi:last-child {
+        grid-column: 1 / -1;
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        align-items: baseline;
+        gap: 8px 12px;
+    }
+    .kpis > .kpi:last-child .value {
+        margin-top: 0;
+        text-align: right;
     }
 }
 .kpi {
