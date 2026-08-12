@@ -109,6 +109,12 @@ pub fn run() -> tauri::Result<()> {
                     } = event
                     {
                         if let Some(window) = tray.app_handle().get_webview_window("main") {
+                            // `hide()` doesn't clear a prior minimize (the
+                            // window-event handler above hides while still
+                            // minimized) — without this, `show()` alone can
+                            // bring back a window the OS still considers
+                            // minimized, invisible again on some platforms.
+                            let _ = window.unminimize();
                             let _ = window.show();
                             let _ = window.set_focus();
                         }
@@ -118,6 +124,7 @@ pub fn run() -> tauri::Result<()> {
                     "quit" => app.exit(0),
                     "show" => {
                         if let Some(window) = app.get_webview_window("main") {
+                            let _ = window.unminimize();
                             let _ = window.show();
                             let _ = window.set_focus();
                         }
