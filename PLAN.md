@@ -1277,16 +1277,26 @@ Task Scheduler entry — `src-tauri/src/commands/scheduler.rs`'s `sync_daily_sum
 through `@engines/scheduler` and `App.tsx`'s `DailySummaryTaskSync`/`HeadlessDailySummarySync` —
 now wakes the app with `--daily-summary` and sends headlessly even if it was closed at
 `DailySummary.Time`; the old in-app per-minute check stays as a backstop for non-Windows dev
-builds and the task-disabled case, not removed).
+builds and the task-disabled case, not removed) · Masters memory-footprint gap closed two ways:
+the dead `doc_fts`/`master_fts` FTS5 virtual tables were dropped from `schema.sql` (never queried
+by anything — confirmed by grep — and Masters search already goes through a plain `LIKE`/keyset
+scan instead), and `useMasterCache` (record selection, forms, every `SearchableDropdown`) no
+longer loads a whole kind up front — it loads one bounded page (2,000 rows) eagerly, which still
+covers every shop small enough to fit in one page with identical behaviour to before, and only
+past that does `search()` fall back to a real `DataPort` query per novel term, merging results in
+(capped at 5,000 rows total, oldest-added trimmed first) so a later render's synchronous filter
+picks them up — `search()` had to stay synchronous throughout since its two real callers
+(`SearchableDropdown` via `TicketFieldsCard`/`SchemaFieldRow`, and `buildRecallOffers.ts`) both
+call it inline during render/computation and can't await a promise, so this is "instant for any
+realistic shop size, best-effort-then-better for a genuinely huge kind" rather than a full async
+rework of those call sites (chosen over that rework — bigger, riskier, touches dropdown
+keyboard/state and recall-offer logic — since it wasn't needed for real relief at 100,000+ rows).
+`MastersScreen`'s `totalCount` badge is exact under the same 2,000-row threshold and becomes a
+lower bound past it, documented in `useMastersScreenState.ts`'s comment rather than solved with a
+new count query nothing has asked for yet.
 
-**Next up — pick in this order once current work lands. Test/verify/CI/push (tasks #19/#20) are
-held until every item below is done, then run once at the end — not per item, to save churn:**
-
-1. **Masters search — close the memory-footprint gap.** Keyset pagination (`useMasterListPage`)
-   is done, but `useMasterCache` (record selection, forms, every `SearchableDropdown`) still loads
-   a whole kind up front; needs that hook changed too for real relief at 100,000+ rows. FTS5
-   virtual tables (`doc_fts`/`master_fts`) exist in `schema.sql` but nothing queries them —
-   either wire them up or drop them, don't leave them dead.
+**Next up — none. Every item above is done; test/verify/CI/push (tasks #19/#20) run once now,
+covering everything in this batch, then push to `origin/main`.**
 
 **Deferred by decision — designed for, not built, revisit only if the decision is revisited:**
 

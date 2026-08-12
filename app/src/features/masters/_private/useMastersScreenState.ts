@@ -18,8 +18,13 @@ export const useMastersScreenState = (activeKind: MasterKind, query: string) => 
     const { rows, save, reload } = useMasterCache(activeKind);
     const [selectedId, setSelectedId] = useState<string | null>(null);
     const [form, setForm] = useState(emptyForm());
-    // `rows` (useMasterCache) always holds the whole kind, so a row picked
-    // from the paginated list below is still found here for editing.
+    // `rows` (useMasterCache) holds the whole kind for any shop small enough
+    // that it fits in one cache page (PLAN §21, useMasterCache.ts) — the
+    // common case, and `totalCount` below is exact for it. Past that page
+    // size `rows` only grows as searches merge more in, so `totalCount`
+    // becomes a lower bound rather than the true count; a real count query
+    // would need its own DataPort method, deferred until a kind that large
+    // is an actual reported problem rather than a hypothetical one.
     const selected: MasterRow | null = selectedId
         ? (rows.find((row) => row.MasterId === selectedId) ?? null)
         : null;

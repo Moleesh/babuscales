@@ -93,7 +93,11 @@ CREATE TABLE IF NOT EXISTS journal (
   DEFAULT 0, body TEXT NOT NULL
 );
 
--- contentless: without content='', FTS5 stores a SECOND full copy of all
--- indexed text, roughly doubling text storage for no benefit.
-CREATE VIRTUAL TABLE IF NOT EXISTS doc_fts    USING fts5(text, content='', tokenize='unicode61');
-CREATE VIRTUAL TABLE IF NOT EXISTS master_fts USING fts5(text, content='', tokenize='unicode61');
+-- doc_fts/master_fts (contentless FTS5 virtual tables) were dropped here —
+-- PLAN §21 flagged them as dead: created but never queried by anything.
+-- Masters search instead does a plain `LIKE`/keyset-paginated scan
+-- (commands/masters.rs, useMasterListPage.ts) and the client-side substring
+-- filter in useMasterCache.ts; real FTS5 wiring is deferred until it's
+-- actually needed, not maintained half-built. No installed database has
+-- ever shipped with these tables (no licence has gone out yet — PLAN §23
+-- item 4), so there is nothing to migrate away from on an existing file.
