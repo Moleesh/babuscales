@@ -33,7 +33,7 @@
     border-width: 3px;
 }
 
-.srOnly {
+.sr-only {
     position: absolute;
     width: 1px;
     height: 1px;

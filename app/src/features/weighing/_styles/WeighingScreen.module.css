@@ -107,13 +107,13 @@
    under a field. Block reuses --alert (same red the licence-gated hint
    would use), Warn/Note use --warn; neither is a new visual tier beyond
    what tokens.css already defines. */
-.fieldError {
+.field-error {
     font-size: 0.6875rem;
     color: var(--alert);
     margin: 2px 0 0;
     line-height: 1.5;
 }
-.fieldWarn {
+.field-warn {
     font-size: 0.6875rem;
     color: var(--warn);
     margin: 2px 0 0;
