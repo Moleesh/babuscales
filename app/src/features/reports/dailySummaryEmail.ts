@@ -29,17 +29,19 @@ export const nowLocalHm = (): string => {
 
 /**
  * True once a whole scheduled day has been skipped outright — not just
- * "today's `Time` hasn't come up yet." PLAN §21's "an OS-level scheduler for
- * the daily summary" gap: there's no background service to wake a closed
- * app at `DailySummary.Time`, so a site whose operating hours never
- * straddle that time (open 8–18, `Time` "20:00") would otherwise never send
- * a single summary — `App.tsx`'s `checkDue` waits on `nowLocalHm() >=
- * cfg.Time`, which never becomes true while the app is closed at 20:00
- * every day. Once the gap is this wide, `checkDue` sends on the very next
+ * "today's `Time` hasn't come up yet." Now mostly a fallback: the real fix
+ * for a site whose hours never straddle `DailySummary.Time` is
+ * `App.tsx`'s `DailySummaryTaskSync`, a genuine Windows Task Scheduler
+ * entry that wakes the app headlessly right at `Time` regardless of
+ * whether it's open (`@engines/scheduler`,
+ * `src-tauri/src/commands/scheduler.rs`). This function still backstops
+ * the cases that don't reach: the OS task disabled, a non-Windows dev
+ * build, or the machine having been fully off across the scheduled moment
+ * — `App.tsx`'s in-app `checkDue` waits on `nowLocalHm() >= cfg.Time`,
+ * which never becomes true on its own once the app was closed at that
+ * exact time, so once the gap is this wide it sends on the very next
  * launch regardless of the clock — a late summary beats a silently
- * skipped one. A real fix (Windows Task Scheduler launching a headless
- * send, or a background service) stays open; this only shortens "never" to
- * "at most a couple of days late."
+ * skipped one.
  */
 export const isMoreThanOneDayLate = (lastSentDate: string | null, today: string): boolean => {
     if (!lastSentDate) return false;

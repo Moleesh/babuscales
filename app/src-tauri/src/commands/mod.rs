@@ -19,6 +19,7 @@ pub mod masters;
 pub mod net;
 pub mod outbox;
 pub mod printers;
+pub mod scheduler;
 pub mod sms;
 pub mod tally;
 pub mod tunnel;

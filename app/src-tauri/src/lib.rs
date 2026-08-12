@@ -55,6 +55,18 @@ pub fn run() -> tauri::Result<()> {
                 verification_server: net::new_state(),
                 tunnel: net::tunnel::new_state(),
             });
+            // Headless daily-summary launch (`--daily-summary`, from the
+            // Task Scheduler entry `commands::scheduler::sync_daily_summary_task`
+            // registers): hide the window immediately rather than flashing
+            // the full UI on screen for what's meant to be an unattended
+            // background send. `App.tsx` still boots normally underneath —
+            // it's the one that notices the same flag, runs the send, and
+            // calls `exit_app` when done.
+            if commands::scheduler::is_headless_daily_summary() {
+                if let Some(window) = app.get_webview_window("main") {
+                    window.hide()?;
+                }
+            }
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -105,6 +117,9 @@ pub fn run() -> tauri::Result<()> {
             commands::webhook::send_webhook,
             commands::tally::write_tally_export,
             commands::board::send_board_message,
+            commands::scheduler::sync_daily_summary_task,
+            commands::scheduler::is_headless_daily_summary,
+            commands::scheduler::exit_app,
         ])
         .run(tauri::generate_context!())
 }

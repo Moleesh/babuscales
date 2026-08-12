@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { AppShell } from "@components/AppShell";
 import type { AppShellTab } from "@components/AppShell";
@@ -19,6 +19,8 @@ import type { IndicatorSource } from "@engines/indicator";
 import { createIndicatorSource } from "@engines/indicator/createIndicatorSource";
 import { createLicensingSource } from "@engines/licensing/createLicensingSource";
 import { reconcileOutboxOutcome } from "@engines/outbox";
+import type { SchedulerSource } from "@engines/scheduler";
+import { createSchedulerSource } from "@engines/scheduler/createSchedulerSource";
 import { DEFAULT_TICKET_SCHEMA, SchemaProvider } from "@engines/schemaEngine";
 import type { Schema } from "@engines/schemaEngine";
 import { TunnelProvider } from "@engines/tunnel";
@@ -352,27 +354,30 @@ const SerialConnectionSync = ({ indicator }: IndicatorSyncProps) => {
 
 // Task #45 — PLAN §18's "scheduled daily summary". Same "Applied
 // immediately" shape as the Sync components above, but on a timer instead
-// of a settings-change effect: no background worker/service exists in this
-// app (app/README.md known gap), so this is the entire scheduler — a
-// once-a-minute check, while the app happens to be open, for "has today's
-// scheduled time passed, and did today's summary not already go out."
-// `DailySummary.LastSentDate` (advanced via `recordDailySummarySent`,
-// regardless of send success) is what stops a satisfied check from firing
-// again next minute, and what stops a relaunch later the same day from
-// re-sending. One attempt from here, same as `WeighingScreen`'s own
-// per-ticket e-mail/SMS (see its own comments) — but unlike before the
-// outbox-worker task, a failure here isn't a dead end: `reconcileOutboxOutcome`
-// (outboxBackoff.ts) gives the row a backoff `NextTryAt`, and
-// `useOutboxWorker.ts` is what actually retries it, so a misconfigured SMTP
-// relay gets a few more automatic tries over the following hour, not just
-// once a day.
+// of a settings-change effect — a once-a-minute check, while the app
+// happens to be open, for "has today's scheduled time passed, and did
+// today's summary not already go out." `DailySummary.LastSentDate`
+// (advanced via `recordDailySummarySent`, regardless of send success) is
+// what stops a satisfied check from firing again next minute, and what
+// stops a relaunch later the same day from re-sending. One attempt from
+// here, same as `WeighingScreen`'s own per-ticket e-mail/SMS (see its own
+// comments) — but unlike before the outbox-worker task, a failure here
+// isn't a dead end: `reconcileOutboxOutcome` (outboxBackoff.ts) gives the
+// row a backoff `NextTryAt`, and `useOutboxWorker.ts` is what actually
+// retries it, so a misconfigured SMTP relay gets a few more automatic
+// tries over the following hour, not just once a day.
 //
 // `isMoreThanOneDayLate` (dailySummaryEmail.ts) covers the machine-asleep
-// case PLAN §21 flags: a site whose hours never straddle `cfg.Time` would
-// otherwise never send at all, since nothing here runs while the app is
-// closed. It only shortens "never" to "late" — a real OS-level scheduler
-// (Task Scheduler waking a headless send, or a background service) stays
-// an open gap, not solved here.
+// case: a site whose hours never straddle `cfg.Time` would otherwise never
+// send at all this way, since nothing here runs while the app is closed —
+// it shortens "never" to "late." The real fix is `DailySummaryTaskSync`/
+// `HeadlessDailySummarySync` below, which register a genuine Windows Task
+// Scheduler wake (`@engines/scheduler`, `src-tauri/src/commands/scheduler.rs`)
+// — PLAN §21's "true OS-level scheduler" gap. This per-minute check stays
+// as the belt to that OS-level suspenders': it still catches the case a
+// site never lets the OS task register at all (disabled, non-Windows dev
+// build) or the one time the machine happens to be already open and idle
+// right as `cfg.Time` ticks over.
 const DailySummarySync = () => {
     const db = useDataPort();
     const { settings, recordDailySummarySent } = useSettings();
@@ -429,6 +434,86 @@ const DailySummarySync = () => {
         amountDp,
         recordDailySummarySent,
     ]);
+
+    return null;
+};
+
+// PLAN §21's "true OS-level scheduler" — registers (or removes) the Windows
+// Task Scheduler entry that launches this app with `--daily-summary` at
+// `cfg.Time` every day, so the send happens even if the app is closed at
+// that moment (`@engines/scheduler`, `src-tauri/src/commands/scheduler.rs`).
+// One `sync` call per Enabled/Time change, same "applied immediately"
+// shape as every other Settings side effect in this file — `loading` guards
+// the very first render so a fresh install's `SYNC_DEFAULT_BODY` (Enabled:
+// false) doesn't race a real row that turns out to have Enabled: true.
+const DailySummaryTaskSync = ({ scheduler }: { scheduler: SchedulerSource }) => {
+    const { settings, loading } = useSettings();
+    const cfg = settings.DailySummary;
+
+    useEffect(() => {
+        if (loading) return;
+        void scheduler.syncDailySummaryTask(cfg.Enabled, cfg.Time);
+    }, [scheduler, loading, cfg.Enabled, cfg.Time]);
+
+    return null;
+};
+
+// The other half of the OS-level scheduler: what actually runs once
+// Windows launches this process with `--daily-summary`. `lib.rs`'s `setup`
+// already hid the window before the webview loaded, so nothing here ever
+// paints — this sends today's summary unconditionally once `settings` has
+// actually loaded (no `nowLocalHm()`/`LastSentDate` gate the way
+// `DailySummarySync`'s own per-minute check needs one — the OS already
+// picked the right moment to launch this process), then exits. Deliberately
+// its own small duplicate of `DailySummarySync`'s send logic rather than a
+// shared helper — same "one attempt, not a shared abstraction" precedent
+// that component's own header comment already sets for this file.
+const HeadlessDailySummarySync = ({ scheduler }: { scheduler: SchedulerSource }) => {
+    const db = useDataPort();
+    const { settings, loading, recordDailySummarySent } = useSettings();
+    const [email] = useState(() => createEmailSource());
+    const cfg = settings.DailySummary;
+    const smtp = settings.Smtp;
+    const amountDp = settings.Formats.AmountDp;
+    // `recordDailySummarySent` persisting mid-send re-renders this
+    // component, which would otherwise re-run the effect and fire a second
+    // send before `exit_app`'s IPC round-trip actually kills the process —
+    // this ref makes the one-shot intent (headless launch → one attempt →
+    // exit) hold regardless of how many times React re-runs the effect.
+    const hasRunRef = useRef(false);
+
+    useEffect(() => {
+        if (loading || hasRunRef.current) return;
+        hasRunRef.current = true;
+        void (async () => {
+            const headless = await scheduler.isHeadlessDailySummary();
+            if (!headless) return;
+            const to = cfg.Recipient.trim();
+            if (cfg.Enabled && to) {
+                const today = todayLocalDate();
+                const docs = await db.listDocs({ DocKind: "Ticket" });
+                const { subject, body } = buildDailySummaryEmail(docs, today, amountDp);
+                const outboxRow = await db.enqueueOutbox({
+                    Channel: "Email",
+                    Body: { Kind: "DailySummary", Date: today, To: to },
+                });
+                const result = await email.send({
+                    host: smtp.Host,
+                    port: smtp.Port,
+                    username: smtp.Username,
+                    to,
+                    subject,
+                    body,
+                });
+                await db.updateOutbox(
+                    outboxRow.OutboxId,
+                    reconcileOutboxOutcome(result, outboxRow.Attempts),
+                );
+                await recordDailySummarySent(today);
+            }
+            await scheduler.exitApp();
+        })();
+    }, [db, email, scheduler, loading, cfg.Enabled, cfg.Recipient, smtp, amountDp, recordDailySummarySent]);
 
     return null;
 };
@@ -509,6 +594,7 @@ export const App = () => {
     const [verificationServer] = useState(() => createVerificationServerSource());
     const [tunnel] = useState(() => createTunnelSource());
     const [licensing] = useState(() => createLicensingSource());
+    const [scheduler] = useState(() => createSchedulerSource());
     const { packs, addLanguagePack } = useAppLanguagePacks(db);
     const { ticketSchema, setTicketSchema } = useAppTicketSchema(db);
 
@@ -526,6 +612,8 @@ export const App = () => {
                                         <VerificationServerSync source={verificationServer} />
                                         <RemoteAccessSync source={tunnel} />
                                         <DailySummarySync />
+                                        <DailySummaryTaskSync scheduler={scheduler} />
+                                        <HeadlessDailySummarySync scheduler={scheduler} />
                                         <OutboxWorkerSync />
                                         <Shell onAddLanguagePack={addLanguagePack} />
                                     </SchemaProvider>
