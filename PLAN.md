@@ -1246,97 +1246,54 @@ start" list and its "Known gap" section; per-feature current state lives in `doc
 | **3 Print** | Content model, three layout engines, six real v1 formats, printer capability profiles | **Done, scoped down** — no Windows RAW/ESC-P spooler path (§15.2); printer profiles are a curated fixture list, not per-printer capability lookups |
 | **4 Capture** | 4(→8) cameras, crop, overlay, ONVIF/RTSP, clips, retention, live view | **Not really done** — cameras are the reference mock's own decorative fixture; no real USB/IP/RTSP capture exists |
 | **5 Insight** | Reports, dashboard, Excel/CSV export, custom indexes, mass print | **Done** — "custom indexes" are named report-view presets, not real expression indexes (`indexEngine` is an empty stub) |
-| **6 Trust & release** | QR verification, licensing, installer, docs, landing page | **Done** — not yet pushed to a remote, so CI and the Pages demo have never actually run |
+| **6 Trust & release** | QR verification, licensing, installer, docs, landing page | **Done** — pushed to `origin` and CI/Pages have run green before; local `main` currently sits a few commits ahead, next push pending (task #20) |
 | **7 Reach** | Remote access, email/SMS, scheduled reports, multi-gross, legacy v1/v2 import, MiMaS, Android | **Done except MiMaS** (blocked, no spec) **and WhatsApp** (permanently decorative, by decision — no compliant free delivery path) |
 | **8 Deferred by decision** | **ANPR** · **visual template designer** · **anomaly detection**. Designed for, not built | Correctly still untouched |
-| **9 Tests** | Full suite — last phase, by decision | **Paused mid-flight** — `src/components/`, `src/constants/`, `src/engines/formulaEngine/` covered (114 tests); rest on hold by explicit request |
+| **9 Tests** | Full suite — last phase, by decision | **Done for pure logic** — `db/`, `engines/*`, `settingsSchema.ts` covered (324 tests, 41 files); component/integration tests for Settings/Masters/Dashboard/Cameras still uncovered, not scheduled |
 
-### What's left — ordered by effort, smallest first
+### What's left — the single source of truth
 
-Task #62 was a four-way parallel review (frontend, Rust backend, build/CI/docs, dependency scan)
-run after the `_styles/`/`__tests__/` folder migration. Its **security/correctness findings are
-already fixed** — folded below into the list they belong to, not kept as a separate task. What's
-left is the actual remaining engineering backlog, smallest lift first so it can be worked down in
-order. Business and design **decisions** (pricing, logo, MiMaS spec, etc.) are not engineering
-effort and are not this list — they live in §23, set aside on their own.
+This is the complete, current backlog — everything else in this document (and `app/README.md`'s
+changelog, `docs/Features.md`'s per-feature table) is history, not a second list to reconcile
+against. Bug tracking starts after this list, so this is the last time the backlog gets
+hand-merged from scattered notes — from here on, update this section directly as items close or
+open. Business/design **decisions** (pricing, logo, etc. — nothing here needs one) live in §23.
 
-**Small — a session or less each — all done**
-- ~~`docs/CodingStandards.md` drift cleanup~~ — done. Removed the Husky pre-commit-hook, `clippy.toml`,
-  `docs/DecisionLog.md` and `quality:report` claims, and the ~9 undocumented `components/` primitives
-  (`Sidebar`, `Topbar`, `AppConfirmDialog`, `FeedbackStates`, etc.). `CameraTile` moved from
-  `features/cameras/` into `components/CameraTile/` (barrel + `.types.ts` + `_styles/`), closing the
-  layering violation the doc itself warned against.
-- ~~Dependency upgrades~~ — done. `zod` 3→4 (`z.record()` two-arg fix in `db/schemas.ts` and
-  `i18n/schemas.ts`), `typescript-eslint` → `^8.67.0` (`typescript` held at `^5.7.3` as required), Rust
-  `windows` → `0.62`, `thiserror` → `2`. `cargo clippy`/`fmt --check` and `npm run typecheck`/`lint:strict`/`build`
-  all clean.
-- ~~Reports date-range filter~~ — done. `filterRowsByDateRange` in `reportRows.ts`, two native
-  `<input type="date">` inputs (`ReportsDateRangeRow`) scoping both Tickets and Summary views plus
-  print/export; the open-ticket strip's `waitingCount` deliberately stays unscoped by date (§7.5).
-- ~~License enforcement hard-block in Rust~~ — done. `licensing::require_licensed` re-derives license
-  state from the `config` table independently of the frontend and gates `save_doc`, closing the
-  bypass where a direct `invoke("save_doc", ...)` skipped the frontend's `licenseGated` check.
-- ~~OS-level scheduler for the daily summary~~ — partially done, honestly: still an in-app check, not
-  a real background/OS-level scheduler, but it now catches up immediately on launch if a whole day
-  was skipped (machine off/app closed at the scheduled time), rather than silently staying silent
-  until the next scheduled time next day. True OS-level scheduling remains unbuilt.
+**Done (kept as a record, not re-litigated):**
+`docs/CodingStandards.md` drift cleanup · dependency upgrades (zod 4, typescript-eslint,
+Rust `windows`/`thiserror`) · Reports date-range filter · license hard-block in Rust ·
+expression-index manager MVP · Masters keyset pagination · multi-gross itemised print line +
+park-mid-sequence investigation (already correct, no change needed) · background outbox worker ·
+schema-driven generic field rendering · i18n coverage, now repo-wide · disabled-cursor/stale-checkbox
+bug fixes · dead-data cleanup · responsive layout audit · UI polish pass · README/Features.md
+accuracy pass · print preview verification · test coverage for pure logic (324 tests, 41 files) ·
+`app/src/components/Field`'s `label`/`searchTitle` migrated to `string | Localized` so static
+captions route through the flat `t()`/JSON-pack system instead of inline literals.
 
-**Medium — a focused multi-day effort each**
-- ~~Expression-index manager (§6.3)~~ — MVP done (create/list/drop). Definitions persist as `config`
-  rows (`ConfigKind: "Index"`) via the existing generic config commands; the two genuinely new
-  DataPort methods (`createCustomIndex`/`dropCustomIndex`) run the real `CREATE INDEX`/`DROP INDEX`
-  DDL server-side. SQLite can't parameterise identifiers, so every string that reaches
-  `conn.execute` is validated first: `table` is a closed Rust enum (not a free string), the JSON path
-  and the derived index name are each checked against a strict letters/digits/underscore allowlist
-  (`src-tauri/src/commands/indexes.rs`), and `drop_custom_index` re-validates the name read back from
-  its own stored config row before using it — never trusting a value just because this code wrote it.
-  Drop is a soft-delete (`Body.Active = false`) rather than a new generic delete-config method.
-  Admin-gated Settings card (`IndexManagerCard`). Out of scope: size/usage stats, slow-query
-  suggestions, and wiring query code to actually use these indexes.
-- A background outbox worker — webhook, cloud backup, Tally export and the outdoor display board
-  toggles persist with no worker draining them; email/SMS/verification are a synchronous "drain of
-  one" at print time, not a retry queue.
-- ~~FTS5 + virtualised/keyset-paginated Masters search at scale~~ — keyset pagination done (not FTS5
-  or virtualisation, still out of scope). `MasterQuery.After: {Name, MasterId}` composite cursor
-  (`Name` alone isn't unique), threaded through the Rust `list_masters` SQL (parameterised
-  `:after_name`/`:after_master_id`, explicit `COLLATE NOCASE` since a SQLite row-value compare would
-  disagree with the `NOCASE` `ORDER BY`) and the memory adapter identically. New `useMasterListPage`
-  hook drives the visible Masters list with its own paginated round-trips + a "Load more" button;
-  `useMasterCache` (record selection, forms, every `SearchableDropdown`) is untouched, so it still
-  loads a whole kind up front — true memory-footprint relief at 100,000+ rows needs that hook changed
-  too, tracked as the remaining gap.
-- Wire the formula engine to live billing — `Charge`/`Value` are hand-computed, not
-  formula-evaluated, even though the formula engine itself is built and tested.
-- i18n content coverage — the Weighing feature is now routed through translation (39 new keys;
-  `OpenTicketStrip`/`RecallBanner`/`ActionsCard`/`CalcCard`/`TicketFieldsCard`/`WeighingRightColumn`).
-  Every other feature (Dashboard, Reports, Masters, Settings, Cameras) is still hardcoded English —
-  this was deliberately scoped to one bounded increment rather than the whole app.
-- ~~Multi-gross: an itemised per-load print line~~ — done. `SlipData.GrossLoads` (one entry per Gross
-  capture) threaded through `buildSlipData`/`useSlipData`, a compact per-load table on the A4 slip
-  (`SlipLoadsTable`), and matching lines in both mono renderers; length <= 1 renders identically to
-  before, so a non-multi-gross ticket's printed output is untouched.
-  "Park a ticket mid-sequence" — investigated, turned out to already be how the feature works, not a
-  gap: captures accumulate unsaved on screen while the operator keeps adding Gross loads (`kind` stays
-  offering "Gross" the whole time under MultiGross — `ActionsCard`/`captureStatus.ts`), and Save is the
-  explicit "finish this ticket" action regardless of how many loads it holds (`weigh.bothWeightsCaptured`
-  / `weigh.captureAnotherGross` strings say so outright: "Save to finish this ticket"). There's no
-  scenario where a ticket needs to be *saved* mid-sequence and resumed later with more loads still to
-  add — that would mean inventing new state-machine semantics the mock/PLAN never called for. Left
-  `useWeighingTicket.ts`'s lock-on-`captures.length>=2` and `ticketBody.ts`'s `isOpenTicket` exactly as
-  they are.
+**Next up — pick in this order once current work lands:**
 
-**Large — genuine subsystem work**
-- Schema-driven generic field rendering, and `VisibleWhen`/`RequiredWhen`/`ReadOnlyWhen`/`Validate`
-  formula evaluation against the ticket (§8) — a custom field validates and saves but renders no
-  input today.
-- Windows RAW/ESC-P spooler path (§15.2) — all printing still goes through the OS print dialog;
-  this was always flagged as the project's largest technical risk (WebView2→pdfium→spooler, §15.2).
-- Real camera capture (USB/IP/RTSP/ONVIF) — cameras are currently decorative (Phase 4).
+1. **Wire the formula engine to live billing.** `Charge`/`Value` are still hand-computed even
+   though the formula engine itself is built and tested (§2 Core). Nobody has touched this yet.
+2. **True OS-level scheduler for the daily summary.** Still an in-app check that catches up on
+   launch if a day was skipped — not a real background/OS-level scheduler.
+3. **Masters search — close the memory-footprint gap.** Keyset pagination (`useMasterListPage`)
+   is done, but `useMasterCache` (record selection, forms, every `SearchableDropdown`) still loads
+   a whole kind up front; needs that hook changed too for real relief at 100,000+ rows. FTS5
+   virtual tables (`doc_fts`/`master_fts`) exist in `schema.sql` but nothing queries them —
+   either wire them up or drop them, don't leave them dead.
 
-**Deferred by decision (Phase 8, unchanged)** — ANPR, visual template designer, anomaly detection.
-Designed for, not built; revisit only if the decision is revisited.
+**Deferred by decision — designed for, not built, revisit only if the decision is revisited:**
 
-**Blocked externally** — MiMaS, no spec yet (§23.3). Nothing to schedule until one arrives.
+4. **Windows RAW/ESC-P spooler path (§15.2).** Printing goes through the OS print dialog instead.
+   Flagged from the start as the project's largest technical risk (WebView2 → pdfium → spooler).
+5. **Real camera capture (USB/IP/RTSP/ONVIF).** Cameras are decorative by Phase-4 scope decision.
+6. **ANPR, visual template designer, anomaly detection** (Phase 8). Designed for, not built.
+7. **WhatsApp delivery.** Permanently decorative — no compliant free delivery path exists.
+
+**Blocked externally — always kept open at the bottom, nothing to schedule until it clears:**
+
+8. **MiMaS integration.** Tamil Nadu's e-permit-to-weighbridge mandate. Blocked on the spec from
+   the external body — task #48 is blocked, not in progress. Revisit the moment a spec arrives.
 
 **On tests.** Your call stands and I will not revisit it. Recorded once so the trade is explicit:
 the risk is not retrofit effort — `engines/` are pure, so tests drop in cleanly — it is that silent
@@ -1399,12 +1356,11 @@ record is ever needed. Every item in §21 is actionable without waiting on any o
 5. **Rotate the ngrok authtoken committed in v2's `ngrok.yml`.** Inherited from the prior product,
    not present in this repo. Needs: access to whatever system still holds v2's history — outside
    this repo's control entirely.
-6. **Push to the configured GitHub remote.** `origin` is set (`git@github.com:Moleesh/babuscales.git`),
-   `.github/workflows/{ci,pages,release}.yml` are authored and valid, but none has ever run — CI has
-   never checked a real push, and the Pages demo has never deployed. Needs: an explicit go-ahead to
-   push (standing project rule — this is an authorization gate, not a missing decision, but it belongs
-   here rather than §21 because no engineering work follows from deciding it beyond confirming the
-   three workflows go green).
+6. **Push the current local commits to the configured GitHub remote.** `origin` is set
+   (`git@github.com:Moleesh/babuscales.git`); `ci`/`pages` have already run green on an earlier
+   push, so the workflows themselves are proven — this item is just about pushing whatever's
+   accumulated locally since (tracked as task #20). Needs: an explicit go-ahead to push (standing
+   project rule — an authorization gate, not a missing decision).
 
 **Resolved, not open:** admin unlock window — ten minutes, implemented and confirmed as-is;
 revisit only if a site actually asks.
