@@ -3,6 +3,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { AppShell } from "@components/AppShell";
 import type { AppShellTab } from "@components/AppShell";
 import { ContextualHelp } from "@components/ContextualHelp";
+import { CustomCursor } from "@components/CustomCursor";
 import { WeightDisplay } from "@components/WeightDisplay";
 import { createDataPort } from "@db/createDataPort";
 import { DataPortProvider } from "@db/DataPortProvider";
@@ -786,6 +787,7 @@ export const App = () => {
 
     return (
         <I18nProvider packs={packs}>
+            <CustomCursor />
             <DataPortProvider db={db}>
                 <SettingsProvider>
                     <LicenseProvider source={licensing}>

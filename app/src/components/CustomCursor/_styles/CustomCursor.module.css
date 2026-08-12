@@ -1,0 +1,87 @@
+/* The custom pointer graphic itself — a small ring + dot pair, in the same
+   amber/led language as AppShell's BrandMark. Position comes from a
+   transform written directly by CustomCursor.tsx (rAF loop), never from
+   React re-renders, so this stays cheap under fast mouse movement. */
+.cursor {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 0;
+    height: 0;
+    pointer-events: none;
+    z-index: 9998;
+    will-change: transform;
+}
+
+.ring {
+    position: absolute;
+    top: -14px;
+    left: -14px;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 1.5px solid var(--led-dim);
+    transition:
+        width 0.15s ease,
+        height 0.15s ease,
+        top 0.15s ease,
+        left 0.15s ease,
+        border-color 0.15s ease,
+        opacity 0.15s ease;
+}
+
+.dot {
+    position: absolute;
+    top: -3px;
+    left: -3px;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--led);
+    transition:
+        transform 0.1s ease,
+        background-color 0.15s ease;
+}
+
+.cursor.hover .ring {
+    width: 38px;
+    height: 38px;
+    top: -19px;
+    left: -19px;
+    border-color: var(--led);
+}
+.cursor.hover .dot {
+    background: var(--led);
+    transform: scale(1.3);
+}
+
+.cursor.pressed .ring {
+    width: 22px;
+    height: 22px;
+    top: -11px;
+    left: -11px;
+    opacity: 0.7;
+}
+.cursor.pressed .dot {
+    transform: scale(0.7);
+}
+
+/* Native cursor is hidden app-wide while the follower is active — except
+   over anything that already tells the operator "you can type here" per
+   base.css's own text-cursor selector list (Cursor + interaction feedback
+   section). Reusing that list rather than re-deriving it keeps the two in
+   sync; if base.css ever adds a text-input case, mirror it here. */
+:global(body.custom-cursor-active) {
+    cursor: none;
+}
+:global(body.custom-cursor-active *) {
+    cursor: none;
+}
+:global(body.custom-cursor-active)
+    input:not([type="checkbox"]):not([type="radio"]):not([type="button"]):not([type="submit"]):not(
+        [type="range"]
+    ):not([readonly]):not(:disabled),
+:global(body.custom-cursor-active) textarea:not([readonly]):not(:disabled),
+:global(body.custom-cursor-active) [contenteditable="true"] {
+    cursor: text;
+}
