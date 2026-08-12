@@ -8,6 +8,13 @@
     justify-content: flex-end;
 }
 
+.loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 0;
+}
+
 /*
  * Ported from demo/BabuScales-demo.html's ".kpis"/".kpi"/".kpi.accent"/".kpi .v"/".kpi .d",
  * then reworked (2 complaints about a lopsided "4 then 1 alone" row) to keep 5 cards

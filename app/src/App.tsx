@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import { AppShell } from "@components/AppShell";
 import type { AppShellTab } from "@components/AppShell";
@@ -296,8 +296,9 @@ const Shell = ({ onAddLanguagePack }: ShellProps) => {
     const [helpOpen, setHelpOpen] = useState(false);
     const reading = useIndicatorReading();
     const db = useDataPort();
-    const { settings } = useSettings();
+    const { settings, loading: settingsLoading } = useSettings();
     const license = useLicense();
+    useRemoveInitialSplash(!settingsLoading);
     const ticket = useWeighingTicket(
         settings.Rules.TareFirst,
         settings.OperatorName,
@@ -676,6 +677,18 @@ const useAppTicketSchema = (db: ReturnType<typeof useDataPort>) => {
     };
 
     return { ticketSchema, setTicketSchema };
+};
+
+// index.html's #app-splash covers the gap before Settings (the last thing
+// Shell needs before its first real paint — everything else in App's
+// provider stack renders unconditionally with a sane default) finishes its
+// first load. `useLayoutEffect` removes it just before the browser paints
+// the real shell, so there's no flash of both.
+const useRemoveInitialSplash = (ready: boolean): void => {
+    useLayoutEffect(() => {
+        if (!ready) return;
+        document.getElementById("app-splash")?.remove();
+    }, [ready]);
 };
 
 export const App = () => {

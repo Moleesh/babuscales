@@ -47,7 +47,7 @@ export const ReportsScreen = ({ onOpenTicket, reportsIntent = null }: ReportsScr
     const { t, lang } = useTranslation();
     const { settings } = useSettings();
     const amountDp = settings.Formats.AmountDp;
-    const docs = useReportDocs(db);
+    const { docs, loading } = useReportDocs(db);
     const s = useReportsScreenController({
         db,
         docs,
@@ -64,7 +64,7 @@ export const ReportsScreen = ({ onOpenTicket, reportsIntent = null }: ReportsScr
 
     return (
         <div className={styles.screen}>
-            <ReportsScreenCard s={s} onSeedDemoTickets={onSeedDemoTickets} />
+            <ReportsScreenCard s={s} loading={loading} onSeedDemoTickets={onSeedDemoTickets} />
             <ReportsScreenOverlays
                 reportSlipData={s.reportSlipData}
                 printOpen={s.printOpen}

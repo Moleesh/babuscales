@@ -200,6 +200,7 @@ export const EN_STRINGS: Record<string, string> = {
     "dashboard.recent.col.net": "Net",
     "dashboard.recent.col.at": "At",
     "dashboard.recent.empty": "No tickets yet",
+    "dashboard.loading": "Loading dashboard…",
 
     "settings.amountFields.twoDecimals": "2 decimals — ₹ 250.00",
     "settings.amountFields.wholeRupees": "Whole rupees — ₹ 250",
@@ -303,6 +304,7 @@ export const EN_STRINGS: Record<string, string> = {
     "settings.fixedPolicy.noFile.detail": "Every setting on this screen is a row in the database.",
 
     "reports.title": "Reports",
+    "reports.loading": "Loading tickets…",
     "reports.view.tickets": "Tickets",
     "reports.view.summary": "Summary",
     "reports.viewAriaLabel": "View",

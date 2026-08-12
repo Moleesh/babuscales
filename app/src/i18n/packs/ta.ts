@@ -213,6 +213,7 @@ export const TA_PACK: LanguagePack = {
         "dashboard.recent.col.net": "நிகரம்",
         "dashboard.recent.col.at": "நேரம்",
         "dashboard.recent.empty": "இதுவரை டிக்கெட்டுகள் இல்லை",
+        "dashboard.loading": "டாஷ்போர்டு ஏற்றுகிறது…",
 
         "settings.amountFields.twoDecimals": "2 தசம இடம் — ₹ 250.00",
         "settings.amountFields.wholeRupees": "முழு ரூபாய் — ₹ 250",
@@ -316,6 +317,7 @@ export const TA_PACK: LanguagePack = {
         "settings.fixedPolicy.noFile.detail": "இந்தத் திரையிலுள்ள ஒவ்வொரு அமைப்பும் தரவுத்தளத்தில் ஒரு வரிசை.",
 
         "reports.title": "அறிக்கைகள்",
+        "reports.loading": "டிக்கெட்டுகள் ஏற்றுகிறது…",
         "reports.view.tickets": "டிக்கெட்டுகள்",
         "reports.view.summary": "சுருக்கம்",
         "reports.viewAriaLabel": "காட்சி",

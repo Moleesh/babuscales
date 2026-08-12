@@ -1,6 +1,7 @@
 import { DataTable } from "@components/DataTable";
 import type { DataTableColumn } from "@components/DataTable";
 import { SegmentedControl } from "@components/SegmentedControl";
+import { Spinner } from "@components/Spinner";
 import { useTranslation } from "@i18n/useTranslation";
 
 import { TicketsSortRow } from "./TicketsSortRow";
@@ -19,6 +20,7 @@ export interface TicketsViewProps {
     onSortDirChange: (sortDir: SortDir) => void;
     columns: DataTableColumn<TicketRow>[];
     rows: TicketRow[];
+    loading: boolean;
 }
 
 // Split out of ReportsScreen (over the line/complexity budget —
@@ -36,6 +38,7 @@ export const TicketsView = ({
     onSortDirChange,
     columns,
     rows,
+    loading,
 }: TicketsViewProps) => {
     const { t } = useTranslation();
     return (
@@ -63,7 +66,15 @@ export const TicketsView = ({
                 columns={columns}
                 rows={rows}
                 getRowId={(row) => row.docId}
-                emptyMessage={t("reports.ticketsEmpty")}
+                emptyMessage={
+                    loading ? (
+                        <span className={styles.loadingRow}>
+                            <Spinner size="sm" label={t("reports.loading")} /> {t("reports.loading")}
+                        </span>
+                    ) : (
+                        t("reports.ticketsEmpty")
+                    )
+                }
             />
         </>
     );
