@@ -234,6 +234,9 @@ export const EN_STRINGS: Record<string, string> = {
     "settings.dailySummary.recipientEmail": "Recipient e-mail",
 
     "components.appShell.sections": "Sections",
+    "components.appShell.more": "More",
+    "components.appShell.pinOn": "Keep window on top (on) — click to turn off",
+    "components.appShell.pinOff": "Keep window on top (off) — click to turn on",
     "components.contextualHelp.close": "Close help",
 
     "settings.dateTimeFormats.title": "Date, time & amounts",
