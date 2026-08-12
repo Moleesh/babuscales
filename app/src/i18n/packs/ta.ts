@@ -62,6 +62,14 @@ export const TA_PACK: LanguagePack = {
         "weigh.weightInMotion": "எடை அசைவில் உள்ளது — நிலையாகும் வரை பதிவு தடுக்கப்பட்டுள்ளது.",
 
         "weigh.capturedAndCalculated": "பதிவு செய்து கணக்கிடப்பட்டது",
+        "weigh.draft": "வரைவு",
+        "weigh.capture.bothCaptured": "இரு எடைகளும் பதிவு செய்யப்பட்டன",
+        "weigh.capture.anotherGross": "மற்றொரு மொத்த எடையைப் பதிவு செய்",
+        "weigh.capture.gross": "மொத்த எடையைப் பதிவு செய்",
+        "weigh.capture.tare": "காலி எடையைப் பதிவு செய்",
+        "weigh.capture.saveToFinish": "இந்த டிக்கெட்டை முடிக்க சேமிக்கவும்",
+        "weigh.capture.stableNow": "நிலையானது — இப்போது பதிவு செய்யவும்",
+        "weigh.capture.waitingForStable": "நிலையான அளவீட்டிற்காக காத்திருக்கிறது",
         charge: "கட்டணம்",
         "weigh.loadsSuffix": "சுமைகள்",
         "weigh.manualWeightPlaceholder": "கிகி",
@@ -229,6 +237,11 @@ export const TA_PACK: LanguagePack = {
         "settings.connections.title": "இணைப்புகள்",
         "settings.connections.desktopOnlyHint":
             "சீரியல் போர்ட் அமைவு டெஸ்க்டாப் செயலியில் மட்டுமே கிடைக்கும் — இந்த டெமோவில் (மற்றும் GitHub Pages கட்டமைப்பில்) இணைக்க உண்மையான வன்பொருள் இல்லை, எனவே இங்குள்ள மீட்டர் எப்போதும் உருவகப்படுத்தப்பட்டதே.",
+        "settings.email.title": "மின்னஞ்சல் விநியோகம்",
+        "settings.email.testSendLabel": "சோதனை மின்னஞ்சலை அனுப்பவும்",
+        "settings.email.sendTest": "சோதனையை அனுப்பு",
+        "settings.email.hint":
+            "மேலே உள்ள SMTP ஹோஸ்ட்/போர்ட்/பயனர்பெயர் வழியாக அனுப்பப்படும் — கடவுச்சொல் Windows Credential Manager-ஐ விட்டு வெளியேறாது. தோல்வியுற்ற சோதனை உண்மையான டிக்கெட் மின்னஞ்சலை பாதிக்காது.",
         "settings.email.password": "கடவுச்சொல்",
         "settings.email.host": "SMTP ஹோஸ்ட்",
         "settings.email.username": "பயனர்பெயர் / அனுப்புநர் முகவரி",
@@ -247,6 +260,7 @@ export const TA_PACK: LanguagePack = {
         "settings.dailySummary.recipientEmail": "பெறுநர் மின்னஞ்சல்",
 
         "components.appShell.sections": "பிரிவுகள்",
+        "components.appShell.moreOptions": "மேலும் விருப்பங்கள்",
         "components.contextualHelp.close": "உதவியை மூடு",
 
         "settings.dateTimeFormats.title": "தேதி, நேரம் & தொகைகள்",
@@ -360,6 +374,7 @@ export const TA_PACK: LanguagePack = {
         "reports.sort.net": "நிகரம்",
         "reports.sort.charge": "கட்டணம்",
         "reports.builder.trigger": "அறிக்கை உருவாக்கு",
+        "reports.seedDemoTickets": "மாதிரி டிக்கெட்டுகளைச் சேர்",
         "reports.builder.title": "அறிக்கை உருவாக்கு",
         "reports.builder.columnsLabel": "நெடுவரிசைகள்",
         "reports.builder.preset.today": "இன்று",

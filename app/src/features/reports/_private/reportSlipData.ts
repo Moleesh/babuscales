@@ -10,6 +10,7 @@ export interface BuildReportsScreenSlipDataArgs {
     rows: TicketRow[];
     visibleRows: TicketRow[];
     amountDp: 0 | 2;
+    lang: string;
 }
 
 // Split out of ReportsScreen (over the line/complexity budget —
@@ -25,6 +26,7 @@ export const buildReportsScreenSlipData = ({
     rows,
     visibleRows,
     amountDp,
+    lang,
 }: BuildReportsScreenSlipDataArgs): ReportSlipData => {
     if (view === "summary") {
         const { head, rows: printRows } = buildSummaryPrintRows(summaryRows, amountDp);
@@ -36,6 +38,7 @@ export const buildReportsScreenSlipData = ({
             head,
             rows: printRows,
             rowTimestamps: timestamps,
+            lang,
         });
     }
     const { head, rows: printRows } = buildTicketPrintRows(visibleRows);
@@ -44,5 +47,6 @@ export const buildReportsScreenSlipData = ({
         head,
         rows: printRows,
         rowTimestamps: visibleRows.map((row) => row.at),
+        lang,
     });
 };

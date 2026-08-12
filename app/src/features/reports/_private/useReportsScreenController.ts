@@ -22,6 +22,7 @@ export interface UseReportsScreenControllerArgs {
     amountDp: 0 | 2;
     styles: CSSModuleClasses;
     t: Translate;
+    lang: string;
     /** Dashboard's "waiting" KPI tile navigates here wanting the "waiting on
      * a second weight" filter already applied — without this, the tab
      * switch always landed on the default Tickets/All view regardless of
@@ -73,6 +74,25 @@ const useReportsScreenFilters = () => {
     };
 };
 
+// Split out of useReportsScreenController (over the line/complexity budget —
+// docs/CodingStandards.md) — Dashboard's "waiting" KPI tile intent-to-filter
+// wiring, unchanged from the inline version it replaces.
+const useReportsIntentEffect = (
+    reportsIntent: { kind: "waiting"; nonce: number } | null,
+    setView: (view: ReportView) => void,
+    setFilter: (filter: TicketRowFilter) => void,
+): void => {
+    // Deliberately keyed on `reportsIntent` alone (not `setView`/`setFilter`,
+    // which are stable setState identities anyway) — this should fire once
+    // per nonce bump (a fresh Dashboard click), not on every render.
+    useEffect(() => {
+        if (reportsIntent?.kind === "waiting") {
+            setView("tickets");
+            setFilter("half");
+        }
+    }, [reportsIntent, setView, setFilter]);
+};
+
 // Split out of ReportsScreen (over the line/complexity budget —
 // docs/CodingStandards.md) — bundles the screen's own local state
 // (view/query/filter/date-range/groupBy/printOpen) together with the two
@@ -85,6 +105,7 @@ export const useReportsScreenController = ({
     amountDp,
     styles,
     t,
+    lang,
     reportsIntent,
 }: UseReportsScreenControllerArgs) => {
     const filters = useReportsScreenFilters();
@@ -125,6 +146,7 @@ export const useReportsScreenController = ({
         amountDp,
         styles,
         t,
+        lang,
     });
 
     const showWaiting = (): void => {
@@ -132,15 +154,7 @@ export const useReportsScreenController = ({
         setFilter("half");
     };
 
-    // Deliberately keyed on `reportsIntent` alone (not `setView`/`setFilter`,
-    // which are stable setState identities anyway) — this should fire once
-    // per nonce bump (a fresh Dashboard click), not on every render.
-    useEffect(() => {
-        if (reportsIntent?.kind === "waiting") {
-            setView("tickets");
-            setFilter("half");
-        }
-    }, [reportsIntent, setView, setFilter]);
+    useReportsIntentEffect(reportsIntent, setView, setFilter);
 
     return { ...filters, savedReportActions, showWaiting, ...screenData };
 };

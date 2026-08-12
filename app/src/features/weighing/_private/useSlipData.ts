@@ -11,12 +11,14 @@ export interface UseSlipDataArgs {
     settings: SettingsBody;
     charge: number | null;
     verifyUrl: string | null;
+    /** i18n's active language — decides the locale every timestamp on the slip renders in. */
+    lang: string;
 }
 
 // Split out of WeighingScreen (over the line budget — docs/CodingStandards.md)
 // — the print preview's own data shape, unchanged from the inline useMemo
 // it replaces.
-export const useSlipData = ({ ticket, settings, charge, verifyUrl }: UseSlipDataArgs) =>
+export const useSlipData = ({ ticket, settings, charge, verifyUrl, lang }: UseSlipDataArgs) =>
     useMemo(
         () =>
             buildSlipData({
@@ -46,6 +48,7 @@ export const useSlipData = ({ ticket, settings, charge, verifyUrl }: UseSlipData
                 charge,
                 amountDp: settings.Formats.AmountDp,
                 verifyUrl,
+                lang,
             }),
-        [ticket, settings.OperatorName, settings.Formats.AmountDp, charge, verifyUrl],
+        [ticket, settings.OperatorName, settings.Formats.AmountDp, charge, verifyUrl, lang],
     );

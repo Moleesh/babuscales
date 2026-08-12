@@ -2,6 +2,34 @@
 // and money figure in the app reads this way, per demo/BabuScales-demo.html.
 export const INDIAN_LOCALE = "en-IN";
 
+// Every date/time on screen or on a printed slip routes through here so the
+// active UI language (i18n's `lang`, "en" or "ta") decides the locale the
+// browser formats with — an untranslated `lang` (e.g. a future third pack)
+// falls back to the English locale rather than throwing.
+const DATE_LOCALE_BY_LANG: Record<string, string> = { en: INDIAN_LOCALE, ta: "ta-IN" };
+const dateLocaleFor = (lang: string): string => DATE_LOCALE_BY_LANG[lang] ?? INDIAN_LOCALE;
+
+/** Date only — e.g. report slip date ranges, dashboard "day" chips. */
+export const formatDate = (
+    value: Date | string,
+    lang: string,
+    options?: Intl.DateTimeFormatOptions,
+): string => new Date(value).toLocaleDateString(dateLocaleFor(lang), options);
+
+/** Date + time — every ticket/master "at"/"updated" timestamp. */
+export const formatDateTime = (
+    value: Date | string,
+    lang: string,
+    options?: Intl.DateTimeFormatOptions,
+): string => new Date(value).toLocaleString(dateLocaleFor(lang), options);
+
+/** Time only — the header clock's `HH:MM:SS`. */
+export const formatTime = (
+    value: Date | string,
+    lang: string,
+    options?: Intl.DateTimeFormatOptions,
+): string => new Date(value).toLocaleTimeString(dateLocaleFor(lang), options);
+
 export const formatWeightKg = (kg: number): string => kg.toLocaleString(INDIAN_LOCALE);
 
 // "Display unit" (Settings' Appearance pane) — most Indian sites weigh in

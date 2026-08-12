@@ -1,4 +1,4 @@
-import { formatWeightKg } from "@constants/numberFormat";
+import { formatDateTime, formatWeightKg } from "@constants/numberFormat";
 import { isStoredTareBody, isStoredTareStale, storedTareAgeDays } from "@db/storedTare";
 import type { DocRow } from "@db/types";
 import type { UseMasterCache } from "@db/useMasterCache";
@@ -8,8 +8,8 @@ import type { RecallOffer } from "../RecallBanner";
 import { formatTicketNo } from "../ticketNumber";
 import type { TicketFormFields, UseWeighingTicket } from "../useWeighingTicket";
 
-const formatStamp = (iso: string | undefined): string =>
-    iso ? new Date(iso).toLocaleString() : "—";
+const formatStamp = (iso: string | undefined, lang: string): string =>
+    iso ? formatDateTime(iso, lang) : "—";
 
 export interface BuildRecallOffersArgs {
     ticket: UseWeighingTicket;
@@ -17,6 +17,8 @@ export interface BuildRecallOffersArgs {
     storedTareCache: UseMasterCache;
     /** Settings' `Rules.StrictTare` — off lets a stored tare be offered at all. */
     strictTare: boolean;
+    /** i18n's active language — decides the locale the "resume" offer's timestamp renders in. */
+    lang: string;
 }
 
 // Split out of WeighingScreen (which was creeping past the 300-line budget —
@@ -29,6 +31,7 @@ export const buildRecallOffers = ({
     allTicketDocs,
     storedTareCache,
     strictTare,
+    lang,
 }: BuildRecallOffersArgs): RecallOffer[] => {
     if (ticket.isLocked || !ticket.fields.vehicleNo.trim()) return [];
     const offers: RecallOffer[] = [];
@@ -41,7 +44,7 @@ export const buildRecallOffers = ({
         offers.push({
             key: "resume",
             label: `Resume ${formatTicketNo(openMatch.doc.DocSeq)}`,
-            hint: `${openMatch.kind} ${formatWeightKg(openMatch.weightKg)} kg · ${formatStamp(openMatch.capturedAt)}`,
+            hint: `${openMatch.kind} ${formatWeightKg(openMatch.weightKg)} kg · ${formatStamp(openMatch.capturedAt, lang)}`,
             onAccept: () => ticket.resume(openMatch.doc),
         });
     }

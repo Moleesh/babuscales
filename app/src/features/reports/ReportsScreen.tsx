@@ -5,6 +5,7 @@ import { useTranslation } from "@i18n/useTranslation";
 
 import { ReportsScreenCard } from "./_private/ReportsScreenCard";
 import { ReportsScreenOverlays } from "./_private/ReportsScreenOverlays";
+import { seedDemoTickets } from "./_private/seedDemoTickets";
 import { useReportDocs } from "./_private/useReportDocs";
 import { useReportsScreenController } from "./_private/useReportsScreenController";
 import styles from "./_styles/ReportsScreen.module.css";
@@ -43,15 +44,27 @@ export interface ReportsScreenProps {
 // see _private/ for each.
 export const ReportsScreen = ({ onOpenTicket, reportsIntent = null }: ReportsScreenProps) => {
     const db = useDataPort();
-    const { t } = useTranslation();
+    const { t, lang } = useTranslation();
     const { settings } = useSettings();
     const amountDp = settings.Formats.AmountDp;
     const docs = useReportDocs(db);
-    const s = useReportsScreenController({ db, docs, onOpenTicket, amountDp, styles, t, reportsIntent });
+    const s = useReportsScreenController({
+        db,
+        docs,
+        onOpenTicket,
+        amountDp,
+        styles,
+        t,
+        lang,
+        reportsIntent,
+    });
+    // Dev-only "Add sample tickets" control — undefined (so the button never
+    // renders) outside a dev build. See seedDemoTickets.ts's own doc comment.
+    const onSeedDemoTickets = import.meta.env.DEV ? () => void seedDemoTickets(db) : undefined;
 
     return (
         <div className={styles.screen}>
-            <ReportsScreenCard s={s} />
+            <ReportsScreenCard s={s} onSeedDemoTickets={onSeedDemoTickets} />
             <ReportsScreenOverlays
                 reportSlipData={s.reportSlipData}
                 printOpen={s.printOpen}

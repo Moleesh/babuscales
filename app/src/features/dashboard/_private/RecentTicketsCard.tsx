@@ -3,14 +3,17 @@ import { useMemo } from "react";
 import { Card } from "@components/Card";
 import { DataTable } from "@components/DataTable";
 import type { DataTableColumn } from "@components/DataTable";
-import { formatWeightKg } from "@constants/numberFormat";
+import { formatDateTime, formatWeightKg } from "@constants/numberFormat";
 import type { TicketRow } from "@features/reports";
 import { formatTicketNo } from "@features/weighing";
 import { useTranslation } from "@i18n/useTranslation";
 
 const RECENT_COUNT = 6;
 
-const buildRecentColumns = (t: (key: string) => string): DataTableColumn<TicketRow>[] => [
+const buildRecentColumns = (
+    t: (key: string) => string,
+    lang: string,
+): DataTableColumn<TicketRow>[] => [
     {
         key: "no",
         header: t("dashboard.recent.col.ticket"),
@@ -25,7 +28,11 @@ const buildRecentColumns = (t: (key: string) => string): DataTableColumn<TicketR
         numeric: true,
         render: (row) => (row.netKg !== null ? `${formatWeightKg(row.netKg)} kg` : "—"),
     },
-    { key: "at", header: t("dashboard.recent.col.at"), render: (row) => new Date(row.at).toLocaleString() },
+    {
+        key: "at",
+        header: t("dashboard.recent.col.at"),
+        render: (row) => formatDateTime(row.at, lang),
+    },
 ];
 
 export interface RecentTicketsCardProps {
@@ -36,8 +43,8 @@ export interface RecentTicketsCardProps {
 // — the bottom "Recent tickets" card. Now uses the t() function for
 // translatable strings. Columns are built dynamically since they depend on t().
 export const RecentTicketsCard = ({ rows }: RecentTicketsCardProps) => {
-    const { t } = useTranslation();
-    const columns = useMemo(() => buildRecentColumns(t), [t]);
+    const { t, lang } = useTranslation();
+    const columns = useMemo(() => buildRecentColumns(t, lang), [t, lang]);
 
     return (
         <Card

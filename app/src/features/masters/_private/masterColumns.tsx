@@ -1,5 +1,5 @@
 import type { DataTableColumn } from "@components/DataTable";
-import { formatMoney } from "@constants/numberFormat";
+import { formatDateTime, formatMoney } from "@constants/numberFormat";
 import { getMaterialRate } from "@db/materialBody";
 import { isStoredTareBody, isStoredTareStale, storedTareAgeDays } from "@db/storedTare";
 import type { MasterKind, MasterRow } from "@db/types";
@@ -72,6 +72,7 @@ export const buildMasterColumns = (
     activeKind: MasterKind,
     styles: CSSModuleClasses,
     t: Translate,
+    lang: string,
 ): DataTableColumn<MasterRow>[] => {
     if (activeKind === "StoredTare") return storedTareColumns(styles, t);
     return [
@@ -91,6 +92,10 @@ export const buildMasterColumns = (
             header: t("masters.col.status"),
             render: (row) => (row.IsActive ? t("masters.status.active") : t("masters.status.inactive")),
         },
-        { key: "updated", header: t("masters.col.updated"), render: (row) => new Date(row.UpdatedAt).toLocaleString() },
+        {
+            key: "updated",
+            header: t("masters.col.updated"),
+            render: (row) => formatDateTime(row.UpdatedAt, lang),
+        },
     ];
 };

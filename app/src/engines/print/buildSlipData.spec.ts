@@ -20,6 +20,7 @@ const baseInput: SlipInput = {
     charge: 250,
     amountDp: 2,
     verifyUrl: "https://example.com/v/doc1",
+    lang: "en",
 };
 
 describe("buildSlipData", () => {

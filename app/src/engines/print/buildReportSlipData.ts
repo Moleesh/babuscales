@@ -1,3 +1,5 @@
+import { formatDate, formatDateTime } from "@constants/numberFormat";
+
 import type { ReportSlipData } from "./types";
 
 export interface ReportSlipInput {
@@ -7,19 +9,19 @@ export interface ReportSlipInput {
     rows: string[][];
     /** ISO timestamps of every row contributing to `rows` — used to compute the real min–max date range shown on the slip, not a fabricated one (see ReportSlipData's own comment). */
     rowTimestamps: string[];
+    /** i18n's active language — decides the locale DateRange/PrintedAt render in. */
+    lang: string;
 }
 
-const formatDate = (iso: string): string => new Date(iso).toLocaleDateString();
-
-const dateRangeOf = (timestamps: string[]): string => {
+const dateRangeOf = (timestamps: string[], lang: string): string => {
     if (timestamps.length === 0) return "No tickets";
     const sorted = [...timestamps].sort();
     const earliest = sorted.at(0);
     const latest = sorted.at(-1);
     if (earliest === undefined || latest === undefined) return "No tickets";
     return earliest === latest
-        ? formatDate(earliest)
-        : `${formatDate(earliest)} – ${formatDate(latest)}`;
+        ? formatDate(earliest, lang)
+        : `${formatDate(earliest, lang)} – ${formatDate(latest, lang)}`;
 };
 
 // Mirrors buildSlipData.ts's role for the per-ticket slip: turns already-
@@ -28,8 +30,8 @@ const dateRangeOf = (timestamps: string[]): string => {
 // consumes.
 export const buildReportSlipData = (input: ReportSlipInput): ReportSlipData => ({
     Title: input.title,
-    DateRange: dateRangeOf(input.rowTimestamps),
+    DateRange: dateRangeOf(input.rowTimestamps, input.lang),
     Head: input.head,
     Rows: input.rows,
-    PrintedAt: new Date().toLocaleString(),
+    PrintedAt: formatDateTime(new Date(), input.lang),
 });

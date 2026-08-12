@@ -1,5 +1,7 @@
+import { formatDateTime } from "@constants/numberFormat";
 import { buildQrDataUri } from "@engines/print";
 import type { SlipData } from "@engines/print";
+import { useTranslation } from "@i18n/useTranslation";
 
 import styles from "./_styles/SlipA4.module.css";
 
@@ -66,51 +68,54 @@ const SlipLoadsTable = ({ loads }: { loads: SlipData["GrossLoads"] }) => (
 // ticket's page, and only when data.VerifyUrl is actually set: a ticket
 // printed before it's saved, or with the integration off, gets no footer
 // line at all rather than a dead link.
-export const SlipA4 = ({ data }: SlipA4Props) => (
-    <div className={styles.paper}>
-        <div className={styles.head}>
-            <div>
-                <div className={styles.site}>{SITE_NAME}</div>
-                <div className={styles.addr}>{SITE_ADDRESS}</div>
+export const SlipA4 = ({ data }: SlipA4Props) => {
+    const { lang } = useTranslation();
+    return (
+        <div className={styles.paper}>
+            <div className={styles.head}>
+                <div>
+                    <div className={styles.site}>{SITE_NAME}</div>
+                    <div className={styles.addr}>{SITE_ADDRESS}</div>
+                </div>
+                <div className={styles.no}>
+                    <div className={styles.noValue}>{data.TicketNo}</div>
+                    <div className={styles.copy}>{data.Copy || "ORIGINAL"}</div>
+                </div>
             </div>
-            <div className={styles.no}>
-                <div className={styles.noValue}>{data.TicketNo}</div>
-                <div className={styles.copy}>{data.Copy || "ORIGINAL"}</div>
+            <div className={styles.grid}>
+                <SlipField label="Vehicle" value={data.VehicleNo} />
+                <SlipField label="Challan" value={data.ChallanNo} />
+                <SlipField label="Party" value={data.Party} />
+                <SlipField label="Material" value={data.Material} />
+                <SlipField label="Tare at" value={data.TareAt} />
+                <SlipField label="Gross at" value={data.GrossAt} />
+            </div>
+            <div className={styles.weights}>
+                <SlipWeightBox label="TARE" kg={data.TareKg} />
+                <SlipWeightBox label="GROSS" kg={data.GrossKg} />
+                <SlipWeightBox label="NET" kg={data.NetKg} />
+            </div>
+            {data.GrossLoads.length > 1 && <SlipLoadsTable loads={data.GrossLoads} />}
+            <div className={styles.grid}>
+                <SlipField label="Charge" value={data.Charge} />
+                <SlipField label="Operator" value={data.Operator} />
+            </div>
+            <div className={styles.footer}>
+                <span>Printed {formatDateTime(new Date(), lang)}</span>
+                {data.VerifyUrl && (
+                    <span className={styles.verify}>
+                        <img
+                            className={styles.qr}
+                            src={buildQrDataUri(data.VerifyUrl)}
+                            alt="Scan to verify this weighment"
+                            width={40}
+                            height={40}
+                        />
+                        Verify: {data.VerifyUrl}
+                    </span>
+                )}
+                <span>Signature</span>
             </div>
         </div>
-        <div className={styles.grid}>
-            <SlipField label="Vehicle" value={data.VehicleNo} />
-            <SlipField label="Challan" value={data.ChallanNo} />
-            <SlipField label="Party" value={data.Party} />
-            <SlipField label="Material" value={data.Material} />
-            <SlipField label="Tare at" value={data.TareAt} />
-            <SlipField label="Gross at" value={data.GrossAt} />
-        </div>
-        <div className={styles.weights}>
-            <SlipWeightBox label="TARE" kg={data.TareKg} />
-            <SlipWeightBox label="GROSS" kg={data.GrossKg} />
-            <SlipWeightBox label="NET" kg={data.NetKg} />
-        </div>
-        {data.GrossLoads.length > 1 && <SlipLoadsTable loads={data.GrossLoads} />}
-        <div className={styles.grid}>
-            <SlipField label="Charge" value={data.Charge} />
-            <SlipField label="Operator" value={data.Operator} />
-        </div>
-        <div className={styles.footer}>
-            <span>Printed {new Date().toLocaleString()}</span>
-            {data.VerifyUrl && (
-                <span className={styles.verify}>
-                    <img
-                        className={styles.qr}
-                        src={buildQrDataUri(data.VerifyUrl)}
-                        alt="Scan to verify this weighment"
-                        width={40}
-                        height={40}
-                    />
-                    Verify: {data.VerifyUrl}
-                </span>
-            )}
-            <span>Signature</span>
-        </div>
-    </div>
-);
+    );
+};

@@ -39,6 +39,7 @@ export interface UseReportsScreenDataArgs {
     amountDp: 0 | 2;
     styles: CSSModuleClasses;
     t: Translate;
+    lang: string;
 }
 
 export interface UseReportsScreenData {
@@ -69,6 +70,7 @@ export const useReportsScreenData = ({
     amountDp,
     styles,
     t,
+    lang,
 }: UseReportsScreenDataArgs): UseReportsScreenData => {
     const rows = useMemo(() => buildTicketRows(docs), [docs]);
     // PLAN §7.5 — the open-ticket strip is a global "what's waiting right
@@ -96,12 +98,13 @@ export const useReportsScreenData = ({
                 rows: dateFilteredRows,
                 visibleRows,
                 amountDp,
+                lang,
             }),
-        [view, summaryRows, dateFilteredRows, visibleRows, amountDp],
+        [view, summaryRows, dateFilteredRows, visibleRows, amountDp, lang],
     );
     const ticketColumns = useMemo(
-        () => buildTicketColumns({ onOpenTicket, amountDp, styles, t, visibleColumnKeys }),
-        [onOpenTicket, amountDp, styles, t, visibleColumnKeys],
+        () => buildTicketColumns({ onOpenTicket, amountDp, styles, t, lang, visibleColumnKeys }),
+        [onOpenTicket, amountDp, styles, t, lang, visibleColumnKeys],
     );
     const summaryColumns = useMemo(
         () => buildSummaryColumns({ groupBy, amountDp, t }),

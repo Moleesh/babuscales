@@ -1,4 +1,4 @@
-import { formatMoney, formatWeightKg } from "@constants/numberFormat";
+import { formatDateTime, formatMoney, formatWeightKg } from "@constants/numberFormat";
 
 import type { SlipData } from "./types";
 
@@ -25,12 +25,14 @@ export interface SlipInput {
     amountDp: 0 | 2;
     /** @engines/verification's resolved `{base}/v/{docId}` — null when unavailable, see SlipData.VerifyUrl. */
     verifyUrl: string | null;
+    /** i18n's active language — decides the locale every timestamp on the slip renders in. */
+    lang: string;
 }
 
 const weightOrDash = (kg: number | null): string => (kg === null ? "—" : formatWeightKg(kg));
 
-const stampOrDash = (iso: string | null): string =>
-    iso === null ? "—" : new Date(iso).toLocaleString();
+const stampOrDash = (iso: string | null, lang: string): string =>
+    iso === null ? "—" : formatDateTime(iso, lang);
 
 // Mirrors the mock's `P()` — one function that turns live ticket state into
 // the flat, already-formatted shape every paper-size renderer consumes.
@@ -44,11 +46,11 @@ export const buildSlipData = (input: SlipInput): SlipData => ({
     TareKg: weightOrDash(input.tareKg),
     GrossKg: weightOrDash(input.grossKg),
     NetKg: weightOrDash(input.netKg),
-    TareAt: stampOrDash(input.tareAt),
-    GrossAt: stampOrDash(input.grossAt),
+    TareAt: stampOrDash(input.tareAt, input.lang),
+    GrossAt: stampOrDash(input.grossAt, input.lang),
     GrossLoads: input.grossLoads.map((load) => ({
         Kg: weightOrDash(load.kg),
-        At: stampOrDash(load.at),
+        At: stampOrDash(load.at, input.lang),
     })),
     Charge: input.charge === null ? "—" : formatMoney(input.charge, input.amountDp),
     Operator: input.operator,

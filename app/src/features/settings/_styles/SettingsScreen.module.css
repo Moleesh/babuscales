@@ -11,6 +11,15 @@
     justify-content: space-between;
     gap: 12px;
     flex-wrap: wrap;
+    /* Without this, a flex item's default `min-width: auto` refuses to
+       shrink below its content's intrinsic size — the SegmentedControl
+       below (`.bar`'s own `flex-wrap: wrap`) never gets the chance to wrap
+       its buttons onto a second line, because the row itself just grows
+       past the viewport instead (Tamil-layout overflow, item 3). */
+    min-width: 0;
+}
+.top-row > * {
+    min-width: 0;
 }
 
 .lockbar {

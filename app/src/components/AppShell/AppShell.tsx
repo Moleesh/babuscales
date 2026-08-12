@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { useTranslation } from "@i18n/useTranslation";
 
 import { BrandMark } from "./_private/BrandMark";
+import { TopBarOverflow } from "./_private/TopBarOverflow";
 import { useEnterAsTab } from "./_private/useEnterAsTab";
 import styles from "./_styles/AppShell.module.css";
 
@@ -76,7 +77,9 @@ export const AppShell = ({
                     ))}
                 </nav>
 
-                <div className={styles.topRight}>{topRight}</div>
+                <div className={styles.topRight}>
+                    <TopBarOverflow>{topRight}</TopBarOverflow>
+                </div>
             </header>
 
             <div className={styles.main} data-enter-scope>

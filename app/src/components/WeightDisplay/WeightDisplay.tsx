@@ -19,6 +19,10 @@ export interface WeightDisplayProps {
     labels?: WeightDisplayLabels;
     /** Placeholder digits behind the live reading, sized to the display's widest expected value. */
     ghostPattern?: string;
+    /** i18n's active language ("en"/"ta") — decides the header clock's locale. A plain
+     * prop (not useTranslation()) so this component stays usable outside an I18nProvider,
+     * same reasoning as `labels` below. */
+    lang?: string;
 }
 
 const DEFAULT_LABELS: WeightDisplayLabels = {
@@ -41,8 +45,9 @@ export const WeightDisplay = ({
     mode = "full",
     labels = DEFAULT_LABELS,
     ghostPattern = "88,888",
+    lang = "en",
 }: WeightDisplayProps) => {
-    const { time, day } = useClock();
+    const { time, day } = useClock(lang);
     const fillPct = Math.min(100, Math.round((weightKg / capacityKg) * 100));
 
     return (

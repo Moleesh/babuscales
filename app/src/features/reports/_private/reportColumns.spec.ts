@@ -16,6 +16,7 @@ describe("buildTicketColumns: headers route through t", () => {
             amountDp: 2,
             styles: noopStyles,
             t: fakeT,
+            lang: "en",
         });
         const headers = columns
             .map((c) => c.header)

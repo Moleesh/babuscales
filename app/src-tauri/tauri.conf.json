@@ -15,8 +15,9 @@
                 "title": "BabuScales",
                 "width": 1280,
                 "height": 800,
-                "resizable": false,
-                "maximizable": false,
+                "maximized": true,
+                "resizable": true,
+                "maximizable": true,
                 "minimizable": true,
                 "alwaysOnTop": true
             }

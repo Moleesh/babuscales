@@ -5,17 +5,28 @@ import type { UseWeighingTicket } from "../useWeighingTicket";
 // `!ticket.kind`, not `isComplete` — under MultiGross, isComplete goes true
 // after the first Gross and stays true while more loads are still
 // capturable, but `kind` only turns null once the operator has actually run
-// out of things to capture.
-export const captureLabel = (ticket: UseWeighingTicket, multiGross: boolean): string => {
-    if (!ticket.kind) return "Both weights captured";
+// out of things to capture. `t`-threaded (bug fix — these were hardcoded
+// English strings, never localized even in the Tamil UI).
+export const captureLabel = (
+    ticket: UseWeighingTicket,
+    multiGross: boolean,
+    t: (key: string) => string,
+): string => {
+    if (!ticket.kind) return t("weigh.capture.bothCaptured");
     if (ticket.kind === "Gross") {
-        return multiGross && ticket.isComplete ? "Capture another Gross" : "Capture Gross";
+        return multiGross && ticket.isComplete
+            ? t("weigh.capture.anotherGross")
+            : t("weigh.capture.gross");
     }
-    return "Capture Tare";
+    return t("weigh.capture.tare");
 };
 
 // Same gating as captureLabel above, for the button's caption line.
-export const captureHint = (ticket: UseWeighingTicket, armed: boolean): string => {
-    if (!ticket.kind) return "Save to finish this ticket";
-    return armed ? "Stable — capture now" : "Waiting for a stable reading";
+export const captureHint = (
+    ticket: UseWeighingTicket,
+    armed: boolean,
+    t: (key: string) => string,
+): string => {
+    if (!ticket.kind) return t("weigh.capture.saveToFinish");
+    return armed ? t("weigh.capture.stableNow") : t("weigh.capture.waitingForStable");
 };

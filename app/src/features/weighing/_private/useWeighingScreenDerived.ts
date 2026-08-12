@@ -25,6 +25,8 @@ export interface UseWeighingScreenDerivedArgs {
     email: EmailSource;
     sms: SmsSource;
     bumpRefresh: () => void;
+    /** i18n's active language — decides the locale the print-preview slip's timestamps render in. */
+    lang: string;
 }
 
 export interface UseWeighingScreenDerived {
@@ -50,6 +52,7 @@ export const useWeighingScreenDerived = ({
     email,
     sms,
     bumpRefresh,
+    lang,
 }: UseWeighingScreenDerivedArgs): UseWeighingScreenDerived => {
     const armed = useAutoCapture({ reading, ticket, settings, licenseGated });
     const recallOffers = useRecallOffers({
@@ -57,6 +60,7 @@ export const useWeighingScreenDerived = ({
         allTicketDocs,
         storedTareCache: caches.storedTare,
         strictTare: settings.Rules.StrictTare,
+        lang,
     });
     const billing = computeTicketBilling(ticket, caches.material);
     const verifyUrl = useTicketVerifyUrl(settings, ticket);
@@ -70,7 +74,7 @@ export const useWeighingScreenDerived = ({
         chargeInr: billing.charge,
         onDelivered: bumpRefresh,
     });
-    const slipData = useSlipData({ ticket, settings, charge: billing.charge, verifyUrl });
+    const slipData = useSlipData({ ticket, settings, charge: billing.charge, verifyUrl, lang });
 
     return { armed, recallOffers, billing, handlePrint, slipData };
 };

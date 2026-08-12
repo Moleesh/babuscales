@@ -19,7 +19,17 @@ export const setTicketNumberFormat = (format: TicketNumberFormat): void => {
     activeFormat = format;
 };
 
+// Same "no React context at these call sites" reasoning as
+// `activeFormat`/`setTicketNumberFormat` above — bug fix: this was a bare
+// "Draft" literal, never localized even in the Tamil UI. I18nProvider
+// pushes the translated string here on every language change.
+let activeDraftLabel = "Draft";
+
+export const setTicketNumberDraftLabel = (label: string): void => {
+    activeDraftLabel = label;
+};
+
 export const formatTicketNo = (docSeq: number | null): string =>
     docSeq === null
-        ? "Draft"
+        ? activeDraftLabel
         : `${activeFormat.prefix}${String(docSeq).padStart(activeFormat.width, "0")}`;

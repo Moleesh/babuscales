@@ -12,6 +12,7 @@ export interface UseRecallOffersArgs {
     allTicketDocs: DocRow[];
     storedTareCache: UseMasterCache;
     strictTare: boolean;
+    lang: string;
 }
 
 // Split out of WeighingScreen (over the line budget — docs/CodingStandards.md)
@@ -22,8 +23,9 @@ export const useRecallOffers = ({
     allTicketDocs,
     storedTareCache,
     strictTare,
+    lang,
 }: UseRecallOffersArgs): RecallOffer[] =>
     useMemo(
-        () => buildRecallOffers({ ticket, allTicketDocs, storedTareCache, strictTare }),
-        [ticket, allTicketDocs, storedTareCache, strictTare],
+        () => buildRecallOffers({ ticket, allTicketDocs, storedTareCache, strictTare, lang }),
+        [ticket, allTicketDocs, storedTareCache, strictTare, lang],
     );

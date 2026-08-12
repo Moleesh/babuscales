@@ -1,6 +1,6 @@
 import { Card } from "@components/Card";
 import { StatusPill } from "@components/StatusPill";
-import { formatMoney, formatWeightKg } from "@constants/numberFormat";
+import { formatDateTime, formatMoney, formatWeightKg } from "@constants/numberFormat";
 import type { Capture, CaptureType } from "@db/ticketBody";
 import type { DerivedWeights } from "@db/ticketBody";
 import { useTranslation } from "@i18n/useTranslation";
@@ -9,8 +9,8 @@ import { CalcFormula } from "./CalcFormula";
 import { ManualCalcBox } from "./ManualCalcBox";
 import styles from "../_styles/WeighingScreen.module.css";
 
-const formatStamp = (iso: string | undefined): string =>
-    iso ? new Date(iso).toLocaleString() : "—";
+const formatStamp = (iso: string | undefined, lang: string): string =>
+    iso ? formatDateTime(iso, lang) : "—";
 
 interface CalcBoxProps {
     label: string;
@@ -53,7 +53,7 @@ const TareGrossBoxes = ({
     manualGross,
     onManualCapture,
 }: TareGrossBoxesProps) => {
-    const { t } = useTranslation();
+    const { t, lang } = useTranslation();
     return (
         <>
             {manualTare ? (
@@ -62,7 +62,7 @@ const TareGrossBoxes = ({
                 <CalcBox
                     label={t("tare")}
                     value={weights.tareKg !== null ? formatWeightKg(weights.tareKg) : "—"}
-                    stamp={formatStamp(captures.find((c) => c.Type === "Tare")?.At)}
+                    stamp={formatStamp(captures.find((c) => c.Type === "Tare")?.At, lang)}
                 />
             )}
             {manualGross ? (
@@ -72,7 +72,7 @@ const TareGrossBoxes = ({
                     label={t("gross")}
                     value={weights.grossKg !== null ? formatWeightKg(weights.grossKg) : "—"}
                     stamp={
-                        formatStamp(grossCaptures[grossCaptures.length - 1]?.At) +
+                        formatStamp(grossCaptures[grossCaptures.length - 1]?.At, lang) +
                         (grossCaptures.length > 1
                             ? ` · ${grossCaptures.length} ${t("weigh.loadsSuffix")}`
                             : "")

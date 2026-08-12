@@ -1,8 +1,10 @@
 import { useState } from "react";
 
+import { formatDateTime } from "@constants/numberFormat";
 import { useIndicator, useIndicatorReading } from "@engines/indicator";
 import { useSchema } from "@engines/schemaEngine";
 import { useSettings } from "@features/settings";
+import { useTranslation } from "@i18n/useTranslation";
 
 import { buildTicketFormulaContext } from "./_private/buildTicketFormulaContext";
 import { PrintPreviewModal } from "./_private/PrintPreviewModal";
@@ -16,8 +18,23 @@ import styles from "./_styles/WeighingScreen.module.css";
 import { OpenTicketStrip } from "./OpenTicketStrip";
 import type { UseWeighingTicket } from "./useWeighingTicket";
 
-const formatStamp = (iso: string | undefined): string =>
-    iso ? new Date(iso).toLocaleString() : "—";
+const formatStamp = (iso: string | undefined, lang: string): string =>
+    iso ? formatDateTime(iso, lang) : "—";
+
+// Split out of WeighingScreen (over the 60-line function budget —
+// docs/CodingStandards.md) — the same visible/Validate/Block check
+// SchemaFieldRow runs per custom field, recomputed here so Save can be
+// gated on it too (see ActionsCard's SaveAndPrintRow).
+const computeHasBlockingCustomFieldError = (
+    ticket: UseWeighingTicket,
+    ticketSchema: ReturnType<typeof useSchema>["ticketSchema"],
+): boolean => {
+    const customFieldDefs = ticketSchema.Fields.filter(
+        (field) => !FIXED_FIELD_IDS.includes(field.FieldId),
+    );
+    const formulaCtx = buildTicketFormulaContext(ticket, ticket.customFields);
+    return hasBlockingCustomFieldError(customFieldDefs, formulaCtx);
+};
 
 export interface WeighingScreenProps {
     /** Lifted to Shell (PLAN §13.1) so Reports can resume a ticket into the same deck across a tab switch. */
@@ -47,6 +64,7 @@ export const WeighingScreen = ({ ticket, licenseGated, onNavigateToCameras }: We
     const indicator = useIndicator();
     const reading = useIndicatorReading();
     const { settings } = useSettings();
+    const { lang } = useTranslation();
     const { email, sms } = useDeliveryChannels();
     const { ticketSchema } = useSchema();
 
@@ -65,16 +83,11 @@ export const WeighingScreen = ({ ticket, licenseGated, onNavigateToCameras }: We
         email,
         sms,
         bumpRefresh,
+        lang,
     });
 
-    const ticketDate = formatStamp(ticket.captures[0]?.At);
-
-    // Same visible/Validate/Block check SchemaFieldRow runs per custom
-    // field (TicketFieldsCard's own rendering), recomputed here so Save can
-    // be gated on it too — see ActionsCard's SaveAndPrintRow.
-    const customFieldDefs = ticketSchema.Fields.filter((field) => !FIXED_FIELD_IDS.includes(field.FieldId));
-    const formulaCtx = buildTicketFormulaContext(ticket, ticket.customFields);
-    const hasBlockingCustomFieldErrorValue = hasBlockingCustomFieldError(customFieldDefs, formulaCtx);
+    const ticketDate = formatStamp(ticket.captures[0]?.At, lang);
+    const hasBlockingCustomFieldErrorValue = computeHasBlockingCustomFieldError(ticket, ticketSchema);
 
     return (
         <div className={styles.screen}>

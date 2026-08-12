@@ -7,13 +7,15 @@ import type { UseReportsScreenController } from "./useReportsScreenController";
 
 export interface ReportsScreenCardProps {
     s: UseReportsScreenController;
+    /** Dev-only "Add sample tickets" control — see ReportsHeaderActions' own doc comment. */
+    onSeedDemoTickets: (() => void) | undefined;
 }
 
 // Split out of ReportsScreen (over the line/complexity budget —
 // docs/CodingStandards.md) — the Card itself (header actions + body),
 // taking the whole controller return value the same way ReportsCardBody's
 // props already mirror it, just one level up.
-export const ReportsScreenCard = ({ s }: ReportsScreenCardProps) => {
+export const ReportsScreenCard = ({ s, onSeedDemoTickets }: ReportsScreenCardProps) => {
     const { t } = useTranslation();
     return (
         <Card
@@ -25,6 +27,7 @@ export const ReportsScreenCard = ({ s }: ReportsScreenCardProps) => {
                     waitingCount={s.waitingCount}
                     onShowWaiting={s.showWaiting}
                     onOpenBuilder={() => s.setBuilderOpen(true)}
+                    onSeedDemoTickets={onSeedDemoTickets}
                 />
             }
         >

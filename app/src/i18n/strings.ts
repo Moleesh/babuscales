@@ -49,6 +49,14 @@ export const EN_STRINGS: Record<string, string> = {
     "weigh.weightInMotion": "Weight in motion — capture is locked until it settles.",
 
     "weigh.capturedAndCalculated": "Captured & calculated",
+    "weigh.draft": "Draft",
+    "weigh.capture.bothCaptured": "Both weights captured",
+    "weigh.capture.anotherGross": "Capture another Gross",
+    "weigh.capture.gross": "Capture Gross",
+    "weigh.capture.tare": "Capture Tare",
+    "weigh.capture.saveToFinish": "Save to finish this ticket",
+    "weigh.capture.stableNow": "Stable — capture now",
+    "weigh.capture.waitingForStable": "Waiting for a stable reading",
     charge: "Charge",
     "weigh.loadsSuffix": "loads",
     "weigh.manualWeightPlaceholder": "kg",
@@ -219,6 +227,11 @@ export const EN_STRINGS: Record<string, string> = {
     "settings.email.password": "Password",
     "settings.email.host": "SMTP host",
     "settings.email.username": "Username / from address",
+    "settings.email.title": "E-mail delivery",
+    "settings.email.testSendLabel": "Send a test e-mail to",
+    "settings.email.sendTest": "Send test",
+    "settings.email.hint":
+        "Delivers via the SMTP host/port/username above — the password never leaves Windows Credential Manager. No real ticket e-mail is ever affected by a failed test.",
     "settings.board.hostIp": "Host / IP address",
     "settings.tally.exportFolder": "Export folder",
     "settings.webhook.endpointUrl": "Endpoint URL",
@@ -234,6 +247,7 @@ export const EN_STRINGS: Record<string, string> = {
     "settings.dailySummary.recipientEmail": "Recipient e-mail",
 
     "components.appShell.sections": "Sections",
+    "components.appShell.moreOptions": "More options",
     "components.contextualHelp.close": "Close help",
 
     "settings.dateTimeFormats.title": "Date, time & amounts",
@@ -346,6 +360,7 @@ export const EN_STRINGS: Record<string, string> = {
     "reports.sort.net": "Net",
     "reports.sort.charge": "Charge",
     "reports.builder.trigger": "Build report",
+    "reports.seedDemoTickets": "Add sample tickets",
     "reports.builder.title": "Build report",
     "reports.builder.columnsLabel": "Columns",
     "reports.builder.preset.today": "Today",

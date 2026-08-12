@@ -42,7 +42,7 @@ import {
 } from "@features/reports/dailySummaryEmail";
 import { OperatorChip, SettingsProvider, SettingsScreen, useOutboxWorker, useSettings } from "@features/settings";
 import type { BusinessInfo } from "@features/settings";
-import { useWeighingTicket, WeighingScreen } from "@features/weighing";
+import { setTicketNumberDraftLabel, useWeighingTicket, WeighingScreen } from "@features/weighing";
 import type { UseWeighingTicket } from "@features/weighing";
 import { DEFAULT_HELP_TOPICS } from "@i18n/helpTopics";
 import { I18nProvider } from "@i18n/I18nProvider";
@@ -172,10 +172,12 @@ const ShellWeightHeader = ({
     reading,
     compact,
     t,
+    lang,
 }: {
     reading: ReturnType<typeof useIndicatorReading>;
     compact: boolean;
     t: ReturnType<typeof useTranslation>["t"];
+    lang: ReturnType<typeof useTranslation>["lang"];
 }) => (
     <WeightDisplay
         weightKg={reading.WeightKg}
@@ -183,6 +185,7 @@ const ShellWeightHeader = ({
         stable={reading.Stable}
         motion={!reading.Stable}
         mode={compact ? "compact" : "full"}
+        lang={lang}
         labels={{
             indicator: t("ind"),
             stable: t("stable"),
@@ -229,10 +232,63 @@ const useReportsNavigation = (setActiveTab: (tab: (typeof TAB_KEYS)[number]) => 
     return { reportsIntent, onNavigateToReports };
 };
 
+// Bug fix: formatTicketNo's "Draft" placeholder was a bare English literal
+// (ticketNumber.ts has no React context of its own — same reasoning as
+// setTicketNumberFormat's push-on-change) — push the translated string down
+// on every language change. Split out for the same line-budget reason as
+// the two hooks above.
+const useDraftLabelSync = (t: ReturnType<typeof useTranslation>["t"]): void => {
+    useEffect(() => {
+        setTicketNumberDraftLabel(t("weigh.draft"));
+    }, [t]);
+};
+
 interface ShellProps {
     /** Owned at App level — the loaded/live pack list lives above I18nProvider, which is above Shell. */
     onAddLanguagePack: (pack: LanguagePack) => Promise<void>;
 }
+
+// Split out of Shell (over the line budget — docs/CodingStandards.md) — just
+// the two AppShell slot props that don't need Shell's full local scope.
+interface ShellTopSlotsProps {
+    lang: string;
+    otherPackName: string | null;
+    otherPackCode: string | null;
+    setLang: (code: string) => void;
+    helpOpen: boolean;
+    setHelpOpen: (updater: (open: boolean) => boolean) => void;
+    t: (key: string) => string;
+    reading: ReturnType<typeof useIndicatorReading>;
+    activeTab: (typeof TAB_KEYS)[number];
+}
+
+const useShellTopSlots = ({
+    lang,
+    otherPackName,
+    otherPackCode,
+    setLang,
+    helpOpen,
+    setHelpOpen,
+    t,
+    reading,
+    activeTab,
+}: ShellTopSlotsProps) => ({
+    topRight: (
+        <TopBarActions
+            lang={lang}
+            otherPackName={otherPackName}
+            onToggleLang={() =>
+                otherPackCode && setLang(lang === otherPackCode ? "en" : otherPackCode)
+            }
+            helpOpen={helpOpen}
+            onToggleHelp={() => setHelpOpen((v) => !v)}
+            helpTitle={t("nav.help")}
+        />
+    ),
+    header: (
+        <ShellWeightHeader reading={reading} compact={!BIG_HEADER_TABS.has(activeTab)} t={t} lang={lang} />
+    ),
+});
 
 const Shell = ({ onAddLanguagePack }: ShellProps) => {
     const { t, lang, setLang, packs } = useTranslation();
@@ -250,6 +306,18 @@ const Shell = ({ onAddLanguagePack }: ShellProps) => {
     const otherPack = packs.find((pack) => pack.Code !== "en") ?? null;
     const { openTicket, resetTicketSeries } = useShellTicketActions(ticket, db, setActiveTab);
     const { reportsIntent, onNavigateToReports } = useReportsNavigation(setActiveTab);
+    useDraftLabelSync(t);
+    const { topRight, header } = useShellTopSlots({
+        lang,
+        otherPackName: otherPack?.Name ?? null,
+        otherPackCode: otherPack?.Code ?? null,
+        setLang,
+        helpOpen,
+        setHelpOpen,
+        t,
+        reading,
+        activeTab,
+    });
 
     return (
         <AppShell
@@ -257,19 +325,8 @@ const Shell = ({ onAddLanguagePack }: ShellProps) => {
             tabs={buildNavTabs(t)}
             activeTab={activeTab}
             onNavigate={(key) => setActiveTab(key as (typeof TAB_KEYS)[number])}
-            topRight={
-                <TopBarActions
-                    lang={lang}
-                    otherPackName={otherPack?.Name ?? null}
-                    onToggleLang={() =>
-                        otherPack && setLang(lang === otherPack.Code ? "en" : otherPack.Code)
-                    }
-                    helpOpen={helpOpen}
-                    onToggleHelp={() => setHelpOpen((v) => !v)}
-                    helpTitle={t("nav.help")}
-                />
-            }
-            header={<ShellWeightHeader reading={reading} compact={!BIG_HEADER_TABS.has(activeTab)} t={t} />}
+            topRight={topRight}
+            header={header}
             banner={renderLicenseBanner(license.state, license.isGated)}
         >
             <TabContent

@@ -54,8 +54,8 @@ export const WeighingRightColumn = ({
                 armed={armed}
                 gated={gated}
                 hasBlockingCustomFieldError={hasBlockingCustomFieldError}
-                captureLabel={captureLabel(ticket, multiGross)}
-                captureHint={captureHint(ticket, armed)}
+                captureLabel={captureLabel(ticket, multiGross, t)}
+                captureHint={captureHint(ticket, armed, t)}
                 onSave={onSave}
                 onOpenPrintModal={onOpenPrintModal}
             />

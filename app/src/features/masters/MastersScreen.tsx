@@ -34,7 +34,10 @@ export const MastersScreen = () => {
     }, [activeKind]);
 
     const kindLower = activeKind.toLowerCase();
-    const columns = useMemo(() => buildMasterColumns(activeKind, styles, t), [activeKind, t]);
+    const columns = useMemo(
+        () => buildMasterColumns(activeKind, styles, t, lang),
+        [activeKind, t, lang],
+    );
     const kindOptions = useMemo(() => buildKindOptions(lang, t), [lang, t]);
 
     return (

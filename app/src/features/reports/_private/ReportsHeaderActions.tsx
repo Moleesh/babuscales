@@ -11,6 +11,10 @@ export interface ReportsHeaderActionsProps {
     waitingCount: number;
     onShowWaiting: () => void;
     onOpenBuilder: () => void;
+    /** Dev-only "Add sample tickets" control — undefined outside a dev
+     * build (see ReportsScreen's own `import.meta.env.DEV` gate), so the
+     * button itself never renders for a real site. */
+    onSeedDemoTickets: (() => void) | undefined;
 }
 
 // Split out of ReportsScreen (over the line/complexity budget —
@@ -23,6 +27,7 @@ export const ReportsHeaderActions = ({
     waitingCount,
     onShowWaiting,
     onOpenBuilder,
+    onSeedDemoTickets,
 }: ReportsHeaderActionsProps) => {
     const { t } = useTranslation();
     return (
@@ -40,6 +45,11 @@ export const ReportsHeaderActions = ({
             <button type="button" className="chip act" onClick={onOpenBuilder}>
                 {t("reports.builder.trigger")}
             </button>
+            {onSeedDemoTickets && (
+                <button type="button" className="chip act" onClick={onSeedDemoTickets}>
+                    {t("reports.seedDemoTickets")}
+                </button>
+            )}
         </div>
     );
 };
