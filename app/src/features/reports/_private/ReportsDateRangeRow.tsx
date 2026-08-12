@@ -1,3 +1,5 @@
+import { useTranslation } from "@i18n/useTranslation";
+
 import styles from "../_styles/ReportsScreen.module.css";
 
 export interface ReportsDateRangeRowProps {
@@ -15,21 +17,24 @@ export const ReportsDateRangeRow = ({
     onDateFromChange,
     dateTo,
     onDateToChange,
-}: ReportsDateRangeRowProps) => (
-    <div className={styles.dateRange}>
-        <input
-            type="date"
-            className={styles.dateInput}
-            value={dateFrom}
-            onChange={(event) => onDateFromChange(event.target.value)}
-            aria-label="From date"
-        />
-        <input
-            type="date"
-            className={styles.dateInput}
-            value={dateTo}
-            onChange={(event) => onDateToChange(event.target.value)}
-            aria-label="To date"
-        />
-    </div>
-);
+}: ReportsDateRangeRowProps) => {
+    const { t } = useTranslation();
+    return (
+        <div className={styles.dateRange}>
+            <input
+                type="date"
+                className={styles.dateInput}
+                value={dateFrom}
+                onChange={(event) => onDateFromChange(event.target.value)}
+                aria-label={t("reports.dateFromAriaLabel")}
+            />
+            <input
+                type="date"
+                className={styles.dateInput}
+                value={dateTo}
+                onChange={(event) => onDateToChange(event.target.value)}
+                aria-label={t("reports.dateToAriaLabel")}
+            />
+        </div>
+    );
+};

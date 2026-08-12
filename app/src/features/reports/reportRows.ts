@@ -57,12 +57,17 @@ export const buildTicketRows = (docs: DocRow[]): TicketRow[] =>
 
 export type ReportView = "tickets" | "summary";
 
-export const VIEW_OPTIONS: { value: ReportView; label: string }[] = [
-    { value: "tickets", label: "Tickets" },
-    { value: "summary", label: "Summary" },
+export type Translate = (key: string) => string;
+
+export const viewOptions = (t: Translate): { value: ReportView; label: string }[] => [
+    { value: "tickets", label: t("reports.view.tickets") },
+    { value: "summary", label: t("reports.view.summary") },
 ];
 
 export type TicketRowFilter = "all" | "half" | "both";
+
+/** Bare value lists (no labels) for validating a recalled saved-report definition against — doesn't need a `t`, unlike the label-bearing `filterOptions`/`groupOptions` above/below. */
+export const TICKET_ROW_FILTER_VALUES: TicketRowFilter[] = ["all", "half", "both"];
 
 export const filterTicketRows = (
     rows: TicketRow[],
@@ -100,23 +105,25 @@ export const filterRowsByDateRange = (rows: TicketRow[], from: string, to: strin
     });
 };
 
-export const FILTER_OPTIONS: { value: TicketRowFilter; label: string }[] = [
-    { value: "all", label: "All" },
-    { value: "half", label: "Waiting for the second weight" },
-    { value: "both", label: "Both weights" },
+export const filterOptions = (t: Translate): { value: TicketRowFilter; label: string }[] => [
+    { value: "all", label: t("reports.filter.all") },
+    { value: "half", label: t("reports.filter.half") },
+    { value: "both", label: t("reports.filter.both") },
 ];
 
 export type GroupKey = "material" | "party" | "vehicleNo" | "transporter";
 
-export const GROUP_OPTIONS: { value: GroupKey; label: string }[] = [
-    { value: "material", label: "Material" },
-    { value: "party", label: "Party" },
-    { value: "vehicleNo", label: "Vehicle" },
-    { value: "transporter", label: "Transporter" },
+export const GROUP_KEY_VALUES: GroupKey[] = ["material", "party", "vehicleNo", "transporter"];
+
+export const groupOptions = (t: Translate): { value: GroupKey; label: string }[] => [
+    { value: "material", label: t("reports.group.material") },
+    { value: "party", label: t("reports.group.party") },
+    { value: "vehicleNo", label: t("reports.group.vehicleNo") },
+    { value: "transporter", label: t("reports.group.transporter") },
 ];
 
-export const groupLabel = (key: GroupKey): string =>
-    GROUP_OPTIONS.find((option) => option.value === key)?.label ?? "Group";
+export const groupLabel = (key: GroupKey, t: Translate): string =>
+    groupOptions(t).find((option) => option.value === key)?.label ?? t("reports.group.fallback");
 
 export interface SummaryRow {
     key: string;

@@ -31,7 +31,12 @@ export const buildReportsScreenSlipData = ({
         const timestamps = rows
             .filter((row) => !row.isCancelled && row.netKg !== null)
             .map((row) => row.at);
-        return buildReportSlipData({ title: "SUMMARY", head, rows: printRows, rowTimestamps: timestamps });
+        return buildReportSlipData({
+            title: "SUMMARY",
+            head,
+            rows: printRows,
+            rowTimestamps: timestamps,
+        });
     }
     const { head, rows: printRows } = buildTicketPrintRows(visibleRows);
     return buildReportSlipData({

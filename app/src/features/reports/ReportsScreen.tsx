@@ -1,18 +1,15 @@
-import { useState } from "react";
-
 import { Card } from "@components/Card";
 import type { DocRow } from "@db/types";
 import { useDataPort } from "@db/useDataPort";
 import { useSettings } from "@features/settings";
+import { useTranslation } from "@i18n/useTranslation";
 
 import { ReportPrintModal } from "./_private/ReportPrintModal";
 import { ReportsCardBody } from "./_private/ReportsCardBody";
 import { ReportsHeaderActions } from "./_private/ReportsHeaderActions";
 import { useReportDocs } from "./_private/useReportDocs";
-import { useReportsScreenData } from "./_private/useReportsScreenData";
-import { useSavedReportActions } from "./_private/useSavedReportActions";
+import { useReportsScreenController } from "./_private/useReportsScreenController";
 import styles from "./_styles/ReportsScreen.module.css";
-import type { GroupKey, ReportView, TicketRowFilter } from "./reportRows";
 
 export interface ReportsScreenProps {
     /** Resumes (open ticket) or reopens (completed ticket, to reprint) into the shared Weighing deck and switches there. */
@@ -44,60 +41,51 @@ export interface ReportsScreenProps {
 // see _private/ for each.
 export const ReportsScreen = ({ onOpenTicket }: ReportsScreenProps) => {
     const db = useDataPort();
+    const { t } = useTranslation();
     const { settings } = useSettings();
     const amountDp = settings.Formats.AmountDp;
     const docs = useReportDocs(db);
-    const [view, setView] = useState<ReportView>("tickets");
-    const [query, setQuery] = useState("");
-    const [filter, setFilter] = useState<TicketRowFilter>("all");
-    const [dateFrom, setDateFrom] = useState("");
-    const [dateTo, setDateTo] = useState("");
-    const [groupBy, setGroupBy] = useState<GroupKey>("material");
-    const [printOpen, setPrintOpen] = useState(false);
-    const savedReportActions = useSavedReportActions({ db, view, groupBy, filter, setView, setGroupBy, setFilter });
-    const { waitingCount, visibleRows, summaryRows, reportSlipData, ticketColumns, summaryColumns } =
-        useReportsScreenData({ docs, view, query, filter, dateFrom, dateTo, groupBy, onOpenTicket, amountDp, styles });
-
-    const showWaiting = (): void => {
-        setView("tickets");
-        setFilter("half");
-    };
+    const s = useReportsScreenController({ db, docs, onOpenTicket, amountDp, styles, t });
 
     return (
         <div className={styles.screen}>
             <Card
-                title={<span className="lbl">Reports</span>}
+                title={<span className="lbl">{t("reports.title")}</span>}
                 headerRight={
                     <ReportsHeaderActions
-                        view={view}
-                        onViewChange={setView}
-                        waitingCount={waitingCount}
-                        onShowWaiting={showWaiting}
+                        view={s.view}
+                        onViewChange={s.setView}
+                        waitingCount={s.waitingCount}
+                        onShowWaiting={s.showWaiting}
                     />
                 }
             >
                 <ReportsCardBody
-                    savedReportActions={savedReportActions}
-                    view={view}
-                    query={query}
-                    onQueryChange={setQuery}
-                    filter={filter}
-                    onFilterChange={setFilter}
-                    dateFrom={dateFrom}
-                    onDateFromChange={setDateFrom}
-                    dateTo={dateTo}
-                    onDateToChange={setDateTo}
-                    groupBy={groupBy}
-                    onGroupByChange={setGroupBy}
-                    ticketColumns={ticketColumns}
-                    visibleRows={visibleRows}
-                    summaryColumns={summaryColumns}
-                    summaryRows={summaryRows}
-                    reportSlipData={reportSlipData}
-                    onPrint={() => setPrintOpen(true)}
+                    savedReportActions={s.savedReportActions}
+                    view={s.view}
+                    query={s.query}
+                    onQueryChange={s.setQuery}
+                    filter={s.filter}
+                    onFilterChange={s.setFilter}
+                    dateFrom={s.dateFrom}
+                    onDateFromChange={s.setDateFrom}
+                    dateTo={s.dateTo}
+                    onDateToChange={s.setDateTo}
+                    groupBy={s.groupBy}
+                    onGroupByChange={s.setGroupBy}
+                    ticketColumns={s.ticketColumns}
+                    visibleRows={s.visibleRows}
+                    summaryColumns={s.summaryColumns}
+                    summaryRows={s.summaryRows}
+                    reportSlipData={s.reportSlipData}
+                    onPrint={() => s.setPrintOpen(true)}
                 />
             </Card>
-            <ReportPrintModal open={printOpen} onClose={() => setPrintOpen(false)} data={reportSlipData} />
+            <ReportPrintModal
+                open={s.printOpen}
+                onClose={() => s.setPrintOpen(false)}
+                data={s.reportSlipData}
+            />
         </div>
     );
 };

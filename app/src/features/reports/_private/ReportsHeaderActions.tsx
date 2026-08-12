@@ -1,7 +1,8 @@
 import { SegmentedControl } from "@components/SegmentedControl";
+import { useTranslation } from "@i18n/useTranslation";
 
 import styles from "../_styles/ReportsScreen.module.css";
-import { VIEW_OPTIONS } from "../reportRows";
+import { viewOptions } from "../reportRows";
 import type { ReportView } from "../reportRows";
 
 export interface ReportsHeaderActionsProps {
@@ -19,12 +20,20 @@ export const ReportsHeaderActions = ({
     onViewChange,
     waitingCount,
     onShowWaiting,
-}: ReportsHeaderActionsProps) => (
-    <div className={styles.headerActions}>
-        <SegmentedControl options={VIEW_OPTIONS} value={view} onChange={onViewChange} ariaLabel="View" />
-        <button className="chip act" onClick={onShowWaiting}>
-            <span className={styles.dot} />
-            {waitingCount} waiting for a second weight
-        </button>
-    </div>
-);
+}: ReportsHeaderActionsProps) => {
+    const { t } = useTranslation();
+    return (
+        <div className={styles.headerActions}>
+            <SegmentedControl
+                options={viewOptions(t)}
+                value={view}
+                onChange={onViewChange}
+                ariaLabel={t("reports.viewAriaLabel")}
+            />
+            <button className="chip act" onClick={onShowWaiting}>
+                <span className={styles.dot} />
+                {waitingCount} {t("reports.waitingForSecondWeight")}
+            </button>
+        </div>
+    );
+};

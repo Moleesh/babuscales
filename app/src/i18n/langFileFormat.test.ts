@@ -4,7 +4,7 @@ import { parseLangFile, serializeLangFile } from "./langFileFormat";
 
 describe("parseLangFile: happy path", () => {
     it("parses metadata and string lines", () => {
-        const text = ['Code=ta', 'Name=தமிழ்', "Version=1", "", 'nav.dash="முகப்பு"'].join("\n");
+        const text = ["Code=ta", "Name=தமிழ்", "Version=1", "", 'nav.dash="முகப்பு"'].join("\n");
         const result = parseLangFile(text);
         expect(result).toEqual({
             pack: { Code: "ta", Name: "தமிழ்", Version: 1, Strings: { "nav.dash": "முகப்பு" } },
@@ -25,7 +25,7 @@ describe("parseLangFile: happy path", () => {
         expect("pack" in result && result.pack.Strings).toEqual({ "weigh.save": "Enregistrer" });
     });
 
-    it("unescapes \\\" and \\n inside quoted values", () => {
+    it('unescapes \\" and \\n inside quoted values', () => {
         const text = ["Code=x", "Name=X", "Version=1", "", 'a.b="line one\\nline \\"two\\""'].join(
             "\n",
         );
@@ -46,7 +46,7 @@ describe("parseLangFile: error reporting", () => {
     });
 
     it("reports the line number of an unrecognised line", () => {
-        const result = parseLangFile('Code=x\nName=X\nVersion=1\n\nthis is not valid');
+        const result = parseLangFile("Code=x\nName=X\nVersion=1\n\nthis is not valid");
         expect("error" in result && result.error).toMatch(/Line 5/);
     });
 });

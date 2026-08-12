@@ -1,4 +1,5 @@
 import type { ReportDefinition } from "@db/reportDefs";
+import { useTranslation } from "@i18n/useTranslation";
 
 import styles from "./_styles/SavedReportsRow.module.css";
 
@@ -24,32 +25,40 @@ export const SavedReportsRow = ({
     onSave,
     onRecall,
     onDelete,
-}: SavedReportsRowProps) => (
-    <div className={styles.row}>
-        {savedReports.map((def) => (
-            <span key={def.Id} className={styles.chip}>
-                <button type="button" className="chip act" onClick={() => onRecall(def)}>
-                    {def.Name}
-                </button>
-                <button
-                    type="button"
-                    className={styles.delete}
-                    aria-label={`Delete saved report ${def.Name}`}
-                    onClick={() => onDelete(def.Id)}
-                >
-                    ×
-                </button>
-            </span>
-        ))}
-        <input
-            className={styles.input}
-            value={newName}
-            onChange={(event) => onNewNameChange(event.target.value)}
-            placeholder="Save current view as…"
-            aria-label="New saved report name"
-        />
-        <button type="button" className={styles.mini} disabled={!newName.trim()} onClick={onSave}>
-            Save view
-        </button>
-    </div>
-);
+}: SavedReportsRowProps) => {
+    const { t } = useTranslation();
+    return (
+        <div className={styles.row}>
+            {savedReports.map((def) => (
+                <span key={def.Id} className={styles.chip}>
+                    <button type="button" className="chip act" onClick={() => onRecall(def)}>
+                        {def.Name}
+                    </button>
+                    <button
+                        type="button"
+                        className={styles.delete}
+                        aria-label={`${t("reports.savedReportsDeletePrefix")} ${def.Name}`}
+                        onClick={() => onDelete(def.Id)}
+                    >
+                        ×
+                    </button>
+                </span>
+            ))}
+            <input
+                className={styles.input}
+                value={newName}
+                onChange={(event) => onNewNameChange(event.target.value)}
+                placeholder={t("reports.savedReportsPlaceholder")}
+                aria-label={t("reports.savedReportsNewAriaLabel")}
+            />
+            <button
+                type="button"
+                className={styles.mini}
+                disabled={!newName.trim()}
+                onClick={onSave}
+            >
+                {t("reports.savedReportsSave")}
+            </button>
+        </div>
+    );
+};

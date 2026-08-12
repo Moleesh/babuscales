@@ -1,5 +1,6 @@
 import { Card } from "@components/Card";
 import type { UseWeighingTicket } from "@features/weighing";
+import { useTranslation } from "@i18n/useTranslation";
 
 import { computeCameraBurnIn } from "./cameraBurnIn";
 import { CAMERA_SLOTS } from "./cameraFixtures";
@@ -17,15 +18,16 @@ export interface CamerasScreenProps {
 // is PLAN §16 in full — a documented gap (app/README.md), not something
 // this screen or the mock it's ported from claims to do.
 export const CamerasScreen = ({ ticket }: CamerasScreenProps) => {
+    const { t } = useTranslation();
     const configuredCount = CAMERA_SLOTS.filter((slot) => slot.configured).length;
     const burnIn = computeCameraBurnIn(ticket.docSeq, ticket.captures);
 
     return (
         <Card
-            title={<span className="lbl">Cameras</span>}
+            title={<span className="lbl">{t("cameras.title")}</span>}
             headerRight={
                 <span className="chip">
-                    {configuredCount} of {CAMERA_SLOTS.length} configured
+                    {configuredCount} {t("weigh.of")} {CAMERA_SLOTS.length} {t("weigh.configured")}
                 </span>
             }
         >

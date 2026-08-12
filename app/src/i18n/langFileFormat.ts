@@ -21,7 +21,8 @@ import type { LanguagePack } from "./types";
 const METADATA_KEYS = ["Code", "Name", "Version"] as const;
 type MetadataKey = (typeof METADATA_KEYS)[number];
 
-const unescapeValue = (raw: string): string => raw.replace(/\\(["n])/g, (_m, c: string) => (c === "n" ? "\n" : '"'));
+const unescapeValue = (raw: string): string =>
+    raw.replace(/\\(["n])/g, (_m, c: string) => (c === "n" ? "\n" : '"'));
 
 const QUOTED_LINE = /^([A-Za-z0-9_.]+)\s*=\s*"((?:\\.|[^"\\])*)"\s*$/;
 const BARE_LINE = /^([A-Za-z]+)\s*=\s*(.*)$/;
@@ -66,7 +67,8 @@ export const parseLangFile = (text: string): { pack: LanguagePack } | { error: s
 
 /** The inverse of `parseLangFile` — used by "Download as .lang" (FieldsLanguagePane) so an admin can start from this app's own built-in pack rather than an empty file. */
 export const serializeLangFile = (pack: LanguagePack): string => {
-    const escape = (value: string): string => value.replace(/["\n]/g, (c) => (c === "\n" ? "\\n" : '\\"'));
+    const escape = (value: string): string =>
+        value.replace(/["\n]/g, (c) => (c === "\n" ? "\\n" : '\\"'));
     const lines = [
         `Code=${pack.Code}`,
         `Name=${pack.Name}`,

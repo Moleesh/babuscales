@@ -5,8 +5,20 @@ import type { DocRow } from "@db/types";
 
 import { buildSummaryColumns, buildTicketColumns } from "./reportColumns";
 import { buildReportsScreenSlipData } from "./reportSlipData";
-import { buildTicketRows, filterRowsByDateRange, filterTicketRows, summarizeTicketRows } from "../reportRows";
-import type { GroupKey, ReportView, SummaryRow, TicketRow, TicketRowFilter } from "../reportRows";
+import {
+    buildTicketRows,
+    filterRowsByDateRange,
+    filterTicketRows,
+    summarizeTicketRows,
+} from "../reportRows";
+import type {
+    GroupKey,
+    ReportView,
+    SummaryRow,
+    TicketRow,
+    TicketRowFilter,
+    Translate,
+} from "../reportRows";
 
 export interface UseReportsScreenDataArgs {
     docs: DocRow[];
@@ -19,6 +31,7 @@ export interface UseReportsScreenDataArgs {
     onOpenTicket: (doc: DocRow) => void;
     amountDp: 0 | 2;
     styles: CSSModuleClasses;
+    t: Translate;
 }
 
 export interface UseReportsScreenData {
@@ -45,6 +58,7 @@ export const useReportsScreenData = ({
     onOpenTicket,
     amountDp,
     styles,
+    t,
 }: UseReportsScreenDataArgs): UseReportsScreenData => {
     const rows = useMemo(() => buildTicketRows(docs), [docs]);
     // PLAN §7.5 — the open-ticket strip is a global "what's waiting right
@@ -60,16 +74,36 @@ export const useReportsScreenData = ({
         () => filterTicketRows(dateFilteredRows, query, filter),
         [dateFilteredRows, query, filter],
     );
-    const summaryRows = useMemo(() => summarizeTicketRows(dateFilteredRows, groupBy), [dateFilteredRows, groupBy]);
+    const summaryRows = useMemo(
+        () => summarizeTicketRows(dateFilteredRows, groupBy),
+        [dateFilteredRows, groupBy],
+    );
     const reportSlipData = useMemo(
-        () => buildReportsScreenSlipData({ view, summaryRows, rows: dateFilteredRows, visibleRows, amountDp }),
+        () =>
+            buildReportsScreenSlipData({
+                view,
+                summaryRows,
+                rows: dateFilteredRows,
+                visibleRows,
+                amountDp,
+            }),
         [view, summaryRows, dateFilteredRows, visibleRows, amountDp],
     );
     const ticketColumns = useMemo(
-        () => buildTicketColumns({ onOpenTicket, amountDp, styles }),
-        [onOpenTicket, amountDp, styles],
+        () => buildTicketColumns({ onOpenTicket, amountDp, styles, t }),
+        [onOpenTicket, amountDp, styles, t],
     );
-    const summaryColumns = useMemo(() => buildSummaryColumns({ groupBy, amountDp }), [groupBy, amountDp]);
+    const summaryColumns = useMemo(
+        () => buildSummaryColumns({ groupBy, amountDp, t }),
+        [groupBy, amountDp, t],
+    );
 
-    return { waitingCount, visibleRows, summaryRows, reportSlipData, ticketColumns, summaryColumns };
+    return {
+        waitingCount,
+        visibleRows,
+        summaryRows,
+        reportSlipData,
+        ticketColumns,
+        summaryColumns,
+    };
 };

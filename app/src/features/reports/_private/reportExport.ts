@@ -3,7 +3,10 @@ import { toCsvBlob, toXlsxBlob } from "@engines/export";
 import type { ReportSlipData } from "@engines/print";
 
 const slugifyTitle = (title: string): string =>
-    title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+    title
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/(^-|-$)/g, "");
 
 // Same plain Blob-download mechanism as BackupRestoreCard.tsx's
 // handleExport — browser-native, works identically in the web demo and
@@ -30,5 +33,8 @@ export const exportReportCsv = (data: ReportSlipData): void => {
 };
 
 export const exportReportXlsx = (data: ReportSlipData): void => {
-    downloadBlob(toXlsxBlob(data.Title, data.Head, data.Rows), `${exportFilenameBase(data.Title)}.xlsx`);
+    downloadBlob(
+        toXlsxBlob(data.Title, data.Head, data.Rows),
+        `${exportFilenameBase(data.Title)}.xlsx`,
+    );
 };

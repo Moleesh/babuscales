@@ -4,7 +4,7 @@ import type { DataPort } from "@db/DataPort";
 import { addReportDef, deleteReportDef, loadReportDefs } from "@db/reportDefs";
 import type { ReportDefinition } from "@db/reportDefs";
 
-import { FILTER_OPTIONS, GROUP_OPTIONS } from "../reportRows";
+import { GROUP_KEY_VALUES, TICKET_ROW_FILTER_VALUES } from "../reportRows";
 import type { GroupKey, ReportView, TicketRowFilter } from "../reportRows";
 
 export interface UseSavedReportActionsArgs {
@@ -65,10 +65,10 @@ export const useSavedReportActions = ({
 
     const handleRecallReport = (def: ReportDefinition): void => {
         if (def.View === "tickets" || def.View === "summary") setView(def.View);
-        if (GROUP_OPTIONS.some((option) => option.value === def.GroupBy)) {
+        if (GROUP_KEY_VALUES.includes(def.GroupBy as GroupKey)) {
             setGroupBy(def.GroupBy as GroupKey);
         }
-        if (FILTER_OPTIONS.some((option) => option.value === def.Filter)) {
+        if (TICKET_ROW_FILTER_VALUES.includes(def.Filter as TicketRowFilter)) {
             setFilter(def.Filter as TicketRowFilter);
         }
     };
@@ -79,5 +79,12 @@ export const useSavedReportActions = ({
             .then(setSavedReports);
     };
 
-    return { savedReports, newReportName, setNewReportName, handleSaveReport, handleRecallReport, handleDeleteReport };
+    return {
+        savedReports,
+        newReportName,
+        setNewReportName,
+        handleSaveReport,
+        handleRecallReport,
+        handleDeleteReport,
+    };
 };
