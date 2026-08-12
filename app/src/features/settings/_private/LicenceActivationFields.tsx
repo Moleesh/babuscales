@@ -1,4 +1,5 @@
 import { Field } from "@components/Field";
+import { useTranslation } from "@i18n/useTranslation";
 
 import styles from "./_styles/SystemPane.module.css";
 
@@ -23,9 +24,11 @@ export const LicenceActivationFields = ({
     hasCode,
     onActivate,
     onClear,
-}: LicenceActivationFieldsProps) => (
+}: LicenceActivationFieldsProps) => {
+    const { t } = useTranslation();
+    return (
     <>
-        <Field id="licReqCode" label={{ en: "Request code — send to Babulens", ta: "கோரிக்கை குறியீடு — Babulens-க்கு அனுப்பவும்" }}>
+        <Field id="licReqCode" label={t("settings.licence.requestCode")}>
             <input
                 id="licReqCode"
                 readOnly
@@ -33,7 +36,7 @@ export const LicenceActivationFields = ({
                 onFocus={(event) => event.target.select()}
             />
         </Field>
-        <Field id="licActCode" label={{ en: "Activation code", ta: "செயல்படுத்தல் குறியீடு" }}>
+        <Field id="licActCode" label={t("settings.licence.activationCode")}>
             <input
                 id="licActCode"
                 placeholder="Paste the code Babulens sent back"
@@ -63,4 +66,5 @@ export const LicenceActivationFields = ({
             )}
         </div>
     </>
-);
+    );
+};

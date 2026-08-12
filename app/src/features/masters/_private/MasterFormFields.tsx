@@ -21,7 +21,7 @@ export const MasterFormFields = ({ activeKind, form, onChange }: MasterFormField
     const { t } = useTranslation();
     return (
         <FieldGrid columns={gridColumns(activeKind)}>
-            <Field id="mfName" label={{ en: t("masters.field.name") }}>
+            <Field id="mfName" label={t("masters.field.name")}>
                 <input
                     id="mfName"
                     value={form.name}
@@ -29,7 +29,7 @@ export const MasterFormFields = ({ activeKind, form, onChange }: MasterFormField
                     autoComplete="off"
                 />
             </Field>
-            <Field id="mfNotes" label={{ en: t("masters.field.notes") }}>
+            <Field id="mfNotes" label={t("masters.field.notes")}>
                 <input
                     id="mfNotes"
                     value={form.notes}
@@ -38,7 +38,7 @@ export const MasterFormFields = ({ activeKind, form, onChange }: MasterFormField
                 />
             </Field>
             {activeKind === "Material" && (
-                <Field id="mfRate" label={{ en: t("masters.field.rate") }}>
+                <Field id="mfRate" label={t("masters.field.rate")}>
                     <input
                         id="mfRate"
                         type="number"
@@ -54,7 +54,7 @@ export const MasterFormFields = ({ activeKind, form, onChange }: MasterFormField
                 // somewhere to send to. Optional: an empty Masters record just
                 // means that party's tickets never enqueue an Email outbox
                 // row, same as no phone number means no SMS.
-                <Field id="mfEmail" label={{ en: t("masters.field.email") }}>
+                <Field id="mfEmail" label={t("masters.field.email")}>
                     <input
                         id="mfEmail"
                         type="email"
@@ -68,7 +68,7 @@ export const MasterFormFields = ({ activeKind, form, onChange }: MasterFormField
                 // Task #43 — read at print time so "Send a copy by SMS" has
                 // somewhere to send to. Optional, same "skip quietly" shape as
                 // an empty E-mail above.
-                <Field id="mfPhone" label={{ en: t("masters.field.phone") }}>
+                <Field id="mfPhone" label={t("masters.field.phone")}>
                     <input
                         id="mfPhone"
                         type="tel"

@@ -47,8 +47,8 @@ const MasterDropdownField = ({
 }: MasterDropdownFieldProps) => (
     <Field
         id={id}
-        label={{ en: label }}
-        searchTitle={searchTitle ? { en: searchTitle } : undefined}
+        label={label}
+        searchTitle={searchTitle}
         recalled={recalled}
     >
         <SearchableDropdown
@@ -87,7 +87,7 @@ const VehicleDateRow = ({ ticket, vehicleCache, vehicleLabel, ticketDate }: Vehi
                 readOnly={ticket.isLocked}
                 spellCheck={false}
             />
-            <Field id="fDate" label={{ en: t("weigh.ticketDate") }}>
+            <Field id="fDate" label={t("weigh.ticketDate")}>
                 <input id="fDate" readOnly value={ticketDate} className={styles.dateField} />
             </Field>
         </FieldGrid>
@@ -152,7 +152,7 @@ const ChallanTransporterRow = ({
     const { t } = useTranslation();
     return (
         <FieldGrid columns={2}>
-            <Field id="fChal" label={{ en: t("weigh.challanNo") }}>
+            <Field id="fChal" label={t("weigh.challanNo")}>
                 <input
                     id="fChal"
                     value={ticket.fields.challanNo}

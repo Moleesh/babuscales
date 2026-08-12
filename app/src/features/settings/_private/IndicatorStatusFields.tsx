@@ -1,6 +1,7 @@
 import { Field } from "@components/Field";
 import { formatWeightKg } from "@constants/numberFormat";
 import type { IndicatorReading } from "@engines/indicator";
+import { useTranslation } from "@i18n/useTranslation";
 
 import type { ConnectionsConfig, SettingsBody } from "../settingsSchema";
 import styles from "./_styles/ConnectionsPane.module.css";
@@ -28,9 +29,11 @@ export const IndicatorStatusFields = ({
     onRescan,
     error,
     reading,
-}: IndicatorStatusFieldsProps) => (
+}: IndicatorStatusFieldsProps) => {
+    const { t } = useTranslation();
+    return (
     <>
-        <Field id="connPattern" label={{ en: "Custom pattern (advanced)", ta: "தனிப்பயன் மாதிரி (மேம்பட்டது)" }}>
+        <Field id="connPattern" label={t("settings.indicator.customPattern")}>
             <input
                 id="connPattern"
                 placeholder="Leave blank to auto-extract the number from each line"
@@ -64,4 +67,5 @@ export const IndicatorStatusFields = ({
             leave this blank.
         </p>
     </>
-);
+    );
+};

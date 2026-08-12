@@ -1,4 +1,5 @@
 import { Field } from "@components/Field";
+import { useTranslation } from "@i18n/useTranslation";
 
 import styles from "./_styles/ConnectionsPane.module.css";
 
@@ -21,9 +22,11 @@ export const EmailPasswordFields = ({
     unlocked,
     onSavePassword,
     onClearPassword,
-}: EmailPasswordFieldsProps) => (
+}: EmailPasswordFieldsProps) => {
+    const { t } = useTranslation();
+    return (
     <>
-        <Field id="smtpPassword" label={{ en: "Password", ta: "கடவுச்சொல்" }}>
+        <Field id="smtpPassword" label={t("settings.email.password")}>
             <input
                 id="smtpPassword"
                 type="password"
@@ -58,4 +61,5 @@ export const EmailPasswordFields = ({
             </span>
         </div>
     </>
-);
+    );
+};

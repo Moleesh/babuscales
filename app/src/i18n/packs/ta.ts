@@ -190,9 +190,14 @@ export const TA_PACK: LanguagePack = {
         "settings.amountFields.twoDecimals": "2 தசம இடம் — ₹ 250.00",
         "settings.amountFields.wholeRupees": "முழு ரூபாய் — ₹ 250",
         "settings.amountFields.newPasswordPlaceholder": "புதிய கடவுச்சொல்",
+        "settings.amountFields.rounding": "தொகை வட்டமிடல்",
+        "settings.adminPassword": "நிர்வாகி கடவுச்சொல்",
+        "settings.port": "போர்ட்",
+        "settings.baudRate": "பாட் விகிதம்",
         "settings.appearance.theme": "தோற்றம்",
         "settings.appearance.textSize": "எழுத்து அளவு",
         "settings.appearance.operatorOnDuty": "பணியில் உள்ள இயக்குநர்",
+        "settings.appearance.operatorName": "பெயர்",
         "settings.backup.working": "செயல்படுகிறது…",
         "settings.backup.saveBackup": "காப்புப் பிரதி எடு",
         "settings.backup.restore": "காப்புப் பிரதியிலிருந்து மீட்டமை…",
@@ -202,6 +207,13 @@ export const TA_PACK: LanguagePack = {
         "settings.connections.title": "இணைப்புகள்",
         "settings.connections.desktopOnlyHint":
             "சீரியல் போர்ட் அமைவு டெஸ்க்டாப் செயலியில் மட்டுமே கிடைக்கும் — இந்த டெமோவில் (மற்றும் GitHub Pages கட்டமைப்பில்) இணைக்க உண்மையான வன்பொருள் இல்லை, எனவே இங்குள்ள மீட்டர் எப்போதும் உருவகப்படுத்தப்பட்டதே.",
+        "settings.email.password": "கடவுச்சொல்",
+        "settings.email.host": "SMTP ஹோஸ்ட்",
+        "settings.email.username": "பயனர்பெயர் / அனுப்புநர் முகவரி",
+        "settings.board.hostIp": "ஹோஸ்ட் / IP முகவரி",
+        "settings.tally.exportFolder": "ஏற்றுமதி கோப்புறை",
+        "settings.webhook.endpointUrl": "இறுதிமுனை URL",
+        "settings.webhook.signingSecret": "கையொப்ப ரகசியம் (விருப்பம்)",
         "settings.dailySummary.title": "திட்டமிடப்பட்ட தினசரி சுருக்கம்",
         "settings.dailySummary.sending": "அனுப்புகிறது…",
         "settings.dailySummary.sendNow": "இப்போது அனுப்பு",
@@ -209,6 +221,8 @@ export const TA_PACK: LanguagePack = {
             "டிக்கெட் மின்னஞ்சல் செல்லும் அதே SMTP வழியாகவே இது செல்கிறது (இணைப்புகள் → மின்னஞ்சல் அனுப்புதல்) — முதலில் அதை அமைக்கவும். செயலி திறந்திருக்கும் போது மட்டுமே இது இயங்கும்: நிர்ணயிக்கப்பட்ட நேரத்திற்கு நிமிடத்திற்கு ஒருமுறை சரிபார்க்கும், பின்னணி சேவை எதுவும் இல்லை, எனவே நிர்ணயிக்கப்பட்ட நேரத்தில் அணைந்திருக்கும் (அல்லது உறங்கும்) இயந்திரம் அடுத்து திறக்கும் வரை எதையும் அனுப்பாது.",
         "settings.dailySummary.lastSent": "கடைசியாக அனுப்பியது:",
         "settings.dailySummary.sendAutomatically": "தினமும் தானாக அனுப்பு",
+        "settings.dailySummary.sendAt": "அனுப்ப வேண்டிய நேரம்",
+        "settings.dailySummary.recipientEmail": "பெறுநர் மின்னஞ்சல்",
 
         "components.appShell.sections": "பிரிவுகள்",
         "components.contextualHelp.close": "உதவியை மூடு",
@@ -216,6 +230,8 @@ export const TA_PACK: LanguagePack = {
         "settings.dateTimeFormats.title": "தேதி, நேரம் & தொகைகள்",
         "settings.dateTimeFormats.hint":
             "தேதி, நேரம் மற்றும் தொகை வடிவங்கள் இங்கே சேமிக்கப்படுகின்றன, ஆனால் செயலியில் வேறு எங்கும் இன்னும் படிக்கப்படவில்லை — அறிக்கைகள், முகப்பு மற்றும் அச்சிடப்பட்ட டிக்கெட்டுகள் இன்னும் உலாவியின் சொந்த வடிவமைப்பையே பயன்படுத்துகின்றன (அறியப்பட்ட குறை, app/README.md).",
+        "settings.dateTimeFormats.date": "தேதி வடிவம்",
+        "settings.dateTimeFormats.time": "நேர வடிவம்",
         "settings.printers.detectedTitle": "கண்டறியப்பட்ட பிரிண்டர்கள்",
         "settings.printers.detectedHint":
             "இந்த இயந்திரத்தில் தற்போது நிறுவப்பட்டுள்ள பிரிண்டர்கள் — OS அச்சு உரையாடல் வழங்கும் அதே பட்டியல். இந்த உலாவி டெமோவில் கிடைக்காது; டெஸ்க்டாப் செயலி இதை Windows அச்சு ஸ்பூலரிலிருந்து படிக்கும்.",
@@ -244,6 +260,8 @@ export const TA_PACK: LanguagePack = {
         "settings.numbering.resetEvery.cal": "நாட்காட்டி ஆண்டு",
         "settings.numbering.resetEvery.month": "மாதம்",
         "settings.numbering.resetEvery.day": "நாள்",
+        "settings.numbering.prefix": "முன்னொட்டு",
+        "settings.numbering.digits": "இலக்கங்கள்",
 
         "settings.fixedPolicy.title": "நிலையான கொள்கை",
         "settings.fixedPolicy.reprints.title": "மறு அச்சுகள் எப்போதும் அனுமதிக்கப்படும்",
@@ -322,8 +340,12 @@ export const TA_PACK: LanguagePack = {
         "settings.indexManager.title": "தனிப்பயன் குறியீடுகள்",
         "settings.indexManager.hint":
             "ஒரு டிக்கெட் அல்லது மாஸ்டரின் JSON உள்ளடக்கத்தில் உள்ள ஒரு புலத்தில் தேடுதலை வேகப்படுத்துகிறது — அட்டவணையே ஒருபோதும் மாறாது. குறியீட்டை நீக்குவது எப்போது வேண்டுமானாலும் பாதுகாப்பானது; இது தரவைத் தொடாது.",
+        "settings.indexManager.table": "அட்டவணை",
+        "settings.indexManager.jsonPath": "JSON பாதை",
 
         "settings.indicator.title": "எடை காட்டி",
+        "settings.indicator.customPattern": "தனிப்பயன் மாதிரி (மேம்பட்டது)",
+        "settings.indicator.serialPort": "சீரியல் போர்ட்",
 
         "settings.integrationConfig.title": "வெப்ஹூக் · கணக்கியல் ஏற்றுமதி · காட்சிப் பலகை",
         "settings.integrationConfig.hint":
@@ -351,6 +373,8 @@ export const TA_PACK: LanguagePack = {
         "settings.licence.notApplicable": "பொருந்தாது — இந்த கட்டமைப்பில் சரிபார்க்க உரிமம் இல்லை (இணைய டெமோ).",
         "settings.licence.hint":
             "ஒவ்வொரு நிறுவலும் முதல் இயக்கத்திலிருந்து இலவச 14-நாள் சோதனையைத் தொடங்குகிறது — கணக்கு இல்லை, சர்வர் இல்லை. இதை உரிமம் பெற, மேலே உள்ள கோரிக்கை குறியீட்டை Babulens-க்கு அனுப்பவும் (தொடர்பு விவரங்களுக்கு இந்த நிறுவலை வழங்கியவரைப் பார்க்கவும் — இன்னும் செயலியில் அடைவு இல்லை); அவர்கள் அதை இந்த இயந்திரத்தின் ஐடிக்கு எதிராக ஆஃப்லைனில் கையொப்பமிட்டு, ஒட்ட மேலே செயல்படுத்தல் குறியீட்டை திருப்பி அனுப்புவார்கள். இந்த இயந்திரத்திற்கு மட்டுமே பிணைக்கப்பட்டுள்ளது — வன்பொருள் மாற்றத்திற்குப் பிறகு அல்லது வேறு நிறுவலில் இது வேலை செய்யாது.",
+        "settings.licence.requestCode": "கோரிக்கை குறியீடு — Babulens-க்கு அனுப்பவும்",
+        "settings.licence.activationCode": "செயல்படுத்தல் குறியீடு",
 
         "settings.printTemplates.title": "அச்சு வார்ப்புருக்கள்",
         "settings.printTemplates.hint":
@@ -366,10 +390,12 @@ export const TA_PACK: LanguagePack = {
         "settings.remoteAccess.optInSuffix": "விருப்பப்பட்டு-இணைவு, இயல்பாக ஆஃப்",
         "settings.remoteAccess.hint":
             "LAN சரிபார்ப்புப் பக்கத்தை (போர்ட் 8420) நீங்கள் Cloudflare Zero Trust டாஷ்போர்டில் உருவாக்கும் ஒரு டன்னல் மூலம் பொதுவில் மீண்டும் வெளியிடுகிறது — அங்கு அதை உருவாக்கி, ஒரு பொது ஹோஸ்ட்பெயரை http://localhost:8420 உடன் மேப் செய்து, பின்னர் அதன் இணைப்பான் டோக்கனை மேலே ஒட்டவும். டோக்கன் நேரடியாக விண்டோஸ் நற்சான்றிதழ் மேலாளருக்குச் செல்கிறது, இந்த செயலியின் தரவுத்தளத்திற்கு ஒருபோதும் இல்லை. cloudflared ஏற்கெனவே நிறுவப்பட்டு PATH இல் இருக்க வேண்டும் — இந்த செயலி ஒருபோதும் அதைப் பதிவிறக்காது. இன்று சரிபார்ப்புப் பக்கம் மட்டுமே இந்த டன்னலில் செல்கிறது; இன்னும் தொலைநிலை நிர்வாக மேற்பரப்பு இல்லை.",
+        "settings.remoteAccess.tunnelToken": "Cloudflare Tunnel டோக்கன்",
 
         "settings.sms.title": "SMS விநியோகம்",
         "settings.sms.testSendLabel": "ஒரு சோதனை SMS-ஐ இதற்கு அனுப்பு",
         "settings.sms.sendTest": "சோதனை அனுப்பு",
+        "settings.sms.serialPort": "மோடம் சீரியல் போர்ட்",
         "settings.sms.hint":
             "ஒருங்கிணைப்புகள் → SMS நுழைவாயில் ஆன் செய்யப்பட்டிருக்கும்போது அச்சிடும் நேரத்தில் படிக்கப்படுகிறது: ஒரு டிக்கெட்டின் தரப்பினருக்கு ஒரு உரையைப் பெற மாஸ்டர்களில் (அமைப்புகள் → மாஸ்டர்கள் → தரப்பினர்) சேமிக்கப்பட்ட ஃபோன் தேவை. மோடத்துடன் வெற்று AT கட்டளைகள் (AT+CMGF, AT+CMGS) மூலம் பேசுகிறது — சீரியல்/USB AT இடைமுகத்தை வெளிப்படுத்தும் எந்த GSM மோடமும் அல்லது தொலைபேசியும் வேலை செய்யும், மேகக் SMS-நுழைவாயில் கணக்கு தேவையில்லை.",
 

@@ -21,7 +21,7 @@ export const SummaryView = ({ groupBy, onGroupByChange, columns, rows }: Summary
     return (
         <>
             <FieldGrid columns={2}>
-                <Field id="rGroup" label={{ en: t("reports.groupByLabel") }}>
+                <Field id="rGroup" label={t("reports.groupByLabel")}>
                     <select
                         id="rGroup"
                         value={groupBy}

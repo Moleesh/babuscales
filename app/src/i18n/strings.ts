@@ -177,9 +177,14 @@ export const EN_STRINGS: Record<string, string> = {
     "settings.amountFields.twoDecimals": "2 decimals — ₹ 250.00",
     "settings.amountFields.wholeRupees": "Whole rupees — ₹ 250",
     "settings.amountFields.newPasswordPlaceholder": "New password",
+    "settings.amountFields.rounding": "Amount rounding",
+    "settings.adminPassword": "Admin password",
+    "settings.port": "Port",
+    "settings.baudRate": "Baud rate",
     "settings.appearance.theme": "Theme",
     "settings.appearance.textSize": "Text size",
     "settings.appearance.operatorOnDuty": "Operator on duty",
+    "settings.appearance.operatorName": "Name",
     "settings.backup.working": "Working…",
     "settings.backup.saveBackup": "Save a backup",
     "settings.backup.restore": "Restore from a backup…",
@@ -189,6 +194,13 @@ export const EN_STRINGS: Record<string, string> = {
     "settings.connections.title": "Connections",
     "settings.connections.desktopOnlyHint":
         "Serial port configuration is only available in the desktop app — this demo (and the GitHub Pages build) has no real hardware to connect to, so the indicator here is always simulated.",
+    "settings.email.password": "Password",
+    "settings.email.host": "SMTP host",
+    "settings.email.username": "Username / from address",
+    "settings.board.hostIp": "Host / IP address",
+    "settings.tally.exportFolder": "Export folder",
+    "settings.webhook.endpointUrl": "Endpoint URL",
+    "settings.webhook.signingSecret": "Signing secret (optional)",
     "settings.dailySummary.title": "Scheduled daily summary",
     "settings.dailySummary.sending": "Sending…",
     "settings.dailySummary.sendNow": "Send now",
@@ -196,6 +208,8 @@ export const EN_STRINGS: Record<string, string> = {
         "Goes out over the same SMTP relay as ticket e-mail (Connections → E-mail delivery) — set that up first. This only runs while the app is open: it checks once a minute for the scheduled time, there is no background service, so a machine that's off (or asleep) at the scheduled time sends nothing until it's next opened.",
     "settings.dailySummary.lastSent": "Last sent:",
     "settings.dailySummary.sendAutomatically": "Send automatically every day",
+    "settings.dailySummary.sendAt": "Send at",
+    "settings.dailySummary.recipientEmail": "Recipient e-mail",
 
     "components.appShell.sections": "Sections",
     "components.contextualHelp.close": "Close help",
@@ -203,6 +217,8 @@ export const EN_STRINGS: Record<string, string> = {
     "settings.dateTimeFormats.title": "Date, time & amounts",
     "settings.dateTimeFormats.hint":
         "Date, time and amount formats are saved here but not yet read anywhere else in the app — Reports, Dashboard and printed tickets still use the browser's own formatting (known gap, app/README.md).",
+    "settings.dateTimeFormats.date": "Date format",
+    "settings.dateTimeFormats.time": "Time format",
     "settings.printers.detectedTitle": "Detected printers",
     "settings.printers.detectedHint":
         "Printers Windows currently has installed — the same list the OS print dialog offers. Not available in this browser demo; the desktop app reads it from the Windows print spooler.",
@@ -231,6 +247,8 @@ export const EN_STRINGS: Record<string, string> = {
     "settings.numbering.resetEvery.cal": "Calendar year",
     "settings.numbering.resetEvery.month": "Month",
     "settings.numbering.resetEvery.day": "Day",
+    "settings.numbering.prefix": "Prefix",
+    "settings.numbering.digits": "Digits",
 
     "settings.fixedPolicy.title": "Fixed policy",
     "settings.fixedPolicy.reprints.title": "Reprints are always allowed",
@@ -308,8 +326,12 @@ export const EN_STRINGS: Record<string, string> = {
     "settings.indexManager.title": "Custom indexes",
     "settings.indexManager.hint":
         "Speeds up lookups on a field inside a ticket or master's JSON body — the table itself never changes. Dropping an index is safe at any time; it never touches the data.",
+    "settings.indexManager.table": "Table",
+    "settings.indexManager.jsonPath": "JSON path",
 
     "settings.indicator.title": "Weight indicator",
+    "settings.indicator.customPattern": "Custom pattern (advanced)",
+    "settings.indicator.serialPort": "Serial port",
 
     "settings.integrationConfig.title": "Webhook · Accounting export · Display board",
     "settings.integrationConfig.hint":
@@ -337,6 +359,8 @@ export const EN_STRINGS: Record<string, string> = {
     "settings.licence.notApplicable": "Not applicable — this build has no licence to check (web demo).",
     "settings.licence.hint":
         "Every install starts a free 14-day trial from first run — no account, no server. To licence it, send the request code above to Babulens (see whoever supplied this install for contact details — there's no in-app directory yet); they sign it offline against this machine's ID and send back the activation code above to paste in. Bound to this machine only — it won't work after a hardware change or on a different install.",
+    "settings.licence.requestCode": "Request code — send to Babulens",
+    "settings.licence.activationCode": "Activation code",
 
     "settings.printTemplates.title": "Print templates",
     "settings.printTemplates.hint":
@@ -352,10 +376,12 @@ export const EN_STRINGS: Record<string, string> = {
     "settings.remoteAccess.optInSuffix": "opt-in, off by default",
     "settings.remoteAccess.hint":
         "Republishes the LAN verification page (port 8420) publicly through a tunnel you create on the Cloudflare Zero Trust dashboard — create it there, map a public hostname to http://localhost:8420, then paste its connector token above. The token goes straight to the Windows Credential Manager, never to this app's database. Requires cloudflared to already be installed and on PATH — this app never downloads it. Only the verification page rides this tunnel today; there is no remote admin surface yet.",
+    "settings.remoteAccess.tunnelToken": "Cloudflare Tunnel token",
 
     "settings.sms.title": "SMS delivery",
     "settings.sms.testSendLabel": "Send a test SMS to",
     "settings.sms.sendTest": "Send test",
+    "settings.sms.serialPort": "Modem serial port",
     "settings.sms.hint":
         "Read at print time when Integrations → SMS gateway is on: a ticket's party needs a Phone saved in Masters (Settings → Masters → Parties) to receive a text. Talks to the modem over plain AT commands (AT+CMGF, AT+CMGS) — any GSM modem or phone that exposes a serial/USB AT interface works, no cloud SMS-gateway account needed.",
 

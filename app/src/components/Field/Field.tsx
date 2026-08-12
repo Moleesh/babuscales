@@ -9,13 +9,25 @@ import styles from "./_styles/Field.module.css";
 export interface FieldProps {
     /** Matches the `htmlFor`/`id` pair so the label focuses the input. */
     id: string;
-    label: Localized;
-    /** Present on search fields (PLAN §8.2) — shows the ⌕ glass with this as its tooltip. */
-    searchTitle?: Localized;
+    /**
+     * A plain string is expected to have already gone through `t()` at the call
+     * site — the normal case for this app's own static UI chrome, which lives in
+     * `strings.ts`/`ta.ts` like everything else so an uploaded language pack can
+     * override it. `Localized` is for genuinely per-install, dynamic data — a
+     * site's own custom schema field labels (`Field.Label`, entered per-field,
+     * per-language, directly on the field) — where there is no static key to
+     * route through `t()` in the first place.
+     */
+    label: string | Localized;
+    /** Present on search fields (PLAN §8.2) — shows the ⌕ glass with this as its tooltip. Same string-vs-Localized split as `label`. */
+    searchTitle?: string | Localized;
     /** True when this value came back from a recalled ticket rather than fresh entry. */
     recalled?: boolean;
     children: ReactNode;
 }
+
+const resolveLabel = (value: string | Localized, lang: string): string =>
+    typeof value === "string" ? value : resolveLocalized(value, lang);
 
 // The wrapper every field in a form uses: label + optional master-search
 // glass + optional "recalled" badge, around whatever input the caller
@@ -26,9 +38,9 @@ export const Field = ({ id, label, searchTitle, recalled, children }: FieldProps
     return (
         <div className={`${styles.f} ${recalled ? styles.recalled : ""}`}>
             <label className={styles.lbl} htmlFor={id}>
-                <span>{resolveLocalized(label, lang)}</span>
+                <span>{resolveLabel(label, lang)}</span>
                 {searchTitle && (
-                    <span className={styles.mst} title={resolveLocalized(searchTitle, lang)}>
+                    <span className={styles.mst} title={resolveLabel(searchTitle, lang)}>
                         ⌕
                     </span>
                 )}

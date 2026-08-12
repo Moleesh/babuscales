@@ -39,7 +39,7 @@ export const NumberingAutoResetFields = ({
         </label>
         {numbering.AutoReset && (
             <FieldGrid columns={2}>
-                <Field id="resetEvery" label={{ en: "Every", ta: "ஒவ்வொரு" }}>
+                <Field id="resetEvery" label={t("settings.numbering.every")}>
                     <select
                         id="resetEvery"
                         value={numbering.ResetEvery}
@@ -55,7 +55,7 @@ export const NumberingAutoResetFields = ({
                         ))}
                     </select>
                 </Field>
-                <Field id="resetOn" label={{ en: "Starting", ta: "தொடங்குவது" }}>
+                <Field id="resetOn" label={t("settings.numbering.startingAt")}>
                     <input
                         id="resetOn"
                         value={numbering.ResetOn}

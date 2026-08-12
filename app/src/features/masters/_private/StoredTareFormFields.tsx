@@ -15,7 +15,7 @@ export const StoredTareFormFields = ({ form, onChange }: StoredTareFormFieldsPro
     const { t } = useTranslation();
     return (
         <FieldGrid columns={2}>
-            <Field id="mfName" label={{ en: t("masters.field.vehicleNo") }}>
+            <Field id="mfName" label={t("masters.field.vehicleNo")}>
                 <input
                     id="mfName"
                     value={form.name}
@@ -23,7 +23,7 @@ export const StoredTareFormFields = ({ form, onChange }: StoredTareFormFieldsPro
                     autoComplete="off"
                 />
             </Field>
-            <Field id="mfWeight" label={{ en: t("masters.field.weightKg") }}>
+            <Field id="mfWeight" label={t("masters.field.weightKg")}>
                 <input
                     id="mfWeight"
                     type="number"
@@ -32,7 +32,7 @@ export const StoredTareFormFields = ({ form, onChange }: StoredTareFormFieldsPro
                     onChange={(event) => onChange({ ...form, weightKg: event.target.value })}
                 />
             </Field>
-            <Field id="mfCaptured" label={{ en: t("masters.field.capturedAt") }}>
+            <Field id="mfCaptured" label={t("masters.field.capturedAt")}>
                 <input
                     id="mfCaptured"
                     type="datetime-local"
@@ -40,7 +40,7 @@ export const StoredTareFormFields = ({ form, onChange }: StoredTareFormFieldsPro
                     onChange={(event) => onChange({ ...form, capturedAt: event.target.value })}
                 />
             </Field>
-            <Field id="mfParty" label={{ en: t("masters.field.party") }}>
+            <Field id="mfParty" label={t("masters.field.party")}>
                 <input
                     id="mfParty"
                     value={form.partyName}

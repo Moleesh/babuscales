@@ -1,4 +1,5 @@
 import { Field } from "@components/Field";
+import { useTranslation } from "@i18n/useTranslation";
 
 import styles from "./_styles/ConnectionsPane.module.css";
 
@@ -23,9 +24,11 @@ export const RemoteAccessTokenFields = ({
     onSaveToken,
     onClearToken,
     onCheckStatus,
-}: RemoteAccessTokenFieldsProps) => (
+}: RemoteAccessTokenFieldsProps) => {
+    const { t } = useTranslation();
+    return (
     <>
-        <Field id="tunnelToken" label={{ en: "Cloudflare Tunnel token", ta: "Cloudflare Tunnel டோக்கன்" }}>
+        <Field id="tunnelToken" label={t("settings.remoteAccess.tunnelToken")}>
             <input
                 id="tunnelToken"
                 type="password"
@@ -65,4 +68,5 @@ export const RemoteAccessTokenFields = ({
             </span>
         </div>
     </>
-);
+    );
+};

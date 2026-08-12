@@ -1,4 +1,5 @@
 import { Field, FieldGrid } from "@components/Field";
+import { useTranslation } from "@i18n/useTranslation";
 
 import type { TicketNumbering } from "../settingsSchema";
 
@@ -16,9 +17,11 @@ export interface NumberingPrefixFieldsProps {
 
 // Split out of TicketNumberingCard (over the line budget — docs/CodingStandards.md)
 // — the Prefix/Digits fields, unchanged from the inline version it replaces.
-export const NumberingPrefixFields = ({ numbering, unlocked, onChange }: NumberingPrefixFieldsProps) => (
+export const NumberingPrefixFields = ({ numbering, unlocked, onChange }: NumberingPrefixFieldsProps) => {
+    const { t } = useTranslation();
+    return (
     <FieldGrid columns={3}>
-        <Field id="numPrefix" label={{ en: "Prefix", ta: "முன்னொட்டு" }}>
+        <Field id="numPrefix" label={t("settings.numbering.prefix")}>
             <input
                 id="numPrefix"
                 value={numbering.Prefix}
@@ -26,7 +29,7 @@ export const NumberingPrefixFields = ({ numbering, unlocked, onChange }: Numberi
                 onChange={(event) => onChange({ ...numbering, Prefix: event.target.value })}
             />
         </Field>
-        <Field id="numWidth" label={{ en: "Digits", ta: "இலக்கங்கள்" }}>
+        <Field id="numWidth" label={t("settings.numbering.digits")}>
             <input
                 id="numWidth"
                 type="number"
@@ -41,4 +44,5 @@ export const NumberingPrefixFields = ({ numbering, unlocked, onChange }: Numberi
         </Field>
         <div />
     </FieldGrid>
-);
+    );
+};

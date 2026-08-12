@@ -32,7 +32,7 @@ export const TestSendField = ({
     onSend,
 }: TestSendFieldProps) => (
     <>
-        <Field id={id} label={{ en: label }}>
+        <Field id={id} label={label}>
             <input
                 id={id}
                 type={type}

@@ -1,4 +1,5 @@
 import { Field, FieldGrid } from "@components/Field";
+import { useTranslation } from "@i18n/useTranslation";
 
 import type { SettingsBody, SmtpConfig } from "../settingsSchema";
 
@@ -12,10 +13,12 @@ export interface EmailHostFieldsProps {
 // Split out of EmailSmtpFields (over the line budget — docs/CodingStandards.md)
 // — the host/port/username fields, unchanged from the inline version it
 // replaces.
-export const EmailHostFields = ({ settings, smtp, unlocked, onSave }: EmailHostFieldsProps) => (
+export const EmailHostFields = ({ settings, smtp, unlocked, onSave }: EmailHostFieldsProps) => {
+    const { t } = useTranslation();
+    return (
     <>
         <FieldGrid columns={2}>
-            <Field id="smtpHost" label={{ en: "SMTP host", ta: "SMTP ஹோஸ்ட்" }}>
+            <Field id="smtpHost" label={t("settings.email.host")}>
                 <input
                     id="smtpHost"
                     placeholder="smtp.example.com"
@@ -24,7 +27,7 @@ export const EmailHostFields = ({ settings, smtp, unlocked, onSave }: EmailHostF
                     onChange={(event) => onSave({ ...settings, Smtp: { ...smtp, Host: event.target.value } })}
                 />
             </Field>
-            <Field id="smtpPort" label={{ en: "Port", ta: "போர்ட்" }}>
+            <Field id="smtpPort" label={t("settings.port")}>
                 <input
                     id="smtpPort"
                     type="number"
@@ -39,7 +42,7 @@ export const EmailHostFields = ({ settings, smtp, unlocked, onSave }: EmailHostF
                 />
             </Field>
         </FieldGrid>
-        <Field id="smtpUsername" label={{ en: "Username / from address", ta: "பயனர்பெயர் / அனுப்புநர் முகவரி" }}>
+        <Field id="smtpUsername" label={t("settings.email.username")}>
             <input
                 id="smtpUsername"
                 type="email"
@@ -50,4 +53,5 @@ export const EmailHostFields = ({ settings, smtp, unlocked, onSave }: EmailHostF
             />
         </Field>
     </>
-);
+    );
+};

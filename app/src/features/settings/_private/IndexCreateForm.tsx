@@ -1,4 +1,5 @@
 import { Field, FieldGrid } from "@components/Field";
+import { useTranslation } from "@i18n/useTranslation";
 
 import styles from "./_styles/SystemPane.module.css";
 import type { IndexTable } from "./useIndexManagerActions";
@@ -28,10 +29,12 @@ export const IndexCreateForm = ({
     unlocked,
     busy,
     onCreate,
-}: IndexCreateFormProps) => (
+}: IndexCreateFormProps) => {
+    const { t } = useTranslation();
+    return (
     <>
         <FieldGrid columns={2}>
-            <Field id="ixTable" label={{ en: "Table", ta: "அட்டவணை" }}>
+            <Field id="ixTable" label={t("settings.indexManager.table")}>
                 <select
                     id="ixTable"
                     value={table}
@@ -42,7 +45,7 @@ export const IndexCreateForm = ({
                     <option value="master">master</option>
                 </select>
             </Field>
-            <Field id="ixPath" label={{ en: "JSON path", ta: "JSON பாதை" }}>
+            <Field id="ixPath" label={t("settings.indexManager.jsonPath")}>
                 <input
                     id="ixPath"
                     type="text"
@@ -67,4 +70,5 @@ export const IndexCreateForm = ({
             </button>
         </div>
     </>
-);
+    );
+};

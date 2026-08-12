@@ -1,4 +1,5 @@
 import { Field } from "@components/Field";
+import { useTranslation } from "@i18n/useTranslation";
 
 import type { SettingsBody } from "../settingsSchema";
 
@@ -11,8 +12,10 @@ export interface TallyFieldsProps {
 // Split out of WebhookTallyBoardFields (over the line budget —
 // docs/CodingStandards.md) — the export-folder field, unchanged from the
 // inline version it replaces.
-export const TallyFields = ({ settings, unlocked, onSave }: TallyFieldsProps) => (
-    <Field id="tallyFolder" label={{ en: "Export folder", ta: "ஏற்றுமதி கோப்புறை" }}>
+export const TallyFields = ({ settings, unlocked, onSave }: TallyFieldsProps) => {
+    const { t } = useTranslation();
+    return (
+    <Field id="tallyFolder" label={t("settings.tally.exportFolder")}>
         <input
             id="tallyFolder"
             placeholder="C:\BabuScales\TallyExport"
@@ -21,4 +24,5 @@ export const TallyFields = ({ settings, unlocked, onSave }: TallyFieldsProps) =>
             onChange={(event) => onSave({ ...settings, Tally: { Folder: event.target.value } })}
         />
     </Field>
-);
+    );
+};

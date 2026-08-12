@@ -1,4 +1,5 @@
 import { Field, FieldGrid } from "@components/Field";
+import { useTranslation } from "@i18n/useTranslation";
 
 import type { SettingsBody } from "../settingsSchema";
 
@@ -13,9 +14,10 @@ export interface BoardFieldsProps {
 // version it replaces.
 export const BoardFields = ({ settings, unlocked, onSave }: BoardFieldsProps) => {
     const board = settings.Board;
+    const { t } = useTranslation();
     return (
         <FieldGrid columns={2}>
-            <Field id="boardHost" label={{ en: "Host / IP address", ta: "ஹோஸ்ட் / IP முகவரி" }}>
+            <Field id="boardHost" label={t("settings.board.hostIp")}>
                 <input
                     id="boardHost"
                     placeholder="192.168.1.50"
@@ -24,7 +26,7 @@ export const BoardFields = ({ settings, unlocked, onSave }: BoardFieldsProps) =>
                     onChange={(event) => onSave({ ...settings, Board: { ...board, Host: event.target.value } })}
                 />
             </Field>
-            <Field id="boardPort" label={{ en: "Port", ta: "போர்ட்" }}>
+            <Field id="boardPort" label={t("settings.port")}>
                 <input
                     id="boardPort"
                     type="number"

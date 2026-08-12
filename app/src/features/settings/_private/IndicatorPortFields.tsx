@@ -1,4 +1,5 @@
 import { Field, FieldGrid } from "@components/Field";
+import { useTranslation } from "@i18n/useTranslation";
 
 import { BAUD_RATE_OPTIONS } from "../settingsSchema";
 import type { ConnectionsConfig, SettingsBody } from "../settingsSchema";
@@ -14,9 +15,11 @@ export interface IndicatorPortFieldsProps {
 // Split out of IndicatorCard (over the line budget — docs/CodingStandards.md)
 // — the serial port/baud selects, unchanged from the inline version it
 // replaces.
-export const IndicatorPortFields = ({ settings, conn, unlocked, onSave, ports }: IndicatorPortFieldsProps) => (
+export const IndicatorPortFields = ({ settings, conn, unlocked, onSave, ports }: IndicatorPortFieldsProps) => {
+    const { t } = useTranslation();
+    return (
     <FieldGrid columns={2}>
-        <Field id="connPort" label={{ en: "Serial port", ta: "சீரியல் போர்ட்" }}>
+        <Field id="connPort" label={t("settings.indicator.serialPort")}>
             <select
                 id="connPort"
                 value={conn.IndicatorPort}
@@ -33,7 +36,7 @@ export const IndicatorPortFields = ({ settings, conn, unlocked, onSave, ports }:
                 ))}
             </select>
         </Field>
-        <Field id="connBaud" label={{ en: "Baud rate", ta: "பாட் விகிதம்" }}>
+        <Field id="connBaud" label={t("settings.baudRate")}>
             <select
                 id="connBaud"
                 value={conn.IndicatorBaud}
@@ -53,4 +56,5 @@ export const IndicatorPortFields = ({ settings, conn, unlocked, onSave, ports }:
             </select>
         </Field>
     </FieldGrid>
-);
+    );
+};

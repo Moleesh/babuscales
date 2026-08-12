@@ -1,4 +1,5 @@
 import { Field, FieldGrid } from "@components/Field";
+import { useTranslation } from "@i18n/useTranslation";
 
 import { BAUD_RATE_OPTIONS } from "../settingsSchema";
 import type { ConnectionsConfig, SettingsBody } from "../settingsSchema";
@@ -25,10 +26,12 @@ export const SmsPortFields = ({
     ports,
     refreshing,
     onRescan,
-}: SmsPortFieldsProps) => (
+}: SmsPortFieldsProps) => {
+    const { t } = useTranslation();
+    return (
     <>
         <FieldGrid columns={2}>
-            <Field id="gsmPort" label={{ en: "Modem serial port", ta: "மோடம் சீரியல் போர்ட்" }}>
+            <Field id="gsmPort" label={t("settings.sms.serialPort")}>
                 <select
                     id="gsmPort"
                     value={conn.GsmPort}
@@ -45,16 +48,13 @@ export const SmsPortFields = ({
                     ))}
                 </select>
             </Field>
-            <Field id="gsmBaud" label={{ en: "Baud rate", ta: "பாட் விகிதம்" }}>
+            <Field id="gsmBaud" label={t("settings.baudRate")}>
                 <select
                     id="gsmBaud"
                     value={conn.GsmBaud}
                     disabled={!unlocked}
                     onChange={(event) =>
-                        onSave({
-                            ...settings,
-                            Connections: { ...conn, GsmBaud: Number(event.target.value) },
-                        })
+                        onSave({ ...settings, Connections: { ...conn, GsmBaud: Number(event.target.value) } })
                     }
                 >
                     {BAUD_RATE_OPTIONS.map((baud) => (
@@ -74,4 +74,5 @@ export const SmsPortFields = ({
             </span>
         </div>
     </>
-);
+    );
+};
