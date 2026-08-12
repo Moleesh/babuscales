@@ -1,68 +1,62 @@
-import type { ReactNode } from "react";
 import { useEffect, useRef, useState } from "react";
+import type { ReactNode } from "react";
 
 import { useTranslation } from "@i18n/useTranslation";
 
-import styles from "./_styles/TopBarOverflow.module.css";
 import { useIsNarrowTopBar } from "./useIsNarrowTopBar";
+import styles from "../_styles/AppShell.module.css";
 
 export interface TopBarOverflowProps {
-    /** The right-side cluster (language toggle, operator chip, help button, …) — feature-owned, this component only decides whether it renders inline or behind "⋯". */
+    /** The secondary controls (Settings/Language/Operator/Help) plus any
+        primary tabs AppShell itself has decided don't fit (task #62) —
+        rendered inline above the breakpoint, behind the "..." menu below
+        it. Opaque to this component either way. */
     children: ReactNode;
 }
 
-// Item 1's fix: below the narrow-top-bar breakpoint (useIsNarrowTopBar), the
-// right-side cluster no longer sits inline — it collapses into a single "⋯"
-// button that opens a dropdown holding the same content. The 5 nav tabs
-// never move; only this cluster does. Outside-click/Escape-closes dropdown
-// follows the same shape as reports/_private/ExportMenu.tsx.
+// Closes the menu on an outside click/tap — the one bit of behaviour this
+// component owns beyond the plain "narrow ? menu : inline" toggle, so it's
+// split out to keep the component itself under the line budget.
+const useCloseOnOutsideClick = (open: boolean, onClose: () => void) => {
+    const ref = useRef<HTMLDivElement>(null);
+    useEffect(() => {
+        if (!open) return;
+        const onPointerDown = (event: PointerEvent) => {
+            if (ref.current && !ref.current.contains(event.target as Node)) onClose();
+        };
+        document.addEventListener("pointerdown", onPointerDown);
+        return () => document.removeEventListener("pointerdown", onPointerDown);
+    }, [open, onClose]);
+    return ref;
+};
+
+// Collapses whatever it's given behind a "..." menu once the top bar is too
+// narrow to show it inline (useIsNarrowTopBar, AppShell.module.css's own
+// 880px breakpoint) — task #62. AppShell.tsx feeds it the secondary
+// top-bar controls (App.tsx's `topRight`) and any primary tabs that no
+// longer fit; the always-visible pin toggle stays outside it entirely.
 export const TopBarOverflow = ({ children }: TopBarOverflowProps) => {
     const { t } = useTranslation();
     const narrow = useIsNarrowTopBar();
     const [open, setOpen] = useState(false);
-    const rootRef = useRef<HTMLDivElement>(null);
-
-    useEffect(() => {
-        if (!narrow) setOpen(false);
-    }, [narrow]);
-
-    useEffect(() => {
-        if (!open) return;
-        const onPointerDown = (event: MouseEvent) => {
-            if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
-        };
-        const onKeyDown = (event: KeyboardEvent) => {
-            if (event.key === "Escape") setOpen(false);
-        };
-        document.addEventListener("mousedown", onPointerDown);
-        document.addEventListener("keydown", onKeyDown);
-        return () => {
-            document.removeEventListener("mousedown", onPointerDown);
-            document.removeEventListener("keydown", onKeyDown);
-        };
-    }, [open]);
+    const ref = useCloseOnOutsideClick(open, () => setOpen(false));
 
     if (!narrow) return <>{children}</>;
 
     return (
-        <div className={styles.root} ref={rootRef}>
+        <div className={styles.overflow} ref={ref}>
             <button
-                type="button"
-                className={`iconbtn ${styles.trigger}`}
+                className="iconbtn"
                 aria-haspopup="menu"
                 aria-expanded={open}
-                aria-label={t("components.appShell.moreOptions")}
-                title={t("components.appShell.moreOptions")}
-                onClick={() => setOpen((v) => !v)}
+                aria-label={t("components.appShell.more")}
+                title={t("components.appShell.more")}
+                onClick={() => setOpen((value) => !value)}
             >
                 ⋯
             </button>
-            {/* No close-on-inner-click here (unlike ExportMenu): the operator
-                chip needs to stay open through a click-to-edit + typed
-                commit, so only the outside-click/Escape handlers above close
-                this menu. */}
             {open && (
-                <div className={styles.menu} role="menu">
+                <div className={styles.overflowMenu} role="menu" onClick={() => setOpen(false)}>
                     {children}
                 </div>
             )}

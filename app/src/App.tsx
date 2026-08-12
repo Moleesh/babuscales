@@ -29,6 +29,8 @@ import { createTunnelSource } from "@engines/tunnel/createTunnelSource";
 import { VerificationServerProvider } from "@engines/verification";
 import type { VerificationServerSource } from "@engines/verification";
 import { createVerificationServerSource } from "@engines/verification/createVerificationServerSource";
+import { createWindowPinSource } from "@engines/windowPin/createWindowPinSource";
+import type { WindowPinSource } from "@engines/windowPin/types";
 import { CamerasScreen } from "@features/cameras";
 import { DashboardScreen } from "@features/dashboard";
 import { LicenseProvider, renderLicenseBanner, useLicense } from "@features/licensing";
@@ -52,6 +54,12 @@ import type { LanguagePack } from "@i18n/types";
 import { useTranslation } from "@i18n/useTranslation";
 
 const TAB_KEYS = ["dash", "weigh", "cameras", "reports", "masters", "settings"] as const;
+
+// The 5 primary tabs AppShell shows in its nav row (task #62) — Settings
+// moved to the secondary top-bar controls (TopBarActions below), reached by
+// its own icon button next to Language/Operator/Help, same "not a
+// screen-switching tab" treatment as those already had.
+const PRIMARY_TAB_KEYS = TAB_KEYS.filter((key) => key !== "settings");
 
 // Dashboard/Weighing/Cameras all get the same bigger indicator readout — the
 // other tabs (Reports/Masters/Settings) keep the compact one (PLAN §21).
@@ -79,6 +87,8 @@ interface TopBarActionsProps {
     helpOpen: boolean;
     onToggleHelp: () => void;
     helpTitle: string;
+    settingsTitle: string;
+    onOpenSettings: () => void;
 }
 
 const TopBarActions = ({
@@ -88,6 +98,8 @@ const TopBarActions = ({
     helpOpen,
     onToggleHelp,
     helpTitle,
+    settingsTitle,
+    onOpenSettings,
 }: TopBarActionsProps) => (
     <>
         {otherPackName && (
@@ -96,6 +108,9 @@ const TopBarActions = ({
             </button>
         )}
         <OperatorChip />
+        <button className="iconbtn" title={settingsTitle} onClick={onOpenSettings}>
+            ⚙
+        </button>
         <button
             className="iconbtn"
             aria-expanded={helpOpen}
@@ -106,6 +121,44 @@ const TopBarActions = ({
             ?
         </button>
     </>
+);
+
+// Filled while pinned, outline-only while not (task #62's "outline/filled
+// state to indicate on/off") — a plain glyph can't do that, so a tiny inline
+// SVG the same size as `.iconbtn`'s own icons, same spirit as BrandMark.
+const PinIcon = ({ pinned }: { pinned: boolean }) => (
+    <svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true">
+        <path
+            d="M12 2a5 5 0 0 0-5 5c0 3 2 5.5 4 8.2V22h2v-6.8c2-2.7 4-5.2 4-8.2a5 5 0 0 0-5-5Z"
+            fill={pinned ? "currentColor" : "none"}
+            stroke="currentColor"
+            strokeWidth="1.6"
+        />
+    </svg>
+);
+
+interface PinToggleProps {
+    pinned: boolean;
+    onToggle: () => void;
+    labelOn: string;
+    labelOff: string;
+}
+
+// The always-on-top toggle (task #62) — always visible in the top bar
+// (AppShell's `pin` slot, never collapsed into TopBarOverflow's menu),
+// defaults to on (`alwaysOnTop: true`, tauri.conf.json) and is pure
+// per-session React state: nothing here writes to Settings/DB, so a
+// relaunch always comes back to the config's own default, exactly as the
+// "temporary" ask wants.
+const PinToggle = ({ pinned, onToggle, labelOn, labelOff }: PinToggleProps) => (
+    <button
+        className="iconbtn"
+        aria-pressed={pinned}
+        title={pinned ? labelOn : labelOff}
+        onClick={onToggle}
+    >
+        <PinIcon pinned={pinned} />
+    </button>
 );
 
 interface TabContentProps {
@@ -196,7 +249,18 @@ const ShellWeightHeader = ({
 );
 
 const buildNavTabs = (t: ReturnType<typeof useTranslation>["t"]): AppShellTab[] =>
-    TAB_KEYS.map((key) => ({ key, label: t(`nav.${key}`), icon: TAB_ICONS[key] }));
+    PRIMARY_TAB_KEYS.map((key) => ({ key, label: t(`nav.${key}`), icon: TAB_ICONS[key] }));
+
+// Per-session only (task #62) — a relaunch always comes back to
+// `tauri.conf.json`'s own `alwaysOnTop: true`, same as the config itself,
+// since this is just React state with nothing behind it that persists.
+const usePinToggle = (windowPin: WindowPinSource) => {
+    const [pinned, setPinned] = useState(true);
+    useEffect(() => {
+        void windowPin.setAlwaysOnTop(pinned);
+    }, [windowPin, pinned]);
+    return { pinned, onToggle: () => setPinned((value) => !value) };
+};
 
 // The two handlers TabContent needs that reach outside its own props (resume
 // a ticket from Reports by switching tabs; reset the doc series from
@@ -246,51 +310,58 @@ const useDraftLabelSync = (t: ReturnType<typeof useTranslation>["t"]): void => {
 interface ShellProps {
     /** Owned at App level — the loaded/live pack list lives above I18nProvider, which is above Shell. */
     onAddLanguagePack: (pack: LanguagePack) => Promise<void>;
+    /** Owned at App level, same "one instance per app, not per Shell render" shape as every other `@engines/*` source below. */
+    windowPin: WindowPinSource;
 }
 
-// Split out of Shell (over the line budget — docs/CodingStandards.md) — just
-// the two AppShell slot props that don't need Shell's full local scope.
-interface ShellTopSlotsProps {
+interface UseShellTopBarArgs {
+    windowPin: WindowPinSource;
     lang: string;
-    otherPackName: string | null;
-    otherPackCode: string | null;
-    setLang: (code: string) => void;
+    setLang: (lang: string) => void;
+    otherPack: LanguagePack | null;
     helpOpen: boolean;
-    setHelpOpen: (updater: (open: boolean) => boolean) => void;
-    t: (key: string) => string;
-    reading: ReturnType<typeof useIndicatorReading>;
-    activeTab: (typeof TAB_KEYS)[number];
+    setHelpOpen: (updater: (value: boolean) => boolean) => void;
+    onOpenSettings: () => void;
 }
 
-const useShellTopSlots = ({
+// AppShell's `pin` + `topRight` slots (the always-on-top toggle and the
+// Settings/Language/Operator/Help controls) — split out of Shell purely to
+// keep that component under the file's own line budget.
+const useShellTopBar = ({
+    windowPin,
     lang,
-    otherPackName,
-    otherPackCode,
     setLang,
+    otherPack,
     helpOpen,
     setHelpOpen,
-    t,
-    reading,
-    activeTab,
-}: ShellTopSlotsProps) => ({
-    topRight: (
+    onOpenSettings,
+}: UseShellTopBarArgs) => {
+    const { t } = useTranslation();
+    const { pinned, onToggle } = usePinToggle(windowPin);
+    const pin = (
+        <PinToggle
+            pinned={pinned}
+            onToggle={onToggle}
+            labelOn={t("components.appShell.pinOn")}
+            labelOff={t("components.appShell.pinOff")}
+        />
+    );
+    const topRight = (
         <TopBarActions
             lang={lang}
-            otherPackName={otherPackName}
-            onToggleLang={() =>
-                otherPackCode && setLang(lang === otherPackCode ? "en" : otherPackCode)
-            }
+            otherPackName={otherPack?.Name ?? null}
+            onToggleLang={() => otherPack && setLang(lang === otherPack.Code ? "en" : otherPack.Code)}
             helpOpen={helpOpen}
             onToggleHelp={() => setHelpOpen((v) => !v)}
             helpTitle={t("nav.help")}
+            settingsTitle={t("nav.settings")}
+            onOpenSettings={onOpenSettings}
         />
-    ),
-    header: (
-        <ShellWeightHeader reading={reading} compact={!BIG_HEADER_TABS.has(activeTab)} t={t} lang={lang} />
-    ),
-});
+    );
+    return { pin, topRight };
+};
 
-const Shell = ({ onAddLanguagePack }: ShellProps) => {
+const Shell = ({ onAddLanguagePack, windowPin }: ShellProps) => {
     const { t, lang, setLang, packs } = useTranslation();
     const [activeTab, setActiveTab] = useState<(typeof TAB_KEYS)[number]>("weigh");
     const [helpOpen, setHelpOpen] = useState(false);
@@ -308,16 +379,14 @@ const Shell = ({ onAddLanguagePack }: ShellProps) => {
     const { openTicket, resetTicketSeries } = useShellTicketActions(ticket, db, setActiveTab);
     const { reportsIntent, onNavigateToReports } = useReportsNavigation(setActiveTab);
     useDraftLabelSync(t);
-    const { topRight, header } = useShellTopSlots({
+    const { pin, topRight } = useShellTopBar({
+        windowPin,
         lang,
-        otherPackName: otherPack?.Name ?? null,
-        otherPackCode: otherPack?.Code ?? null,
         setLang,
+        otherPack,
         helpOpen,
         setHelpOpen,
-        t,
-        reading,
-        activeTab,
+        onOpenSettings: () => setActiveTab("settings"),
     });
 
     return (
@@ -326,8 +395,9 @@ const Shell = ({ onAddLanguagePack }: ShellProps) => {
             tabs={buildNavTabs(t)}
             activeTab={activeTab}
             onNavigate={(key) => setActiveTab(key as (typeof TAB_KEYS)[number])}
+            pin={pin}
             topRight={topRight}
-            header={header}
+            header={<ShellWeightHeader reading={reading} compact={!BIG_HEADER_TABS.has(activeTab)} t={t} lang={lang} />}
             banner={renderLicenseBanner(license.state, license.isGated)}
         >
             <TabContent
@@ -698,6 +768,7 @@ export const App = () => {
     const [tunnel] = useState(() => createTunnelSource());
     const [licensing] = useState(() => createLicensingSource());
     const [scheduler] = useState(() => createSchedulerSource());
+    const [windowPin] = useState(() => createWindowPinSource());
     const { packs, addLanguagePack } = useAppLanguagePacks(db);
     const { ticketSchema, setTicketSchema } = useAppTicketSchema(db);
 
@@ -718,7 +789,7 @@ export const App = () => {
                                         <DailySummaryTaskSync scheduler={scheduler} />
                                         <HeadlessDailySummarySync scheduler={scheduler} />
                                         <OutboxWorkerSync />
-                                        <Shell onAddLanguagePack={addLanguagePack} />
+                                        <Shell onAddLanguagePack={addLanguagePack} windowPin={windowPin} />
                                     </SchemaProvider>
                                 </TunnelProvider>
                             </VerificationServerProvider>

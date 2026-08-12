@@ -134,6 +134,11 @@
     font: inherit;
     font-size: 0.8125rem;
     white-space: nowrap;
+    /* Never let a tab shrink below its own label width (task #62) — the
+       reported "Reports" -> "Rep" clipping. useVisibleTabCount.ts is what
+       keeps the row itself from running out of room in the first place;
+       this is the belt-and-suspenders CSS half, in case it ever doesn't. */
+    flex-shrink: 0;
 }
 .tab:hover {
     color: var(--text);
@@ -158,14 +163,43 @@
     flex: none;
 }
 
-/* Responsive top bar (task #58): below ~880px, brandbox (site label) +
-   6 labelled tabs + topRight chips no longer fit on one 52px row — the
-   `.tabs` nav (flex:1, min-width:0, overflow-x:auto) would silently shrink
-   to a sliver showing one tab with no visible hint that the rest are a
-   swipe away, and on a phone-width screen it can shrink to 0 entirely
-   (topRight's fixed-width chips alone are wider than a phone). Two-step
-   fix: go icon-only first to reclaim space, then let the bar wrap onto a
-   second full-width row for the tabs once even that's too tight. */
+/* TopBarOverflow's "..." trigger + its dropdown (task #62) — collapses the
+   secondary controls (Settings/Language/Operator/Help) and, once
+   useVisibleTabCount.ts decides they no longer fit, trailing primary tabs
+   too. Positioned off the trigger itself so it never pushes the row's own
+   width around while open. */
+.overflow {
+    position: relative;
+    flex: none;
+}
+.overflow-menu {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 180px;
+    max-width: min(80vw, 260px);
+    padding: 6px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+    z-index: 20;
+}
+.overflow-menu .tab {
+    justify-content: flex-start;
+    width: 100%;
+}
+
+/* Responsive top bar (task #58/#62): below ~880px, brandbox (site label) +
+   5 labelled tabs + topRight chips no longer fit on one 52px row. Go
+   icon-only first to reclaim space (this rule); TopBarOverflow.tsx +
+   useVisibleTabCount.ts handle what still doesn't fit past that — the
+   secondary controls always, and trailing primary tabs once the row itself
+   runs out of room — so the bar always stays a single row and nothing
+   silently clips. */
 @media (max-width: 880px) {
     .site {
         display: none;
@@ -175,34 +209,6 @@
     }
     .tab-label {
         display: none;
-    }
-}
-
-@media (max-width: 560px) {
-    .top {
-        flex-wrap: wrap;
-        height: auto;
-        min-height: 52px;
-        row-gap: 6px;
-        padding: 8px 10px;
-    }
-    .brandbox {
-        order: 1;
-    }
-    .top-right {
-        order: 2;
-        margin-left: auto;
-        max-width: 60%;
-        overflow-x: auto;
-        scrollbar-width: none;
-    }
-    .top-right::-webkit-scrollbar {
-        display: none;
-    }
-    .tabs {
-        order: 3;
-        flex: 1 1 100%;
-        width: 100%;
     }
 }
 

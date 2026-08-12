@@ -261,7 +261,9 @@ export const TA_PACK: LanguagePack = {
         "settings.dailySummary.recipientEmail": "பெறுநர் மின்னஞ்சல்",
 
         "components.appShell.sections": "பிரிவுகள்",
-        "components.appShell.moreOptions": "மேலும் விருப்பங்கள்",
+        "components.appShell.more": "மேலும்",
+        "components.appShell.pinOn": "சாளரத்தை மேலே வைத்திரு (இயக்கத்தில்) — அணைக்க கிளிக் செய்யவும்",
+        "components.appShell.pinOff": "சாளரத்தை மேலே வைத்திரு (அணைக்கப்பட்டது) — இயக்க கிளிக் செய்யவும்",
         "components.contextualHelp.close": "உதவியை மூடு",
 
         "settings.dateTimeFormats.title": "தேதி, நேரம் & தொகைகள்",
