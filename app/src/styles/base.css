@@ -120,20 +120,34 @@ select,
         opacity 0.12s ease,
         background-color 0.12s ease,
         border-color 0.12s ease,
-        color 0.12s ease;
+        color 0.12s ease,
+        box-shadow 0.12s ease;
 }
+/* Visible hover feedback, applied once here rather than per-component
+   (docs/CodingStandards.md §3) — a lift plus a faint amber glow. Left as
+   transform/box-shadow only (no background-color override) so it layers on
+   top of each variant's own colours (e.g. Button's `.primary`) instead of
+   flattening them. `.tab` gets the lift but not the glow — it already owns
+   a box-shadow for `.active`'s underline, and a plain hover glow would
+   replace (not add to) that indicator instead of complementing it. */
 button:not(:disabled):hover,
 [role="button"]:not([aria-disabled="true"]):hover,
 .chip.act:hover,
 .iconbtn:not(:disabled):hover {
     transform: translateY(-1px);
+    box-shadow: 0 3px 10px -4px var(--led-dim);
+}
+.tab:hover {
+    transform: translateY(-1px);
 }
 button:not(:disabled):active,
 [role="button"]:not([aria-disabled="true"]):active,
 .chip.act:active,
-.iconbtn:not(:disabled):active {
-    transform: translateY(0);
+.iconbtn:not(:disabled):active,
+.tab:active {
+    transform: translateY(0) scale(0.97);
     opacity: 0.85;
+    box-shadow: none;
 }
 
 button:disabled,
