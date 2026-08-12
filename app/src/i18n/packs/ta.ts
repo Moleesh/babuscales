@@ -222,6 +222,39 @@ export const TA_PACK: LanguagePack = {
         "settings.printers.scanning": "வருடுகிறது…",
         "settings.printers.rescan": "மீண்டும் வருடு",
 
+        "settings.weighingRules.title": "எடைபோடல் விதிகள்",
+        "settings.weighingRules.appliedImmediately": "உடனடியாகப் பயன்படுத்தப்படும்",
+        "settings.weighingRules.tareFirst.label": "முதலில் காலி எடையை எடு",
+        "settings.weighingRules.tareFirst.note":
+            "அணைக்கப்பட்டால், ஏற்றப்பட்ட லாரி முதலில் எடைபோடப்படும் — வெளியேறுவதற்குப் பதிலாக உள்ளே வரும் டெலிவரி.",
+        "settings.weighingRules.strictTare.label": "கண்டிப்பான காலி எடை",
+        "settings.weighingRules.strictTare.note":
+            "ஒவ்வொரு பயணத்திலும் காலி லாரியை மீண்டும் எடைபோடு. அணைக்கப்பட்டால் வாகன அடிப்படைத் தரவிலிருந்து சேமிக்கப்பட்ட காலி எடையைப் பயன்படுத்தலாம்.",
+        "settings.weighingRules.autoCapture.label": "நிலைப்பட்டதும் தானாக எடு",
+        "settings.weighingRules.autoCapture.note":
+            "இயக்குநர் பட்டனைத் தொடமாட்டார்; அளவீடு நிலைப்பட்ட உடனேயே எடுக்கப்படும்.",
+        "settings.weighingRules.multiGross.label": "பல மொத்த எடைகள் (ஒரு டிக்கெட்டில் பல ஏற்றங்கள்)",
+        "settings.weighingRules.multiGross.note":
+            "காலி லாரியின் காலி எடையை ஒருமுறை எடுத்து, பின் அதே டிக்கெட்டின் கீழ் ஒன்றுக்கு மேற்பட்ட ஏற்றப்பட்ட (மொத்த) எடைகளை எடுக்கவும் — நிகர எடை ஒவ்வொரு ஏற்றத்தின் மொத்த எடையிலிருந்தும் அந்த ஒரு காலி எடையைக் கழித்ததன் கூட்டுத்தொகை. அணைக்கப்பட்டால் ஒவ்வொரு டிக்கெட்டும் வழக்கமான ஒரு காலி/ஒரு மொத்த எடை ஜோடியாகவே இருக்கும்.",
+
+        "settings.numbering.autoResetAutomatically": "தானாகவும் மீட்டமை",
+        "settings.numbering.every": "ஒவ்வொரு",
+        "settings.numbering.startingAt": "தொடங்குவது",
+        "settings.numbering.resetEvery.year": "நிதி ஆண்டு",
+        "settings.numbering.resetEvery.cal": "நாட்காட்டி ஆண்டு",
+        "settings.numbering.resetEvery.month": "மாதம்",
+        "settings.numbering.resetEvery.day": "நாள்",
+
+        "settings.fixedPolicy.title": "நிலையான கொள்கை",
+        "settings.fixedPolicy.reprints.title": "மறு அச்சுகள் எப்போதும் அனுமதிக்கப்படும்",
+        "settings.fixedPolicy.reprints.detail":
+            "முதலாவதற்குப் பிறகு ஒவ்வொரு நகலும் DUPLICATE என முத்திரையிடப்பட்டு தணிக்கை பதிவில் கணக்கிடப்படும்.",
+        "settings.fixedPolicy.cancellation.title": "ரத்து செய்வதற்கு எப்போதும் ஒரு காரணம் தேவை",
+        "settings.fixedPolicy.cancellation.detail":
+            "வரிசை ஒருபோதும் நீக்கப்படாது — அது கோடிடப்பட்டு, காரணம் பதிவு செய்யப்பட்டு அப்படியே இருக்கும்.",
+        "settings.fixedPolicy.noFile.title": "எதுவும் கோப்பில் எழுதப்படாது",
+        "settings.fixedPolicy.noFile.detail": "இந்தத் திரையிலுள்ள ஒவ்வொரு அமைப்பும் தரவுத்தளத்தில் ஒரு வரிசை.",
+
         "reports.title": "அறிக்கைகள்",
         "reports.view.tickets": "டிக்கெட்டுகள்",
         "reports.view.summary": "சுருக்கம்",

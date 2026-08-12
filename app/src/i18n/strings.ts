@@ -209,6 +209,39 @@ export const EN_STRINGS: Record<string, string> = {
     "settings.printers.scanning": "Scanning…",
     "settings.printers.rescan": "Rescan",
 
+    "settings.weighingRules.title": "Weighing rules",
+    "settings.weighingRules.appliedImmediately": "Applied immediately",
+    "settings.weighingRules.tareFirst.label": "Weigh tare first",
+    "settings.weighingRules.tareFirst.note":
+        "Off means the loaded lorry is weighed first — a delivery coming in rather than going out.",
+    "settings.weighingRules.strictTare.label": "Strict tare",
+    "settings.weighingRules.strictTare.note":
+        "Re-weigh the empty lorry every trip. Off lets a stored tare be pulled in from the vehicle master.",
+    "settings.weighingRules.autoCapture.label": "Auto-capture when stable",
+    "settings.weighingRules.autoCapture.note":
+        "The operator never touches the button; the reading is taken the moment it settles.",
+    "settings.weighingRules.multiGross.label": "Multi-gross (multiple loads per ticket)",
+    "settings.weighingRules.multiGross.note":
+        "Weigh the empty lorry's tare once, then capture more than one loaded (Gross) weight under the same ticket — net is the sum of every load's own gross minus that one tare. Off keeps every ticket to the usual single tare/single gross pair.",
+
+    "settings.numbering.autoResetAutomatically": "Also reset automatically",
+    "settings.numbering.every": "Every",
+    "settings.numbering.startingAt": "Starting",
+    "settings.numbering.resetEvery.year": "Financial year",
+    "settings.numbering.resetEvery.cal": "Calendar year",
+    "settings.numbering.resetEvery.month": "Month",
+    "settings.numbering.resetEvery.day": "Day",
+
+    "settings.fixedPolicy.title": "Fixed policy",
+    "settings.fixedPolicy.reprints.title": "Reprints are always allowed",
+    "settings.fixedPolicy.reprints.detail":
+        "Every copy after the first is stamped DUPLICATE and counted on the audit trail.",
+    "settings.fixedPolicy.cancellation.title": "A cancellation always needs a reason",
+    "settings.fixedPolicy.cancellation.detail":
+        "The row is never deleted — it stays, struck through, with the reason recorded.",
+    "settings.fixedPolicy.noFile.title": "Nothing is written to a file",
+    "settings.fixedPolicy.noFile.detail": "Every setting on this screen is a row in the database.",
+
     "reports.title": "Reports",
     "reports.view.tickets": "Tickets",
     "reports.view.summary": "Summary",

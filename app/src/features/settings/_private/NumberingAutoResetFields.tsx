@@ -1,15 +1,9 @@
 import { Field, FieldGrid } from "@components/Field";
+import { useTranslation } from "@i18n/useTranslation";
 
 import { RESET_EVERY_OPTIONS } from "../settingsSchema";
 import type { ResetEvery, TicketNumbering } from "../settingsSchema";
 import styles from "./_styles/SystemPane.module.css";
-
-const RESET_EVERY_LABEL: Record<ResetEvery, string> = {
-    year: "Financial year",
-    cal: "Calendar year",
-    month: "Month",
-    day: "Day",
-};
 
 export interface NumberingAutoResetFieldsProps {
     numbering: TicketNumbering;
@@ -24,7 +18,15 @@ export const NumberingAutoResetFields = ({
     numbering,
     unlocked,
     onChange,
-}: NumberingAutoResetFieldsProps) => (
+}: NumberingAutoResetFieldsProps) => {
+    const { t } = useTranslation();
+    const resetEveryLabel: Record<ResetEvery, string> = {
+        year: t("settings.numbering.resetEvery.year"),
+        cal: t("settings.numbering.resetEvery.cal"),
+        month: t("settings.numbering.resetEvery.month"),
+        day: t("settings.numbering.resetEvery.day"),
+    };
+    return (
     <>
         <label className={styles.ck}>
             <input
@@ -33,7 +35,7 @@ export const NumberingAutoResetFields = ({
                 disabled={!unlocked}
                 onChange={(event) => onChange({ ...numbering, AutoReset: event.target.checked })}
             />
-            <span>Also reset automatically</span>
+            <span>{t("settings.numbering.autoResetAutomatically")}</span>
         </label>
         {numbering.AutoReset && (
             <FieldGrid columns={2}>
@@ -48,7 +50,7 @@ export const NumberingAutoResetFields = ({
                     >
                         {RESET_EVERY_OPTIONS.map((value) => (
                             <option key={value} value={value}>
-                                {RESET_EVERY_LABEL[value]}
+                                {resetEveryLabel[value]}
                             </option>
                         ))}
                     </select>
@@ -64,4 +66,5 @@ export const NumberingAutoResetFields = ({
             </FieldGrid>
         )}
     </>
-);
+    );
+};

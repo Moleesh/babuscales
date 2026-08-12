@@ -376,39 +376,17 @@ export const DEFAULT_INTEGRATIONS: IntegrationsConfig = {
     board: false,
 };
 
-/** RULE_DEFS, verbatim — the one place a one-line note earns its keep. */
-export const RULE_DEFS: readonly [key: keyof WeighingRules, label: string, note: string][] = [
-    [
-        "TareFirst",
-        "Weigh tare first",
-        "Off means the loaded lorry is weighed first — a delivery coming in rather than going out.",
-    ],
-    [
-        "StrictTare",
-        "Strict tare",
-        "Re-weigh the empty lorry every trip. Off lets a stored tare be pulled in from the vehicle master.",
-    ],
-    [
-        "AutoCapture",
-        "Auto-capture when stable",
-        "The operator never touches the button; the reading is taken the moment it settles.",
-    ],
-    [
-        "MultiGross",
-        "Multi-gross (multiple loads per ticket)",
-        "Weigh the empty lorry's tare once, then capture more than one loaded (Gross) weight under the same ticket — net is the sum of every load's own gross minus that one tare. Off keeps every ticket to the usual single tare/single gross pair.",
-    ],
+/** Was a plain RULE_DEFS constant — now `t`-threaded (task #12/#16, mirrors reportRows.ts's viewOptions(t) precedent) so label/note re-render on language change. */
+export const ruleDefs = (t: (key: string) => string): readonly [key: keyof WeighingRules, label: string, note: string][] => [
+    ["TareFirst", t("settings.weighingRules.tareFirst.label"), t("settings.weighingRules.tareFirst.note")],
+    ["StrictTare", t("settings.weighingRules.strictTare.label"), t("settings.weighingRules.strictTare.note")],
+    ["AutoCapture", t("settings.weighingRules.autoCapture.label"), t("settings.weighingRules.autoCapture.note")],
+    ["MultiGross", t("settings.weighingRules.multiGross.label"), t("settings.weighingRules.multiGross.note")],
 ];
 
-/** POLICY, verbatim — the read-only "Fixed policy" table (not a Settings control; there is nothing to toggle). */
-export const FIXED_POLICY: readonly [title: string, detail: string][] = [
-    [
-        "Reprints are always allowed",
-        "Every copy after the first is stamped DUPLICATE and counted on the audit trail.",
-    ],
-    [
-        "A cancellation always needs a reason",
-        "The row is never deleted — it stays, struck through, with the reason recorded.",
-    ],
-    ["Nothing is written to a file", "Every setting on this screen is a row in the database."],
+/** POLICY, `t`-threaded (task #16, mirrors ruleDefs(t) above) — the read-only "Fixed policy" table (not a Settings control; there is nothing to toggle). */
+export const fixedPolicy = (t: (key: string) => string): readonly [title: string, detail: string][] => [
+    [t("settings.fixedPolicy.reprints.title"), t("settings.fixedPolicy.reprints.detail")],
+    [t("settings.fixedPolicy.cancellation.title"), t("settings.fixedPolicy.cancellation.detail")],
+    [t("settings.fixedPolicy.noFile.title"), t("settings.fixedPolicy.noFile.detail")],
 ];
