@@ -353,6 +353,18 @@ export const EN_STRINGS: Record<string, string> = {
     "reports.builder.preset.year": "This year",
     "reports.builder.preset.all": "All time",
     "reports.builder.done": "Done",
+    "reports.builder.back": "Back",
+    "reports.builder.next": "Next",
+    "reports.builder.stepsAriaLabel": "Report builder steps",
+    "reports.builder.step1Title": "Date range & view",
+    "reports.builder.step2Title": "Filter",
+    "reports.builder.step3Title": "Columns & review",
+    "reports.builder.step1Label": "Step 1 of 3",
+    "reports.builder.step2Label": "Step 2 of 3",
+    "reports.builder.step3Label": "Step 3 of 3",
+    "reports.builder.reviewTitle": "Review",
+    "reports.builder.reviewDateRange": "Date range",
+    "reports.builder.reviewAllDates": "All dates",
 
     "cameras.title": "Cameras",
 

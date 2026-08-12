@@ -1,18 +1,24 @@
+import { useEffect, useState } from "react";
+
 import { AppModal } from "@components/AppModal";
-import { SegmentedControl } from "@components/SegmentedControl";
 import { useTranslation } from "@i18n/useTranslation";
 
 import styles from "./_styles/ReportBuilderModal.module.css";
-import { ReportBuilderColumns } from "./ReportBuilderColumns";
-import { ReportBuilderPresets } from "./ReportBuilderPresets";
-import { ReportBuilderSaveRow } from "./ReportBuilderSaveRow";
-import { ReportsDateRangeRow } from "./ReportsDateRangeRow";
-import { filterOptions } from "../reportRows";
-import type { TicketColumnKey, TicketRowFilter } from "../reportRows";
+import { ReportBuilderNav } from "./ReportBuilderNav";
+import { ReportBuilderStep1 } from "./ReportBuilderStep1";
+import { ReportBuilderStep2 } from "./ReportBuilderStep2";
+import { ReportBuilderStep3 } from "./ReportBuilderStep3";
+import type { ReportBuilderStep } from "./reportBuilderSteps";
+import { reportBuilderStepTitle } from "./reportBuilderSteps";
+import type { GroupKey, ReportView, TicketColumnKey, TicketRowFilter } from "../reportRows";
 
 export interface ReportBuilderModalProps {
     open: boolean;
     onClose: () => void;
+    view: ReportView;
+    onViewChange: (view: ReportView) => void;
+    groupBy: GroupKey;
+    onGroupByChange: (groupBy: GroupKey) => void;
     filter: TicketRowFilter;
     onFilterChange: (filter: TicketRowFilter) => void;
     dateFrom: string;
@@ -26,18 +32,42 @@ export interface ReportBuilderModalProps {
     onSaveReport: () => void;
 }
 
-// Task: Reports rework, item 4 — the report-builder wizard MVP. A popup
-// (not an inline dump in the card body) that lets the operator pick a date
-// range (quick presets or the same manual ReportsDateRangeRow the screen
-// already has), a ticket filter, and which columns show — then save the
-// whole combination through the existing saved-report mechanism
-// (useSavedReportActions/db/reportDefs.ts), not a new persistence layer.
-// Every field here applies live to the screen's own state as it changes
-// (same shape as the always-visible date-range row), so "Done" only ever
-// closes the popup — there is nothing left to "apply".
+const FIRST_STEP: ReportBuilderStep = 1;
+const LAST_STEP: ReportBuilderStep = 3;
+
+/** Split out of ReportBuilderModal (over the line/complexity budget —
+ * docs/CodingStandards.md) — steps back/forward one at a time, clamped to
+ * the valid range; separated from the JSX so the step-advance rule lives
+ * in one place instead of two inline closures. */
+const useReportBuilderStep = (open: boolean): [ReportBuilderStep, () => void, () => void] => {
+    const [step, setStep] = useState<ReportBuilderStep>(FIRST_STEP);
+
+    // Every fresh open starts back at step 1 — a half-finished wizard from
+    // a previous visit would otherwise strand the operator on step 3 with
+    // step 1/2 fields they never actually looked at this time.
+    useEffect(() => {
+        if (open) setStep(FIRST_STEP);
+    }, [open]);
+
+    const goBack = (): void => setStep((current) => (current > FIRST_STEP ? ((current - 1) as ReportBuilderStep) : current));
+    const goNext = (): void => setStep((current) => (current < LAST_STEP ? ((current + 1) as ReportBuilderStep) : current));
+    return [step, goBack, goNext];
+};
+
+// Task: Reports rework, item 4 — the report-builder wizard. A stepped
+// popup (not an inline dump in the card body) that walks the operator
+// through date range & view, then filter, then columns/save/review — one
+// concern per screen instead of every control at once. Every field applies
+// live to the screen's own state as it changes (same shape as the
+// always-visible date-range row), so closing early keeps whatever was
+// picked so far; there is nothing to "apply" on Finish beyond closing.
 export const ReportBuilderModal = ({
     open,
     onClose,
+    view,
+    onViewChange,
+    groupBy,
+    onGroupByChange,
     filter,
     onFilterChange,
     dateFrom,
@@ -51,36 +81,39 @@ export const ReportBuilderModal = ({
     onSaveReport,
 }: ReportBuilderModalProps) => {
     const { t } = useTranslation();
+    const [step, goBack, goNext] = useReportBuilderStep(open);
 
     return (
         <AppModal open={open} title={t("reports.builder.title")} onClose={onClose}>
             <div className={styles.body}>
-                <ReportBuilderPresets
-                    onDateFromChange={onDateFromChange}
-                    onDateToChange={onDateToChange}
-                />
-                <ReportsDateRangeRow
-                    dateFrom={dateFrom}
-                    onDateFromChange={onDateFromChange}
-                    dateTo={dateTo}
-                    onDateToChange={onDateToChange}
-                />
-                <SegmentedControl
-                    options={filterOptions(t)}
-                    value={filter}
-                    onChange={onFilterChange}
-                    ariaLabel={t("reports.filterAriaLabel")}
-                />
-                <ReportBuilderColumns
-                    visibleColumnKeys={visibleColumnKeys}
-                    onVisibleColumnKeysChange={onVisibleColumnKeysChange}
-                />
-                <ReportBuilderSaveRow
-                    newReportName={newReportName}
-                    onNewReportNameChange={onNewReportNameChange}
-                    onSaveReport={onSaveReport}
-                    onDone={onClose}
-                />
+                <h3 className={styles.stepTitle}>{reportBuilderStepTitle(step, t)}</h3>
+                {step === 1 ? (
+                    <ReportBuilderStep1
+                        view={view}
+                        onViewChange={onViewChange}
+                        groupBy={groupBy}
+                        onGroupByChange={onGroupByChange}
+                        dateFrom={dateFrom}
+                        onDateFromChange={onDateFromChange}
+                        dateTo={dateTo}
+                        onDateToChange={onDateToChange}
+                    />
+                ) : null}
+                {step === 2 ? <ReportBuilderStep2 filter={filter} onFilterChange={onFilterChange} /> : null}
+                {step === 3 ? (
+                    <ReportBuilderStep3
+                        view={view}
+                        filter={filter}
+                        dateFrom={dateFrom}
+                        dateTo={dateTo}
+                        visibleColumnKeys={visibleColumnKeys}
+                        onVisibleColumnKeysChange={onVisibleColumnKeysChange}
+                        newReportName={newReportName}
+                        onNewReportNameChange={onNewReportNameChange}
+                        onSaveReport={onSaveReport}
+                    />
+                ) : null}
+                <ReportBuilderNav step={step} onBack={goBack} onNext={goNext} onFinish={onClose} />
             </div>
         </AppModal>
     );

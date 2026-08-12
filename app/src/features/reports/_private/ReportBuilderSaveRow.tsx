@@ -7,18 +7,18 @@ export interface ReportBuilderSaveRowProps {
     newReportName: string;
     onNewReportNameChange: (name: string) => void;
     onSaveReport: () => void;
-    onDone: () => void;
 }
 
 // Split out of ReportBuilderModal (over the line/complexity budget —
 // docs/CodingStandards.md) — the "save current picks as a named report"
-// row plus the modal's own "Done" button, wired to the same
-// useSavedReportActions the always-visible SavedReportsRow uses.
+// row, wired to the same useSavedReportActions the always-visible
+// SavedReportsRow uses. The modal's own Done/Finish button moved to
+// ReportBuilderNav once the builder became a step wizard (task: Reports
+// rework — "guided wizard, not a flat page").
 export const ReportBuilderSaveRow = ({
     newReportName,
     onNewReportNameChange,
     onSaveReport,
-    onDone,
 }: ReportBuilderSaveRowProps) => {
     const { t } = useTranslation();
     return (
@@ -32,9 +32,6 @@ export const ReportBuilderSaveRow = ({
             />
             <Button disabled={!newReportName.trim()} onClick={onSaveReport}>
                 {t("reports.savedReportsSave")}
-            </Button>
-            <Button variant="primary" onClick={onDone}>
-                {t("reports.builder.done")}
             </Button>
         </div>
     );

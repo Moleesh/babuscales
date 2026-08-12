@@ -367,6 +367,18 @@ export const TA_PACK: LanguagePack = {
         "reports.builder.preset.year": "இந்த ஆண்டு",
         "reports.builder.preset.all": "எல்லா நேரமும்",
         "reports.builder.done": "முடிந்தது",
+        "reports.builder.back": "பின்செல்",
+        "reports.builder.next": "அடுத்து",
+        "reports.builder.stepsAriaLabel": "அறிக்கை உருவாக்கும் படிகள்",
+        "reports.builder.step1Title": "தேதி வரம்பு & காட்சி",
+        "reports.builder.step2Title": "வடிகட்டி",
+        "reports.builder.step3Title": "நெடுவரிசைகள் & மறுஆய்வு",
+        "reports.builder.step1Label": "படி 1 / 3",
+        "reports.builder.step2Label": "படி 2 / 3",
+        "reports.builder.step3Label": "படி 3 / 3",
+        "reports.builder.reviewTitle": "மறுஆய்வு",
+        "reports.builder.reviewDateRange": "தேதி வரம்பு",
+        "reports.builder.reviewAllDates": "அனைத்து தேதிகளும்",
 
         "cameras.title": "கேமராக்கள்",
 

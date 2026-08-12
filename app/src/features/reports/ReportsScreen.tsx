@@ -58,6 +58,10 @@ export const ReportsScreen = ({ onOpenTicket, reportsIntent = null }: ReportsScr
                 onPrintOpenChange={s.setPrintOpen}
                 builderOpen={s.builderOpen}
                 onBuilderOpenChange={s.setBuilderOpen}
+                view={s.view}
+                onViewChange={s.setView}
+                groupBy={s.groupBy}
+                onGroupByChange={s.setGroupBy}
                 filter={s.filter}
                 onFilterChange={s.setFilter}
                 dateFrom={s.dateFrom}
