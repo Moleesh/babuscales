@@ -148,7 +148,7 @@ components/Button/
 ├─ _styles/
 │  └─ Button.module.css  CSS Modules, kebab-case selectors (§5)
 ├─ __tests__/
-│  └─ Button.test.tsx
+│  └─ Button.spec.tsx
 └─ _private/             internals never imported from outside this folder
 ```
 
