@@ -1,12 +1,10 @@
-import { Card } from "@components/Card";
 import type { DocRow } from "@db/types";
 import { useDataPort } from "@db/useDataPort";
 import { useSettings } from "@features/settings";
 import { useTranslation } from "@i18n/useTranslation";
 
-import { ReportPrintModal } from "./_private/ReportPrintModal";
-import { ReportsCardBody } from "./_private/ReportsCardBody";
-import { ReportsHeaderActions } from "./_private/ReportsHeaderActions";
+import { ReportsScreenCard } from "./_private/ReportsScreenCard";
+import { ReportsScreenOverlays } from "./_private/ReportsScreenOverlays";
 import { useReportDocs } from "./_private/useReportDocs";
 import { useReportsScreenController } from "./_private/useReportsScreenController";
 import styles from "./_styles/ReportsScreen.module.css";
@@ -14,6 +12,10 @@ import styles from "./_styles/ReportsScreen.module.css";
 export interface ReportsScreenProps {
     /** Resumes (open ticket) or reopens (completed ticket, to reprint) into the shared Weighing deck and switches there. */
     onOpenTicket: (doc: DocRow) => void;
+    /** Set by App.tsx when Dashboard's "waiting" KPI tile sends the operator
+     * here wanting the waiting-on-second-weight filter pre-applied (PLAN §21
+     * bug fix — see useReportsScreenController's own comment). */
+    reportsIntent?: { kind: "waiting"; nonce: number } | null;
 }
 
 // PLAN §13.1 — "there is no Tickets tab... a ticket list is a report that
@@ -39,52 +41,32 @@ export interface ReportsScreenProps {
 // useReportDocs/useSavedReportActions (load effects + handlers) and
 // ReportsHeaderActions/TicketsView/SummaryView/ReportsActionsRow (JSX) —
 // see _private/ for each.
-export const ReportsScreen = ({ onOpenTicket }: ReportsScreenProps) => {
+export const ReportsScreen = ({ onOpenTicket, reportsIntent = null }: ReportsScreenProps) => {
     const db = useDataPort();
     const { t } = useTranslation();
     const { settings } = useSettings();
     const amountDp = settings.Formats.AmountDp;
     const docs = useReportDocs(db);
-    const s = useReportsScreenController({ db, docs, onOpenTicket, amountDp, styles, t });
+    const s = useReportsScreenController({ db, docs, onOpenTicket, amountDp, styles, t, reportsIntent });
 
     return (
         <div className={styles.screen}>
-            <Card
-                title={<span className="lbl">{t("reports.title")}</span>}
-                headerRight={
-                    <ReportsHeaderActions
-                        view={s.view}
-                        onViewChange={s.setView}
-                        waitingCount={s.waitingCount}
-                        onShowWaiting={s.showWaiting}
-                    />
-                }
-            >
-                <ReportsCardBody
-                    savedReportActions={s.savedReportActions}
-                    view={s.view}
-                    query={s.query}
-                    onQueryChange={s.setQuery}
-                    filter={s.filter}
-                    onFilterChange={s.setFilter}
-                    dateFrom={s.dateFrom}
-                    onDateFromChange={s.setDateFrom}
-                    dateTo={s.dateTo}
-                    onDateToChange={s.setDateTo}
-                    groupBy={s.groupBy}
-                    onGroupByChange={s.setGroupBy}
-                    ticketColumns={s.ticketColumns}
-                    visibleRows={s.visibleRows}
-                    summaryColumns={s.summaryColumns}
-                    summaryRows={s.summaryRows}
-                    reportSlipData={s.reportSlipData}
-                    onPrint={() => s.setPrintOpen(true)}
-                />
-            </Card>
-            <ReportPrintModal
-                open={s.printOpen}
-                onClose={() => s.setPrintOpen(false)}
-                data={s.reportSlipData}
+            <ReportsScreenCard s={s} />
+            <ReportsScreenOverlays
+                reportSlipData={s.reportSlipData}
+                printOpen={s.printOpen}
+                onPrintOpenChange={s.setPrintOpen}
+                builderOpen={s.builderOpen}
+                onBuilderOpenChange={s.setBuilderOpen}
+                filter={s.filter}
+                onFilterChange={s.setFilter}
+                dateFrom={s.dateFrom}
+                onDateFromChange={s.setDateFrom}
+                dateTo={s.dateTo}
+                onDateToChange={s.setDateTo}
+                visibleColumnKeys={s.visibleColumnKeys}
+                onVisibleColumnKeysChange={s.setVisibleColumnKeys}
+                savedReportActions={s.savedReportActions}
             />
         </div>
     );

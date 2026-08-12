@@ -10,16 +10,19 @@ export interface ReportsHeaderActionsProps {
     onViewChange: (view: ReportView) => void;
     waitingCount: number;
     onShowWaiting: () => void;
+    onOpenBuilder: () => void;
 }
 
 // Split out of ReportsScreen (over the line/complexity budget —
-// docs/CodingStandards.md) — the view switcher + "N waiting" chip in the
-// Card's headerRight, unchanged from the inline version it replaces.
+// docs/CodingStandards.md) — the view switcher + "N waiting" chip + the
+// report-builder wizard trigger (task: Reports rework, item 4) in the
+// Card's headerRight.
 export const ReportsHeaderActions = ({
     view,
     onViewChange,
     waitingCount,
     onShowWaiting,
+    onOpenBuilder,
 }: ReportsHeaderActionsProps) => {
     const { t } = useTranslation();
     return (
@@ -33,6 +36,9 @@ export const ReportsHeaderActions = ({
             <button className="chip act" onClick={onShowWaiting}>
                 <span className={styles.dot} />
                 {waitingCount} {t("reports.waitingForSecondWeight")}
+            </button>
+            <button type="button" className="chip act" onClick={onOpenBuilder}>
+                {t("reports.builder.trigger")}
             </button>
         </div>
     );

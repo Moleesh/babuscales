@@ -48,6 +48,14 @@ export const DEFAULT_HELP_TOPICS: Record<string, HelpTopic> = {
                 "Enter",
                 "moves to the next field, and keeps moving through the buttons. Space presses a button.",
             ),
+            point(
+                "Go to Cameras",
+                "in the sidebar jumps straight to the Cameras tab without losing your place on the ticket.",
+            ),
+            point(
+                "Send a lorry",
+                "is a demo/testing button, not a customer control. Settings → Weighing Rules can hide it site-wide.",
+            ),
         ],
         Tip: en(
             "Nothing reaches the ledger until Save. A lorry that drives off before the first capture leaves no row behind.",
@@ -59,8 +67,19 @@ export const DEFAULT_HELP_TOPICS: Record<string, HelpTopic> = {
         Lead: en("The shift at a glance."),
         Points: [
             point("Waiting", "are lorries that took a first weight and have not come back."),
-            point("Tickets by hour", "shows the rush. The lit bar is the hour you are in."),
-            point("Material split", "is net tonnes, not ticket count."),
+            point(
+                "The period dropdown",
+                "switches the whole page between day, week, month, year and all-time — the KPIs, the chart and the material split all follow it.",
+            ),
+            point(
+                "Tickets by hour",
+                "is the day view's chart. Wider periods re-bucket by weekday, day-of-month, month or year instead — the lit bar is always where you are now.",
+            ),
+            point("Material split", "is net tonnes, not ticket count, for whichever period is selected."),
+            point(
+                "Weight unit",
+                "kg or tonnes — set once in Settings → Formats and every figure on this page follows it.",
+            ),
         ],
         Tip: en(
             "Every number here is a query over the same ledger Reports searches. There is no second copy to fall out of date.",
@@ -132,6 +151,10 @@ export const DEFAULT_HELP_TOPICS: Record<string, HelpTopic> = {
             point(
                 "Admin",
                 "the lock in the top bar. Unlock once and Settings stays editable for ten minutes.",
+            ),
+            point(
+                "Business",
+                "your site's name, address and phone — printed on tickets, editable here instead of hardcoded.",
             ),
             point(
                 "Fields",

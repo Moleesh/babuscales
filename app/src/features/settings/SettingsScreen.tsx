@@ -6,17 +6,20 @@ import type { LanguagePack } from "@i18n/types";
 import { useTranslation } from "@i18n/useTranslation";
 
 import { AppearancePane } from "./_private/AppearancePane";
+import { BusinessPane } from "./_private/BusinessPane";
 import { ConnectionsPane } from "./_private/ConnectionsPane";
 import { FieldsLanguagePane } from "./_private/FieldsLanguagePane";
 import { PrintPane } from "./_private/PrintPane";
 import { SystemPane } from "./_private/SystemPane";
 import { WeighingPane } from "./_private/WeighingPane";
 import styles from "./_styles/SettingsScreen.module.css";
+import { AdminChip } from "./AdminChip";
 import { useSettings } from "./useSettings";
 
-type PaneKey = "fields" | "print" | "look" | "weigh" | "conn" | "sys";
+type PaneKey = "biz" | "fields" | "print" | "look" | "weigh" | "conn" | "sys";
 
 const buildPaneOptions = (t: (key: string) => string): SegmentedOption<PaneKey>[] => [
+    { value: "biz", label: t("settings.pane.biz") },
     { value: "fields", label: t("settings.pane.fields") },
     { value: "print", label: t("settings.pane.print") },
     { value: "look", label: t("settings.pane.look") },
@@ -42,18 +45,23 @@ export interface SettingsScreenProps {
 export const SettingsScreen = ({ onResetTicketSeries, onAddLanguagePack }: SettingsScreenProps) => {
     const { unlocked } = useSettings();
     const { t } = useTranslation();
-    const [pane, setPane] = useState<PaneKey>("weigh");
+    const [pane, setPane] = useState<PaneKey>("biz");
     const paneOptions = useMemo(() => buildPaneOptions(t), [t]);
 
     return (
         <div className={styles.screen}>
-            <SegmentedControl
-                options={paneOptions}
-                value={pane}
-                onChange={setPane}
-                size="big"
-                ariaLabel={t("settings.ariaLabel")}
-            />
+            <div className={styles.topRow}>
+                <SegmentedControl
+                    options={paneOptions}
+                    value={pane}
+                    onChange={setPane}
+                    size="big"
+                    ariaLabel={t("settings.ariaLabel")}
+                />
+                {/* Moved here from the app's top bar (PLAN §21 — it was
+                    showing on every tab, not just Settings). */}
+                <AdminChip />
+            </div>
 
             {!unlocked && (
                 <div className={styles.lockbar}>
@@ -61,6 +69,7 @@ export const SettingsScreen = ({ onResetTicketSeries, onAddLanguagePack }: Setti
                 </div>
             )}
 
+            {pane === "biz" && <BusinessPane />}
             {pane === "fields" && <FieldsLanguagePane onAddLanguagePack={onAddLanguagePack} />}
             {pane === "print" && <PrintPane />}
             {pane === "look" && <AppearancePane />}

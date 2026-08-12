@@ -156,6 +156,33 @@ textarea[readonly] {
     cursor: default;
 }
 
+/* App-wide cursor states. Every interactive surface gets a cursor that
+   matches what it does — hover/click already `pointer` above, this fills
+   in the rest: typing (`text`/`caret`), dragging (`grab`/`grabbing`), and
+   a resize affordance for anything explicitly resizable. Native `cursor`
+   values only — no JS-driven custom cursor follower (perf risk, not asked
+   for). */
+input:not([type="checkbox"]):not([type="radio"]):not([type="button"]):not([type="submit"]):not(
+        [type="range"]
+    ):not([readonly]):not(:disabled),
+textarea:not([readonly]):not(:disabled),
+[contenteditable="true"] {
+    cursor: text;
+}
+[draggable="true"] {
+    cursor: grab;
+}
+[draggable="true"]:active {
+    cursor: grabbing;
+}
+.resizable,
+[data-resizable="true"] {
+    cursor: ew-resize;
+}
+select:not(:disabled) {
+    cursor: pointer;
+}
+
 @media (prefers-reduced-motion: reduce) {
     *,
     *::before,

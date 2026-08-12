@@ -16,7 +16,13 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
-tauri = { version = "2", features = [] }
+# "tray-icon": close-to-tray + a Show/Quit menu, PLAN §21 window-behaviour item.
+tauri = { version = "2", features = ["tray-icon"] }
+# Registers the app to launch at login (Windows: a registry Run key) — the
+# app stays running in the tray after close, so once it's autostarted once
+# it survives every later sleep/wake without the OS having closed it in
+# between; there's no separate OS "on wake" hook to register against.
+tauri-plugin-autostart = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 thiserror = "2"

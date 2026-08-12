@@ -72,6 +72,20 @@
     color: var(--faint);
 }
 
+/* Settings → Weighing → Rules.ManualEntry — the editable stand-in for a
+   not-yet-captured Tare/Gross `.calc-box` (ManualCalcBox.tsx). */
+.manual-entry-row {
+    display: flex;
+    gap: 6px;
+    margin-top: 3px;
+}
+.manual-entry-input {
+    min-width: 0;
+    flex: 1;
+    font-family: var(--mono);
+    font-variant-numeric: tabular-nums;
+}
+
 /* Ported from the mock's ".actions". */
 .actions {
     display: flex;

@@ -1,42 +1,44 @@
 import { Card } from "@components/Card";
+import { formatWeightIn } from "@constants/numberFormat";
+import type { WeightUnit } from "@constants/numberFormat";
 import { useTranslation } from "@i18n/useTranslation";
 
 import styles from "../_styles/DashboardScreen.module.css";
-import type { HourBucket, MaterialSplitEntry } from "../dashboardData";
-
-const p2 = (n: number): string => String(n).padStart(2, "0");
+import type { ActivityBucket, DashboardPeriod, MaterialSplitEntry } from "../dashboardData";
 
 export interface DashboardChartsProps {
-    hours: HourBucket[];
-    currentHour: number;
+    buckets: ActivityBucket[];
+    period: DashboardPeriod;
     materialSplit: MaterialSplitEntry[];
+    weightUnit: WeightUnit;
 }
 
 // Split out of DashboardScreen (over the line budget — docs/CodingStandards.md)
-// — the `.grid2` pair: the hourly bar chart and the material-split list.
-// Now uses the t() function for translatable strings.
-export const DashboardCharts = ({ hours, currentHour, materialSplit }: DashboardChartsProps) => {
+// — the `.grid2` pair: the activity bar chart (hour-of-day for "day", a
+// coarser bucket for every wider period — see dashboardData's own
+// `computeActivityBuckets` comment) and the material-split list.
+export const DashboardCharts = ({ buckets, period, materialSplit, weightUnit }: DashboardChartsProps) => {
     const { t } = useTranslation();
-    const maxHourly = Math.max(1, ...hours.map((h) => h.count));
+    const maxCount = Math.max(1, ...buckets.map((b) => b.count));
 
     return (
         <div className={styles.grid2}>
             <Card
-                title={<span className="lbl">{t("dashboard.chart.hourly")}</span>}
+                title={<span className="lbl">{t(`dashboard.chart.activity.${period}`)}</span>}
                 headerRight={
                     <span className="lbl">
-                        {p2(hours[0]?.hour ?? 0)}:00 — {p2(hours[hours.length - 1]?.hour ?? 0)}:00
+                        {buckets[0]?.label ?? ""} — {buckets[buckets.length - 1]?.label ?? ""}
                     </span>
                 }
             >
                 <div className={styles.bars}>
-                    {hours.map((bucket) => (
+                    {buckets.map((bucket) => (
                         <div
-                            key={bucket.hour}
-                            className={`${styles.bar} ${bucket.hour === currentHour ? styles.barNow : ""}`}
-                            style={{ height: `${(bucket.count / maxHourly) * 100}%` }}
+                            key={bucket.id}
+                            className={`${styles.bar} ${bucket.current ? styles.barNow : ""}`}
+                            style={{ height: `${(bucket.count / maxCount) * 100}%` }}
                         >
-                            <span className={styles.barLabel}>{p2(bucket.hour)}</span>
+                            <span className={styles.barLabel}>{bucket.label}</span>
                         </div>
                     ))}
                 </div>
@@ -53,7 +55,7 @@ export const DashboardCharts = ({ hours, currentHour, materialSplit }: Dashboard
                                     <i style={{ width: `${entry.share * 100}%` }} />
                                 </span>
                                 <span className="num" style={{ textAlign: "right" }}>
-                                    {entry.tonnes.toFixed(1)} t
+                                    {formatWeightIn(entry.tonnes * 1000, weightUnit)}
                                 </span>
                             </div>
                         ))

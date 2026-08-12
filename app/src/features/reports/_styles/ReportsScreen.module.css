@@ -58,6 +58,46 @@
     flex-wrap: wrap;
 }
 
+/* Task: Reports rework, item 3 — hangs at the bottom of `.main`'s scroll
+   area (AppShell.module.css) as the screen scrolls, so Print/Export stay
+   reachable without scrolling back up. Same panel/border/radius treatment
+   as Card's own chrome so it reads as part of the screen, not an overlay. */
+.bottom-bar {
+    position: sticky;
+    bottom: 0;
+    z-index: 5;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 11px;
+}
+
+.sort-row {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    flex-wrap: wrap;
+}
+
+.sort-label {
+    font-size: 0.75rem;
+    color: var(--dim);
+}
+
+.sort-dir-btn {
+    padding: 6px 10px;
+    border-radius: 7px;
+    border: 1px solid var(--line);
+    background: var(--panel-2);
+    color: var(--text);
+    font: inherit;
+    cursor: pointer;
+}
+.sort-dir-btn:hover {
+    border-color: var(--led-dim);
+    color: var(--led);
+}
+
 .waiting {
     color: var(--warn);
 }

@@ -1,3 +1,5 @@
+import { useEffect, useRef } from "react";
+
 import type { HelpTopic } from "@i18n/helpTopics";
 import { resolveLocalized } from "@i18n/types";
 
@@ -29,10 +31,30 @@ export const ContextualHelp = ({
     onClose,
     labels = DEFAULT_LABELS,
 }: ContextualHelpProps) => {
+    const drawerRef = useRef<HTMLElement>(null);
+
+    // Not a backdrop-modal (aria-modal="false" — the mock never blocked the
+    // screen behind it), so "close on outside click" has to be a document
+    // listener rather than AppModal's backdrop-click trick. `data-help-toggle`
+    // on the "?" button (App.tsx's TopBarActions) is excluded here so
+    // clicking it to close doesn't first close-then-reopen via its own
+    // onClick toggle.
+    useEffect(() => {
+        if (!open) return;
+        const onPointerDown = (event: MouseEvent) => {
+            const target = event.target as Node;
+            if (drawerRef.current?.contains(target)) return;
+            if (target instanceof Element && target.closest("[data-help-toggle]")) return;
+            onClose();
+        };
+        document.addEventListener("mousedown", onPointerDown);
+        return () => document.removeEventListener("mousedown", onPointerDown);
+    }, [open, onClose]);
+
     if (!open) return null;
 
     return (
-        <aside className={styles.drawer} role="dialog" aria-modal="false" data-enter-scope>
+        <aside ref={drawerRef} className={styles.drawer} role="dialog" aria-modal="false" data-enter-scope>
             <header className={styles.header}>
                 <span className="lbl">{labels.title}</span>
                 <span className={styles.push}>

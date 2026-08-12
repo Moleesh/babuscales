@@ -10,6 +10,7 @@ export type { SettingsContextValue } from "./_private/SettingsContext";
 export { SETTINGS_CONFIG_ID } from "./settingsSchema";
 export type {
     SettingsBody,
+    BusinessInfo,
     WeighingRules,
     StabilityGate,
     TicketNumbering,

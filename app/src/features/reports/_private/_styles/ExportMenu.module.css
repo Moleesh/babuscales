@@ -1,0 +1,33 @@
+.root {
+    position: relative;
+    display: inline-block;
+}
+
+.menu {
+    position: absolute;
+    bottom: calc(100% + 6px);
+    left: 0;
+    min-width: 160px;
+    display: grid;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow: 0 12px 32px rgb(0 0 0 / 30%);
+    padding: 4px;
+    z-index: 20;
+}
+
+.item {
+    padding: 8px 10px;
+    border: none;
+    border-radius: 7px;
+    background: transparent;
+    color: var(--text);
+    font: inherit;
+    font-size: 0.8125rem;
+    text-align: left;
+    cursor: pointer;
+}
+.item:hover {
+    background: var(--panel-2);
+}

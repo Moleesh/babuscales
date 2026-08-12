@@ -1,11 +1,19 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import type { DataPort } from "@db/DataPort";
 import type { DocRow } from "@db/types";
 
 import { useReportsScreenData } from "./useReportsScreenData";
 import { useSavedReportActions } from "./useSavedReportActions";
-import type { GroupKey, ReportView, TicketRowFilter, Translate } from "../reportRows";
+import type {
+    GroupKey,
+    ReportView,
+    SortDir,
+    TicketColumnKey,
+    TicketRowFilter,
+    TicketSortKey,
+    Translate,
+} from "../reportRows";
 
 export interface UseReportsScreenControllerArgs {
     db: DataPort;
@@ -14,6 +22,14 @@ export interface UseReportsScreenControllerArgs {
     amountDp: 0 | 2;
     styles: CSSModuleClasses;
     t: Translate;
+    /** Dashboard's "waiting" KPI tile navigates here wanting the "waiting on
+     * a second weight" filter already applied — without this, the tab
+     * switch always landed on the default Tickets/All view regardless of
+     * which KPI sent the operator here (PLAN §21 bug report: "opens report
+     * but it's not on the right tab"). Bumped by a counter, not a boolean,
+     * so clicking the same tile twice in a row re-applies the filter even
+     * if the operator had since changed it by hand. */
+    reportsIntent: { kind: "waiting"; nonce: number } | null;
 }
 
 // Split out of useReportsScreenController (over the line/complexity budget —
@@ -27,6 +43,10 @@ const useReportsScreenFilters = () => {
     const [dateTo, setDateTo] = useState("");
     const [groupBy, setGroupBy] = useState<GroupKey>("material");
     const [printOpen, setPrintOpen] = useState(false);
+    const [builderOpen, setBuilderOpen] = useState(false);
+    const [sortKey, setSortKey] = useState<TicketSortKey>("at");
+    const [sortDir, setSortDir] = useState<SortDir>("desc");
+    const [visibleColumnKeys, setVisibleColumnKeys] = useState<TicketColumnKey[] | null>(null);
     return {
         view,
         setView,
@@ -42,6 +62,14 @@ const useReportsScreenFilters = () => {
         setGroupBy,
         printOpen,
         setPrintOpen,
+        builderOpen,
+        setBuilderOpen,
+        sortKey,
+        setSortKey,
+        sortDir,
+        setSortDir,
+        visibleColumnKeys,
+        setVisibleColumnKeys,
     };
 };
 
@@ -57,18 +85,38 @@ export const useReportsScreenController = ({
     amountDp,
     styles,
     t,
+    reportsIntent,
 }: UseReportsScreenControllerArgs) => {
     const filters = useReportsScreenFilters();
-    const { view, groupBy, filter, setView, setGroupBy, setFilter } = filters;
-
-    const savedReportActions = useSavedReportActions({
-        db,
+    const {
         view,
         groupBy,
         filter,
         setView,
         setGroupBy,
         setFilter,
+        dateFrom,
+        dateTo,
+        setDateFrom,
+        setDateTo,
+        visibleColumnKeys,
+        setVisibleColumnKeys,
+    } = filters;
+
+    const savedReportActions = useSavedReportActions({
+        db,
+        view,
+        groupBy,
+        filter,
+        dateFrom,
+        dateTo,
+        visibleColumnKeys,
+        setView,
+        setGroupBy,
+        setFilter,
+        setDateFrom,
+        setDateTo,
+        setVisibleColumnKeys,
     });
     const screenData = useReportsScreenData({
         docs,
@@ -84,5 +132,17 @@ export const useReportsScreenController = ({
         setFilter("half");
     };
 
+    // Deliberately keyed on `reportsIntent` alone (not `setView`/`setFilter`,
+    // which are stable setState identities anyway) — this should fire once
+    // per nonce bump (a fresh Dashboard click), not on every render.
+    useEffect(() => {
+        if (reportsIntent?.kind === "waiting") {
+            setView("tickets");
+            setFilter("half");
+        }
+    }, [reportsIntent, setView, setFilter]);
+
     return { ...filters, savedReportActions, showWaiting, ...screenData };
 };
+
+export type UseReportsScreenController = ReturnType<typeof useReportsScreenController>;

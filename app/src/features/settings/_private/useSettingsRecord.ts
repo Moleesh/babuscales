@@ -6,6 +6,7 @@ import { setTicketNumberFormat } from "@features/weighing";
 import { DEFAULT_ADMIN_PASSWORD, hashAdminPassword } from "../adminAuth";
 import {
     DEFAULT_BOARD,
+    DEFAULT_BUSINESS,
     DEFAULT_CONNECTIONS,
     DEFAULT_DAILY_SUMMARY,
     DEFAULT_FORMATS,
@@ -32,6 +33,7 @@ import type { SettingsBody } from "../settingsSchema";
 // and filling in via effect. An empty admin hash/salt can never verify a
 // password, so `unlock()` is safely inert until the real row is in.
 const SYNC_DEFAULT_BODY: SettingsBody = {
+    Business: DEFAULT_BUSINESS,
     Rules: DEFAULT_RULES,
     Stability: DEFAULT_STABILITY,
     Numbering: DEFAULT_NUMBERING,

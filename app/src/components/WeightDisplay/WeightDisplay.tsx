@@ -62,9 +62,6 @@ export const WeightDisplay = ({
                         {labels.motion}
                     </span>
                 </div>
-                <div className={`lbl num ${styles.capText}`}>
-                    {formatWeightKg(weightKg)} / {formatWeightKg(capacityKg)} {labels.unit}
-                </div>
             </div>
 
             <div className={styles.readout}>

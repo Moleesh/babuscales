@@ -14,7 +14,10 @@ pub mod security;
 pub mod state;
 pub mod store;
 
-use tauri::Manager;
+use tauri::menu::{Menu, MenuItem};
+use tauri::tray::TrayIconBuilder;
+use tauri::{Manager, WindowEvent};
+use tauri_plugin_autostart::MacosLauncher;
 
 use state::AppState;
 
@@ -42,7 +45,57 @@ use state::AppState;
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() -> tauri::Result<()> {
     tauri::Builder::default()
+        // Launch-at-login (PLAN §21 window-behaviour item) — the app then
+        // stays running (see the close-to-tray handler below), so it's live
+        // again after every later sleep/wake without needing a separate "on
+        // wake" hook; `MacosLauncher` is unused on Windows but the API is
+        // cross-platform.
+        .plugin(tauri_plugin_autostart::init(
+            MacosLauncher::LaunchAgent,
+            None,
+        ))
+        .on_window_event(|window, event| {
+            // The window's own X button: hide to the tray instead of
+            // exiting, so a stray click never kills the daily-summary
+            // scheduler's headless send or the LAN verification server mid
+            // ticket. Real exit is the tray menu's "Quit" item below,
+            // which calls `app.exit()` directly rather than closing the
+            // window, so it never reaches this handler at all.
+            if window.label() == "main" {
+                if let WindowEvent::CloseRequested { api, .. } = event {
+                    api.prevent_close();
+                    let _ = window.hide();
+                }
+            }
+        })
         .setup(|app| {
+            // Idempotent — safe to call on every launch, not just the first.
+            use tauri_plugin_autostart::ManagerExt;
+            let _ = app.autolaunch().enable();
+
+            let show = MenuItem::with_id(app, "show", "Show BabuScales", true, None::<&str>)?;
+            let quit = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
+            let tray_menu = Menu::with_items(app, &[&show, &quit])?;
+            TrayIconBuilder::new()
+                .icon(
+                    app.default_window_icon()
+                        .cloned()
+                        .ok_or("no default window icon")?,
+                )
+                .menu(&tray_menu)
+                .show_menu_on_left_click(true)
+                .on_menu_event(|app, event| match event.id.as_ref() {
+                    "quit" => app.exit(0),
+                    "show" => {
+                        if let Some(window) = app.get_webview_window("main") {
+                            let _ = window.show();
+                            let _ = window.set_focus();
+                        }
+                    }
+                    _ => {}
+                })
+                .build(app)?;
+
             // One file, in the app's own data directory — not a project
             // path, not a temp dir (PLAN §6.4). `store::open` creates it
             // (and its parent) if this is the first run.

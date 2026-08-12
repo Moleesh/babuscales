@@ -1,15 +1,20 @@
 import type { DataTableColumn } from "@components/DataTable";
-import type { ReportSlipData } from "@engines/print";
 
-import { exportReportCsv, exportReportXlsx } from "./reportExport";
-import { ReportsActionsRow } from "./ReportsActionsRow";
 import { ReportsDateRangeRow } from "./ReportsDateRangeRow";
 import { SavedReportsRow } from "./SavedReportsRow";
 import { SummaryView } from "./SummaryView";
 import { TicketsView } from "./TicketsView";
 import type { UseSavedReportActions } from "./useSavedReportActions";
 import styles from "../_styles/ReportsScreen.module.css";
-import type { GroupKey, ReportView, SummaryRow, TicketRow, TicketRowFilter } from "../reportRows";
+import type {
+    GroupKey,
+    ReportView,
+    SortDir,
+    SummaryRow,
+    TicketRow,
+    TicketRowFilter,
+    TicketSortKey,
+} from "../reportRows";
 
 export interface ReportsCardBodyProps {
     savedReportActions: UseSavedReportActions;
@@ -18,6 +23,10 @@ export interface ReportsCardBodyProps {
     onQueryChange: (query: string) => void;
     filter: TicketRowFilter;
     onFilterChange: (filter: TicketRowFilter) => void;
+    sortKey: TicketSortKey;
+    onSortKeyChange: (sortKey: TicketSortKey) => void;
+    sortDir: SortDir;
+    onSortDirChange: (sortDir: SortDir) => void;
     dateFrom: string;
     onDateFromChange: (date: string) => void;
     dateTo: string;
@@ -28,14 +37,12 @@ export interface ReportsCardBodyProps {
     visibleRows: TicketRow[];
     summaryColumns: DataTableColumn<SummaryRow>[];
     summaryRows: SummaryRow[];
-    reportSlipData: ReportSlipData;
-    onPrint: () => void;
 }
 
 // Split out of ReportsScreen (over the line/complexity budget —
-// docs/CodingStandards.md) — the Card's body: saved-reports row, the
-// active view (Tickets or Summary), and the Print/Export button row,
-// unchanged from the inline version it replaces.
+// docs/CodingStandards.md) — the Card's body: saved-reports row and the
+// active view (Tickets or Summary). The Print/Export button row moved out
+// to ReportsScreen's own sticky bottom bar (task: Reports rework, item 3).
 export const ReportsCardBody = ({
     savedReportActions,
     view,
@@ -43,6 +50,10 @@ export const ReportsCardBody = ({
     onQueryChange,
     filter,
     onFilterChange,
+    sortKey,
+    onSortKeyChange,
+    sortDir,
+    onSortDirChange,
     dateFrom,
     onDateFromChange,
     dateTo,
@@ -53,8 +64,6 @@ export const ReportsCardBody = ({
     visibleRows,
     summaryColumns,
     summaryRows,
-    reportSlipData,
-    onPrint,
 }: ReportsCardBodyProps) => (
     <div className={styles.body}>
         <SavedReportsRow
@@ -77,6 +86,10 @@ export const ReportsCardBody = ({
                 onQueryChange={onQueryChange}
                 filter={filter}
                 onFilterChange={onFilterChange}
+                sortKey={sortKey}
+                onSortKeyChange={onSortKeyChange}
+                sortDir={sortDir}
+                onSortDirChange={onSortDirChange}
                 columns={ticketColumns}
                 rows={visibleRows}
             />
@@ -88,10 +101,5 @@ export const ReportsCardBody = ({
                 rows={summaryRows}
             />
         )}
-        <ReportsActionsRow
-            onPrint={onPrint}
-            onExportXlsx={() => exportReportXlsx(reportSlipData)}
-            onExportCsv={() => exportReportCsv(reportSlipData)}
-        />
     </div>
 );

@@ -34,6 +34,15 @@ export interface ReportDefinition {
     View: string;
     GroupBy: string;
     Filter: string;
+    /** Report-builder wizard MVP (task: Reports rework, item 4) — date range
+     * (`yyyy-MM-dd`, matching reportRows.ts's own date-only filter) and a
+     * comma-joined list of visible ticket-column keys. Both optional so
+     * pre-existing saved defs (View/GroupBy/Filter only) still round-trip
+     * through `loadReportDefs` unchanged — an absent value just means
+     * "no date range" / "all columns" on recall. */
+    DateFrom?: string;
+    DateTo?: string;
+    Columns?: string;
 }
 
 const reportDefinitionSchema: z.ZodType<ReportDefinition> = z.object({
@@ -42,6 +51,9 @@ const reportDefinitionSchema: z.ZodType<ReportDefinition> = z.object({
     View: z.string().min(1),
     GroupBy: z.string().min(1),
     Filter: z.string().min(1),
+    DateFrom: z.string().optional(),
+    DateTo: z.string().optional(),
+    Columns: z.string().optional(),
 });
 
 const reportDefsBodySchema = z.object({ Definitions: z.array(reportDefinitionSchema) });

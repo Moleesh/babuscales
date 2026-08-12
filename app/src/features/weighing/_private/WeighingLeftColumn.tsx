@@ -12,6 +12,8 @@ export interface WeighingLeftColumnProps {
     caches: WeighingCaches;
     billing: TicketBilling;
     amountDp: 0 | 2;
+    /** Settings → Weighing → Rules.ManualEntry — threaded to CalcCard's Tare/Gross boxes. */
+    manualEntry: boolean;
 }
 
 // Split out of WeighingScreen (over the line budget — docs/CodingStandards.md)
@@ -24,6 +26,7 @@ export const WeighingLeftColumn = ({
     caches,
     billing,
     amountDp,
+    manualEntry,
 }: WeighingLeftColumnProps) => (
     <>
         <TicketFieldsCard
@@ -42,6 +45,10 @@ export const WeighingLeftColumn = ({
             materialRate={billing.materialRate}
             value={billing.value}
             amountDp={amountDp}
+            manualEntry={manualEntry}
+            kind={ticket.kind}
+            isLocked={ticket.isLocked}
+            onManualCapture={ticket.manualCapture}
         />
     </>
 );

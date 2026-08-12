@@ -3,6 +3,11 @@
     gap: 13px;
 }
 
+.period-row {
+    display: flex;
+    justify-content: flex-end;
+}
+
 /* Ported from demo/BabuScales-demo.html's ".kpis"/".kpi"/".kpi.accent"/".kpi .v"/".kpi .d". */
 .kpis {
     display: grid;

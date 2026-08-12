@@ -40,14 +40,8 @@ import {
     nowLocalHm,
     todayLocalDate,
 } from "@features/reports/dailySummaryEmail";
-import {
-    AdminChip,
-    OperatorChip,
-    SettingsProvider,
-    SettingsScreen,
-    useOutboxWorker,
-    useSettings,
-} from "@features/settings";
+import { OperatorChip, SettingsProvider, SettingsScreen, useOutboxWorker, useSettings } from "@features/settings";
+import type { BusinessInfo } from "@features/settings";
 import { useWeighingTicket, WeighingScreen } from "@features/weighing";
 import type { UseWeighingTicket } from "@features/weighing";
 import { DEFAULT_HELP_TOPICS } from "@i18n/helpTopics";
@@ -58,6 +52,16 @@ import type { LanguagePack } from "@i18n/types";
 import { useTranslation } from "@i18n/useTranslation";
 
 const TAB_KEYS = ["dash", "weigh", "cameras", "reports", "masters", "settings"] as const;
+
+// Dashboard/Weighing/Cameras all get the same bigger indicator readout — the
+// other tabs (Reports/Masters/Settings) keep the compact one (PLAN §21).
+const BIG_HEADER_TABS = new Set<(typeof TAB_KEYS)[number]>(["dash", "weigh", "cameras"]);
+
+// Was a hardcoded string in AppShell's `siteLabel` prop — now editable via
+// Settings' Business pane (PLAN §21); `·`-joins only the parts the operator
+// actually filled in, so a blank Address/Phone doesn't leave dangling " · "s.
+const buildSiteLabel = (business: BusinessInfo): string =>
+    [business.Name, business.Address, business.Phone].filter(Boolean).join(" · ");
 const TAB_ICONS: Record<(typeof TAB_KEYS)[number], string> = {
     dash: "▩",
     weigh: "◎",
@@ -92,11 +96,11 @@ const TopBarActions = ({
             </button>
         )}
         <OperatorChip />
-        <AdminChip />
         <button
             className="iconbtn"
             aria-expanded={helpOpen}
             title={helpTitle}
+            data-help-toggle
             onClick={onToggleHelp}
         >
             ?
@@ -109,10 +113,13 @@ interface TabContentProps {
     ticket: UseWeighingTicket;
     onOpenTicket: (doc: DocRow) => void;
     onNavigateToReports: () => void;
+    onNavigateToCameras: () => void;
     onResetTicketSeries: () => Promise<void>;
     onAddLanguagePack: (pack: LanguagePack) => Promise<void>;
     /** `useLicense().isGated` — the one place licensing actually changes what the operator can do (task #38); see WeighingScreen's own `licenseGated` prop comment. */
     licenseGated: boolean;
+    /** See ReportsScreen's own `reportsIntent` prop comment (PLAN §21 bug fix). */
+    reportsIntent: { kind: "waiting"; nonce: number } | null;
 }
 
 // The Weighing ticket hook is lifted to Shell (not owned by WeighingScreen
@@ -123,17 +130,25 @@ const TabContent = ({
     ticket,
     onOpenTicket,
     onNavigateToReports,
+    onNavigateToCameras,
     onResetTicketSeries,
     onAddLanguagePack,
     licenseGated,
+    reportsIntent,
 }: TabContentProps) => {
     switch (tab) {
         case "dash":
             return <DashboardScreen onNavigateToReports={onNavigateToReports} />;
         case "weigh":
-            return <WeighingScreen ticket={ticket} licenseGated={licenseGated} />;
+            return (
+                <WeighingScreen
+                    ticket={ticket}
+                    licenseGated={licenseGated}
+                    onNavigateToCameras={onNavigateToCameras}
+                />
+            );
         case "reports":
-            return <ReportsScreen onOpenTicket={onOpenTicket} />;
+            return <ReportsScreen onOpenTicket={onOpenTicket} reportsIntent={reportsIntent} />;
         case "masters":
             return <MastersScreen />;
         case "settings":
@@ -148,9 +163,11 @@ const TabContent = ({
     }
 };
 
-// The mock's own weight readout — full-size on Weighing, compact as a
-// glance-only strip everywhere else (AppShell's `header` slot). Pulled out
-// of Shell so its own prop wiring doesn't count against Shell's budget.
+// The mock's own weight readout — full-size on Dashboard/Weighing/Cameras
+// (the three tabs where knowing the live reading actually matters —
+// PLAN §21), compact as a glance-only strip on Masters/Reports/Settings
+// (AppShell's `header` slot). Pulled out of Shell so its own prop wiring
+// doesn't count against Shell's budget.
 const ShellWeightHeader = ({
     reading,
     compact,
@@ -195,8 +212,21 @@ const useShellTicketActions = (
     const resetTicketSeries = async (): Promise<void> => {
         await db.resetDocSeries("Ticket", "default");
     };
-
     return { openTicket, resetTicketSeries };
+};
+
+// Dashboard's "waiting" KPI tile switching tabs without telling Reports
+// which filter the operator wanted (PLAN §21 bug report) — see
+// ReportsScreen's own `reportsIntent` prop comment. Split out for the same
+// line-budget reason as useShellTicketActions above.
+const useReportsNavigation = (setActiveTab: (tab: (typeof TAB_KEYS)[number]) => void) => {
+    const [reportsIntent, setReportsIntent] = useState<{ kind: "waiting"; nonce: number } | null>(null);
+    const onNavigateToReports = (): void => {
+        setActiveTab("reports");
+        setReportsIntent((prev) => ({ kind: "waiting", nonce: (prev?.nonce ?? 0) + 1 }));
+    };
+
+    return { reportsIntent, onNavigateToReports };
 };
 
 interface ShellProps {
@@ -219,10 +249,11 @@ const Shell = ({ onAddLanguagePack }: ShellProps) => {
     );
     const otherPack = packs.find((pack) => pack.Code !== "en") ?? null;
     const { openTicket, resetTicketSeries } = useShellTicketActions(ticket, db, setActiveTab);
+    const { reportsIntent, onNavigateToReports } = useReportsNavigation(setActiveTab);
 
     return (
         <AppShell
-            siteLabel="Babulens Enterprise · Nagercoil · 9789597007"
+            siteLabel={buildSiteLabel(settings.Business)}
             tabs={buildNavTabs(t)}
             activeTab={activeTab}
             onNavigate={(key) => setActiveTab(key as (typeof TAB_KEYS)[number])}
@@ -238,17 +269,19 @@ const Shell = ({ onAddLanguagePack }: ShellProps) => {
                     helpTitle={t("nav.help")}
                 />
             }
-            header={<ShellWeightHeader reading={reading} compact={activeTab !== "weigh"} t={t} />}
+            header={<ShellWeightHeader reading={reading} compact={!BIG_HEADER_TABS.has(activeTab)} t={t} />}
             banner={renderLicenseBanner(license.state, license.isGated)}
         >
             <TabContent
                 tab={activeTab}
                 ticket={ticket}
                 onOpenTicket={openTicket}
-                onNavigateToReports={() => setActiveTab("reports")}
+                onNavigateToReports={onNavigateToReports}
+                onNavigateToCameras={() => setActiveTab("cameras")}
                 onResetTicketSeries={resetTicketSeries}
                 onAddLanguagePack={onAddLanguagePack}
                 licenseGated={license.isGated}
+                reportsIntent={reportsIntent}
             />
             <ContextualHelp
                 open={helpOpen}

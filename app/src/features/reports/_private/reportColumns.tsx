@@ -5,7 +5,7 @@ import type { DocRow } from "@db/types";
 import { formatTicketNo } from "@features/weighing";
 
 import { groupLabel } from "../reportRows";
-import type { GroupKey, SummaryRow, TicketRow, Translate } from "../reportRows";
+import type { GroupKey, SummaryRow, TicketColumnKey, TicketRow, Translate } from "../reportRows";
 
 const formatWeightCell = (kg: number | null): string =>
     kg === null ? "—" : `${formatWeightKg(kg)} kg`;
@@ -15,6 +15,11 @@ export interface BuildTicketColumnsArgs {
     amountDp: 0 | 2;
     styles: CSSModuleClasses;
     t: Translate;
+    /** Report-builder wizard MVP (task: Reports rework, item 4) — `null`
+     * (the default) shows every column, same as before the wizard existed.
+     * A non-null list restricts the table to just those keys plus the
+     * always-shown trailing "action" column. */
+    visibleColumnKeys?: TicketColumnKey[] | null;
 }
 
 const renderStatusCell = (row: TicketRow, styles: CSSModuleClasses, t: Translate) =>
@@ -33,10 +38,10 @@ const renderActionCell = (row: TicketRow, onOpenTicket: (doc: DocRow) => void, t
         </Button>
     );
 
-// Split out of ReportsScreen (over the line/complexity budget —
-// docs/CodingStandards.md) — the Tickets-view DataTable columns,
-// unchanged from the inline version it replaces.
-export const buildTicketColumns = ({
+// Split out of buildTicketColumns (over the line/complexity budget —
+// docs/CodingStandards.md) — the full, unfiltered column list, unchanged
+// from the inline version it replaces.
+const buildAllTicketColumns = ({
     onOpenTicket,
     amountDp,
     styles,
@@ -82,6 +87,19 @@ export const buildTicketColumns = ({
     },
     { key: "action", header: "", render: (row) => renderActionCell(row, onOpenTicket, t) },
 ];
+
+// Split out of ReportsScreen (over the line/complexity budget —
+// docs/CodingStandards.md) — the Tickets-view DataTable columns. Task:
+// Reports rework, item 4 — `visibleColumnKeys` (set by the report-builder
+// wizard) filters the list down; `null` (the default) keeps every column,
+// same as before the wizard existed.
+export const buildTicketColumns = (args: BuildTicketColumnsArgs): DataTableColumn<TicketRow>[] => {
+    const all = buildAllTicketColumns(args);
+    const { visibleColumnKeys = null } = args;
+    if (!visibleColumnKeys) return all;
+    const keys: string[] = visibleColumnKeys;
+    return all.filter((column) => column.key === "action" || keys.includes(column.key));
+};
 
 export interface BuildSummaryColumnsArgs {
     groupBy: GroupKey;

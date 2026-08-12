@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { WEIGHT_UNITS } from "@constants/numberFormat";
+
 // One row, one ConfigId, `ConfigKind: "Settings"` (already in `CONFIG_KINDS`
 // — src/db/types.ts). Everything on this screen is a row in the database,
 // same as the mock's own "Fixed policy" says it should be — see
@@ -21,6 +23,27 @@ const rulesSchema = z.object({
     StrictTare: z.boolean(),
     AutoCapture: z.boolean(),
     MultiGross: z.boolean(),
+    // PLAN §21 — "Send to lorry" (ActionsCard.tsx) only ever appears on the
+    // simulated indicator adapter (`IndicatorSource.loadLorry` is undefined
+    // on the real serial one), which was an accidental, adapter-tied way to
+    // hide a button meant for local testing/demoing. This makes hiding it
+    // an explicit choice instead: on by default (unchanged behaviour on the
+    // simulated adapter), off hides the button even in a demo/dev build.
+    // `.default()` (unlike every field above) because this field is new —
+    // a settings row saved before it existed must still `safeParse`
+    // successfully instead of failing whole-row and silently resetting
+    // every other setting on the row (useSettingsRecord.ts's fallback to
+    // `createDefaultSettingsRow`). Same reasoning on `ManualEntry`,
+    // `Formats.WeightUnit` and the whole `Business` object below.
+    ShowSendLorry: z.boolean().default(true),
+    // Manual-entry mode — the Tare/Gross boxes on the weighing screen
+    // (CalcCard.tsx) become typed number inputs instead of read-only scale
+    // readouts, for a site with no connected indicator yet (or one that's
+    // temporarily down). Off by default: zero behaviour change until an
+    // admin opts in, same shape as every other rule here. A manual entry
+    // still flows through the same `Capture` pipeline as a scale reading —
+    // see useWeighingTicket's `manualCapture`, `Source: "Manual"`.
+    ManualEntry: z.boolean().default(false),
 });
 export type WeighingRules = z.infer<typeof rulesSchema>;
 
@@ -43,6 +66,10 @@ const formatsSchema = z.object({
     DateFmt: z.string(),
     TimeFmt: z.enum(["24", "12"]),
     AmountDp: z.union([z.literal(0), z.literal(2)]),
+    /** Dashboard/report weight display — Indian sites read kg, not tonnes
+     * (PLAN §21); the indicator itself always reports kg regardless of
+     * this. See constants/numberFormat.ts's `formatWeightIn`. */
+    WeightUnit: z.enum(WEIGHT_UNITS).default("kg"),
 });
 export type DisplayFormats = z.infer<typeof formatsSchema>;
 
@@ -253,7 +280,27 @@ const dailySummarySchema = z.object({
 });
 export type DailySummaryConfig = z.infer<typeof dailySummarySchema>;
 
+/** Settings' new default-open "Business" pane — the name/address/phone that
+ * used to be a hardcoded string in App.tsx's `siteLabel` prop (PLAN §21). */
+const businessSchema = z.object({
+    Name: z.string(),
+    Address: z.string(),
+    Phone: z.string(),
+});
+export type BusinessInfo = z.infer<typeof businessSchema>;
+
+/** The exact string App.tsx's `siteLabel` prop hardcoded before the
+ * Business pane existed — same real-world default, now editable. Declared
+ * here (rather than after `settingsBodySchema`) so `businessSchema`'s own
+ * `.default()` below can reference it. */
+const DEFAULT_BUSINESS_VALUE: BusinessInfo = {
+    Name: "Babulens Enterprise",
+    Address: "Nagercoil",
+    Phone: "9789597007",
+};
+
 export const settingsBodySchema = z.object({
+    Business: businessSchema.default(DEFAULT_BUSINESS_VALUE),
     Rules: rulesSchema,
     Stability: stabilitySchema,
     Numbering: numberingSchema,
@@ -277,6 +324,8 @@ export const settingsBodySchema = z.object({
 });
 export type SettingsBody = z.infer<typeof settingsBodySchema>;
 
+export const DEFAULT_BUSINESS: BusinessInfo = DEFAULT_BUSINESS_VALUE;
+
 // The mock's own form defaults (demo/BabuScales-demo.html's `cfg`/`rules`
 // objects and the Weighing pane's `#setReads`/`#setBand` input `value=`s).
 export const DEFAULT_RULES: WeighingRules = {
@@ -284,6 +333,8 @@ export const DEFAULT_RULES: WeighingRules = {
     StrictTare: false,
     AutoCapture: false,
     MultiGross: false,
+    ShowSendLorry: true,
+    ManualEntry: false,
 };
 
 export const DEFAULT_STABILITY: StabilityGate = {
@@ -310,6 +361,9 @@ export const DEFAULT_FORMATS: DisplayFormats = {
     DateFmt: "dd MMM yyyy",
     TimeFmt: "24",
     AmountDp: 2,
+    /** Per PLAN §21: "in india we use kg instead of ton" — kg is the
+     * out-of-the-box default, tonnes is opt-in. */
+    WeightUnit: "kg",
 };
 
 export const DEFAULT_CONNECTIONS: ConnectionsConfig = {
@@ -382,6 +436,16 @@ export const ruleDefs = (t: (key: string) => string): readonly [key: keyof Weigh
     ["StrictTare", t("settings.weighingRules.strictTare.label"), t("settings.weighingRules.strictTare.note")],
     ["AutoCapture", t("settings.weighingRules.autoCapture.label"), t("settings.weighingRules.autoCapture.note")],
     ["MultiGross", t("settings.weighingRules.multiGross.label"), t("settings.weighingRules.multiGross.note")],
+    [
+        "ShowSendLorry",
+        t("settings.weighingRules.showSendLorry.label"),
+        t("settings.weighingRules.showSendLorry.note"),
+    ],
+    [
+        "ManualEntry",
+        t("settings.weighingRules.manualEntry.label"),
+        t("settings.weighingRules.manualEntry.note"),
+    ],
 ];
 
 /** POLICY, `t`-threaded (task #16, mirrors ruleDefs(t) above) — the read-only "Fixed policy" table (not a Settings control; there is nothing to toggle). */

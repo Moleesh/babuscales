@@ -111,6 +111,81 @@ export const filterOptions = (t: Translate): { value: TicketRowFilter; label: st
     { value: "both", label: t("reports.filter.both") },
 ];
 
+export type TicketSortKey = "at" | "docSeq" | "vehicleNo" | "party" | "material" | "netKg" | "charge";
+
+export const TICKET_SORT_KEY_VALUES: TicketSortKey[] = [
+    "at",
+    "docSeq",
+    "vehicleNo",
+    "party",
+    "material",
+    "netKg",
+    "charge",
+];
+
+export type SortDir = "asc" | "desc";
+
+export const sortOptions = (t: Translate): { value: TicketSortKey; label: string }[] => [
+    { value: "at", label: t("reports.sort.at") },
+    { value: "docSeq", label: t("reports.sort.ticket") },
+    { value: "vehicleNo", label: t("reports.sort.vehicle") },
+    { value: "party", label: t("reports.sort.party") },
+    { value: "material", label: t("reports.sort.material") },
+    { value: "netKg", label: t("reports.sort.net") },
+    { value: "charge", label: t("reports.sort.charge") },
+];
+
+/** Nulls always sort last regardless of direction — a missing weight/charge is "unknown", not "zero". */
+const compareTicketRows = (a: TicketRow, b: TicketRow, sortKey: TicketSortKey): number => {
+    const av = a[sortKey];
+    const bv = b[sortKey];
+    if (av === null) return bv === null ? 0 : 1;
+    if (bv === null) return -1;
+    if (typeof av === "number" && typeof bv === "number") return av - bv;
+    return String(av).localeCompare(String(bv));
+};
+
+export const sortTicketRows = (
+    rows: TicketRow[],
+    sortKey: TicketSortKey,
+    sortDir: SortDir,
+): TicketRow[] => {
+    const sorted = [...rows].sort((a, b) => compareTicketRows(a, b, sortKey));
+    return sortDir === "asc" ? sorted : sorted.reverse();
+};
+
+/** Ticket-column keys the report-builder wizard (task: Reports rework,
+ * item 4) can show/hide — mirrors reportColumns.tsx's `buildTicketColumns`
+ * key list 1:1, minus "action" (Resume/Reprint isn't a data column, always
+ * shown). */
+export const TICKET_COLUMN_KEYS = [
+    "no",
+    "veh",
+    "party",
+    "mat",
+    "tare",
+    "gross",
+    "net",
+    "charge",
+    "at",
+    "status",
+] as const;
+
+export type TicketColumnKey = (typeof TICKET_COLUMN_KEYS)[number];
+
+export const ticketColumnOptions = (t: Translate): { value: TicketColumnKey; label: string }[] => [
+    { value: "no", label: t("reports.col.ticket") },
+    { value: "veh", label: t("reports.col.vehicle") },
+    { value: "party", label: t("reports.col.party") },
+    { value: "mat", label: t("reports.col.material") },
+    { value: "tare", label: t("reports.col.tare") },
+    { value: "gross", label: t("reports.col.gross") },
+    { value: "net", label: t("reports.col.net") },
+    { value: "charge", label: t("reports.col.charge") },
+    { value: "at", label: t("reports.col.at") },
+    { value: "status", label: t("reports.col.status") },
+];
+
 export type GroupKey = "material" | "party" | "vehicleNo" | "transporter";
 
 export const GROUP_KEY_VALUES: GroupKey[] = ["material", "party", "vehicleNo", "transporter"];

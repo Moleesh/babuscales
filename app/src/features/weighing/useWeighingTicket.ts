@@ -56,10 +56,11 @@ export interface UseWeighingTicket {
     printCount: number;
     saving: boolean;
     capture: (weightKg: number) => void;
+    /** Settings → Weighing → Rules.ManualEntry (CalcCard's typed inputs) — same `pushCapture` pipeline as `capture`, just `Source: "Manual"` instead of `"Indicator"`. */
+    manualCapture: (weightKg: number) => void;
     useStoredTare: (weightKg: number, capturedAtIso: string) => void;
     save: () => Promise<void>;
     startNew: () => void;
-    clear: () => void;
     resume: (doc: DocRow) => void;
     print: () => Promise<void>;
 }
@@ -265,6 +266,7 @@ const useTicketCaptureActions = ({
 
     return {
         capture: useCallback((weightKg: number) => pushCapture(weightKg, "Indicator"), [pushCapture]),
+        manualCapture: useCallback((weightKg: number) => pushCapture(weightKg, "Manual"), [pushCapture]),
         useStoredTare: useCallback(
             (weightKg: number, capturedAtIso: string) =>
                 pushCapture(weightKg, "StoredTare", capturedAtIso),
@@ -378,10 +380,6 @@ const useTicketLifecycleActions = ({
         }
     }, [captures.length, isLocked, resetToNew, save]);
 
-    const clear = useCallback(() => {
-        if (!isLocked) resetToNew();
-    }, [isLocked, resetToNew]);
-
     const resume = useCallback(
         (doc: DocRow) => {
             dispatch({ type: "Resumed", doc, tareFirst, multiGross });
@@ -390,7 +388,7 @@ const useTicketLifecycleActions = ({
         [dispatch, indicator, tareFirst, multiGross],
     );
 
-    return { startNew, clear, resume };
+    return { startNew, resume };
 };
 
 // The reducer itself plus the one derived effect that keeps `kind` in sync
@@ -407,6 +405,19 @@ const useTicketState = (
     );
 
     useEffect(() => {
+        // Only steps in when the *current* kind has genuinely stopped being
+        // a valid choice (captured already, and MultiGross doesn't allow
+        // re-picking it) or there's no kind at all yet. Bug fix: this used
+        // to unconditionally recompute "the" default from `captures` alone
+        // and overwrite `state.kind` whenever it differed — which fired
+        // right after the operator's own manual SegmentedControl pick
+        // (ActionsCard.tsx) dispatched a *different* kind than the
+        // order-based default, silently snapping it back and making the
+        // Tare/Gross toggle look broken.
+        const kindStillValid =
+            state.kind !== null &&
+            !(hasCapture(state.captures, state.kind) && !(multiGross && state.kind === "Gross"));
+        if (kindStillValid) return;
         const next = defaultCaptureKind(state.captures, tareFirst, multiGross);
         if (next !== state.kind) dispatch({ type: "SetKind", kind: next });
     }, [state.captures, state.kind, tareFirst, multiGross]);
@@ -455,10 +466,10 @@ const assembleTicket = ({
     printCount: state.printCount,
     saving: state.saving,
     capture: captureActions.capture,
+    manualCapture: captureActions.manualCapture,
     useStoredTare: captureActions.useStoredTare,
     save: persistenceActions.save,
     startNew: lifecycleActions.startNew,
-    clear: lifecycleActions.clear,
     resume: lifecycleActions.resume,
     print: persistenceActions.print,
 });

@@ -5,6 +5,14 @@
     align-content: start;
 }
 
+.top-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
 .lockbar {
     display: flex;
     align-items: center;

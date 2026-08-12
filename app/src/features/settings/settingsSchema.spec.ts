@@ -7,9 +7,16 @@ import { fixedPolicy, ruleDefs } from "./settingsSchema";
 const fakeT = (key: string): string => `[${key}]`;
 
 describe("ruleDefs(t)", () => {
-    it("returns exactly the four WeighingRules keys, in order", () => {
+    it("returns exactly the six WeighingRules keys, in order", () => {
         const defs = ruleDefs(fakeT);
-        expect(defs.map((d) => d[0])).toEqual(["TareFirst", "StrictTare", "AutoCapture", "MultiGross"]);
+        expect(defs.map((d) => d[0])).toEqual([
+            "TareFirst",
+            "StrictTare",
+            "AutoCapture",
+            "MultiGross",
+            "ShowSendLorry",
+            "ManualEntry",
+        ]);
     });
 
     it("labels/notes every entry through t with the expected keys", () => {
@@ -19,6 +26,16 @@ describe("ruleDefs(t)", () => {
             ["StrictTare", "[settings.weighingRules.strictTare.label]", "[settings.weighingRules.strictTare.note]"],
             ["AutoCapture", "[settings.weighingRules.autoCapture.label]", "[settings.weighingRules.autoCapture.note]"],
             ["MultiGross", "[settings.weighingRules.multiGross.label]", "[settings.weighingRules.multiGross.note]"],
+            [
+                "ShowSendLorry",
+                "[settings.weighingRules.showSendLorry.label]",
+                "[settings.weighingRules.showSendLorry.note]",
+            ],
+            [
+                "ManualEntry",
+                "[settings.weighingRules.manualEntry.label]",
+                "[settings.weighingRules.manualEntry.note]",
+            ],
         ]);
     });
 
@@ -28,7 +45,7 @@ describe("ruleDefs(t)", () => {
             calls++;
             return key;
         });
-        expect(calls).toBe(8); // 4 rules x (label + note)
+        expect(calls).toBe(12); // 6 rules x (label + note)
     });
 });
 

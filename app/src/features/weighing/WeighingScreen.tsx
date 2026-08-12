@@ -32,6 +32,8 @@ export interface WeighingScreenProps {
      * they're entitled to see, only out of adding more of it.
      */
     licenseGated: boolean;
+    /** Jumps out to the Cameras tab from the sidebar's "Go to Cameras" shortcut — App.tsx owns tab state, this screen doesn't (PLAN §21). */
+    onNavigateToCameras: () => void;
 }
 
 // PLAN §7 end to end: an ordered capture array (§7.1), a stability-gated
@@ -41,7 +43,7 @@ export interface WeighingScreenProps {
 // preview tied to this same ticket state — @features/cameras). Real
 // print-template editing is a separate, not-yet-built feature
 // (app/README.md known gap) — this screen does not render it.
-export const WeighingScreen = ({ ticket, licenseGated }: WeighingScreenProps) => {
+export const WeighingScreen = ({ ticket, licenseGated, onNavigateToCameras }: WeighingScreenProps) => {
     const indicator = useIndicator();
     const reading = useIndicatorReading();
     const { settings } = useSettings();
@@ -78,17 +80,30 @@ export const WeighingScreen = ({ ticket, licenseGated }: WeighingScreenProps) =>
         <div className={styles.screen}>
             <OpenTicketStrip tickets={openTickets} onResume={handleResume} />
             <WeighingBody
-                left={{ ticket, ticketDate, recallOffers, caches, billing, amountDp: settings.Formats.AmountDp }}
+                left={{
+                    ticket,
+                    ticketDate,
+                    recallOffers,
+                    caches,
+                    billing,
+                    amountDp: settings.Formats.AmountDp,
+                    manualEntry: settings.Rules.ManualEntry,
+                }}
                 right={{
                     ticket,
                     reading,
-                    loadLorry: indicator.loadLorry,
+                    // `indicator.loadLorry` is only ever defined on the
+                    // simulated adapter to start with (real serial never has
+                    // it) — `ShowSendLorry` (Settings → Weighing Rules) adds
+                    // an explicit off switch on top of that, PLAN §21.
+                    loadLorry: settings.Rules.ShowSendLorry ? indicator.loadLorry : undefined,
                     multiGross: settings.Rules.MultiGross,
                     armed,
                     gated: licenseGated,
                     hasBlockingCustomFieldError: hasBlockingCustomFieldErrorValue,
                     onSave: () => void handleSave(),
                     onOpenPrintModal: () => setPrintModalOpen(true),
+                    onNavigateToCameras,
                 }}
             />
             <PrintPreviewModal

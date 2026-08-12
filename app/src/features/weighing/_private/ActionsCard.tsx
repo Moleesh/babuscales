@@ -101,28 +101,28 @@ const ReprintRow = ({
     );
 };
 
-const ClearAndSendRow = ({
-    ticket,
-    loadLorry,
-}: Pick<ActionsCardProps, "ticket" | "loadLorry">) => {
+// "Clear" used to live here alongside "Send to lorry" — a `danger`-styled
+// discard button, separate from ReprintRow's "New ticket" (which parks any
+// in-progress captures instead of discarding them). Removed: with no
+// captures yet — the overwhelmingly common moment either gets clicked —
+// both just reset the empty form, so the two read as one button doing the
+// same thing twice (PLAN §21 bug report). "New ticket" is the one kept: its
+// park-in-progress-work behaviour is a strict superset of what "Clear" did.
+const SendLorryRow = ({ ticket, loadLorry }: Pick<ActionsCardProps, "ticket" | "loadLorry">) => {
     const { t } = useTranslation();
+    if (!loadLorry) return null;
     return (
         <div className={styles.actions}>
-            <Button variant="danger" disabled={ticket.isLocked} onClick={ticket.clear}>
-                {t("weigh.clear")}
+            <Button
+                // Task #46: `!ticket.kind` alone is the correct gate now — `defaultCaptureKind`
+                // already returns null exactly when nothing more should be captured (the old
+                // `captures.length >= 2` check would have blocked a second Gross under
+                // MultiGross even though `kind` still offers one).
+                disabled={ticket.isLocked || !ticket.kind}
+                onClick={() => ticket.kind && loadLorry(ticket.kind)}
+            >
+                {t("weigh.sendLorry")}
             </Button>
-            {loadLorry && (
-                <Button
-                    // Task #46: `!ticket.kind` alone is the correct gate now — `defaultCaptureKind`
-                    // already returns null exactly when nothing more should be captured (the old
-                    // `captures.length >= 2` check would have blocked a second Gross under
-                    // MultiGross even though `kind` still offers one).
-                    disabled={ticket.isLocked || !ticket.kind}
-                    onClick={() => ticket.kind && loadLorry(ticket.kind)}
-                >
-                    {t("weigh.sendLorry")}
-                </Button>
-            )}
         </div>
     );
 };
@@ -200,7 +200,7 @@ export const ActionsCard = ({
                     onOpenPrintModal={onOpenPrintModal}
                 />
                 <ReprintRow ticket={ticket} onOpenPrintModal={onOpenPrintModal} />
-                <ClearAndSendRow ticket={ticket} loadLorry={loadLorry} />
+                <SendLorryRow ticket={ticket} loadLorry={loadLorry} />
                 <p className={styles.hint}>
                     {actionsHint({ ticket, reading, armed, gated, multiGross, t })}
                 </p>

@@ -19,6 +19,9 @@ export interface WeighingRightColumnProps {
     hasBlockingCustomFieldError: boolean;
     onSave: () => void;
     onOpenPrintModal: () => void;
+    /** Jumps to the Cameras tab (App.tsx's `setActiveTab`) — a shortcut out
+     * of this decorative sidebar to the real Cameras screen (PLAN §21). */
+    onNavigateToCameras: () => void;
 }
 
 // Split out of WeighingScreen (over the line budget — docs/CodingStandards.md)
@@ -35,6 +38,7 @@ export const WeighingRightColumn = ({
     hasBlockingCustomFieldError,
     onSave,
     onOpenPrintModal,
+    onNavigateToCameras,
 }: WeighingRightColumnProps) => {
     const { t } = useTranslation();
     const cameraBurnIn = computeCameraBurnIn(ticket.docSeq, ticket.captures);
@@ -66,6 +70,9 @@ export const WeighingRightColumn = ({
                 }
             >
                 <CameraGrid vehicleNo={ticket.fields.vehicleNo} burnIn={cameraBurnIn} variant="sidebar" />
+                <button type="button" className="chip act" onClick={onNavigateToCameras}>
+                    {t("weigh.goToCameras")}
+                </button>
             </Card>
         </>
     );

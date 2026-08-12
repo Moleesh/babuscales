@@ -9,14 +9,18 @@ import {
     buildTicketRows,
     filterRowsByDateRange,
     filterTicketRows,
+    sortTicketRows,
     summarizeTicketRows,
 } from "../reportRows";
 import type {
     GroupKey,
     ReportView,
+    SortDir,
     SummaryRow,
+    TicketColumnKey,
     TicketRow,
     TicketRowFilter,
+    TicketSortKey,
     Translate,
 } from "../reportRows";
 
@@ -28,6 +32,9 @@ export interface UseReportsScreenDataArgs {
     dateFrom: string;
     dateTo: string;
     groupBy: GroupKey;
+    sortKey: TicketSortKey;
+    sortDir: SortDir;
+    visibleColumnKeys: TicketColumnKey[] | null;
     onOpenTicket: (doc: DocRow) => void;
     amountDp: 0 | 2;
     styles: CSSModuleClasses;
@@ -55,6 +62,9 @@ export const useReportsScreenData = ({
     dateFrom,
     dateTo,
     groupBy,
+    sortKey,
+    sortDir,
+    visibleColumnKeys,
     onOpenTicket,
     amountDp,
     styles,
@@ -71,8 +81,8 @@ export const useReportsScreenData = ({
         [rows, dateFrom, dateTo],
     );
     const visibleRows = useMemo(
-        () => filterTicketRows(dateFilteredRows, query, filter),
-        [dateFilteredRows, query, filter],
+        () => sortTicketRows(filterTicketRows(dateFilteredRows, query, filter), sortKey, sortDir),
+        [dateFilteredRows, query, filter, sortKey, sortDir],
     );
     const summaryRows = useMemo(
         () => summarizeTicketRows(dateFilteredRows, groupBy),
@@ -90,8 +100,8 @@ export const useReportsScreenData = ({
         [view, summaryRows, dateFilteredRows, visibleRows, amountDp],
     );
     const ticketColumns = useMemo(
-        () => buildTicketColumns({ onOpenTicket, amountDp, styles, t }),
-        [onOpenTicket, amountDp, styles, t],
+        () => buildTicketColumns({ onOpenTicket, amountDp, styles, t, visibleColumnKeys }),
+        [onOpenTicket, amountDp, styles, t, visibleColumnKeys],
     );
     const summaryColumns = useMemo(
         () => buildSummaryColumns({ groupBy, amountDp, t }),
