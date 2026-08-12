@@ -2,6 +2,7 @@ import { Button } from "@components/Button";
 import { Card } from "@components/Card";
 import { DataTable } from "@components/DataTable";
 import type { DataTableColumn } from "@components/DataTable";
+import { Spinner } from "@components/Spinner";
 import type { MasterRow } from "@db/types";
 
 import styles from "../_styles/MastersScreen.module.css";
@@ -55,11 +56,25 @@ export const MastersListCard = ({
                 rows={rows}
                 getRowId={(row) => row.MasterId}
                 onRowClick={onRowClick}
-                emptyMessage={loading ? t("masters.loading") : `${t("masters.emptyPrefix")} ${title.toLowerCase()} ${t("masters.emptySuffix")}`}
+                emptyMessage={
+                    loading ? (
+                        <span className={styles.loadingRow}>
+                            <Spinner size="sm" label={t("masters.loading")} /> {t("masters.loading")}
+                        </span>
+                    ) : (
+                        `${t("masters.emptyPrefix")} ${title.toLowerCase()} ${t("masters.emptySuffix")}`
+                    )
+                }
             />
             {hasMore && onLoadMore && (
                 <Button onClick={onLoadMore} disabled={loadingMore}>
-                    {loadingMore ? t("masters.loading") : t("masters.loadMore")}
+                    {loadingMore ? (
+                        <span className={styles.loadingRow}>
+                            <Spinner size="sm" label={t("masters.loading")} /> {t("masters.loading")}
+                        </span>
+                    ) : (
+                        t("masters.loadMore")
+                    )}
                 </Button>
             )}
         </div>

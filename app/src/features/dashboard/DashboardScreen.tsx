@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 
 import { SegmentedControl } from "@components/SegmentedControl";
 import type { SegmentedOption } from "@components/SegmentedControl";
+import { Spinner } from "@components/Spinner";
+import type { WeightUnit } from "@constants/numberFormat";
 import type { DocRow } from "@db/types";
 import { useDataPort } from "@db/useDataPort";
 import { buildTicketRows } from "@features/reports";
@@ -30,6 +32,77 @@ const SPLIT_COUNT = 6;
 const buildPeriodOptions = (t: (key: string) => string): SegmentedOption<DashboardPeriod>[] =>
     DASHBOARD_PERIODS.map((period) => ({ value: period, label: t(`dashboard.period.${period}`) }));
 
+interface DashboardLoadedProps {
+    kpis: ReturnType<typeof computeDashboardKpis>;
+    buckets: ReturnType<typeof computeActivityBuckets>;
+    materialSplit: ReturnType<typeof computeMaterialSplit>;
+    rows: ReturnType<typeof buildTicketRows>;
+    period: DashboardPeriod;
+    amountDp: 0 | 2;
+    weightUnit: WeightUnit;
+    onNavigateToReports?: () => void;
+}
+
+// Split out of DashboardScreen (over the line/complexity budget —
+// docs/CodingStandards.md) — the post-load KPIs/charts/recent-tickets
+// block, unchanged from the inline version it replaces.
+const DashboardLoaded = ({
+    kpis,
+    buckets,
+    materialSplit,
+    rows,
+    period,
+    amountDp,
+    weightUnit,
+    onNavigateToReports,
+}: DashboardLoadedProps) => (
+    <>
+        <DashboardKpis
+            kpis={kpis}
+            amountDp={amountDp}
+            weightUnit={weightUnit}
+            onNavigateToReports={onNavigateToReports}
+        />
+        <DashboardCharts buckets={buckets} period={period} materialSplit={materialSplit} weightUnit={weightUnit} />
+        <RecentTicketsCard rows={rows} />
+    </>
+);
+
+// Split out of DashboardScreen (over the line/complexity budget —
+// docs/CodingStandards.md) — the docs load effect plus every period-derived
+// figure, unchanged from the inline version it replaces.
+const useDashboardData = (db: ReturnType<typeof useDataPort>, period: DashboardPeriod) => {
+    const [docs, setDocs] = useState<DocRow[]>([]);
+    const [loading, setLoading] = useState(true);
+    const referenceIso = useMemo(() => new Date().toISOString(), []);
+
+    useEffect(() => {
+        let cancelled = false;
+        void db.listDocs({ DocKind: "Ticket" }).then((loaded) => {
+            if (!cancelled) {
+                setDocs(loaded);
+                setLoading(false);
+            }
+        });
+        return () => {
+            cancelled = true;
+        };
+    }, [db]);
+
+    const rows = useMemo(() => buildTicketRows(docs), [docs]);
+    const kpis = useMemo(() => computeDashboardKpis(rows, referenceIso, period), [rows, referenceIso, period]);
+    const buckets = useMemo(
+        () => computeActivityBuckets(rows, referenceIso, period),
+        [rows, referenceIso, period],
+    );
+    const materialSplit = useMemo(
+        () => computeMaterialSplit(rows, referenceIso, SPLIT_COUNT, period),
+        [rows, referenceIso, period],
+    );
+
+    return { loading, rows, kpis, buckets, materialSplit };
+};
+
 // PLAN §18 — "dashboard (throughput, tonnage, ... top ... materials,
 // peak hours...)". ANPR and anomaly detection are not built (app/README.md
 // known gaps) — this is the operational slice: the selected period's KPIs
@@ -44,33 +117,8 @@ export const DashboardScreen = ({ onNavigateToReports }: DashboardScreenProps) =
     const db = useDataPort();
     const { settings } = useSettings();
     const { t } = useTranslation();
-    const [docs, setDocs] = useState<DocRow[]>([]);
     const [period, setPeriod] = useState<DashboardPeriod>("day");
-    const referenceIso = useMemo(() => new Date().toISOString(), []);
-
-    useEffect(() => {
-        let cancelled = false;
-        void db.listDocs({ DocKind: "Ticket" }).then((rows) => {
-            if (!cancelled) setDocs(rows);
-        });
-        return () => {
-            cancelled = true;
-        };
-    }, [db]);
-
-    const rows = useMemo(() => buildTicketRows(docs), [docs]);
-    const kpis = useMemo(
-        () => computeDashboardKpis(rows, referenceIso, period),
-        [rows, referenceIso, period],
-    );
-    const buckets = useMemo(
-        () => computeActivityBuckets(rows, referenceIso, period),
-        [rows, referenceIso, period],
-    );
-    const materialSplit = useMemo(
-        () => computeMaterialSplit(rows, referenceIso, SPLIT_COUNT, period),
-        [rows, referenceIso, period],
-    );
+    const { loading, rows, kpis, buckets, materialSplit } = useDashboardData(db, period);
 
     return (
         <div className={styles.screen}>
@@ -82,19 +130,22 @@ export const DashboardScreen = ({ onNavigateToReports }: DashboardScreenProps) =
                     ariaLabel={t("dashboard.period.ariaLabel")}
                 />
             </div>
-            <DashboardKpis
-                kpis={kpis}
-                amountDp={settings.Formats.AmountDp}
-                weightUnit={settings.Formats.WeightUnit}
-                onNavigateToReports={onNavigateToReports}
-            />
-            <DashboardCharts
-                buckets={buckets}
-                period={period}
-                materialSplit={materialSplit}
-                weightUnit={settings.Formats.WeightUnit}
-            />
-            <RecentTicketsCard rows={rows} />
+            {loading ? (
+                <div className={styles.loading}>
+                    <Spinner size="lg" label={t("dashboard.loading")} />
+                </div>
+            ) : (
+                <DashboardLoaded
+                    kpis={kpis}
+                    buckets={buckets}
+                    materialSplit={materialSplit}
+                    rows={rows}
+                    period={period}
+                    amountDp={settings.Formats.AmountDp}
+                    weightUnit={settings.Formats.WeightUnit}
+                    onNavigateToReports={onNavigateToReports}
+                />
+            )}
         </div>
     );
 };

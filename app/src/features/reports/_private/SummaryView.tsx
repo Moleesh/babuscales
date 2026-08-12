@@ -1,8 +1,10 @@
 import { DataTable } from "@components/DataTable";
 import type { DataTableColumn } from "@components/DataTable";
 import { Field, FieldGrid } from "@components/Field";
+import { Spinner } from "@components/Spinner";
 import { useTranslation } from "@i18n/useTranslation";
 
+import styles from "../_styles/ReportsScreen.module.css";
 import { groupOptions } from "../reportRows";
 import type { GroupKey, SummaryRow } from "../reportRows";
 
@@ -11,12 +13,14 @@ export interface SummaryViewProps {
     onGroupByChange: (groupBy: GroupKey) => void;
     columns: DataTableColumn<SummaryRow>[];
     rows: SummaryRow[];
+    loading: boolean;
 }
 
 // Split out of ReportsScreen (over the line/complexity budget —
 // docs/CodingStandards.md) — the Summary-view group-by select + table,
-// unchanged from the inline version it replaces.
-export const SummaryView = ({ groupBy, onGroupByChange, columns, rows }: SummaryViewProps) => {
+// unchanged from the inline version it replaces except for the added
+// loading spinner.
+export const SummaryView = ({ groupBy, onGroupByChange, columns, rows, loading }: SummaryViewProps) => {
     const { t } = useTranslation();
     return (
         <>
@@ -39,7 +43,15 @@ export const SummaryView = ({ groupBy, onGroupByChange, columns, rows }: Summary
                 columns={columns}
                 rows={rows}
                 getRowId={(row) => row.key}
-                emptyMessage={t("reports.summaryEmpty")}
+                emptyMessage={
+                    loading ? (
+                        <span className={styles.loadingRow}>
+                            <Spinner size="sm" label={t("reports.loading")} /> {t("reports.loading")}
+                        </span>
+                    ) : (
+                        t("reports.summaryEmpty")
+                    )
+                }
             />
         </>
     );

@@ -7,13 +7,15 @@ import type { UseReportsScreenController } from "./useReportsScreenController";
 
 export interface ReportsScreenCardProps {
     s: UseReportsScreenController;
+    /** True until the ticket docs behind every view/table below have loaded once — see ReportsScreen's own useReportDocs() call. */
+    loading: boolean;
 }
 
 // Split out of ReportsScreen (over the line/complexity budget —
 // docs/CodingStandards.md) — the Card itself (header actions + body),
 // taking the whole controller return value the same way ReportsCardBody's
 // props already mirror it, just one level up.
-export const ReportsScreenCard = ({ s }: ReportsScreenCardProps) => {
+export const ReportsScreenCard = ({ s, loading }: ReportsScreenCardProps) => {
     const { t } = useTranslation();
     return (
         <Card
@@ -29,6 +31,7 @@ export const ReportsScreenCard = ({ s }: ReportsScreenCardProps) => {
             }
         >
             <ReportsCardBody
+                loading={loading}
                 savedReportActions={s.savedReportActions}
                 view={s.view}
                 query={s.query}

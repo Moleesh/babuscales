@@ -17,6 +17,8 @@ import type {
 } from "../reportRows";
 
 export interface ReportsCardBodyProps {
+    /** True until the ticket docs behind Tickets/Summary have loaded once. */
+    loading: boolean;
     savedReportActions: UseSavedReportActions;
     view: ReportView;
     query: string;
@@ -39,12 +41,30 @@ export interface ReportsCardBodyProps {
     summaryRows: SummaryRow[];
 }
 
-// Split out of ReportsScreen (over the line/complexity budget —
-// docs/CodingStandards.md) — the Card's body: saved-reports row and the
-// active view (Tickets or Summary). The Print/Export button row moved out
-// to ReportsScreen's own sticky bottom bar (task: Reports rework, item 3).
-export const ReportsCardBody = ({
-    savedReportActions,
+type ReportsActiveViewProps = Pick<
+    ReportsCardBodyProps,
+    | "loading"
+    | "view"
+    | "query"
+    | "onQueryChange"
+    | "filter"
+    | "onFilterChange"
+    | "sortKey"
+    | "onSortKeyChange"
+    | "sortDir"
+    | "onSortDirChange"
+    | "groupBy"
+    | "onGroupByChange"
+    | "ticketColumns"
+    | "visibleRows"
+    | "summaryColumns"
+    | "summaryRows"
+>;
+
+// Split out of ReportsCardBody (over the line/complexity budget —
+// docs/CodingStandards.md) — the Tickets/Summary view switch itself.
+const ReportsActiveView = ({
+    loading,
     view,
     query,
     onQueryChange,
@@ -54,17 +74,42 @@ export const ReportsCardBody = ({
     onSortKeyChange,
     sortDir,
     onSortDirChange,
-    dateFrom,
-    onDateFromChange,
-    dateTo,
-    onDateToChange,
     groupBy,
     onGroupByChange,
     ticketColumns,
     visibleRows,
     summaryColumns,
     summaryRows,
-}: ReportsCardBodyProps) => (
+}: ReportsActiveViewProps) =>
+    view === "tickets" ? (
+        <TicketsView
+            query={query}
+            onQueryChange={onQueryChange}
+            filter={filter}
+            onFilterChange={onFilterChange}
+            sortKey={sortKey}
+            onSortKeyChange={onSortKeyChange}
+            sortDir={sortDir}
+            onSortDirChange={onSortDirChange}
+            columns={ticketColumns}
+            rows={visibleRows}
+            loading={loading}
+        />
+    ) : (
+        <SummaryView
+            groupBy={groupBy}
+            onGroupByChange={onGroupByChange}
+            columns={summaryColumns}
+            rows={summaryRows}
+            loading={loading}
+        />
+    );
+
+// Split out of ReportsScreen (over the line/complexity budget —
+// docs/CodingStandards.md) — the Card's body: saved-reports row and the
+// active view (Tickets or Summary). The Print/Export button row moved out
+// to ReportsScreen's own sticky bottom bar (task: Reports rework, item 3).
+export const ReportsCardBody = ({ dateFrom, onDateFromChange, dateTo, onDateToChange, savedReportActions, ...view }: ReportsCardBodyProps) => (
     <div className={styles.body}>
         <SavedReportsRow
             savedReports={savedReportActions.savedReports}
@@ -80,26 +125,6 @@ export const ReportsCardBody = ({
             dateTo={dateTo}
             onDateToChange={onDateToChange}
         />
-        {view === "tickets" ? (
-            <TicketsView
-                query={query}
-                onQueryChange={onQueryChange}
-                filter={filter}
-                onFilterChange={onFilterChange}
-                sortKey={sortKey}
-                onSortKeyChange={onSortKeyChange}
-                sortDir={sortDir}
-                onSortDirChange={onSortDirChange}
-                columns={ticketColumns}
-                rows={visibleRows}
-            />
-        ) : (
-            <SummaryView
-                groupBy={groupBy}
-                onGroupByChange={onGroupByChange}
-                columns={summaryColumns}
-                rows={summaryRows}
-            />
-        )}
+        <ReportsActiveView {...view} />
     </div>
 );

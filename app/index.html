@@ -9,6 +9,24 @@
     </head>
     <body>
         <div id="root"></div>
+        <!--
+          Shown until App.tsx's first render removes it (see App's own
+          `useEffect(() => document.getElementById("app-splash")?.remove())`).
+          Lives outside React's tree, in the static HTML, so it paints before
+          React/Tauri finish initializing — otherwise that gap is a blank
+          screen with no feedback (docs/CodingStandards.md §9).
+        -->
+        <div id="app-splash" role="status" aria-live="polite">
+            <svg viewBox="0 0 38 32" width="44" height="37" aria-hidden="true">
+                <text x="19" y="16.5" text-anchor="middle" font-size="15" fill="var(--text)" font-family="var(--ui)" font-weight="800">BS</text>
+                <rect x="1.5" y="19.5" width="35" height="4" rx="1.6" fill="var(--led)" />
+                <rect x="7" y="24" width="4" height="3.6" rx="1.2" fill="var(--led-dim)" />
+                <rect x="27" y="24" width="4" height="3.6" rx="1.2" fill="var(--led-dim)" />
+                <rect x="3.5" y="28.4" width="31" height="2.2" rx="1.1" fill="var(--led-dim)" />
+            </svg>
+            <span id="app-splash-ring"></span>
+            <span class="app-splash-sr">Loading BabuScales…</span>
+        </div>
         <script type="module" src="/src/main.tsx"></script>
     </body>
 </html>

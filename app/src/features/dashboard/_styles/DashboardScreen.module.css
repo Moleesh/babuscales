@@ -8,6 +8,13 @@
     justify-content: flex-end;
 }
 
+.loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 0;
+}
+
 /* Ported from demo/BabuScales-demo.html's ".kpis"/".kpi"/".kpi.accent"/".kpi .v"/".kpi .d". */
 .kpis {
     display: grid;
