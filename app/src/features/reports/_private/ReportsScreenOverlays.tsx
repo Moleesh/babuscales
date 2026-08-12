@@ -6,7 +6,7 @@ import { ReportPrintModal } from "./ReportPrintModal";
 import { ReportsActionsRow } from "./ReportsActionsRow";
 import type { UseSavedReportActions } from "./useSavedReportActions";
 import styles from "../_styles/ReportsScreen.module.css";
-import type { TicketColumnKey, TicketRowFilter } from "../reportRows";
+import type { GroupKey, ReportView, TicketColumnKey, TicketRowFilter } from "../reportRows";
 
 export interface ReportsScreenOverlaysProps {
     reportSlipData: ReportSlipData;
@@ -14,6 +14,10 @@ export interface ReportsScreenOverlaysProps {
     onPrintOpenChange: (open: boolean) => void;
     builderOpen: boolean;
     onBuilderOpenChange: (open: boolean) => void;
+    view: ReportView;
+    onViewChange: (view: ReportView) => void;
+    groupBy: GroupKey;
+    onGroupByChange: (groupBy: GroupKey) => void;
     filter: TicketRowFilter;
     onFilterChange: (filter: TicketRowFilter) => void;
     dateFrom: string;
@@ -35,6 +39,10 @@ export const ReportsScreenOverlays = ({
     onPrintOpenChange,
     builderOpen,
     onBuilderOpenChange,
+    view,
+    onViewChange,
+    groupBy,
+    onGroupByChange,
     filter,
     onFilterChange,
     dateFrom,
@@ -63,6 +71,10 @@ export const ReportsScreenOverlays = ({
         <ReportBuilderModal
             open={builderOpen}
             onClose={() => onBuilderOpenChange(false)}
+            view={view}
+            onViewChange={onViewChange}
+            groupBy={groupBy}
+            onGroupByChange={onGroupByChange}
             filter={filter}
             onFilterChange={onFilterChange}
             dateFrom={dateFrom}
