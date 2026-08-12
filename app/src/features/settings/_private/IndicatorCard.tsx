@@ -1,5 +1,6 @@
 import { Card } from "@components/Card";
 import type { IndicatorReading } from "@engines/indicator";
+import { useTranslation } from "@i18n/useTranslation";
 
 import type { ConnectionsConfig, SettingsBody } from "../settingsSchema";
 import styles from "./_styles/ConnectionsPane.module.css";
@@ -35,23 +36,34 @@ export const IndicatorCard = ({
     onRescan,
     error,
     reading,
-}: IndicatorCardProps) => (
-    <Card
-        title={<span className="lbl">Weight indicator</span>}
-        headerRight={<span className={styles.applied}>Applied immediately</span>}
-    >
-        <div className={styles.body}>
-            <IndicatorPortFields settings={settings} conn={conn} unlocked={unlocked} onSave={onSave} ports={ports} />
-            <IndicatorStatusFields
-                settings={settings}
-                conn={conn}
-                unlocked={unlocked}
-                onSave={onSave}
-                refreshing={refreshing}
-                onRescan={onRescan}
-                error={error}
-                reading={reading}
-            />
-        </div>
-    </Card>
-);
+}: IndicatorCardProps) => {
+    const { t } = useTranslation();
+    return (
+        <Card
+            title={<span className="lbl">{t("settings.indicator.title")}</span>}
+            headerRight={
+                <span className={styles.applied}>{t("settings.weighingRules.appliedImmediately")}</span>
+            }
+        >
+            <div className={styles.body}>
+                <IndicatorPortFields
+                    settings={settings}
+                    conn={conn}
+                    unlocked={unlocked}
+                    onSave={onSave}
+                    ports={ports}
+                />
+                <IndicatorStatusFields
+                    settings={settings}
+                    conn={conn}
+                    unlocked={unlocked}
+                    onSave={onSave}
+                    refreshing={refreshing}
+                    onRescan={onRescan}
+                    error={error}
+                    reading={reading}
+                />
+            </div>
+        </Card>
+    );
+};

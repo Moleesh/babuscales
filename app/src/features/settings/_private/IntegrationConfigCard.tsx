@@ -1,4 +1,5 @@
 import { Card } from "@components/Card";
+import { useTranslation } from "@i18n/useTranslation";
 
 import { useSettings } from "../useSettings";
 import styles from "./_styles/ConnectionsPane.module.css";
@@ -18,23 +19,17 @@ import { WebhookTallyBoardFields } from "./WebhookTallyBoardFields";
 // enqueueTicketBoard for why there's no "drain of one" here either).
 export const IntegrationConfigCard = () => {
     const { settings, unlocked, save } = useSettings();
+    const { t } = useTranslation();
 
     return (
-        <Card title={<span className="lbl">Webhook · Accounting export · Display board</span>}>
+        <Card title={<span className="lbl">{t("settings.integrationConfig.title")}</span>}>
             <div className={styles.body}>
                 <WebhookTallyBoardFields
                     settings={settings}
                     unlocked={unlocked}
                     onSave={(next) => void save(next)}
                 />
-                <p className={styles.hint}>
-                    Read once per outbox drain (every ~30s) when the matching Integrations toggle
-                    above is on and the field here isn&apos;t blank: a ticket carries its own
-                    vehicle/party/material/net-weight/charge to whichever of these three are
-                    configured. The accounting export is plain CSV to a local folder, not a Tally
-                    XML/proprietary format; the display board is one line of text over a raw TCP
-                    socket, not a binary protocol.
-                </p>
+                <p className={styles.hint}>{t("settings.integrationConfig.hint")}</p>
             </div>
         </Card>
     );

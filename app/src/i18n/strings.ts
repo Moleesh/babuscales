@@ -291,4 +291,73 @@ export const EN_STRINGS: Record<string, string> = {
     "reports.col.netTonnes": "Net tonnes",
 
     "cameras.title": "Cameras",
+
+    "settings.fieldSchema.title": "Field schema",
+    "settings.fieldSchema.fieldsSuffix": "fields",
+    "settings.fieldSchema.col.field": "Field",
+    "settings.fieldSchema.col.kind": "Kind",
+    "settings.fieldSchema.col.label": "Label",
+    "settings.fieldSchema.col.indexed": "Indexed",
+    "settings.fieldSchema.hint":
+        "Relabels, reorders, or indexes Weighing's existing fields. Custom FieldIds validate and save but don't appear on the form yet — schema-driven field rendering isn't built (app/README.md known gap).",
+    "settings.fieldSchema.dropApplying": "Applying…",
+    "settings.fieldSchema.dropPrompt": "Drop a field schema .json here, or click to choose",
+    "settings.fieldSchema.resetToDefault": "Reset to default",
+    "settings.fieldSchema.empty": "No fields in this schema",
+
+    "settings.indexManager.title": "Custom indexes",
+    "settings.indexManager.hint":
+        "Speeds up lookups on a field inside a ticket or master's JSON body — the table itself never changes. Dropping an index is safe at any time; it never touches the data.",
+
+    "settings.indicator.title": "Weight indicator",
+
+    "settings.integrationConfig.title": "Webhook · Accounting export · Display board",
+    "settings.integrationConfig.hint":
+        "Read once per outbox drain (every ~30s) when the matching Integrations toggle above is on and the field here isn't blank: a ticket carries its own vehicle/party/material/net-weight/charge to whichever of these three are configured. The accounting export is plain CSV to a local folder, not a Tally XML/proprietary format; the display board is one line of text over a raw TCP socket, not a binary protocol.",
+
+    "settings.integrations.title": "Integrations",
+
+    "settings.languagePacks.title": "Language packs",
+    "settings.languagePacks.installedSuffix": "installed",
+    "settings.languagePacks.col.code": "Code",
+    "settings.languagePacks.col.language": "Language",
+    "settings.languagePacks.col.strings": "Strings",
+    "settings.languagePacks.col.version": "Version",
+    "settings.languagePacks.dropApplying": "Applying…",
+    "settings.languagePacks.dropPrompt": "Drop a language .lang file here, or click to choose",
+    "settings.languagePacks.empty": "No language packs installed yet",
+
+    "settings.legacyImport.title": "Legacy import (v1/v2)",
+    "settings.legacyImport.readingExisting": "Reading what's already here…",
+    "settings.legacyImport.couldntReadPrefix": "Couldn't read that file —",
+    "settings.legacyImport.hint":
+        "Takes a documented JSON bundle (see docs/AdminSetup.md), not a VaultBill database file directly — a site migrating converts its old data into that shape first, by hand or with a short script. Matches masters by name and tickets by their own legacy id, so importing the same file twice is safe — nothing is created twice. Saves a restore-point backup automatically before writing anything.",
+
+    "settings.licence.title": "Licence",
+    "settings.licence.notApplicable": "Not applicable — this build has no licence to check (web demo).",
+    "settings.licence.hint":
+        "Every install starts a free 14-day trial from first run — no account, no server. To licence it, send the request code above to Babulens (see whoever supplied this install for contact details — there's no in-app directory yet); they sign it offline against this machine's ID and send back the activation code above to paste in. Bound to this machine only — it won't work after a hardware change or on a different install.",
+
+    "settings.printTemplates.title": "Print templates",
+    "settings.printTemplates.hint":
+        "A visual template designer (upload or build a custom layout with live preview) is designed for but not built — PLAN marks it a Phase 8 item, deferred by decision. Every ticket and report currently prints through one of three built-in layouts (A4, thermal, dot-matrix), chosen automatically from paper size, not authored here.",
+
+    "settings.printerFixtures.title": "Printers",
+
+    "settings.remoteAccess.title": "Remote access",
+    "settings.remoteAccess.turnOff": "Turn off",
+    "settings.remoteAccess.turnOn": "Turn on",
+    "settings.remoteAccess.enabled": "Enabled",
+    "settings.remoteAccess.disabled": "Disabled",
+    "settings.remoteAccess.optInSuffix": "opt-in, off by default",
+    "settings.remoteAccess.hint":
+        "Republishes the LAN verification page (port 8420) publicly through a tunnel you create on the Cloudflare Zero Trust dashboard — create it there, map a public hostname to http://localhost:8420, then paste its connector token above. The token goes straight to the Windows Credential Manager, never to this app's database. Requires cloudflared to already be installed and on PATH — this app never downloads it. Only the verification page rides this tunnel today; there is no remote admin surface yet.",
+
+    "settings.sms.title": "SMS delivery",
+    "settings.sms.testSendLabel": "Send a test SMS to",
+    "settings.sms.sendTest": "Send test",
+    "settings.sms.hint":
+        "Read at print time when Integrations → SMS gateway is on: a ticket's party needs a Phone saved in Masters (Settings → Masters → Parties) to receive a text. Talks to the modem over plain AT commands (AT+CMGF, AT+CMGS) — any GSM modem or phone that exposes a serial/USB AT interface works, no cloud SMS-gateway account needed.",
+
+    "settings.ticketNumbering.title": "Ticket numbering",
 };

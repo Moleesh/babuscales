@@ -1,5 +1,6 @@
 import { Card } from "@components/Card";
 import { useDataPort } from "@db/useDataPort";
+import { useTranslation } from "@i18n/useTranslation";
 
 import { useSettings } from "../useSettings";
 import styles from "./_styles/SystemPane.module.css";
@@ -29,6 +30,7 @@ import { useLegacyImportActions } from "./useLegacyImportActions";
 export const LegacyImportCard = () => {
     const db = useDataPort();
     const { unlocked } = useSettings();
+    const { t } = useTranslation();
     const {
         fileName,
         parseError,
@@ -46,7 +48,7 @@ export const LegacyImportCard = () => {
     } = useLegacyImportActions(db);
 
     return (
-        <Card title={<span className="lbl">Legacy import (v1/v2)</span>}>
+        <Card title={<span className="lbl">{t("settings.legacyImport.title")}</span>}>
             <div className={styles.body}>
                 <LegacyImportFileRow
                     inputRef={inputRef}
@@ -57,8 +59,14 @@ export const LegacyImportCard = () => {
                     onClear={reset}
                 />
 
-                {loadingPlan && <p className={styles.hint}>Reading what&apos;s already here…</p>}
-                {parseError && <p className={styles.bad}>Couldn&apos;t read that file — {parseError}</p>}
+                {loadingPlan && (
+                    <p className={styles.hint}>{t("settings.legacyImport.readingExisting")}</p>
+                )}
+                {parseError && (
+                    <p className={styles.bad}>
+                        {t("settings.legacyImport.couldntReadPrefix")} {parseError}
+                    </p>
+                )}
 
                 {plan && (
                     <LegacyImportPlanPreview
@@ -75,13 +83,7 @@ export const LegacyImportCard = () => {
                     <LegacyImportResultSummary result={result} committedSkipped={committedSkipped} />
                 )}
 
-                <p className={styles.hint}>
-                    Takes a documented JSON bundle (see docs/AdminSetup.md), not a VaultBill database
-                    file directly — a site migrating converts its old data into that shape first, by
-                    hand or with a short script. Matches masters by name and tickets by their own
-                    legacy id, so importing the same file twice is safe — nothing is created twice.
-                    Saves a restore-point backup automatically before writing anything.
-                </p>
+                <p className={styles.hint}>{t("settings.legacyImport.hint")}</p>
             </div>
         </Card>
     );

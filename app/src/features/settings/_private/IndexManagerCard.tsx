@@ -1,5 +1,6 @@
 import { Card } from "@components/Card";
 import { useDataPort } from "@db/useDataPort";
+import { useTranslation } from "@i18n/useTranslation";
 
 import { useSettings } from "../useSettings";
 import styles from "./_styles/SystemPane.module.css";
@@ -18,12 +19,13 @@ import { useIndexManagerActions } from "./useIndexManagerActions";
 export const IndexManagerCard = () => {
     const db = useDataPort();
     const { unlocked } = useSettings();
+    const { t } = useTranslation();
     const { indexes, table, setTable, path, setPath, pathValid, busy, flash, handleCreate, handleDrop } =
         useIndexManagerActions(db);
 
     return (
         <Card
-            title={<span className="lbl">Custom indexes</span>}
+            title={<span className="lbl">{t("settings.indexManager.title")}</span>}
             headerRight={
                 flash ? (
                     <span className={flash.bad ? styles.bad : styles.applied}>{flash.text}</span>
@@ -47,11 +49,7 @@ export const IndexManagerCard = () => {
                     busy={busy}
                     onCreate={() => void handleCreate()}
                 />
-                <p className={styles.hint}>
-                    Speeds up lookups on a field inside a ticket or master&apos;s JSON body — the
-                    table itself never changes. Dropping an index is safe at any time; it never
-                    touches the data.
-                </p>
+                <p className={styles.hint}>{t("settings.indexManager.hint")}</p>
             </div>
         </Card>
     );

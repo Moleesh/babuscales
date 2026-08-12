@@ -1,4 +1,5 @@
 import { Card } from "@components/Card";
+import { useTranslation } from "@i18n/useTranslation";
 
 import { INTEGRATION_FIXTURES } from "../settingsSchema";
 import { useSettings } from "../useSettings";
@@ -14,10 +15,11 @@ export const IntegrationsCard = () => {
     const { settings, unlocked, save } = useSettings();
     const { flash, showFlash } = useFlashMessage();
     const { toggle, configure } = useIntegrationsActions({ settings, save, showFlash });
+    const { t } = useTranslation();
 
     return (
         <Card
-            title={<span className="lbl">Integrations</span>}
+            title={<span className="lbl">{t("settings.integrations.title")}</span>}
             headerRight={flash ? <span className={styles.applied}>{flash}</span> : null}
         >
             <div className={styles.tpls}>

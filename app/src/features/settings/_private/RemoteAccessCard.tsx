@@ -1,4 +1,5 @@
 import { Card } from "@components/Card";
+import { useTranslation } from "@i18n/useTranslation";
 
 import { useSettings } from "../useSettings";
 import styles from "./_styles/ConnectionsPane.module.css";
@@ -13,6 +14,7 @@ import { useRemoteAccessConnection } from "./useRemoteAccessConnection";
 // useRemoteAccessConnection for the token/connection logic.
 export const RemoteAccessCard = () => {
     const { settings, unlocked, save } = useSettings();
+    const { t } = useTranslation();
     const {
         enabled,
         tokenInput,
@@ -27,7 +29,7 @@ export const RemoteAccessCard = () => {
 
     return (
         <Card
-            title={<span className="lbl">Remote access</span>}
+            title={<span className="lbl">{t("settings.remoteAccess.title")}</span>}
             headerRight={flash ? <span className={styles.applied}>{flash}</span> : null}
         >
             <div className={styles.body}>
@@ -38,10 +40,11 @@ export const RemoteAccessCard = () => {
                         disabled={!unlocked}
                         onClick={toggleEnabled}
                     >
-                        {enabled ? "Turn off" : "Turn on"}
+                        {enabled ? t("settings.remoteAccess.turnOff") : t("settings.remoteAccess.turnOn")}
                     </button>
                     <span className={enabled ? styles.statusOk : styles.hint}>
-                        {enabled ? "Enabled" : "Disabled"} — opt-in, off by default
+                        {enabled ? t("settings.remoteAccess.enabled") : t("settings.remoteAccess.disabled")}{" "}
+                        — {t("settings.remoteAccess.optInSuffix")}
                     </span>
                 </div>
                 <RemoteAccessTokenFields
@@ -53,15 +56,7 @@ export const RemoteAccessCard = () => {
                     onClearToken={() => void clearToken()}
                     onCheckStatus={() => void checkStatus()}
                 />
-                <p className={styles.hint}>
-                    Republishes the LAN verification page (port 8420) publicly through a tunnel you
-                    create on the Cloudflare Zero Trust dashboard — create it there, map a public
-                    hostname to http://localhost:8420, then paste its connector token above. The
-                    token goes straight to the Windows Credential Manager, never to this app&apos;s
-                    database. Requires cloudflared to already be installed and on PATH — this app
-                    never downloads it. Only the verification page rides this tunnel today; there is
-                    no remote admin surface yet.
-                </p>
+                <p className={styles.hint}>{t("settings.remoteAccess.hint")}</p>
             </div>
         </Card>
     );

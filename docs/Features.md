@@ -30,7 +30,7 @@ For the trimmed list of what's actually left to build, see [`../PLAN.md`](../PLA
 | Stability gate before capture | ✅ | Configurable readings-in-a-row + band (kg), Settings → Weighing |
 | Many lorries at once — open-ticket strip, park & resume | ✅ | Saving one weight writes a real row and frees the deck |
 | Recall on vehicle entry (resume / stored tare / fill-from-last-ticket) | 🟡 | Real, but a static inline banner, not the mock's positioned popover |
-| Multi-gross (`[Tare, Gross1, Gross2…]`) | 🟡 | Off by default; net is a true per-load sum. Slip prints one aggregate line, not itemised per load; can't be parked mid-sequence |
+| Multi-gross (`[Tare, Gross1, Gross2…]`) | 🟡 | Off by default; net is a true per-load sum (`deriveWeights` in `db/ticketBody.ts`). Slip prints one aggregate line, not itemised per load; `save()` still only finishes and locks a ticket, so a multi-gross ticket's loads all need capturing in one continuous session |
 | Explicit Tare/Gross capture-kind selector | ✅ | |
 | Manual weight entry | — | Not built |
 | Capture timeline component | 🟡 | The "Captured & calculated" card uses a 3-box grid, not a dedicated `CaptureTimeline` |
@@ -44,7 +44,7 @@ all eight kinds, one screen, inline create/edit.
 
 | Feature | Status | Notes |
 |---|---|---|
-| Search | 🟡 | Client-side substring search over a cached list — fine at site scale, not FTS5/100,000-row scale |
+| Search | 🟡 | Client-side substring search over a cached list (`useMasterCache.ts`) — fine at site scale, not 100,000-row scale. `src-tauri/src/store/schema.sql` defines `doc_fts`/`master_fts` FTS5 virtual tables, but nothing in `src-tauri/src` or `src/` queries them yet — the tables exist, unused |
 | Stored-tare staleness warning | ✅ | Fixed threshold, not a Setting |
 | Material.Rate (drives Value) | ✅ | |
 | Party Email / Phone (drives delivery) | ✅ | |
@@ -63,7 +63,7 @@ all eight kinds, one screen, inline create/edit.
 | CSV export | ✅ | RFC-4180, UTF-8 BOM for Tamil/₹ in Excel |
 | PDF export | ⚪ | Button stays disabled — the OS print dialog's "Save as PDF" covers it |
 | Saved report views | 🟡 | Named View/GroupBy/Filter presets, not a dynamic query builder over custom fields |
-| Date-range filter | — | Not built |
+| Date-range filter | ✅ | `dateFrom`/`dateTo` wired end to end — `ReportsScreen.tsx` → `ReportsCardBody.tsx` → `useReportsScreenData.ts`'s `filterRowsByDateRange` |
 | Dashboard KPIs, hourly chart, material split | ✅ | Real numbers, not simulated |
 | Configurable dashboard hours | — | Fixed 06:00–20:00 window |
 
@@ -106,11 +106,11 @@ Six panes, admin-password-gated (except Appearance, which is deliberately open).
 
 | Pane | What's real | What's not |
 |---|---|---|
-| **Fields & language** | Language-pack upload, live-applied, falls back to English per key. Field schema upload — relabels/reorders/indexes the 5 built-in fields, live-translated | A schema's new custom fields validate and save but render no input on the ticket — no schema-driven generic field rendering, no `VisibleWhen`/`RequiredWhen`/`ReadOnlyWhen`/`Validate` evaluation |
+| **Fields & language** | Language-pack upload, live-applied, falls back to English per key. Field schema upload — relabels/reorders/indexes the 5 built-in fields, live-translated. `VisibleWhen`/`RequiredWhen`/`ReadOnlyWhen`/`Validate` formulas are evaluated (`schemaFieldValidation.ts`, `buildTicketFormulaContext.ts`) and generic Text/Number/Date/DateTime/Boolean/Select inputs render from schema (`SchemaFieldRow.tsx`) | Weighing's screen text and inner card copy still has some hardcoded-English gaps outside the schema-driven fields themselves |
 | **Print & printers** | Per-class default printer, real detected-printer list | No visual template designer (Phase 8) |
 | **Appearance** | 6 skins + 4 text sizes, applied globally and instantly, ungated by design. Operator-on-duty name | — |
 | **Weighing** | Stability gate, Tare-first/Strict-tare/Auto-capture/Multi-gross rules, all live | — |
-| **Connections** | Weight indicator (port/baud/pattern) · e-mail SMTP (real send + test) · SMS over serial GSM modem (real send + test) · Cloudflare Tunnel remote access · Integrations toggle list | Of 8 Integrations toggles, only **QR verification, e-mail, SMS** do anything. Cloud backup, webhook, accounting export, outdoor display board persist as flags with no worker. **WhatsApp is permanently decorative** — no compliant free delivery path exists |
+| **Connections** | Weight indicator (port/baud/pattern) · e-mail SMTP (real send + test) · SMS over serial GSM modem (real send + test) · Cloudflare Tunnel remote access · Integrations toggle list | `useOutboxWorker.ts` polls every 30s and drains `Pending`/backed-off-`Failed` rows for **Email, SMS, Webhook, Tally and Board** — no longer a "drain of one" for Email/SMS only. Cloud backup and accounting-format export beyond the Tally CSV line still have no consumer. **WhatsApp is permanently decorative** — no compliant free delivery path exists |
 | **System** | Admin password, ticket numbering (prefix/width/reset), backup & restore (checksum-verified), legacy v1/v2 import, scheduled daily-summary e-mail, licence | Date/time display formats persist but aren't read elsewhere yet (money format is). Scheduled summary runs only while the app is open — no OS-level scheduler |
 
 ## 8. Hardware & connectivity
@@ -146,7 +146,7 @@ Six panes, admin-password-gated (except Appearance, which is deliberately open).
 | `Enter`-walks-like-`Tab`, `Space` fires | ✅ | |
 | Contextual per-tab help drawer | ✅ | |
 | Searchable Help manual / first-run guided setup | — | Not built — `features/help/` is empty |
-| Languages (en / ta) | 🟡 | Infrastructure is real (pack upload, per-field labels, fallback-to-English) but only ~19 keys are actually routed through translation — most on-screen text is still hardcoded English |
+| Languages (en / ta) | ✅ | Infrastructure is real (pack upload, per-field labels, fallback-to-English), and a real hand-translated Tamil pack (`app/src/i18n/packs/ta.ts`, ~290 keys) ships as source, covering navigation, weighing, reports, dashboard, cameras, masters, components and most of settings. Settings still has some inner card-body text not yet routed through translation |
 
 ## 11. Backup, import & data portability
 
@@ -180,4 +180,4 @@ Six panes, admin-password-gated (except Appearance, which is deliberately open).
 
 | Feature | Status |
 |---|---|
-| Unit test suite | `src/components/` (design-system library), `src/constants/`, `src/engines/formulaEngine/` covered — 19 files, 114 tests, all passing. Rest of the codebase paused, by request, mid-pass |
+| Unit test suite | 167 tests across 25 `*.spec.ts(x)` files, verified live this session (`npx vitest run`). Covers `src/components/` (design-system library), `src/constants/`, `src/engines/` (formula, schema, and more), plus some `src/db/`, `src/i18n/` and `src/features/reports` / `src/features/weighing` coverage. Most of `src/features/` (the screens themselves) is still uncovered, paused by request mid-pass |

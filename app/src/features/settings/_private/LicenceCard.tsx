@@ -4,6 +4,7 @@ import { Card } from "@components/Card";
 // settings → licensing → settings cycle).
 import { describeLicenseState } from "@features/licensing/describeLicenseState";
 import { useLicense } from "@features/licensing/useLicense";
+import { useTranslation } from "@i18n/useTranslation";
 
 import { useSettings } from "../useSettings";
 import styles from "./_styles/SystemPane.module.css";
@@ -20,12 +21,13 @@ import { useLicenceCardState } from "./useLicenceCardState";
 export const LicenceCard = () => {
     const { unlocked } = useSettings();
     const license = useLicense();
+    const { t } = useTranslation();
     const { requestCode, codeInput, setCodeInput, flash, hasCode, handleActivate, handleClear } =
         useLicenceCardState(license);
 
     return (
         <Card
-            title={<span className="lbl">Licence</span>}
+            title={<span className="lbl">{t("settings.licence.title")}</span>}
             headerRight={flash ? <span className={styles.applied}>{flash}</span> : null}
         >
             <div className={styles.body}>
@@ -34,8 +36,8 @@ export const LicenceCard = () => {
                         {license.state
                             ? describeLicenseState(license.state)
                             : license.loading
-                              ? "Loading…"
-                              : "Not applicable — this build has no licence to check (web demo)."}
+                              ? t("masters.loading")
+                              : t("settings.licence.notApplicable")}
                     </span>
                 </div>
                 <LicenceActivationFields
@@ -47,14 +49,7 @@ export const LicenceCard = () => {
                     onActivate={() => void handleActivate()}
                     onClear={() => void handleClear()}
                 />
-                <p className={styles.hint}>
-                    Every install starts a free 14-day trial from first run — no account, no server.
-                    To licence it, send the request code above to Babulens (see whoever supplied
-                    this install for contact details — there&apos;s no in-app directory yet); they
-                    sign it offline against this machine&apos;s ID and send back the activation code
-                    above to paste in. Bound to this machine only — it won&apos;t work after a
-                    hardware change or on a different install.
-                </p>
+                <p className={styles.hint}>{t("settings.licence.hint")}</p>
             </div>
         </Card>
     );

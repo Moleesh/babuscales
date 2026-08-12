@@ -1,4 +1,5 @@
 import { Card } from "@components/Card";
+import { useTranslation } from "@i18n/useTranslation";
 
 import { useSettings } from "../useSettings";
 import styles from "./_styles/ConnectionsPane.module.css";
@@ -14,13 +15,14 @@ import { useSmsDeliveryActions } from "./useSmsDeliveryActions";
 // the same proof-it-works button as EmailCard's "Send test".
 export const SmsCard = () => {
     const { settings, unlocked, save } = useSettings();
+    const { t } = useTranslation();
     const conn = settings.Connections;
     const { ports, refreshing, refreshPorts, testTo, setTestTo, sending, flash, sendTest } =
         useSmsDeliveryActions({ conn });
 
     return (
         <Card
-            title={<span className="lbl">SMS delivery</span>}
+            title={<span className="lbl">{t("settings.sms.title")}</span>}
             headerRight={flash ? <span className={styles.applied}>{flash}</span> : null}
         >
             <div className={styles.body}>
@@ -35,23 +37,17 @@ export const SmsCard = () => {
                 />
                 <TestSendField
                     id="gsmTestTo"
-                    label="Send a test SMS to"
+                    label={t("settings.sms.testSendLabel")}
                     type="tel"
                     placeholder="+91XXXXXXXXXX"
                     value={testTo}
                     setValue={setTestTo}
                     unlocked={unlocked}
                     sending={sending}
-                    buttonLabel="Send test"
+                    buttonLabel={t("settings.sms.sendTest")}
                     onSend={() => void sendTest()}
                 />
-                <p className={styles.hint}>
-                    Read at print time when Integrations → SMS gateway is on: a ticket&apos;s party
-                    needs a Phone saved in Masters (Settings → Masters → Parties) to receive a text.
-                    Talks to the modem over plain AT commands (AT+CMGF, AT+CMGS) — any GSM modem or
-                    phone that exposes a serial/USB AT interface works, no cloud SMS-gateway account
-                    needed.
-                </p>
+                <p className={styles.hint}>{t("settings.sms.hint")}</p>
             </div>
         </Card>
     );

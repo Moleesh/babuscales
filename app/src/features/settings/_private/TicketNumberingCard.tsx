@@ -1,4 +1,5 @@
 import { Card } from "@components/Card";
+import { useTranslation } from "@i18n/useTranslation";
 
 import type { SettingsBody, TicketNumbering } from "../settingsSchema";
 import styles from "./_styles/SystemPane.module.css";
@@ -25,12 +26,13 @@ export const TicketNumberingCard = ({
     onSave,
     onResetTicketSeries,
 }: TicketNumberingCardProps) => {
+    const { t } = useTranslation();
     const numbering = settings.Numbering;
     const setNumbering = (next: TicketNumbering): void =>
         onSave({ ...settings, Numbering: next });
 
     return (
-        <Card title={<span className="lbl">Ticket numbering</span>}>
+        <Card title={<span className="lbl">{t("settings.ticketNumbering.title")}</span>}>
             <div className={styles.body}>
                 <NumberingPrefixFields numbering={numbering} unlocked={unlocked} onChange={setNumbering} />
                 <NumberingResetRow unlocked={unlocked} onResetTicketSeries={onResetTicketSeries} />

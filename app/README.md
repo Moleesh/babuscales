@@ -704,7 +704,8 @@ a different and bigger feature the mock itself never specifies, so nothing here 
 
 - **Masters** — client-side substring search over a per-kind cache, not FTS5; a plain table, not
   virtualised/keyset-paginated; no merge-duplicates or bulk import/export. Fine at demo/site scale,
-  not at 100,000 rows.
+  not at 100,000 rows. `src-tauri/src/store/schema.sql` does define `doc_fts`/`master_fts` FTS5
+  virtual tables, but nothing queries them yet — they're schema, not a wired search path.
 - **Master field richness** — generic Name/Notes only, except StoredTare, Material (item 26's Rate
   field), and now Party (item 29's Email field, item 30's Phone field). No GST fields on Party — the
   mock never defines
@@ -714,9 +715,11 @@ a different and bigger feature the mock itself never specifies, so nothing here 
   never a real foreign key into a `VehicleType` master, just display text.
 - **Recall** (PLAN §9.2) — a simplified, statically-positioned inline banner (`RecallBanner`), not
   the mock's viewport-positioned popover.
-- **Reports has no date-range filter** — the mock's `rFrom`/`rTo` inputs weren't ported; both
-  views always show every ticket. Item 22's bulk print substitutes a real, data-derived date range
-  (the printed rows' own earliest–latest timestamp) rather than fabricating one.
+- ~~**Reports has no date-range filter**~~ — now built: `ReportsScreen.tsx` passes `dateFrom`/
+  `dateTo` down through `ReportsCardBody.tsx` into `useReportsScreenData.ts`'s
+  `filterRowsByDateRange`, and both views respect it. Item 22's bulk print date range (the printed
+  rows' own earliest–latest timestamp) is unaffected by this and still data-derived, not a separate
+  input.
 - **Settings** — Weighing, System, Connections and Print & printers are fully wired (items 17, 21,
   24); Appearance is now fully wired too (Operator-on-duty was already real — item 18; Theme is now
   real as well — item 36: skin and text-scale both persist and apply globally, not admin-gated);
@@ -727,13 +730,11 @@ a different and bigger feature the mock itself never specifies, so nothing here 
   stale-tare threshold (`STORED_TARE_STALE_AFTER_DAYS` in `src/db/storedTare.ts`) stays a fixed
   constant — the mock itself never exposes it as a setting either (`ex:"expired"` is static demo
   master data, not computed from a configurable day count).
-- **Schema-driven rendering** — item 35 made the schema itself real, persisted, and admin-editable
-  (Settings → Fields & language's "Field schema" card), and Weighing's five built-in fields now
-  read their `Label`s from that live, saved `Schema` row rather than a hardcoded constant. What's
-  still not built: Weighing does not render fields *generically* from schema config — a custom
-  `FieldId` in an uploaded schema validates and saves but adds no input to the form, and
-  `VisibleWhen`/`RequiredWhen`/`ReadOnlyWhen`/`Validate` formulas are never evaluated against the
-  ticket. That remains a separate, much larger feature.
+- ~~**Schema-driven rendering**~~ — now built, past item 35's label-only wiring: a custom `FieldId`
+  in an uploaded schema now renders a real generic input (`SchemaFieldRow.tsx` — Text/Number/Date/
+  DateTime/Boolean/Select) on the Weighing ticket, and `VisibleWhen`/`RequiredWhen`/`ReadOnlyWhen`/
+  `Validate` formulas are evaluated against live ticket state (`schemaFieldValidation.ts`,
+  `buildTicketFormulaContext.ts`).
 - **Billing** — Charge is real (item 20: `engines/billing`, wired into Weighing, Reports,
   Dashboard, and the print slip), but flat and hardcoded (`TARE_CHARGE_INR` + `GROSS_CHARGE_INR`),
   matching the mock's own actual runtime behaviour rather than its schema's aspirational
@@ -794,9 +795,12 @@ a different and bigger feature the mock itself never specifies, so nothing here 
   the `"Email"` channel a real, if minimal, consumer: the print flow itself attempts the send and
   reconciles the row to `Sent`/`Failed` synchronously — a "drain of one", not a background worker.
   Item 30 gave the `"Sms"` channel the same real, minimal consumer, over a serial GSM modem instead
-  of SMTP. No worker drains any channel in the general case yet: webhook firing, cloud backup, and
-  accounting-format export are all still unimplemented consumers pending future work, and no
-  outdoor display board is driven. WhatsApp delivery is different from that list — item 31 records
+  of SMTP. A later pass added the general case: `src/features/settings/useOutboxWorker.ts` polls
+  every 30 seconds and drains `Pending` rows plus any `Failed` row whose backoff `NextTryAt` has
+  passed, across **Email, Sms, Webhook, Tally and Board** — not just the "drain of one" at
+  print/send time. Cloud backup and a real accounting-format export (beyond the Tally CSV line)
+  still have no consumer, and no outdoor display board hardware has been tested against the Board
+  channel. WhatsApp delivery is different from that list — item 31 records
   the decision to leave it decorative permanently, not queued: it has no free, ToS-compliant path.
   Anomaly detection is deferred by decision (PLAN §21 Phase 8); MiMaS is a Phase 7 item, not built,
   blocked on a spec that doesn't exist yet.

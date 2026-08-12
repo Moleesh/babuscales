@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { Card } from "@components/Card";
 import type { DetectedPrinter } from "@engines/printers";
 import { createPrinterSource } from "@engines/printers/createPrinterSource";
+import { useTranslation } from "@i18n/useTranslation";
 
 import type { PrintersConfig } from "../settingsSchema";
 import { useSettings } from "../useSettings";
@@ -19,16 +20,12 @@ const printerSource = createPrinterSource();
 // preview), isn't ported: PLAN §21's roadmap table names the visual
 // template designer as a Phase 8 item — "designed for, not built" — so it
 // stays out of scope here; the three built-in layouts (A4/Thermal/Matrix,
-// Tasks 23 & 26) are the only templates this build has. Static markup, so
-// it's a module constant rather than JSX inside the component body.
-const TEMPLATES_CARD = (
-    <Card title={<span className="lbl">Print templates</span>}>
-        <p className={styles.hint}>
-            A visual template designer (upload or build a custom layout with live preview) is
-            designed for but not built — PLAN marks it a Phase 8 item, deferred by decision. Every
-            ticket and report currently prints through one of three built-in layouts (A4, thermal,
-            dot-matrix), chosen automatically from paper size, not authored here.
-        </p>
+// Tasks 23 & 26) are the only templates this build has. `t`-threaded (task
+// #16, mirrors ruleDefs(t)/fixedPolicy(t) in settingsSchema.ts) since it
+// needs to re-render on language change — no longer a static module constant.
+const templatesCard = (t: (key: string) => string) => (
+    <Card title={<span className="lbl">{t("settings.printTemplates.title")}</span>}>
+        <p className={styles.hint}>{t("settings.printTemplates.hint")}</p>
     </Card>
 );
 
@@ -44,6 +41,7 @@ const TEMPLATES_CARD = (
 // role, not a live binding.
 export const PrintPane = () => {
     const { settings, unlocked, save } = useSettings();
+    const { t } = useTranslation();
     const printers = settings.Printers;
     const [detected, setDetected] = useState<DetectedPrinter[]>([]);
     const [scanning, setScanning] = useState(false);
@@ -66,7 +64,7 @@ export const PrintPane = () => {
         <div className={styles.grid}>
             <PrinterFixturesCard printers={printers} unlocked={unlocked} onChange={setPrinter} />
             <DetectedPrintersCard detected={detected} scanning={scanning} onRescan={rescan} />
-            {TEMPLATES_CARD}
+            {templatesCard(t)}
         </div>
     );
 };
