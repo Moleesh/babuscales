@@ -5,7 +5,9 @@
 //!
 //! Cloudflare's own `cloudflared` binary does the actual tunneling; this
 //! module only spawns and supervises it as a child process
-//! (`cloudflared tunnel run --token <token>`) against a tunnel the operator
+//! (`cloudflared tunnel run`, token passed via the `TUNNEL_TOKEN`
+//! environment variable rather than `--token` on argv — see `open` below)
+//! against a tunnel the operator
 //! creates on the Cloudflare Zero Trust dashboard and points at their own
 //! domain. Creating the tunnel and mapping a public hostname to
 //! `http://localhost:8420` (`commands::net::DEFAULT_PORT`, the verification
@@ -140,7 +142,13 @@ pub(crate) fn open(state: &TunnelHandleState) -> Result<TunnelStatus, AppError> 
 
     let mut command = Command::new("cloudflared");
     command
-        .args(["tunnel", "run", "--token", &token])
+        .args(["tunnel", "run"])
+        // Passed via the environment rather than `--token <token>` — argv is
+        // readable by any other process on the machine for as long as the
+        // child runs (Task Manager, `wmic process list full`, etc.), while
+        // an env var set on this specific child is not. `cloudflared`
+        // documents `TUNNEL_TOKEN` as equivalent to `--token`.
+        .env("TUNNEL_TOKEN", &token)
         .stdout(Stdio::null())
         .stderr(Stdio::piped());
     hide_console(&mut command);

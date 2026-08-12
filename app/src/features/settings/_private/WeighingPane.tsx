@@ -3,7 +3,7 @@ import { Card } from "@components/Card";
 import { FIXED_POLICY } from "../settingsSchema";
 import type { WeighingRules } from "../settingsSchema";
 import { useSettings } from "../useSettings";
-import styles from "./WeighingPane.module.css";
+import styles from "./_styles/WeighingPane.module.css";
 import { WeighingRulesCard } from "./WeighingRulesCard";
 
 // The read-only "Fixed policy" table doesn't depend on props or state, so

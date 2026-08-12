@@ -1,6 +1,7 @@
+import { CameraTile } from "@components/CameraTile";
+
+import styles from "./_styles/CameraGrid.module.css";
 import { CAMERA_SLOTS } from "./cameraFixtures";
-import styles from "./CameraGrid.module.css";
-import { CameraTile } from "./CameraTile";
 
 export interface CameraGridProps {
     vehicleNo: string;

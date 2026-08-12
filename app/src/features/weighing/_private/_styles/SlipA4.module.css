@@ -1,0 +1,105 @@
+/* Ported from demo/BabuScales-demo.html's ".paper"/".slip-h"/".slip-g"/".slip-w" —
+   deliberately hardcoded to light, near-black-on-cream ink regardless of the
+   active skin: this is what actually prints, not a themed screen surface. */
+.paper {
+    background: #fffdf7;
+    color: #141414;
+    border-radius: 6px;
+    padding: 20px 22px;
+    font-size: 0.75rem;
+    line-height: 1.55;
+}
+
+.head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    border-bottom: 2px solid #141414;
+    padding-bottom: 8px;
+}
+.site {
+    font-weight: 700;
+    font-size: 0.875rem;
+}
+.addr {
+    font-size: 0.625rem;
+}
+.no {
+    text-align: right;
+}
+.no-value {
+    font-family: var(--mono);
+    font-weight: 700;
+}
+.copy {
+    font-size: 0.625rem;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px 18px;
+    margin: 10px 0;
+    font-size: 0.6875rem;
+}
+
+.weights {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin: 10px 0;
+    text-align: center;
+}
+.weights div {
+    border: 1px solid #c9c4b4;
+    border-radius: 4px;
+    padding: 7px;
+}
+.weights b {
+    display: block;
+    font-family: var(--mono);
+    font-size: 1rem;
+    margin-top: 2px;
+}
+
+/* Task #46's itemised per-load breakdown — a compact table under the
+   TARE/GROSS/NET summary boxes, shown only when a multi-gross ticket has
+   more than one Gross capture to itemise. */
+.loads {
+    margin: 10px 0;
+    font-size: 0.6875rem;
+}
+.loads table {
+    width: 100%;
+    border-collapse: collapse;
+}
+.loads th {
+    text-align: left;
+    font-weight: 700;
+    border-bottom: 1px solid #c9c4b4;
+    padding: 3px 6px 3px 0;
+}
+.loads td {
+    padding: 2px 6px 2px 0;
+    font-family: var(--mono);
+}
+
+.footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-top: 14px;
+    border-top: 1px solid #c9c4b4;
+    padding-top: 9px;
+    font-size: 0.625rem;
+}
+
+.verify {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    word-break: break-all;
+}
+.qr {
+    flex-shrink: 0;
+}

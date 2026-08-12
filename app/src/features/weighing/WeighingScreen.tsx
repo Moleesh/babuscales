@@ -1,16 +1,20 @@
 import { useState } from "react";
 
 import { useIndicator, useIndicatorReading } from "@engines/indicator";
+import { useSchema } from "@engines/schemaEngine";
 import { useSettings } from "@features/settings";
 
+import { buildTicketFormulaContext } from "./_private/buildTicketFormulaContext";
 import { PrintPreviewModal } from "./_private/PrintPreviewModal";
+import { hasBlockingCustomFieldError } from "./_private/schemaFieldValidation";
+import { FIXED_FIELD_IDS } from "./_private/ticketFieldIds";
 import { useDeliveryChannels } from "./_private/useDeliveryChannels";
 import { useWeighingScreenDerived } from "./_private/useWeighingScreenDerived";
 import { useWeighingScreenTickets } from "./_private/useWeighingScreenTickets";
 import { WeighingBody } from "./_private/WeighingBody";
+import styles from "./_styles/WeighingScreen.module.css";
 import { OpenTicketStrip } from "./OpenTicketStrip";
 import type { UseWeighingTicket } from "./useWeighingTicket";
-import styles from "./WeighingScreen.module.css";
 
 const formatStamp = (iso: string | undefined): string =>
     iso ? new Date(iso).toLocaleString() : "—";
@@ -42,6 +46,7 @@ export const WeighingScreen = ({ ticket, licenseGated }: WeighingScreenProps) =>
     const reading = useIndicatorReading();
     const { settings } = useSettings();
     const { email, sms } = useDeliveryChannels();
+    const { ticketSchema } = useSchema();
 
     const [printModalOpen, setPrintModalOpen] = useState(false);
 
@@ -62,6 +67,13 @@ export const WeighingScreen = ({ ticket, licenseGated }: WeighingScreenProps) =>
 
     const ticketDate = formatStamp(ticket.captures[0]?.At);
 
+    // Same visible/Validate/Block check SchemaFieldRow runs per custom
+    // field (TicketFieldsCard's own rendering), recomputed here so Save can
+    // be gated on it too — see ActionsCard's SaveAndPrintRow.
+    const customFieldDefs = ticketSchema.Fields.filter((field) => !FIXED_FIELD_IDS.includes(field.FieldId));
+    const formulaCtx = buildTicketFormulaContext(ticket, ticket.customFields);
+    const hasBlockingCustomFieldErrorValue = hasBlockingCustomFieldError(customFieldDefs, formulaCtx);
+
     return (
         <div className={styles.screen}>
             <OpenTicketStrip tickets={openTickets} onResume={handleResume} />
@@ -74,6 +86,7 @@ export const WeighingScreen = ({ ticket, licenseGated }: WeighingScreenProps) =>
                     multiGross: settings.Rules.MultiGross,
                     armed,
                     gated: licenseGated,
+                    hasBlockingCustomFieldError: hasBlockingCustomFieldErrorValue,
                     onSave: () => void handleSave(),
                     onOpenPrintModal: () => setPrintModalOpen(true),
                 }}

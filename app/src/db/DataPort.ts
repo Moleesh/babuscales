@@ -42,6 +42,7 @@ export interface DataPort {
 
     // master — reference data (PLAN §6.1, §9)
     getMaster(masterId: string): Promise<MasterRow | null>;
+    /** Sorted `name COLLATE NOCASE ASC`. Pass `query.After` (the last row's `Name`+`MasterId` from a previous call) to keyset-paginate past it instead of always returning page 1 — `MastersScreen`'s "Load more" is the one caller today; every other consumer (`useMasterCache`) omits it and gets the same full, unpaginated result as before. */
     listMasters(query?: MasterQuery): Promise<MasterRow[]>;
     saveMaster(draft: MasterDraft): Promise<MasterRow>;
 
@@ -49,6 +50,17 @@ export interface DataPort {
     getConfig(configId: string): Promise<ConfigRow | null>;
     listConfig(query?: ConfigQuery): Promise<ConfigRow[]>;
     saveConfig(draft: ConfigDraft): Promise<ConfigRow>;
+
+    // custom indexes (PLAN §6.3) — SQLite expression indexes on a JSON path
+    // inside `doc.body`/`master.body`. The definitions themselves live as
+    // ordinary `config` rows (`ConfigKind: "Index"`) read/written through
+    // `getConfig`/`listConfig`/`saveConfig` above; these two methods exist
+    // only because creating/dropping one also means running real DDL
+    // (Tauri) or the memory adapter's equivalent no-op stand-in.
+    /** Validates `table`/`path` server-side, creates `CREATE INDEX IF NOT EXISTS`, and persists the definition as a `config` row. */
+    createCustomIndex(table: "doc" | "master", path: string): Promise<ConfigRow>;
+    /** Drops the index and flips the stored definition's `Body.Active` to `false` (soft-delete — there is no generic delete-config method). */
+    dropCustomIndex(configId: string): Promise<ConfigRow>;
 
     // asset — all binary content. Metadata and bytes are fetched separately
     // on purpose: `SELECT *` on this table would materialise every image

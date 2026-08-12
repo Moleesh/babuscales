@@ -1,6 +1,7 @@
 use tauri::State;
 
 use crate::error::AppError;
+use crate::licensing;
 use crate::state::{lock, AppState};
 use crate::store;
 use crate::store::dto::{DocDraft, DocQuery, DocRow, SeriesEpoch};
@@ -23,6 +24,14 @@ pub fn list_docs(
 #[tauri::command]
 pub fn save_doc(state: State<'_, AppState>, draft: DocDraft) -> Result<DocRow, AppError> {
     let conn = lock(&state)?;
+    // The one write a license is actually meant to gate (PLAN §12, §4.10) —
+    // see `licensing::require_licensed`'s own doc comment for why only this
+    // command, and why a missing license row doesn't block it.
+    let app_data_dir = state
+        .db_path
+        .parent()
+        .ok_or_else(|| AppError::Message("could not resolve app data dir from db_path".into()))?;
+    licensing::require_licensed(&conn, app_data_dir)?;
     store::save_doc(&conn, &draft)
 }
 

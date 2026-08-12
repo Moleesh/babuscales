@@ -1,7 +1,7 @@
 import type { HelpTopic } from "@i18n/helpTopics";
 import { resolveLocalized } from "@i18n/types";
 
-import styles from "./ContextualHelp.module.css";
+import styles from "./_styles/ContextualHelp.module.css";
 
 export interface ContextualHelpLabels {
     title: string;

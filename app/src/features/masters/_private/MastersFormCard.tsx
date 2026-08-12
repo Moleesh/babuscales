@@ -1,11 +1,11 @@
 import { Card } from "@components/Card";
 import type { MasterKind, MasterRow } from "@db/types";
 
-import styles from "../MastersScreen.module.css";
 import { MasterFormActions } from "./MasterFormActions";
 import { MasterFormFields } from "./MasterFormFields";
 import type { MasterFormState } from "./masterFormState";
 import { StoredTareFormFields } from "./StoredTareFormFields";
+import styles from "../_styles/MastersScreen.module.css";
 
 export interface MastersFormCardProps {
     activeKind: MasterKind;
@@ -18,11 +18,12 @@ export interface MastersFormCardProps {
     onToggleActive: () => void;
     onStartNew: () => void;
     onReload: () => void;
+    t: (key: string) => string;
 }
 
 // Split out of MastersScreen (over the line/complexity budget —
 // docs/CodingStandards.md) — the add/edit form card (fields + action
-// buttons), unchanged from the inline version it replaces.
+// buttons). Now uses the t() function for translatable strings.
 export const MastersFormCard = ({
     activeKind,
     selected,
@@ -34,10 +35,11 @@ export const MastersFormCard = ({
     onToggleActive,
     onStartNew,
     onReload,
+    t,
 }: MastersFormCardProps) => (
     <Card
         title={
-            <span className="lbl">{selected ? `Edit — ${selected.Name}` : addNewLabel}</span>
+            <span className="lbl">{selected ? `${t("masters.editPrefix")} ${selected.Name}` : addNewLabel}</span>
         }
     >
         <div className={styles.body}>

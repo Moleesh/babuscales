@@ -2,7 +2,7 @@ import { Field, FieldGrid } from "@components/Field";
 
 import { RESET_EVERY_OPTIONS } from "../settingsSchema";
 import type { ResetEvery, TicketNumbering } from "../settingsSchema";
-import styles from "./SystemPane.module.css";
+import styles from "./_styles/SystemPane.module.css";
 
 const RESET_EVERY_LABEL: Record<ResetEvery, string> = {
     year: "Financial year",

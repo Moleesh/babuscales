@@ -1,6 +1,7 @@
 import { formatWeightKg } from "@constants/numberFormat";
+import { useTranslation } from "@i18n/useTranslation";
 
-import styles from "./OpenTicketStrip.module.css";
+import styles from "./_styles/OpenTicketStrip.module.css";
 import type { OpenTicketSummary } from "./recall";
 import { formatTicketNo } from "./ticketNumber";
 
@@ -13,11 +14,12 @@ export interface OpenTicketStripProps {
 // always visible so the operator can pick the lorry back up the moment it
 // returns to the deck, without hunting through Reports for it.
 export const OpenTicketStrip = ({ tickets, onResume }: OpenTicketStripProps) => {
+    const { t } = useTranslation();
     if (tickets.length === 0) return null;
 
     return (
         <div className={styles.strip}>
-            <span className="lbl">Open</span>
+            <span className="lbl">{t("weigh.open")}</span>
             {tickets.map((ticket) => (
                 <button
                     key={ticket.doc.DocId}
@@ -28,7 +30,8 @@ export const OpenTicketStrip = ({ tickets, onResume }: OpenTicketStripProps) => 
                     <span>{formatTicketNo(ticket.doc.DocSeq)}</span>
                     <span>{ticket.body.VehicleNo || "—"}</span>
                     <span className={styles.weight}>
-                        {ticket.kind} {formatWeightKg(ticket.weightKg)} kg
+                        {t(ticket.kind === "Tare" ? "tare" : "gross")} {formatWeightKg(ticket.weightKg)}{" "}
+                        {t("kg")}
                     </span>
                 </button>
             ))}

@@ -4,7 +4,7 @@ import { resolveLocalized } from "@i18n/types";
 import type { Localized } from "@i18n/types";
 import { useTranslation } from "@i18n/useTranslation";
 
-import styles from "./Field.module.css";
+import styles from "./_styles/Field.module.css";
 
 export interface FieldProps {
     /** Matches the `htmlFor`/`id` pair so the label focuses the input. */

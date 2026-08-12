@@ -1,0 +1,202 @@
+/* Ported from demo/BabuScales-demo.html ".head"/".readout"/".lamps" rules. */
+.head {
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background:
+        radial-gradient(90% 160% at 50% -40%, var(--led-ghost), transparent 62%), var(--panel-2);
+    display: grid;
+    grid-template-columns: 200px minmax(0, 1fr) 220px;
+    gap: 16px;
+    align-items: center;
+    padding: 10px 16px;
+}
+.head.compact {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    padding: 7px 14px;
+    gap: 12px;
+}
+.head.compact .digits,
+.head.compact .ghost span {
+    font-size: 1.75rem;
+}
+.head.compact .cap,
+.head.compact .cday,
+.head.compact .cap-text {
+    display: none;
+}
+.head.compact .clock {
+    font-size: 0.875rem;
+}
+.head.compact .head-left {
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+}
+
+.head-left {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    min-width: 0;
+}
+
+.lamps {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+.lamp {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 8px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    font-size: 0.625rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--faint);
+}
+.lamp .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--faint);
+    flex: none;
+}
+.lamp.on {
+    color: var(--stable);
+    border-color: var(--stable);
+}
+.lamp.on .dot {
+    background: var(--stable);
+}
+.lamp.busy {
+    color: var(--live);
+    border-color: var(--live);
+}
+.lamp.busy .dot {
+    background: var(--live);
+    animation: pulse 1s infinite;
+}
+@keyframes pulse {
+    50% {
+        opacity: 0.25;
+    }
+}
+
+.readout {
+    position: relative;
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    gap: 8px;
+    min-width: 0;
+}
+.ghost {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    pointer-events: none;
+    color: var(--led-ghost);
+}
+.digits,
+.ghost span {
+    font-family: var(--mono);
+    font-variant-numeric: tabular-nums;
+    font-size: clamp(2.25rem, 6vw, 3.75rem);
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    line-height: 1;
+    transition: font-size 0.16s ease;
+}
+.digits {
+    color: var(--led);
+    text-shadow: 0 0 26px var(--led-ghost);
+}
+.unit {
+    font-size: 0.9375rem;
+    color: var(--dim);
+}
+
+.head-right {
+    text-align: right;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    align-items: flex-end;
+}
+
+/* Below this width the 200px/220px fixed side columns (sized for a
+   desktop kiosk header) no longer leave room for the middle readout —
+   the digits, lamps and clock start overlapping. Fall back to the same
+   `auto` column shape `.compact` already uses, purely via CSS so this
+   applies regardless of which `mode` the caller passed. */
+@media (max-width: 640px) {
+    .head {
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        padding: 7px 10px;
+        gap: 10px;
+    }
+    .head .digits,
+    .head .ghost span {
+        font-size: clamp(1.5rem, 8vw, 2.25rem);
+    }
+    .head .cap,
+    .head .cday,
+    .head .cap-text {
+        display: none;
+    }
+    .head .clock {
+        font-size: 0.8125rem;
+    }
+    .head .head-left {
+        gap: 4px;
+    }
+}
+
+@media (max-width: 420px) {
+    .head {
+        grid-template-columns: 1fr;
+        justify-items: center;
+        text-align: center;
+    }
+    .head .head-left {
+        align-items: center;
+    }
+    .head .head-right {
+        align-items: center;
+        flex-direction: row;
+        gap: 8px;
+    }
+    .head .lamps {
+        justify-content: center;
+    }
+}
+.clock {
+    font-family: var(--mono);
+    font-size: 1.125rem;
+    letter-spacing: 0.04em;
+}
+.cday {
+    font-size: 0.6875rem;
+    color: var(--dim);
+}
+.cap {
+    width: 100%;
+    height: 4px;
+    border-radius: 999px;
+    background: var(--line);
+    overflow: hidden;
+}
+.cap-bar {
+    display: block;
+    height: 100%;
+    background: var(--led);
+    transition: width 0.2s linear;
+}
+.cap-text {
+    font-size: 0.6875rem;
+}

@@ -10,7 +10,7 @@ internet, in English or Tamil.
 [![Platform](https://img.shields.io/badge/platform-Windows-informational)](#install)
 [![Licence](https://img.shields.io/badge/licence-proprietary-lightgrey)](#licence)
 
-> **Status (2026-08-11): Phases 0–7 are built** — weighing, masters, printing, reports/dashboard,
+> **Status (2026-08-12): Phases 0–7 are built** — weighing, masters, printing, reports/dashboard,
 > backup/restore, the audit hash chain with public QR verification, offline licence activation, a
 > Windows installer, remote access, email/SMS delivery and Android packaging all run for real in
 > **[`app/`](app/README.md)** against a real SQLite database, not just the mock. What's left is
@@ -21,10 +21,10 @@ internet, in English or Tamil.
 > `app/README.md`'s "Known gap" section for the full narrative. The full technical plan is in
 > **[PLAN.md](PLAN.md)**.
 >
-> This repository has a GitHub remote configured but hasn't been pushed yet, so the *Open the demo*
-> and *Releases* links below aren't live — everything under `app/` runs locally today; open
-> `demo/BabuScales-demo.html` in any browser in the meantime for the original one-file, no-build,
-> no-database mock this application was built against.
+> Pushed to GitHub as of 2026-08-12. The *Open the demo* link below goes live once the Pages
+> workflow finishes its first run against `main`; until then, open `demo/BabuScales-demo.html` in
+> any browser for the original one-file, no-build, no-database mock this application was built
+> against.
 
 ---
 
@@ -90,8 +90,8 @@ database** — same screens, same flow, a simulated indicator producing live wei
 `DataPort` adapter standing in for SQLite. Not a mock-up; it's the same `app/` source everything
 else in this README describes.
 
-**→ Open the demo** — live once this repository is pushed to a public GitHub remote and the Pages
-workflow has run once (not yet — see the status note above).
+**→ Open the demo** — live once the Pages workflow has run once against `main` (see the status note
+above).
 
 ---
 
@@ -153,7 +153,7 @@ a real, tracked gap, not a broken link to ignore.
 | 6 | Trust & release | **Done.** QR verification, offline licensing, Windows installer |
 | 7 | Reach | **Done except MiMaS** (blocked, no spec) **and WhatsApp** (permanently decorative, by decision) |
 | 8 | Deferred by decision | Not started — ANPR, visual template designer, anomaly detection |
-| 9 | Tests | Paused mid-flight — `components/`, `constants/`, `formulaEngine/` covered (114 tests), rest on hold |
+| 9 | Tests | In progress — 148 tests across `components/`, `constants/`, `formulaEngine/` and `schemaEngine/`; screens/features still uncovered |
 
 See [`docs/Features.md`](docs/Features.md) for the feature-level detail behind each phase, and
 `PLAN.md` §21's "What's left" for the concrete backlog.

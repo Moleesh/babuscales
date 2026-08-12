@@ -8,9 +8,11 @@
 pub mod assets;
 pub mod audit;
 pub mod backup;
+pub mod board;
 pub mod configs;
 pub mod docs;
 pub mod email;
+pub mod indexes;
 pub mod indicator;
 pub mod licensing;
 pub mod masters;
@@ -18,4 +20,6 @@ pub mod net;
 pub mod outbox;
 pub mod printers;
 pub mod sms;
+pub mod tally;
 pub mod tunnel;
+pub mod webhook;

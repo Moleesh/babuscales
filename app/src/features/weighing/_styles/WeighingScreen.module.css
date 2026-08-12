@@ -1,0 +1,123 @@
+.screen {
+    display: grid;
+    gap: 12px;
+}
+
+/* Ported from demo/BabuScales-demo.html's ".grid2"/".col" (Weighing's own
+   330px action-column layout — distinct from Field's generic FieldGrid). */
+.layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 330px;
+    gap: 12px;
+    align-items: start;
+}
+@media (max-width: 899px) {
+    .layout {
+        grid-template-columns: 1fr;
+    }
+}
+
+.col {
+    display: grid;
+    gap: 12px;
+    min-width: 0;
+}
+
+.date-field {
+    color: var(--dim);
+}
+
+/* Ported from the mock's ".calc"/".calc>div"/".calc b"/".calc .stamp"/".calc .lead"/".calc .pend". */
+.calc {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 9px;
+}
+@media (max-width: 560px) {
+    .calc {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+.calc-box {
+    border: 1px solid var(--line);
+    border-radius: 9px;
+    padding: 9px 11px;
+    background: var(--panel-2);
+    min-width: 0;
+}
+.calc-value {
+    display: block;
+    font-family: var(--mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 1.25rem;
+    margin-top: 3px;
+    letter-spacing: 0.02em;
+}
+.calc-stamp {
+    font-size: 0.5625rem;
+    color: var(--faint);
+    margin-top: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.calc-lead {
+    border-color: var(--led-dim);
+    background: var(--led-ghost);
+}
+.calc-lead .calc-value {
+    color: var(--led);
+}
+.calc-pending .calc-value {
+    color: var(--faint);
+}
+
+/* Ported from the mock's ".actions". */
+.actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 9px;
+}
+.actions > * {
+    flex: 1;
+}
+
+.hint {
+    font-size: 0.6875rem;
+    color: var(--dim);
+    margin: 0;
+    line-height: 1.6;
+}
+
+/* Schema-driven custom fields (SchemaFieldRow) — inline Validate feedback
+   under a field. Block reuses --alert (same red the licence-gated hint
+   would use), Warn/Note use --warn; neither is a new visual tier beyond
+   what tokens.css already defines. */
+.fieldError {
+    font-size: 0.6875rem;
+    color: var(--alert);
+    margin: 2px 0 0;
+    line-height: 1.5;
+}
+.fieldWarn {
+    font-size: 0.6875rem;
+    color: var(--warn);
+    margin: 2px 0 0;
+    line-height: 1.5;
+}
+
+/* Ported from the mock's own ".formula"/".formula em" — the derivation
+   text under the calc grid (Net/Charge/Value), demo/BabuScales-demo.html's
+   `renderCalc()`. */
+.formula {
+    margin-top: 10px;
+    display: grid;
+    gap: 4px;
+    font-size: 0.6875rem;
+    color: var(--dim);
+    font-family: var(--mono);
+}
+.formula em {
+    color: var(--text);
+    font-style: normal;
+}

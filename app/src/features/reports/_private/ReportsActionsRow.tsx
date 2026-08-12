@@ -1,6 +1,6 @@
 import { Button } from "@components/Button";
 
-import styles from "../ReportsScreen.module.css";
+import styles from "../_styles/ReportsScreen.module.css";
 
 export interface ReportsActionsRowProps {
     onPrint: () => void;

@@ -3,7 +3,7 @@ import { DataTable } from "@components/DataTable";
 import type { DataTableColumn } from "@components/DataTable";
 import type { LanguagePack } from "@i18n/types";
 
-import styles from "./FieldsLanguagePane.module.css";
+import styles from "./_styles/FieldsLanguagePane.module.css";
 
 const PACK_COLUMNS: DataTableColumn<LanguagePack>[] = [
     { key: "code", header: "Code", render: (pack) => pack.Code },

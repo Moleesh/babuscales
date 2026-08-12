@@ -2,10 +2,10 @@ import { Card } from "@components/Card";
 import { useDataPort } from "@db/useDataPort";
 
 import { useSettings } from "../useSettings";
+import styles from "./_styles/SystemPane.module.css";
 import { LegacyImportFileRow } from "./LegacyImportFileRow";
 import { LegacyImportPlanPreview } from "./LegacyImportPlanPreview";
 import { LegacyImportResultSummary } from "./LegacyImportResultSummary";
-import styles from "./SystemPane.module.css";
 import { useLegacyImportActions } from "./useLegacyImportActions";
 
 // Task #47, PLAN §22 Phase 7 "legacy v1/v2 import" — a one-time tool for a

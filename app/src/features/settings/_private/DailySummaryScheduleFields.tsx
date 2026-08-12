@@ -1,7 +1,8 @@
 import { Field, FieldGrid } from "@components/Field";
+import { useTranslation } from "@i18n/useTranslation";
 
 import type { DailySummaryConfig, SettingsBody } from "../settingsSchema";
-import styles from "./SystemPane.module.css";
+import styles from "./_styles/SystemPane.module.css";
 
 export interface DailySummaryScheduleFieldsProps {
     settings: SettingsBody;
@@ -18,7 +19,9 @@ export const DailySummaryScheduleFields = ({
     cfg,
     unlocked,
     onSave,
-}: DailySummaryScheduleFieldsProps) => (
+}: DailySummaryScheduleFieldsProps) => {
+    const { t } = useTranslation();
+    return (
     <>
         <label className={styles.ck}>
             <input
@@ -29,7 +32,7 @@ export const DailySummaryScheduleFields = ({
                     onSave({ ...settings, DailySummary: { ...cfg, Enabled: event.target.checked } })
                 }
             />
-            <span>Send automatically every day</span>
+            <span>{t("settings.dailySummary.sendAutomatically")}</span>
         </label>
         <FieldGrid columns={2}>
             <Field id="dsTime" label={{ en: "Send at" }}>
@@ -57,4 +60,5 @@ export const DailySummaryScheduleFields = ({
             </Field>
         </FieldGrid>
     </>
-);
+    );
+};

@@ -1,12 +1,12 @@
 import type { ReportSlipData } from "@engines/print";
 
-import styles from "./ReportA4.module.css";
+import styles from "./_styles/ReportA4.module.css";
 
 // The same fictional site identity SlipA4.tsx hardcodes (app/README.md
 // known gap: no site-profile Setting yet) — kept in sync by hand until a
 // real Settings pane owns it.
-const SITE_NAME = "Sri Lakshmi Blue Metals";
-const SITE_SUB = "Bridge 1";
+const SITE_NAME = "Babulens Enterprise";
+const SITE_SUB = "Nagercoil · 9789597007";
 
 export interface ReportA4Props {
     data: ReportSlipData;

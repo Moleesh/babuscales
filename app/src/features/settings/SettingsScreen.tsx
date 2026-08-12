@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import { SegmentedControl } from "@components/SegmentedControl";
 import type { SegmentedOption } from "@components/SegmentedControl";
 import type { LanguagePack } from "@i18n/types";
+import { useTranslation } from "@i18n/useTranslation";
 
 import { AppearancePane } from "./_private/AppearancePane";
 import { ConnectionsPane } from "./_private/ConnectionsPane";
@@ -10,18 +11,18 @@ import { FieldsLanguagePane } from "./_private/FieldsLanguagePane";
 import { PrintPane } from "./_private/PrintPane";
 import { SystemPane } from "./_private/SystemPane";
 import { WeighingPane } from "./_private/WeighingPane";
-import styles from "./SettingsScreen.module.css";
+import styles from "./_styles/SettingsScreen.module.css";
 import { useSettings } from "./useSettings";
 
 type PaneKey = "fields" | "print" | "look" | "weigh" | "conn" | "sys";
 
-const PANE_OPTIONS: SegmentedOption<PaneKey>[] = [
-    { value: "fields", label: "Fields & language" },
-    { value: "print", label: "Print & printers" },
-    { value: "look", label: "Appearance" },
-    { value: "weigh", label: "Weighing" },
-    { value: "conn", label: "Connections" },
-    { value: "sys", label: "System" },
+const buildPaneOptions = (t: (key: string) => string): SegmentedOption<PaneKey>[] => [
+    { value: "fields", label: t("settings.pane.fields") },
+    { value: "print", label: t("settings.pane.print") },
+    { value: "look", label: t("settings.pane.look") },
+    { value: "weigh", label: t("settings.pane.weigh") },
+    { value: "conn", label: t("settings.pane.conn") },
+    { value: "sys", label: t("settings.pane.sys") },
 ];
 
 export interface SettingsScreenProps {
@@ -40,24 +41,23 @@ export interface SettingsScreenProps {
 // real (FieldsLanguagePane), Field schema stays a documented placeholder.
 export const SettingsScreen = ({ onResetTicketSeries, onAddLanguagePack }: SettingsScreenProps) => {
     const { unlocked } = useSettings();
+    const { t } = useTranslation();
     const [pane, setPane] = useState<PaneKey>("weigh");
+    const paneOptions = useMemo(() => buildPaneOptions(t), [t]);
 
     return (
         <div className={styles.screen}>
             <SegmentedControl
-                options={PANE_OPTIONS}
+                options={paneOptions}
                 value={pane}
                 onChange={setPane}
                 size="big"
-                ariaLabel="Settings section"
+                ariaLabel={t("settings.ariaLabel")}
             />
 
             {!unlocked && (
                 <div className={styles.lockbar}>
-                    <span>
-                        🔒 Settings are read-only. Unlock with the admin password to change
-                        anything.
-                    </span>
+                    <span>🔒 {t("settings.lockedMessage")}</span>
                 </div>
             )}
 

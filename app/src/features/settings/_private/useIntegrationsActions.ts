@@ -15,13 +15,15 @@ export interface UseIntegrationsActions {
 
 // Split out of IntegrationsCard (over the line budget — docs/CodingStandards.md)
 // — the toggle/configure logic, unchanged from the inline version it
-// replaces. Real for QR verification, e-mail and SMS — everything else
-// stays the mock's own "here's where this would be configured" placeholder
-// (app/README.md known gap). WhatsApp specifically will never join that
-// list: PLAN §23 open item 5 flags it as "the only per-message cost", and
-// task #44 (app/README.md item 31) recorded why there's no compliant free
-// path to wire it to — Meta's Cloud API is paid, and the unofficial
-// alternative violates WhatsApp's own Terms of Service.
+// replaces. Real for QR verification, e-mail, SMS and — since the
+// outbox-worker task — webhook/tally/board too (see IntegrationConfigCard):
+// only Cloud backup stays the mock's own "here's where this would be
+// configured" placeholder now (app/README.md known gap). WhatsApp
+// specifically will never join that list: PLAN §23 open item 5 flags it as
+// "the only per-message cost", and task #44 (app/README.md item 31)
+// recorded why there's no compliant free path to wire it to — Meta's Cloud
+// API is paid, and the unofficial alternative violates WhatsApp's own Terms
+// of Service.
 export const useIntegrationsActions = ({
     settings,
     save,
@@ -55,6 +57,10 @@ export const useIntegrationsActions = ({
         }
         if (fixture.key === "sms") {
             showFlash("SMS gateway — modem port and baud rate set below, not here");
+            return;
+        }
+        if (fixture.key === "webhook" || fixture.key === "tally" || fixture.key === "board") {
+            showFlash(`${fixture.name} — endpoint/folder/host set below, not here`);
             return;
         }
         showFlash(`${fixture.name} · ${fixture.config} — stored in the settings table`);

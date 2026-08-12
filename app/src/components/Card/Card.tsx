@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-import styles from "./Card.module.css";
+import styles from "./_styles/Card.module.css";
 
 export interface CardProps {
     /** Rendered in the header's left side — usually a `.lbl` title. */

@@ -3,10 +3,11 @@ import { useState } from "react";
 import { Card } from "@components/Card";
 import { useDataPort } from "@db/useDataPort";
 import { createEmailSource } from "@engines/email/createEmailSource";
+import { useTranslation } from "@i18n/useTranslation";
 
 import { useSettings } from "../useSettings";
+import styles from "./_styles/SystemPane.module.css";
 import { DailySummaryScheduleFields } from "./DailySummaryScheduleFields";
-import styles from "./SystemPane.module.css";
 import { useDailySummarySend } from "./useDailySummarySend";
 
 // Task #45 — PLAN §18's "scheduled daily summary", the manual half:
@@ -23,6 +24,7 @@ import { useDailySummarySend } from "./useDailySummarySend";
 export const DailySummaryCard = () => {
     const db = useDataPort();
     const { settings, unlocked, save, recordDailySummarySent } = useSettings();
+    const { t } = useTranslation();
     const [email] = useState(() => createEmailSource());
     const { sending, flash, handleSendNow } = useDailySummarySend({
         db,
@@ -34,7 +36,7 @@ export const DailySummaryCard = () => {
 
     return (
         <Card
-            title={<span className="lbl">Scheduled daily summary</span>}
+            title={<span className="lbl">{t("settings.dailySummary.title")}</span>}
             headerRight={flash ? <span className={styles.applied}>{flash}</span> : null}
         >
             <div className={styles.body}>
@@ -51,16 +53,12 @@ export const DailySummaryCard = () => {
                         disabled={!unlocked || sending || !cfg.Recipient.trim()}
                         onClick={() => void handleSendNow()}
                     >
-                        {sending ? "Sending…" : "Send now"}
+                        {sending ? t("settings.dailySummary.sending") : t("settings.dailySummary.sendNow")}
                     </button>
                 </div>
                 <p className={styles.hint}>
-                    Goes out over the same SMTP relay as ticket e-mail (Connections → E-mail
-                    delivery) — set that up first. This only runs while the app is open: it checks
-                    once a minute for the scheduled time, there is no background service, so a
-                    machine that&apos;s off (or asleep) at the scheduled time sends nothing until
-                    it&apos;s next opened.
-                    {cfg.LastSentDate && ` Last sent: ${cfg.LastSentDate}.`}
+                    {t("settings.dailySummary.hint")}
+                    {cfg.LastSentDate && ` ${t("settings.dailySummary.lastSent")} ${cfg.LastSentDate}.`}
                 </p>
             </div>
         </Card>

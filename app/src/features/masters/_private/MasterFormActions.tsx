@@ -1,7 +1,8 @@
 import { Button } from "@components/Button";
 import type { MasterRow } from "@db/types";
+import { useTranslation } from "@i18n/useTranslation";
 
-import styles from "../MastersScreen.module.css";
+import styles from "../_styles/MastersScreen.module.css";
 
 export interface MasterFormActionsProps {
     selected: MasterRow | null;
@@ -26,23 +27,26 @@ export const MasterFormActions = ({
     onToggleActive,
     onStartNew,
     onReload,
-}: MasterFormActionsProps) => (
-    <div className={styles.formActions}>
-        <Button variant="primary" disabled={saving || !canSave} onClick={onSave}>
-            {selected ? "Save changes" : addNewLabel}
-        </Button>
-        {selected && (
-            <Button variant={selected.IsActive ? "danger" : "default"} disabled={saving} onClick={onToggleActive}>
-                {selected.IsActive ? "Deactivate" : "Activate"}
+}: MasterFormActionsProps) => {
+    const { t } = useTranslation();
+    return (
+        <div className={styles.formActions}>
+            <Button variant="primary" disabled={saving || !canSave} onClick={onSave}>
+                {selected ? t("masters.action.saveChanges") : addNewLabel}
             </Button>
-        )}
-        {selected && (
-            <Button disabled={saving} onClick={onStartNew}>
-                New
+            {selected && (
+                <Button variant={selected.IsActive ? "danger" : "default"} disabled={saving} onClick={onToggleActive}>
+                    {selected.IsActive ? t("masters.action.deactivate") : t("masters.action.activate")}
+                </Button>
+            )}
+            {selected && (
+                <Button disabled={saving} onClick={onStartNew}>
+                    {t("masters.action.new")}
+                </Button>
+            )}
+            <Button disabled={saving} onClick={onReload}>
+                {t("masters.action.refresh")}
             </Button>
-        )}
-        <Button disabled={saving} onClick={onReload}>
-            Refresh
-        </Button>
-    </div>
-);
+        </div>
+    );
+};

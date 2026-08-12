@@ -1,26 +1,8 @@
-import { useState } from "react";
-import type { InputHTMLAttributes } from "react";
+import { useDropdownState } from "./_private/useDropdownState";
+import styles from "./_styles/SearchableDropdown.module.css";
+import type { SearchableDropdownOption, SearchableDropdownProps } from "./SearchableDropdown.types";
 
-import styles from "./SearchableDropdown.module.css";
-
-export interface SearchableDropdownOption {
-    Value: string;
-    Label: string;
-    Sub?: string;
-}
-
-export interface SearchableDropdownProps extends Omit<
-    InputHTMLAttributes<HTMLInputElement>,
-    "onChange" | "value" | "className"
-> {
-    value: string;
-    onChange: (text: string) => void;
-    onSearch: (query: string) => SearchableDropdownOption[];
-    onPick?: (option: SearchableDropdownOption) => void;
-    onAddNew?: (query: string) => void;
-    addNewLabel?: (query: string) => string;
-    heading?: string;
-}
+export type { SearchableDropdownOption, SearchableDropdownProps } from "./SearchableDropdown.types";
 
 interface DropdownResultsProps {
     heading?: string;
@@ -30,11 +12,14 @@ interface DropdownResultsProps {
     onAddNew?: (query: string) => void;
     addNewLabel?: (query: string) => string;
     showAddNew: boolean | undefined;
+    highlightedIndex: number;
 }
 
 // The open popover's contents — matched options plus the optional "＋ Add"
 // row — pulled out so the field component itself reads as "an input plus a
-// popover", not the popover's own markup inline.
+// popover", not the popover's own markup inline. `highlightedIndex` indexes
+// into results + the trailing add-new row combined, driven by the input's
+// ArrowUp/ArrowDown handling in `useDropdownState`.
 const DropdownResults = ({
     heading,
     results,
@@ -43,16 +28,18 @@ const DropdownResults = ({
     onAddNew,
     addNewLabel,
     showAddNew,
+    highlightedIndex,
 }: DropdownResultsProps) => (
     <div className={styles.pop} role="listbox">
         {heading && <div className={styles.heading}>{heading}</div>}
-        {results.map((option) => (
+        {results.map((option, index) => (
             <button
                 key={option.Value}
                 type="button"
-                className={styles.option}
+                className={`${styles.option} ${index === highlightedIndex ? styles.highlighted : ""}`}
                 /* Reachable by mouse/click, not by Enter-as-Tab's field walk (PLAN §13) —
-                   it lives outside the natural tab sequence on purpose (useEnterAsTab.ts). */
+                   it lives outside the natural tab sequence on purpose (useEnterAsTab.ts).
+                   Keyboard reach comes from the input's own onKeyDown instead. */
                 tabIndex={-1}
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={() => onPick(option)}
@@ -64,7 +51,9 @@ const DropdownResults = ({
         {showAddNew && onAddNew && (
             <button
                 type="button"
-                className={`${styles.option} ${styles.add}`}
+                className={`${styles.option} ${styles.add} ${
+                    results.length === highlightedIndex ? styles.highlighted : ""
+                }`}
                 tabIndex={-1}
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={() => onAddNew(query)}
@@ -89,33 +78,27 @@ export const SearchableDropdown = ({
     heading,
     ...inputProps
 }: SearchableDropdownProps) => {
-    const [open, setOpen] = useState(false);
-    const results = open ? onSearch(value) : [];
-    const showAddNew = Boolean(
-        open && onAddNew && value.trim() && !results.some((r) => r.Label === value),
-    );
-
-    const pick = (option: SearchableDropdownOption) => {
-        onChange(option.Label);
-        onPick?.(option);
-        setOpen(false);
-    };
-
-    const addNew = onAddNew
-        ? (query: string) => {
-              onAddNew(query);
-              setOpen(false);
-          }
-        : undefined;
+    const {
+        open,
+        setOpen,
+        highlightedIndex,
+        results,
+        showAddNew,
+        pick,
+        addNew,
+        handleKeyDown,
+        handleInputChange,
+    } = useDropdownState({ value, onChange, onSearch, onPick, onAddNew });
 
     return (
         <div className={styles.wrapper}>
             <input
                 {...inputProps}
                 value={value}
-                onChange={(e) => onChange(e.target.value)}
+                onChange={(e) => handleInputChange(e.target.value)}
                 onFocus={() => setOpen(true)}
                 onBlur={() => setOpen(false)}
+                onKeyDown={handleKeyDown}
                 role="combobox"
                 aria-expanded={open}
             />
@@ -128,6 +111,7 @@ export const SearchableDropdown = ({
                     onAddNew={addNew}
                     addNewLabel={addNewLabel}
                     showAddNew={showAddNew}
+                    highlightedIndex={highlightedIndex}
                 />
             )}
         </div>

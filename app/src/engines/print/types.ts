@@ -14,6 +14,16 @@ export interface SlipData {
     NetKg: string;
     TareAt: string;
     GrossAt: string;
+    /**
+     * One entry per Gross capture, in capture order — length 1 in the
+     * common case (mirrors weighing/_private/CalcFormula's own
+     * `grossWeightsKg` convention). Every renderer treats length <= 1 as
+     * "nothing to itemise", so a non-multi-gross ticket's printed output is
+     * byte-identical to before this field existed; only a real multi-gross
+     * ticket (task #46, Settings → Weighing → Rules.MultiGross) gets the
+     * extra per-load lines.
+     */
+    GrossLoads: { Kg: string; At: string }[];
     /** Pre-formatted money (engines/billing) — "—" until both weights are in. */
     Charge: string;
     Operator: string;

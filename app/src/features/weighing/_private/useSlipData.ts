@@ -30,12 +30,17 @@ export const useSlipData = ({ ticket, settings, charge, verifyUrl }: UseSlipData
                 grossKg: ticket.weights.grossKg,
                 netKg: ticket.weights.netKg,
                 tareAt: ticket.captures.find((c) => c.Type === "Tare")?.At ?? null,
-                // Task #46 — the slip's own layout has one Gross line (no
-                // itemised per-load breakdown, app/README.md known gap), so a
-                // multi-gross ticket shows its LAST Gross's timestamp here —
-                // "when this ticket's weighing finished" reads better on a
-                // printed slip than "when the first of several loads did."
+                // "When this ticket's weighing finished" reads better on the
+                // slip's own GROSS AT line than "when the first of several
+                // loads did" — kept even now that GrossLoads (below) carries
+                // every load's own timestamp too.
                 grossAt: ticket.captures.filter((c) => c.Type === "Gross").at(-1)?.At ?? null,
+                // Task #46's itemised per-load breakdown (PLAN §21) — one
+                // entry per Gross capture; every renderer collapses this
+                // back to the single GROSS line above when there's only one.
+                grossLoads: ticket.captures
+                    .filter((c) => c.Type === "Gross")
+                    .map((c) => ({ kg: c.WeightKg, at: c.At })),
                 operator: settings.OperatorName,
                 printCount: ticket.printCount,
                 charge,

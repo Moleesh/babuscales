@@ -5,7 +5,10 @@ import { CONFIG_KINDS, MASTER_KINDS, OUTBOX_STATES } from "./types";
 // Zod at every boundary (docs/CodingStandards.md). DataPort is the boundary
 // between the UI and storage — a draft is untrusted the moment it leaves a
 // form, so it is parsed here once rather than trusted by every adapter.
-export const jsonRecordSchema: z.ZodType<Record<string, unknown>> = z.record(z.unknown());
+export const jsonRecordSchema: z.ZodType<Record<string, unknown>> = z.record(
+    z.string(),
+    z.unknown(),
+);
 
 export const docKindSchema = z.enum(["Ticket", "Invoice"]);
 export const masterKindSchema = z.enum(MASTER_KINDS);

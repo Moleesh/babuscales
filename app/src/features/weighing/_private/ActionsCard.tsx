@@ -4,13 +4,14 @@ import { SegmentedControl } from "@components/SegmentedControl";
 import type { SegmentedOption } from "@components/SegmentedControl";
 import type { CaptureType } from "@db/ticketBody";
 import type { IndicatorReading } from "@engines/indicator";
+import { useTranslation } from "@i18n/useTranslation";
 
+import styles from "../_styles/WeighingScreen.module.css";
 import type { UseWeighingTicket } from "../useWeighingTicket";
-import styles from "../WeighingScreen.module.css";
 
-const KIND_OPTIONS: SegmentedOption<CaptureType>[] = [
-    { value: "Tare", label: "Tare" },
-    { value: "Gross", label: "Gross" },
+const kindOptions = (t: ReturnType<typeof useTranslation>["t"]): SegmentedOption<CaptureType>[] => [
+    { value: "Tare", label: t("tare") },
+    { value: "Gross", label: t("gross") },
 ];
 
 // Task #46: with MultiGross on, a Gross that's already been captured once
@@ -30,6 +31,7 @@ interface ActionsHintArgs {
     armed: boolean;
     gated: boolean;
     multiGross: boolean;
+    t: ReturnType<typeof useTranslation>["t"];
 }
 
 // The bottom-of-card status line — a straight run of "which situation are we
@@ -37,18 +39,16 @@ interface ActionsHintArgs {
 // toward cognitive complexity) on its own instead of stacking with the ones
 // around it. Args bundled into one object (rather than five positional
 // params) to stay under the params budget too.
-const actionsHint = ({ ticket, reading, armed, gated, multiGross }: ActionsHintArgs): string => {
+const actionsHint = ({ ticket, reading, armed, gated, multiGross, t }: ActionsHintArgs): string => {
     if (gated && !ticket.isLocked) {
-        return "Licence needs attention — see the banner above. Activate in Settings → System to resume.";
+        return t("weigh.licenceHint");
     }
-    if (ticket.isLocked) return ticket.printCount > 0 ? "Printed." : "Saved — ready to print.";
+    if (ticket.isLocked) return ticket.printCount > 0 ? t("weigh.printed") : t("weigh.savedReadyToPrint");
     if (ticket.isComplete) {
-        return multiGross
-            ? "Capture another Gross to add a load, or Save to finish this ticket."
-            : "Both weights captured — Save to finish.";
+        return multiGross ? t("weigh.captureAnotherGross") : t("weigh.bothWeightsCaptured");
     }
-    if (reading.WeightKg === 0 && reading.Stable) return "Deck empty. Send a lorry to begin.";
-    return armed ? "Stable — capture now." : "Weight in motion — capture is locked until it settles.";
+    if (reading.WeightKg === 0 && reading.Stable) return t("weigh.deckEmpty");
+    return armed ? t("weigh.stableCaptureNow") : t("weigh.weightInMotion");
 };
 
 // The three fixed button rows below the capture button — pulled out so the
@@ -57,56 +57,75 @@ const actionsHint = ({ ticket, reading, armed, gated, multiGross }: ActionsHintA
 const SaveAndPrintRow = ({
     ticket,
     gated,
+    hasBlockingCustomFieldError,
     onSave,
     onOpenPrintModal,
-}: Pick<ActionsCardProps, "ticket" | "gated" | "onSave" | "onOpenPrintModal">) => (
-    <div className={styles.actions}>
-        <Button
-            disabled={ticket.isLocked || ticket.captures.length === 0 || ticket.saving || gated}
-            onClick={onSave}
-        >
-            {ticket.isComplete ? "Save" : "Save & park"}
-        </Button>
-        <Button disabled={!ticket.isLocked || ticket.printCount > 0} onClick={onOpenPrintModal}>
-            Print
-        </Button>
-    </div>
-);
+}: Pick<
+    ActionsCardProps,
+    "ticket" | "gated" | "hasBlockingCustomFieldError" | "onSave" | "onOpenPrintModal"
+>) => {
+    const { t } = useTranslation();
+    return (
+        <div className={styles.actions}>
+            <Button
+                disabled={
+                    ticket.isLocked ||
+                    ticket.captures.length === 0 ||
+                    ticket.saving ||
+                    gated ||
+                    hasBlockingCustomFieldError
+                }
+                onClick={onSave}
+            >
+                {ticket.isComplete ? t("weigh.save") : t("weigh.saveAndPark")}
+            </Button>
+            <Button disabled={!ticket.isLocked || ticket.printCount > 0} onClick={onOpenPrintModal}>
+                {t("weigh.print")}
+            </Button>
+        </div>
+    );
+};
 
 const ReprintRow = ({
     ticket,
     onOpenPrintModal,
-}: Pick<ActionsCardProps, "ticket" | "onOpenPrintModal">) => (
-    <div className={styles.actions}>
-        <Button disabled={ticket.printCount === 0} onClick={onOpenPrintModal}>
-            Reprint
-        </Button>
-        <Button onClick={ticket.startNew}>New ticket</Button>
-    </div>
-);
+}: Pick<ActionsCardProps, "ticket" | "onOpenPrintModal">) => {
+    const { t } = useTranslation();
+    return (
+        <div className={styles.actions}>
+            <Button disabled={ticket.printCount === 0} onClick={onOpenPrintModal}>
+                {t("weigh.reprint")}
+            </Button>
+            <Button onClick={ticket.startNew}>{t("weigh.newTicket")}</Button>
+        </div>
+    );
+};
 
 const ClearAndSendRow = ({
     ticket,
     loadLorry,
-}: Pick<ActionsCardProps, "ticket" | "loadLorry">) => (
-    <div className={styles.actions}>
-        <Button variant="danger" disabled={ticket.isLocked} onClick={ticket.clear}>
-            Clear
-        </Button>
-        {loadLorry && (
-            <Button
-                // Task #46: `!ticket.kind` alone is the correct gate now — `defaultCaptureKind`
-                // already returns null exactly when nothing more should be captured (the old
-                // `captures.length >= 2` check would have blocked a second Gross under
-                // MultiGross even though `kind` still offers one).
-                disabled={ticket.isLocked || !ticket.kind}
-                onClick={() => ticket.kind && loadLorry(ticket.kind)}
-            >
-                Send a lorry
+}: Pick<ActionsCardProps, "ticket" | "loadLorry">) => {
+    const { t } = useTranslation();
+    return (
+        <div className={styles.actions}>
+            <Button variant="danger" disabled={ticket.isLocked} onClick={ticket.clear}>
+                {t("weigh.clear")}
             </Button>
-        )}
-    </div>
-);
+            {loadLorry && (
+                <Button
+                    // Task #46: `!ticket.kind` alone is the correct gate now — `defaultCaptureKind`
+                    // already returns null exactly when nothing more should be captured (the old
+                    // `captures.length >= 2` check would have blocked a second Gross under
+                    // MultiGross even though `kind` still offers one).
+                    disabled={ticket.isLocked || !ticket.kind}
+                    onClick={() => ticket.kind && loadLorry(ticket.kind)}
+                >
+                    {t("weigh.sendLorry")}
+                </Button>
+            )}
+        </div>
+    );
+};
 
 export interface ActionsCardProps {
     ticket: UseWeighingTicket;
@@ -118,6 +137,8 @@ export interface ActionsCardProps {
     armed: boolean;
     /** `useLicense().isGated` — blocks Save (a new row hitting the DB) in addition to `armed` already blocking capture; see WeighingScreen's own `licenseGated` prop comment for why Print/Reprint of an already-saved ticket stays open. */
     gated: boolean;
+    /** A custom Field's Block-severity Validate rule is currently failing (PLAN §8) — blocks Save the same way `gated` does. Computed in WeighingScreen, threaded through WeighingRightColumn. */
+    hasBlockingCustomFieldError: boolean;
     captureLabel: string;
     captureHint: string;
     onSave: () => void;
@@ -135,46 +156,55 @@ export const ActionsCard = ({
     multiGross,
     armed,
     gated,
+    hasBlockingCustomFieldError,
     captureLabel,
     captureHint,
     onSave,
     onOpenPrintModal,
-}: ActionsCardProps) => (
-    <Card
-        title={<span className="lbl">Actions</span>}
-        headerRight={<span className="chip num">{ticket.printCount} prints</span>}
-    >
-        <div style={{ display: "grid", gap: 9 }}>
-            <SegmentedControl
-                options={KIND_OPTIONS.map((option) => ({
-                    ...option,
-                    disabled: kindOptionDisabled(ticket, option.value, multiGross),
-                }))}
-                value={ticket.kind ?? "Tare"}
-                onChange={ticket.setKind}
-                size="big"
-                ariaLabel="Capture as"
-            />
-            <Button
-                variant="primary"
-                size="large"
-                disabled={!armed}
-                caption={captureHint}
-                onClick={() => ticket.capture(reading.WeightKg)}
-            >
-                {captureLabel}
-            </Button>
-            <SaveAndPrintRow
-                ticket={ticket}
-                gated={gated}
-                onSave={onSave}
-                onOpenPrintModal={onOpenPrintModal}
-            />
-            <ReprintRow ticket={ticket} onOpenPrintModal={onOpenPrintModal} />
-            <ClearAndSendRow ticket={ticket} loadLorry={loadLorry} />
-            <p className={styles.hint}>
-                {actionsHint({ ticket, reading, armed, gated, multiGross })}
-            </p>
-        </div>
-    </Card>
-);
+}: ActionsCardProps) => {
+    const { t } = useTranslation();
+    return (
+        <Card
+            title={<span className="lbl">{t("weigh.actions")}</span>}
+            headerRight={
+                <span className="chip num">
+                    {ticket.printCount} {t("weigh.printsSuffix")}
+                </span>
+            }
+        >
+            <div style={{ display: "grid", gap: 9 }}>
+                <SegmentedControl
+                    options={kindOptions(t).map((option) => ({
+                        ...option,
+                        disabled: kindOptionDisabled(ticket, option.value, multiGross),
+                    }))}
+                    value={ticket.kind ?? "Tare"}
+                    onChange={ticket.setKind}
+                    size="big"
+                    ariaLabel={t("weigh.captureAs")}
+                />
+                <Button
+                    variant="primary"
+                    size="large"
+                    disabled={!armed}
+                    caption={captureHint}
+                    onClick={() => ticket.capture(reading.WeightKg)}
+                >
+                    {captureLabel}
+                </Button>
+                <SaveAndPrintRow
+                    ticket={ticket}
+                    gated={gated}
+                    hasBlockingCustomFieldError={hasBlockingCustomFieldError}
+                    onSave={onSave}
+                    onOpenPrintModal={onOpenPrintModal}
+                />
+                <ReprintRow ticket={ticket} onOpenPrintModal={onOpenPrintModal} />
+                <ClearAndSendRow ticket={ticket} loadLorry={loadLorry} />
+                <p className={styles.hint}>
+                    {actionsHint({ ticket, reading, armed, gated, multiGross, t })}
+                </p>
+            </div>
+        </Card>
+    );
+};

@@ -1,7 +1,7 @@
 import { formatMoney, formatWeightKg, INDIAN_LOCALE } from "@constants/numberFormat";
 import { GROSS_CHARGE_INR, TARE_CHARGE_INR } from "@engines/billing";
 
-import styles from "../WeighingScreen.module.css";
+import styles from "../_styles/WeighingScreen.module.css";
 
 export interface CalcFormulaProps {
     tareKg: number | null;

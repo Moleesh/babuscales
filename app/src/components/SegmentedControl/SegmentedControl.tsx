@@ -1,4 +1,4 @@
-import styles from "./SegmentedControl.module.css";
+import styles from "./_styles/SegmentedControl.module.css";
 
 export interface SegmentedOption<Value extends string> {
     value: Value;

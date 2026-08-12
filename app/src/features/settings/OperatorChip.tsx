@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 
-import styles from "./OperatorChip.module.css";
+import { useTranslation } from "@i18n/useTranslation";
+
+import styles from "./_styles/OperatorChip.module.css";
 import { useSettings } from "./useSettings";
 
 // The top-bar `#opChip`/`#opEdit` (demo/BabuScales-demo.html) — click the
@@ -9,6 +11,7 @@ import { useSettings } from "./useSettings";
 // comfort", not configuration — anyone on shift can say who they are.
 export const OperatorChip = () => {
     const { settings, setOperatorName } = useSettings();
+    const { t } = useTranslation();
     const [editing, setEditing] = useState(false);
     const [draft, setDraft] = useState(settings.OperatorName);
     const inputRef = useRef<HTMLInputElement | null>(null);
@@ -31,7 +34,7 @@ export const OperatorChip = () => {
             <input
                 ref={inputRef}
                 className={`chip ${styles.input}`}
-                aria-label="Operator name"
+                aria-label={t("settings.operatorChip.ariaLabel")}
                 // Excludes this input from useEnterAsTab's global walk — see
                 // that hook's own comment for why an unmarked Enter here
                 // would get hijacked instead of committing the chip.
@@ -55,8 +58,12 @@ export const OperatorChip = () => {
     }
 
     return (
-        <button className="chip act" title="Change operator" onClick={() => setEditing(true)}>
-            Operator:&nbsp;<b>{settings.OperatorName}</b>&nbsp;✎
+        <button
+            className="chip act"
+            title={t("settings.operatorChip.changeTitle")}
+            onClick={() => setEditing(true)}
+        >
+            {t("settings.operatorChip.label")}&nbsp;<b>{settings.OperatorName}</b>&nbsp;✎
         </button>
     );
 };

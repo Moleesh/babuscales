@@ -1,0 +1,94 @@
+/* Ported from demo/BabuScales-demo.html's ".grid2"/".checks"/".ck"/".inline"/".tw". */
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 12px;
+    align-items: start;
+}
+
+.applied {
+    font-size: 0.6875rem;
+    color: var(--stable);
+}
+
+.checks {
+    display: grid;
+    gap: 10px;
+}
+
+.ck {
+    display: flex;
+    align-items: flex-start;
+    gap: 9px;
+    font-size: 0.8125rem;
+    cursor: pointer;
+    line-height: 1.35;
+}
+.ck input {
+    margin: 2px 0 0;
+    accent-color: var(--led);
+    width: 15px;
+    height: 15px;
+    flex: none;
+}
+.ck small {
+    display: block;
+    font-size: 0.625rem;
+    color: var(--dim);
+    margin-top: 2px;
+}
+.ck:has(input:disabled) {
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.stability {
+    display: grid;
+    gap: 5px;
+}
+
+.inline {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    font-size: 0.8125rem;
+    color: var(--dim);
+}
+.inline input {
+    width: 76px;
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 8px 10px;
+    color: var(--text);
+    font: inherit;
+    font-size: 0.8125rem;
+}
+.inline input:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.policy-table {
+    overflow-x: auto;
+}
+.policy-table table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8125rem;
+}
+.policy-table td {
+    padding: 9px 0;
+    border-bottom: 1px solid var(--line);
+    vertical-align: top;
+}
+.policy-table tr:last-child td {
+    border-bottom: none;
+}
+.policy-detail {
+    font-size: 0.6875rem;
+    color: var(--dim);
+    margin-top: 2px;
+    line-height: 1.5;
+}

@@ -4,7 +4,7 @@ import type { DataTableColumn } from "@components/DataTable";
 import type { Field, Schema } from "@engines/schemaEngine";
 import { resolveLocalized } from "@i18n/types";
 
-import styles from "./FieldsLanguagePane.module.css";
+import styles from "./_styles/FieldsLanguagePane.module.css";
 
 const fieldColumns = (lang: string): DataTableColumn<Field>[] => [
     { key: "id", header: "Field", render: (field) => field.FieldId },

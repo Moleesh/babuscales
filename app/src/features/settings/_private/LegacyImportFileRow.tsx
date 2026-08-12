@@ -1,6 +1,6 @@
 import type { RefObject } from "react";
 
-import styles from "./SystemPane.module.css";
+import styles from "./_styles/SystemPane.module.css";
 
 export interface LegacyImportFileRowProps {
     inputRef: RefObject<HTMLInputElement | null>;

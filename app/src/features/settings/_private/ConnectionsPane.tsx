@@ -2,11 +2,13 @@ import { useEffect, useState } from "react";
 
 import { Card } from "@components/Card";
 import { isSerialIndicatorSource, useIndicator, useIndicatorReading } from "@engines/indicator";
+import { useTranslation } from "@i18n/useTranslation";
 
 import { useSettings } from "../useSettings";
-import styles from "./ConnectionsPane.module.css";
+import styles from "./_styles/ConnectionsPane.module.css";
 import { EmailCard } from "./EmailCard";
 import { IndicatorCard } from "./IndicatorCard";
+import { IntegrationConfigCard } from "./IntegrationConfigCard";
 import { IntegrationsCard } from "./IntegrationsCard";
 import { RemoteAccessCard } from "./RemoteAccessCard";
 import { SmsCard } from "./SmsCard";
@@ -26,6 +28,7 @@ import { SmsCard } from "./SmsCard";
 // see IntegrationsCard.
 export const ConnectionsPane = () => {
     const { settings, unlocked, save } = useSettings();
+    const { t } = useTranslation();
     const indicator = useIndicator();
     const reading = useIndicatorReading();
     const serial = isSerialIndicatorSource(indicator) ? indicator : null;
@@ -48,16 +51,13 @@ export const ConnectionsPane = () => {
     if (!serial) {
         return (
             <div className={styles.grid}>
-                <Card title={<span className="lbl">Connections</span>}>
-                    <p className={styles.hint}>
-                        Serial port configuration is only available in the desktop app — this demo
-                        (and the GitHub Pages build) has no real hardware to connect to, so the
-                        indicator here is always simulated.
-                    </p>
+                <Card title={<span className="lbl">{t("settings.connections.title")}</span>}>
+                    <p className={styles.hint}>{t("settings.connections.desktopOnlyHint")}</p>
                 </Card>
                 <IntegrationsCard />
                 <EmailCard />
                 <SmsCard />
+                <IntegrationConfigCard />
                 <RemoteAccessCard />
             </div>
         );

@@ -1,5 +1,5 @@
+import styles from "./_styles/SystemPane.module.css";
 import type { LegacyImportRunResult } from "./legacyImportRun";
-import styles from "./SystemPane.module.css";
 
 export interface LegacyImportResultSummaryProps {
     result: LegacyImportRunResult;

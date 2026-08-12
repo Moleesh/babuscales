@@ -2,7 +2,7 @@ import { Card } from "@components/Card";
 import type { IndicatorReading } from "@engines/indicator";
 
 import type { ConnectionsConfig, SettingsBody } from "../settingsSchema";
-import styles from "./ConnectionsPane.module.css";
+import styles from "./_styles/ConnectionsPane.module.css";
 import { IndicatorPortFields } from "./IndicatorPortFields";
 import { IndicatorStatusFields } from "./IndicatorStatusFields";
 

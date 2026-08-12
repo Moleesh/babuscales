@@ -1,4 +1,6 @@
-import styles from "./SystemPane.module.css";
+import { useTranslation } from "@i18n/useTranslation";
+
+import styles from "./_styles/SystemPane.module.css";
 
 export interface BackupActionsRowProps {
     busy: boolean;
@@ -10,13 +12,15 @@ export interface BackupActionsRowProps {
 // Split out of BackupRestoreCard (over the line budget — docs/CodingStandards.md)
 // — the "Save a backup" button + "Restore from a backup…" file picker row,
 // unchanged from the inline version it replaces.
-export const BackupActionsRow = ({ busy, unlocked, onExport, onSelectFile }: BackupActionsRowProps) => (
+export const BackupActionsRow = ({ busy, unlocked, onExport, onSelectFile }: BackupActionsRowProps) => {
+    const { t } = useTranslation();
+    return (
     <div className={styles.statusRow}>
         <button type="button" className={styles.mini} disabled={busy} onClick={onExport}>
-            {busy ? "Working…" : "Save a backup"}
+            {busy ? t("settings.backup.working") : t("settings.backup.saveBackup")}
         </button>
         <label className={`${styles.mini} ${!unlocked || busy ? styles.miniLabelDisabled : ""}`}>
-            Restore from a backup…
+            {t("settings.backup.restore")}
             <input
                 type="file"
                 accept=".bak,.db"
@@ -30,4 +34,5 @@ export const BackupActionsRow = ({ busy, unlocked, onExport, onSelectFile }: Bac
             />
         </label>
     </div>
-);
+    );
+};

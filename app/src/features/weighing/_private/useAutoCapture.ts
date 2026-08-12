@@ -34,7 +34,15 @@ export const useAutoCapture = ({ reading, ticket, settings, licenseGated }: UseA
         if (!armed || !settings.Rules.AutoCapture) return;
         const timer = setTimeout(() => ticket.capture(reading.WeightKg), 350);
         return () => clearTimeout(timer);
-    }, [armed, settings.Rules.AutoCapture, reading.WeightKg, ticket]);
+        // `ticket.capture` (not `ticket`) deliberately — `ticket` is a fresh
+        // object every render (assembleTicket in useWeighingTicket has no
+        // useMemo), so depending on it reset this timer on every keystroke
+        // in an unrelated field (e.g. Challan No), and a fast typist could
+        // prevent Rules.AutoCapture from ever firing. ticket.capture is
+        // itself a stable useCallback, only changing when captures/kind/
+        // isLocked/multiGross/operatorName actually change.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [armed, settings.Rules.AutoCapture, reading.WeightKg, ticket.capture]);
 
     return armed;
 };

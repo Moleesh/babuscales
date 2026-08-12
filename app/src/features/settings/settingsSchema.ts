@@ -188,6 +188,40 @@ const smtpSchema = z.object({
 });
 export type SmtpConfig = z.infer<typeof smtpSchema>;
 
+// Outbox-worker task — real (if minimal) delivery config for the Webhook,
+// Tally and Board Integrations rows, same "empty = not configured yet"
+// convention as `GsmPort`/`IndicatorPort` above, and the same "non-secret
+// config here, any real secret in the OS credential store" split as
+// `smtpSchema`. Unlike SMTP there's no password to keep out of this schema:
+// an HMAC signing secret is sent as a header value on every request, not
+// used to authenticate a login, so it stays alongside the endpoint rather
+// than in Windows Credential Manager.
+const webhookSchema = z.object({
+    /** Full URL a ticket's payload is POSTed to; empty = not configured. */
+    Endpoint: z.string(),
+    /** HMAC-SHA256 signing secret, sent as an X-BabuScales-Signature header; empty = send unsigned. */
+    Secret: z.string(),
+});
+export type WebhookConfig = z.infer<typeof webhookSchema>;
+
+// A local directory, not a live connection — "Format · folder" per
+// INTEGRATION_FIXTURES' own description of this row. CSV-to-a-folder is the
+// whole scope (see net::tally's own doc comment): no real Tally XML/
+// proprietary accounting format is attempted.
+const tallySchema = z.object({
+    /** A local directory path; empty = not configured. */
+    Folder: z.string(),
+});
+export type TallyConfig = z.infer<typeof tallySchema>;
+
+// The outdoor display board's address — a raw TCP text-line protocol (see
+// net::board's own doc comment), so there's nothing else to configure here.
+const boardSchema = z.object({
+    Host: z.string(),
+    Port: z.number().int().min(1).max(65535),
+});
+export type BoardConfig = z.infer<typeof boardSchema>;
+
 // PLAN §17's setup wizard, scoped down (app/README.md known gap) to just
 // the fields a real connection needs — see settings/_private/ConnectionsPane.tsx.
 const connectionsSchema = z.object({
@@ -229,6 +263,9 @@ export const settingsBodySchema = z.object({
     Integrations: integrationsSchema,
     RemoteAccess: remoteAccessSchema,
     Smtp: smtpSchema,
+    Webhook: webhookSchema,
+    Tally: tallySchema,
+    Board: boardSchema,
     DailySummary: dailySummarySchema,
     /** "Operator on duty" (mock's `#opChip`/Appearance pane `#setOp`) — a free-text label, not an account; deliberately not admin-gated. */
     OperatorName: z.string(),
@@ -300,6 +337,23 @@ export const DEFAULT_SMTP: SmtpConfig = {
     Host: "",
     Port: 587,
     Username: "",
+};
+
+/** Empty — same "not configured yet" shape as `DEFAULT_SMTP`; unsigned until a secret is set. */
+export const DEFAULT_WEBHOOK: WebhookConfig = {
+    Endpoint: "",
+    Secret: "",
+};
+
+/** Empty — same "not configured yet" shape as `DEFAULT_CONNECTIONS.IndicatorPort`. */
+export const DEFAULT_TALLY: TallyConfig = {
+    Folder: "",
+};
+
+/** Empty host — same "not configured yet" shape as the other new channels above; 23 is a placeholder TCP port with no special meaning, mirroring `DEFAULT_SMTP.Port`'s own "a sane default, not a validated one" note. */
+export const DEFAULT_BOARD: BoardConfig = {
+    Host: "",
+    Port: 23,
 };
 
 /** Off, unset recipient, never sent — same "not configured yet" shape as `DEFAULT_SMTP`, which this reuses for the relay itself. */

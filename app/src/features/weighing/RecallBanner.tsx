@@ -1,4 +1,6 @@
-import styles from "./RecallBanner.module.css";
+import { useTranslation } from "@i18n/useTranslation";
+
+import styles from "./_styles/RecallBanner.module.css";
 
 export interface RecallOffer {
     key: string;
@@ -14,11 +16,12 @@ export interface RecallBannerProps {
 // PLAN §9.2 — "Recall is not silent prefill... each item a separate choice
 // the operator accepts or ignores." Nothing here applies itself.
 export const RecallBanner = ({ offers }: RecallBannerProps) => {
+    const { t } = useTranslation();
     if (offers.length === 0) return null;
 
     return (
         <div className={styles.banner}>
-            <span className={styles.title}>The database already knows this vehicle</span>
+            <span className={styles.title}>{t("weigh.recallTitle")}</span>
             <div className={styles.offers}>
                 {offers.map((offer) => (
                     <button

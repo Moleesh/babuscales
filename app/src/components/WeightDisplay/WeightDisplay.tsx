@@ -1,7 +1,7 @@
 import { formatWeightKg } from "@constants/numberFormat";
 
 import { useClock } from "./_private/useClock";
-import styles from "./WeightDisplay.module.css";
+import styles from "./_styles/WeightDisplay.module.css";
 
 export interface WeightDisplayLabels {
     indicator: string;

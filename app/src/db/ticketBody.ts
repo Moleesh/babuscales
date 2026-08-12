@@ -43,6 +43,8 @@ export interface TicketBody extends JsonRecord {
     Captures: Capture[];
     /** PLAN §7.4 — "printing is not a status either... a ticket carries a print count." */
     PrintCount?: number;
+    /** Values for any Field in the active Schema whose FieldId isn't one of the 5 fixed ticket fields above — PLAN §8's schema-driven custom fields. Keyed by FieldId. Absent/undefined is exactly equivalent to "no custom fields on this ticket" — fully backward compatible with every ticket saved before this existed. */
+    CustomFields?: Record<string, string | number | boolean | null>;
 }
 
 const ticketBodyShape = z.object({
@@ -54,6 +56,7 @@ const ticketBodyShape = z.object({
     ChallanNo: z.string().optional(),
     Captures: z.array(captureSchema),
     PrintCount: z.number().int().nonnegative().optional(),
+    CustomFields: z.record(z.string(), z.union([z.string(), z.number(), z.boolean(), z.null()])).optional(),
 });
 
 export const emptyTicketBody = (): TicketBody => ({ BodyVersion: 1, Captures: [] });

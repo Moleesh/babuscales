@@ -2,55 +2,40 @@ import { useEffect, useMemo, useState } from "react";
 
 import { SegmentedControl } from "@components/SegmentedControl";
 import type { MasterKind } from "@db/types";
-import { useMasterCache } from "@db/useMasterCache";
-import { resolveLocalized } from "@i18n/types";
 import { useTranslation } from "@i18n/useTranslation";
 
 import { buildMasterColumns } from "./_private/masterColumns";
-import { emptyForm } from "./_private/masterFormState";
 import { MastersFormCard } from "./_private/MastersFormCard";
 import { MastersListCard } from "./_private/MastersListCard";
-import { useMasterFormActions } from "./_private/useMasterFormActions";
-import { buildKindOptions, MASTER_KIND_META } from "./masterKindMeta";
-import styles from "./MastersScreen.module.css";
+import { useMastersScreenState } from "./_private/useMastersScreenState";
+import styles from "./_styles/MastersScreen.module.css";
+import { buildKindOptions } from "./masterKindMeta";
 
 // PLAN §9.1 — one screen for everything saved: Parties, Materials,
 // Vehicles, Vehicle Types, Transporters, Places, Operators, Stored Tares.
-// FTS5 search, row virtualisation, keyset pagination, merge-duplicates and
-// bulk import/export are the real §9.1 spec at 100,000-row scale — not
-// built yet, tracked as a known gap (app/README.md); client-side filtering
-// over a per-kind cache (useMasterCache) covers demo/site-sized data today.
+// FTS5 search and row virtualisation are still not built (app/README.md
+// known gap); keyset pagination for the visible list is (useMasterListPage,
+// "Load more"). Record selection/editing and every SearchableDropdown
+// elsewhere still go through useMasterCache's "load once, filter every
+// keystroke locally" cache, untouched — see useMasterCache.ts.
 // Split into masterColumns/masterFormBody/masterFormState (data shaping),
-// MastersListCard/MastersFormCard (the two Card blocks) and
+// MastersListCard/MastersFormCard (the two Card blocks),
+// useMastersScreenState (data wiring) and
 // StoredTareFormFields/MasterFormFields/MasterFormActions/
 // useMasterFormActions (form JSX + handlers) — see _private/ for each.
 export const MastersScreen = () => {
-    const { lang } = useTranslation();
+    const { lang, t } = useTranslation();
     const [activeKind, setActiveKind] = useState<MasterKind>("Party");
-    const { rows, loading, search, save, reload } = useMasterCache(activeKind);
     const [query, setQuery] = useState("");
-    const [selectedId, setSelectedId] = useState<string | null>(null);
-    const [form, setForm] = useState(emptyForm());
-    const selected = selectedId ? (rows.find((row) => row.MasterId === selectedId) ?? null) : null;
-    const { saving, selectRow, startNew, handleSave, toggleActive } = useMasterFormActions({
-        activeKind,
-        selected,
-        form,
-        setForm,
-        setSelectedId,
-        save,
-    });
+    const { totalCount, reload, list, form } = useMastersScreenState(activeKind, query);
 
     useEffect(() => {
         setQuery("");
-        setSelectedId(null);
-        setForm(emptyForm());
     }, [activeKind]);
 
-    const filtered = useMemo(() => search(query), [search, query]);
-    const meta = MASTER_KIND_META[activeKind];
-    const columns = useMemo(() => buildMasterColumns(activeKind, styles), [activeKind]);
-    const kindOptions = useMemo(() => buildKindOptions(lang), [lang]);
+    const kindLower = activeKind.toLowerCase();
+    const columns = useMemo(() => buildMasterColumns(activeKind, styles, t), [activeKind, t]);
+    const kindOptions = useMemo(() => buildKindOptions(lang, t), [lang, t]);
 
     return (
         <div className={styles.screen}>
@@ -58,32 +43,26 @@ export const MastersScreen = () => {
                 options={kindOptions}
                 value={activeKind}
                 onChange={setActiveKind}
-                ariaLabel="Master kind"
+                ariaLabel={t("masters.kindLabel")}
             />
 
             <MastersListCard
-                title={resolveLocalized(meta.Label, lang)}
-                count={rows.length}
+                title={t(`masters.${kindLower}.label`)}
+                count={totalCount}
                 query={query}
                 onQueryChange={setQuery}
-                searchPlaceholder={resolveLocalized(meta.SearchPlaceholder, lang)}
+                searchPlaceholder={t(`masters.${kindLower}.search`)}
                 columns={columns}
-                rows={filtered}
-                loading={loading}
-                onRowClick={selectRow}
+                t={t}
+                {...list}
             />
 
             <MastersFormCard
                 activeKind={activeKind}
-                selected={selected}
-                addNewLabel={resolveLocalized(meta.AddNewLabel, lang)}
-                form={form}
-                onChange={setForm}
-                saving={saving}
-                onSave={() => void handleSave()}
-                onToggleActive={() => void toggleActive()}
-                onStartNew={startNew}
+                addNewLabel={t(`masters.${kindLower}.addNew`)}
                 onReload={() => reload()}
+                t={t}
+                {...form}
             />
         </div>
     );

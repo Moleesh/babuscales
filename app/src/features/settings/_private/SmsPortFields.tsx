@@ -2,7 +2,7 @@ import { Field, FieldGrid } from "@components/Field";
 
 import { BAUD_RATE_OPTIONS } from "../settingsSchema";
 import type { ConnectionsConfig, SettingsBody } from "../settingsSchema";
-import styles from "./ConnectionsPane.module.css";
+import styles from "./_styles/ConnectionsPane.module.css";
 
 export interface SmsPortFieldsProps {
     settings: SettingsBody;

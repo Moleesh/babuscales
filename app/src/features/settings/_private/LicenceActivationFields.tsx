@@ -1,6 +1,6 @@
 import { Field } from "@components/Field";
 
-import styles from "./SystemPane.module.css";
+import styles from "./_styles/SystemPane.module.css";
 
 export interface LicenceActivationFieldsProps {
     requestCode: string | null;

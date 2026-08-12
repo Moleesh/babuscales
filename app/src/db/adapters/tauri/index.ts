@@ -3,6 +3,7 @@ import { createAuditMethods } from "./audit";
 import { createBackupMethods } from "./backup";
 import { createConfigMethods } from "./configs";
 import { createDocMethods } from "./docs";
+import { createIndexMethods } from "./indexes";
 import { createMasterMethods } from "./masters";
 import { createOutboxMethods } from "./outbox";
 import type { DataPort } from "../../DataPort";
@@ -15,6 +16,7 @@ export const createTauriAdapter = (): DataPort => ({
     ...createDocMethods(),
     ...createMasterMethods(),
     ...createConfigMethods(),
+    ...createIndexMethods(),
     ...createAssetMethods(),
     ...createAuditMethods(),
     ...createOutboxMethods(),

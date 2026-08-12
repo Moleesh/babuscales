@@ -21,6 +21,24 @@ use state::AppState;
 // Returns the Result rather than unwrapping — `unwrap`/`expect` are banned
 // outside main.rs (docs/CodingStandards.md), so the top-level panic point
 // stays in main.rs, the one sanctioned place for it.
+//
+// `app.security.csp` in tauri.conf.json (not this file — Tauri's schema
+// rejects unknown/comment fields there, confirmed by `cargo build` failing
+// on an earlier attempt to inline the note as JSON) is a defense-in-depth
+// layer for every command registered below: with no CSP, any script that
+// ever ran in the webview could reach all of them. The value there —
+// `default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline';
+// img-src 'self' data:; font-src 'self' data:; connect-src 'self';
+// object-src 'none'; base-uri 'self'; form-action 'self'` — only allows the
+// bundled build (`frontendDist`) plus `data:` URIs for images (captured
+// photos and the QR code built as a data URI in
+// `src/engines/print/qr.ts`), since the app never loads an external script,
+// stylesheet, font or image host. `style-src` keeps `unsafe-inline` because
+// Vite's build output and component libraries commonly rely on inline
+// `style` attributes; `script-src` does not get the same allowance. This
+// was not verified against a running dev/prod build in this change — it is
+// a conservative reading of what the app actually loads, and the app
+// should be smoke-tested after this change lands.
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() -> tauri::Result<()> {
     tauri::Builder::default()
@@ -54,6 +72,8 @@ pub fn run() -> tauri::Result<()> {
             commands::configs::get_config,
             commands::configs::list_config,
             commands::configs::save_config,
+            commands::indexes::create_custom_index,
+            commands::indexes::drop_custom_index,
             commands::assets::get_asset_meta,
             commands::assets::get_asset_bytes,
             commands::assets::list_asset_meta,
@@ -82,6 +102,9 @@ pub fn run() -> tauri::Result<()> {
             commands::email::send_ticket_email,
             commands::sms::send_ticket_sms,
             commands::printers::list_printers,
+            commands::webhook::send_webhook,
+            commands::tally::write_tally_export,
+            commands::board::send_board_message,
         ])
         .run(tauri::generate_context!())
 }

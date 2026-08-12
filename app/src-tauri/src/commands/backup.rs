@@ -32,8 +32,13 @@ pub fn import_backup(state: State<'_, AppState>, bytes: Vec<u8>) -> Result<(), A
     *conn = Connection::open_in_memory()?;
     let restore_result = store::restore_database(&state.db_path, &tmp_path);
     let _ = std::fs::remove_file(&tmp_path);
-    restore_result?;
 
-    *conn = store::open(&state.db_path)?;
+    // Reopen `db_path` regardless of whether the restore above succeeded —
+    // if it failed, the file at `db_path` is unchanged, so this just puts
+    // the live connection back the way it was rather than leaving the app
+    // running against the throwaway in-memory database until restart.
+    let reopened = store::open(&state.db_path);
+    restore_result?;
+    *conn = reopened?;
     Ok(())
 }

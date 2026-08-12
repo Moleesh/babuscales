@@ -181,6 +181,13 @@ export interface MasterQuery {
     IsActive?: boolean;
     Search?: string;
     Limit?: number;
+    /**
+     * Keyset cursor for the page after the last row a previous call
+     * returned — composite because `Name` alone isn't unique. Pass the
+     * `Name`/`MasterId` of the last row in the previous page to get the
+     * next `Limit` rows in `name COLLATE NOCASE ASC` order. Omit for page 1.
+     */
+    After?: { Name: string; MasterId: string };
 }
 
 export interface ConfigQuery {

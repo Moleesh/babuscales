@@ -3,7 +3,7 @@ import { Field, FieldGrid } from "@components/Field";
 
 import { PRINTER_FIXTURES } from "../settingsSchema";
 import type { PrinterKind, PrintersConfig } from "../settingsSchema";
-import styles from "./PrintPane.module.css";
+import styles from "./_styles/PrintPane.module.css";
 
 const PRINTER_ROWS: readonly [key: keyof PrintersConfig, kind: PrinterKind, label: string][] = [
     ["A4", "a4", "Default · A4 laser / inkjet"],

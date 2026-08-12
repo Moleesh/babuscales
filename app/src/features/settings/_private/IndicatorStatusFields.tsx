@@ -3,7 +3,7 @@ import { formatWeightKg } from "@constants/numberFormat";
 import type { IndicatorReading } from "@engines/indicator";
 
 import type { ConnectionsConfig, SettingsBody } from "../settingsSchema";
-import styles from "./ConnectionsPane.module.css";
+import styles from "./_styles/ConnectionsPane.module.css";
 
 export interface IndicatorStatusFieldsProps {
     settings: SettingsBody;

@@ -3,9 +3,10 @@ import { StatusPill } from "@components/StatusPill";
 import { formatMoney, formatWeightKg } from "@constants/numberFormat";
 import type { Capture } from "@db/ticketBody";
 import type { DerivedWeights } from "@db/ticketBody";
+import { useTranslation } from "@i18n/useTranslation";
 
 import { CalcFormula } from "./CalcFormula";
-import styles from "../WeighingScreen.module.css";
+import styles from "../_styles/WeighingScreen.module.css";
 
 const formatStamp = (iso: string | undefined): string =>
     iso ? new Date(iso).toLocaleString() : "—";
@@ -55,32 +56,35 @@ export const CalcCard = ({
     value,
     amountDp,
 }: CalcCardProps) => {
+    const { t } = useTranslation();
     // Task #46 — every Gross capture, in the order they were taken; length 1
     // covers today's single-gross ticket unchanged.
     const grossCaptures = captures.filter((c) => c.Type === "Gross");
     return (
-        <Card title={<span className="lbl">Captured &amp; calculated</span>}>
+        <Card title={<span className="lbl">{t("weigh.capturedAndCalculated")}</span>}>
             <div className={styles.calc}>
                 <CalcBox
-                    label="Tare"
+                    label={t("tare")}
                     value={weights.tareKg !== null ? formatWeightKg(weights.tareKg) : "—"}
                     stamp={formatStamp(captures.find((c) => c.Type === "Tare")?.At)}
                 />
                 <CalcBox
-                    label="Gross"
+                    label={t("gross")}
                     value={weights.grossKg !== null ? formatWeightKg(weights.grossKg) : "—"}
                     stamp={
                         formatStamp(grossCaptures[grossCaptures.length - 1]?.At) +
-                        (grossCaptures.length > 1 ? ` · ${grossCaptures.length} loads` : "")
+                        (grossCaptures.length > 1
+                            ? ` · ${grossCaptures.length} ${t("weigh.loadsSuffix")}`
+                            : "")
                     }
                 />
                 <CalcBox
-                    label="Net"
+                    label={t("net")}
                     value={weights.netKg !== null ? formatWeightKg(weights.netKg) : "—"}
                     lead={weights.netKg !== null}
                 />
                 <CalcBox
-                    label="Charge"
+                    label={t("charge")}
                     value={charge === null ? "—" : formatMoney(charge, amountDp)}
                     pending={charge === null}
                 />

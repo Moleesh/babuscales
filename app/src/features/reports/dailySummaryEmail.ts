@@ -27,6 +27,27 @@ export const nowLocalHm = (): string => {
     return `${pad2(now.getHours())}:${pad2(now.getMinutes())}`;
 };
 
+/**
+ * True once a whole scheduled day has been skipped outright — not just
+ * "today's `Time` hasn't come up yet." PLAN §21's "an OS-level scheduler for
+ * the daily summary" gap: there's no background service to wake a closed
+ * app at `DailySummary.Time`, so a site whose operating hours never
+ * straddle that time (open 8–18, `Time` "20:00") would otherwise never send
+ * a single summary — `App.tsx`'s `checkDue` waits on `nowLocalHm() >=
+ * cfg.Time`, which never becomes true while the app is closed at 20:00
+ * every day. Once the gap is this wide, `checkDue` sends on the very next
+ * launch regardless of the clock — a late summary beats a silently
+ * skipped one. A real fix (Windows Task Scheduler launching a headless
+ * send, or a background service) stays open; this only shortens "never" to
+ * "at most a couple of days late."
+ */
+export const isMoreThanOneDayLate = (lastSentDate: string | null, today: string): boolean => {
+    if (!lastSentDate) return false;
+    const gapMs = Date.parse(today) - Date.parse(lastSentDate);
+    const gapDays = gapMs / (24 * 60 * 60 * 1000);
+    return gapDays > 1;
+};
+
 export interface DailySummaryEmail {
     subject: string;
     body: string;

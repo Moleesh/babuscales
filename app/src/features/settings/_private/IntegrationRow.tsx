@@ -1,5 +1,5 @@
-import styles from "./ConnectionsPane.module.css";
 import type { IntegrationFixture } from "../settingsSchema";
+import styles from "./_styles/ConnectionsPane.module.css";
 
 interface IntegrationRowProps {
     fixture: IntegrationFixture;

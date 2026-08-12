@@ -53,7 +53,23 @@ pub fn list_asset_meta(conn: &Connection, owner_id: &str) -> Result<Vec<AssetMet
     Ok(rows)
 }
 
+/// Real image types the capture/upload path actually produces. `mime_type`
+/// on `AssetDraft` is client-supplied and otherwise unchecked, and
+/// `net::mod::asset_response` serves stored bytes back with this exact
+/// `Content-Type` over the public verification server — an unvalidated
+/// `text/html` (or `image/svg+xml`, which can carry `<script>`) would let a
+/// caller stash a script payload as an "asset" and have it served to anyone
+/// who opens a ticket's QR link. Widen this list only for a type this app
+/// genuinely writes.
+const ALLOWED_MIME_TYPES: &[&str] = &["image/jpeg", "image/png", "image/webp"];
+
 pub fn put_asset(conn: &Connection, draft: &AssetDraft) -> Result<AssetMetaRow, AppError> {
+    if !ALLOWED_MIME_TYPES.contains(&draft.mime_type.as_str()) {
+        return Err(AppError::Message(format!(
+            "unsupported asset type {:?} — expected one of {ALLOWED_MIME_TYPES:?}",
+            draft.mime_type
+        )));
+    }
     let asset_id = draft.asset_id.clone().unwrap_or_else(new_id);
     let created_at = now_iso();
     let sha256 = sha256_hex(&draft.bytes);

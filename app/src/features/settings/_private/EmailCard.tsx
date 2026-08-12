@@ -1,7 +1,8 @@
 import { Card } from "@components/Card";
+import { useTranslation } from "@i18n/useTranslation";
 
 import { useSettings } from "../useSettings";
-import styles from "./ConnectionsPane.module.css";
+import styles from "./_styles/ConnectionsPane.module.css";
 import { EmailSmtpFields } from "./EmailSmtpFields";
 import { TestSendField } from "./TestSendField";
 import { useEmailDeliveryActions } from "./useEmailDeliveryActions";
@@ -15,6 +16,7 @@ import { useEmailDeliveryActions } from "./useEmailDeliveryActions";
 // actually prove a relay works short of printing a real ticket.
 export const EmailCard = () => {
     const { settings, unlocked, save } = useSettings();
+    const { t } = useTranslation();
     const {
         passwordInput,
         setPasswordInput,
@@ -30,7 +32,7 @@ export const EmailCard = () => {
 
     return (
         <Card
-            title={<span className="lbl">E-mail delivery</span>}
+            title={<span className="lbl">{t("settings.email.title")}</span>}
             headerRight={flash ? <span className={styles.applied}>{flash}</span> : null}
         >
             <div className={styles.body}>
@@ -47,23 +49,17 @@ export const EmailCard = () => {
                 />
                 <TestSendField
                     id="smtpTestTo"
-                    label="Send a test e-mail to"
+                    label={t("settings.email.testSendLabel")}
                     type="email"
                     placeholder="you@example.com"
                     value={testTo}
                     setValue={setTestTo}
                     unlocked={unlocked}
                     sending={sending}
-                    buttonLabel="Send test"
+                    buttonLabel={t("settings.email.sendTest")}
                     onSend={() => void sendTest()}
                 />
-                <p className={styles.hint}>
-                    Read at print time when Integrations → E-mail is on: a ticket&apos;s party
-                    needs an E-mail saved in Masters (Settings → Masters → Parties) to receive a
-                    copy. Most providers want port 587 with STARTTLS and an app-specific password
-                    rather than your normal login password — check your provider&apos;s SMTP
-                    documentation if the test above fails.
-                </p>
+                <p className={styles.hint}>{t("settings.email.hint")}</p>
             </div>
         </Card>
     );

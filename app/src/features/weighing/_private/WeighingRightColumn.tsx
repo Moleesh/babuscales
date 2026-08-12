@@ -2,6 +2,7 @@ import { Card } from "@components/Card";
 import type { CaptureType } from "@db/ticketBody";
 import type { IndicatorReading } from "@engines/indicator";
 import { computeCameraBurnIn, CAMERA_SLOTS, CameraGrid } from "@features/cameras";
+import { useTranslation } from "@i18n/useTranslation";
 
 import type { UseWeighingTicket } from "../useWeighingTicket";
 import { ActionsCard } from "./ActionsCard";
@@ -14,6 +15,8 @@ export interface WeighingRightColumnProps {
     multiGross: boolean;
     armed: boolean;
     gated: boolean;
+    /** A custom Field's Block-severity Validate rule is currently failing — computed once in WeighingScreen (it has both ticketSchema and ticket in scope) and threaded down to gate Save. */
+    hasBlockingCustomFieldError: boolean;
     onSave: () => void;
     onOpenPrintModal: () => void;
 }
@@ -29,9 +32,11 @@ export const WeighingRightColumn = ({
     multiGross,
     armed,
     gated,
+    hasBlockingCustomFieldError,
     onSave,
     onOpenPrintModal,
 }: WeighingRightColumnProps) => {
+    const { t } = useTranslation();
     const cameraBurnIn = computeCameraBurnIn(ticket.docSeq, ticket.captures);
     const configuredCameraCount = CAMERA_SLOTS.filter((slot) => slot.configured).length;
 
@@ -44,6 +49,7 @@ export const WeighingRightColumn = ({
                 multiGross={multiGross}
                 armed={armed}
                 gated={gated}
+                hasBlockingCustomFieldError={hasBlockingCustomFieldError}
                 captureLabel={captureLabel(ticket, multiGross)}
                 captureHint={captureHint(ticket, armed)}
                 onSave={onSave}
@@ -51,10 +57,11 @@ export const WeighingRightColumn = ({
             />
 
             <Card
-                title={<span className="lbl">Cameras</span>}
+                title={<span className="lbl">{t("weigh.cameras")}</span>}
                 headerRight={
                     <span className="chip">
-                        {configuredCameraCount} of {CAMERA_SLOTS.length} configured
+                        {configuredCameraCount} {t("weigh.of")} {CAMERA_SLOTS.length}{" "}
+                        {t("weigh.configured")}
                     </span>
                 }
             >

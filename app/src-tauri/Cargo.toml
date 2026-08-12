@@ -19,7 +19,7 @@ tauri-build = { version = "2", features = [] }
 tauri = { version = "2", features = [] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-thiserror = "1"
+thiserror = "2"
 # bundled-full: statically links SQLite, no system install required, and
 # turns on FTS5 — PLAN §6.1's `doc_fts`/`master_fts` virtual tables need it.
 rusqlite = { version = "0.32", features = ["bundled-full"] }
@@ -59,6 +59,22 @@ lettre = { version = "0.11", default-features = false, features = [
     "rustls-tls",
     "hostname",
 ] }
+# Outbox worker task — real delivery for the Webhook/Tally/Board integration
+# channels (net/webhook.rs, net/tally.rs, net/board.rs). Same "smallest
+# blocking client" call as lettre above: one POST per outbox row from a
+# synchronous command, no async/tokio runtime anywhere else in this crate to
+# plug into. default-features off drops ureq's own gzip/cookie handling,
+# neither of which this one-shot POST needs; "tls" keeps rustls (no system
+# OpenSSL, same reasoning as lettre's "rustls-tls"), "json" is pulled in for
+# its `serde_json` re-export convenience even though the payload here is
+# already a pre-built JSON string.
+ureq = { version = "2", default-features = false, features = ["json", "tls"] }
+# HMAC-SHA256 signing for outgoing webhooks (net/webhook.rs) — sha2 (above)
+# is already a dependency for the license machine-id hash; hmac is the thin
+# wrapper crate that turns any `Digest` impl into a keyed MAC.
+hmac = "0.12"
+# Hex-encodes the HMAC digest for the X-BabuScales-Signature header.
+hex = "0.4"
 # `keyring`'s backend is genuinely platform-specific (see the two
 # `target.*.dependencies` sections below) — everything else above this line
 # is a pure-Rust or self-contained-C dependency that's the same crate/feature
@@ -74,7 +90,7 @@ machine-uid = "0.6"
 # Task #52's real printer enumeration (devices/printers.rs) — Win32-only by
 # construction (EnumPrintersW). Task #49 gated the module itself to match;
 # see devices/printers.rs's own doc comment for the Android side.
-windows = { version = "0.58", features = ["Win32_Graphics_Printing", "Win32_Foundation"] }
+windows = { version = "0.62", features = ["Win32_Graphics_Printing", "Win32_Foundation"] }
 # Windows Credential Manager backend.
 keyring = { version = "3", features = ["windows-native"] }
 

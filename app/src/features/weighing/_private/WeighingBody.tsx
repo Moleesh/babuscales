@@ -1,8 +1,8 @@
-import styles from "../WeighingScreen.module.css";
 import { WeighingLeftColumn } from "./WeighingLeftColumn";
 import type { WeighingLeftColumnProps } from "./WeighingLeftColumn";
 import { WeighingRightColumn } from "./WeighingRightColumn";
 import type { WeighingRightColumnProps } from "./WeighingRightColumn";
+import styles from "../_styles/WeighingScreen.module.css";
 
 export interface WeighingBodyProps {
     left: WeighingLeftColumnProps;

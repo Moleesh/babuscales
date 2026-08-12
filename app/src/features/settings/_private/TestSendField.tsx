@@ -1,6 +1,6 @@
 import { Field } from "@components/Field";
 
-import styles from "./ConnectionsPane.module.css";
+import styles from "./_styles/ConnectionsPane.module.css";
 
 export interface TestSendFieldProps {
     id: string;

@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 
-import styles from "./AppModal.module.css";
+import { useModalFocus } from "./_private/useModalFocus";
+import styles from "./_styles/AppModal.module.css";
 
 export interface AppModalProps {
     open: boolean;
@@ -16,7 +17,8 @@ export interface AppModalProps {
 // (PLAN §10) — ported from the mock's ".modal"/".sheet". `data-enter-scope`
 // makes it the active Enter-as-Tab scope while open (PLAN §13), same
 // mechanism as `ContextualHelp`'s drawer. Backdrop click and Escape both
-// close it, matching every one of the mock's own modals.
+// close it, matching every one of the mock's own modals. Focus management
+// (move in on open, restore on close, trap Tab) lives in `useModalFocus`.
 export const AppModal = ({
     open,
     title,
@@ -25,6 +27,8 @@ export const AppModal = ({
     size = "default",
     children,
 }: AppModalProps) => {
+    const { sheetRef, trapTab } = useModalFocus(open);
+
     if (!open) return null;
 
     return (
@@ -35,12 +39,18 @@ export const AppModal = ({
             }}
         >
             <div
+                ref={sheetRef}
                 className={`${styles.sheet} ${size === "small" ? styles.small : ""}`}
                 role="dialog"
                 aria-modal="true"
+                tabIndex={-1}
                 data-enter-scope
                 onKeyDown={(event) => {
-                    if (event.key === "Escape") onClose();
+                    if (event.key === "Escape") {
+                        onClose();
+                        return;
+                    }
+                    trapTab(event);
                 }}
             >
                 <header className={styles.header}>

@@ -14,6 +14,8 @@ export interface SlipInput {
     netKg: number | null;
     tareAt: string | null;
     grossAt: string | null;
+    /** Every Gross capture's own weight + timestamp, in capture order — see `SlipData.GrossLoads`. */
+    grossLoads: { kg: number; at: string | null }[];
     operator: string;
     /** The ticket's `PrintCount` *before* this print — 0 means this is the first (ORIGINAL). */
     printCount: number;
@@ -44,6 +46,10 @@ export const buildSlipData = (input: SlipInput): SlipData => ({
     NetKg: weightOrDash(input.netKg),
     TareAt: stampOrDash(input.tareAt),
     GrossAt: stampOrDash(input.grossAt),
+    GrossLoads: input.grossLoads.map((load) => ({
+        Kg: weightOrDash(load.kg),
+        At: stampOrDash(load.at),
+    })),
     Charge: input.charge === null ? "—" : formatMoney(input.charge, input.amountDp),
     Operator: input.operator,
     Copy: input.printCount >= 1 ? `DUPLICATE COPY ${input.printCount + 1}` : "",

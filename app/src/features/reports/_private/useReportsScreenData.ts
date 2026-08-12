@@ -5,7 +5,7 @@ import type { DocRow } from "@db/types";
 
 import { buildSummaryColumns, buildTicketColumns } from "./reportColumns";
 import { buildReportsScreenSlipData } from "./reportSlipData";
-import { buildTicketRows, filterTicketRows, summarizeTicketRows } from "../reportRows";
+import { buildTicketRows, filterRowsByDateRange, filterTicketRows, summarizeTicketRows } from "../reportRows";
 import type { GroupKey, ReportView, SummaryRow, TicketRow, TicketRowFilter } from "../reportRows";
 
 export interface UseReportsScreenDataArgs {
@@ -13,6 +13,8 @@ export interface UseReportsScreenDataArgs {
     view: ReportView;
     query: string;
     filter: TicketRowFilter;
+    dateFrom: string;
+    dateTo: string;
     groupBy: GroupKey;
     onOpenTicket: (doc: DocRow) => void;
     amountDp: 0 | 2;
@@ -37,18 +39,31 @@ export const useReportsScreenData = ({
     view,
     query,
     filter,
+    dateFrom,
+    dateTo,
     groupBy,
     onOpenTicket,
     amountDp,
     styles,
 }: UseReportsScreenDataArgs): UseReportsScreenData => {
     const rows = useMemo(() => buildTicketRows(docs), [docs]);
+    // PLAN §7.5 — the open-ticket strip is a global "what's waiting right
+    // now" indicator, not scoped to whatever date range Reports happens to
+    // have selected, so this reads the full unfiltered `rows`, not
+    // `dateFilteredRows` below.
     const waitingCount = useMemo(() => rows.filter((row) => row.isOpen).length, [rows]);
-    const visibleRows = useMemo(() => filterTicketRows(rows, query, filter), [rows, query, filter]);
-    const summaryRows = useMemo(() => summarizeTicketRows(rows, groupBy), [rows, groupBy]);
+    const dateFilteredRows = useMemo(
+        () => filterRowsByDateRange(rows, dateFrom, dateTo),
+        [rows, dateFrom, dateTo],
+    );
+    const visibleRows = useMemo(
+        () => filterTicketRows(dateFilteredRows, query, filter),
+        [dateFilteredRows, query, filter],
+    );
+    const summaryRows = useMemo(() => summarizeTicketRows(dateFilteredRows, groupBy), [dateFilteredRows, groupBy]);
     const reportSlipData = useMemo(
-        () => buildReportsScreenSlipData({ view, summaryRows, rows, visibleRows, amountDp }),
-        [view, summaryRows, rows, visibleRows, amountDp],
+        () => buildReportsScreenSlipData({ view, summaryRows, rows: dateFilteredRows, visibleRows, amountDp }),
+        [view, summaryRows, dateFilteredRows, visibleRows, amountDp],
     );
     const ticketColumns = useMemo(
         () => buildTicketColumns({ onOpenTicket, amountDp, styles }),

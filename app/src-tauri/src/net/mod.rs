@@ -19,9 +19,12 @@
 //! the shared "one background thread, a stop flag it polls" shape this
 //! copies.
 
+pub mod board;
 pub mod email;
 pub mod sms;
+pub mod tally;
 pub mod tunnel;
+pub mod webhook;
 
 use std::net::UdpSocket;
 use std::sync::atomic::{AtomicBool, Ordering};

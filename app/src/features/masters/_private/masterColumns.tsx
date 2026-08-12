@@ -4,17 +4,20 @@ import { getMaterialRate } from "@db/materialBody";
 import { isStoredTareBody, isStoredTareStale, storedTareAgeDays } from "@db/storedTare";
 import type { MasterKind, MasterRow } from "@db/types";
 
-const storedTareColumns = (styles: CSSModuleClasses): DataTableColumn<MasterRow>[] => [
-    { key: "name", header: "Vehicle", render: (row) => row.Name },
+/** Same shape as useTranslation()'s `t` — threaded in as a param since this is a plain helper, not a component. */
+type Translate = (key: string) => string;
+
+const storedTareColumns = (styles: CSSModuleClasses, t: Translate): DataTableColumn<MasterRow>[] => [
+    { key: "name", header: t("masters.col.vehicle"), render: (row) => row.Name },
     {
         key: "weight",
-        header: "Weight",
+        header: t("masters.col.weight"),
         numeric: true,
         render: (row) => (isStoredTareBody(row.Body) ? `${row.Body.WeightKg} kg` : "—"),
     },
     {
         key: "age",
-        header: "Age",
+        header: t("masters.col.age"),
         numeric: true,
         render: (row) => {
             if (!isStoredTareBody(row.Body)) return "—";
@@ -29,17 +32,21 @@ const storedTareColumns = (styles: CSSModuleClasses): DataTableColumn<MasterRow>
     },
     {
         key: "party",
-        header: "Party",
+        header: t("masters.col.party"),
         render: (row) => (isStoredTareBody(row.Body) ? (row.Body.PartyName ?? "—") : "—"),
     },
-    { key: "active", header: "Status", render: (row) => (row.IsActive ? "Active" : "Inactive") },
+    {
+        key: "active",
+        header: t("masters.col.status"),
+        render: (row) => (row.IsActive ? t("masters.status.active") : t("masters.status.inactive")),
+    },
 ];
 
-const kindSpecificColumn = (activeKind: MasterKind): DataTableColumn<MasterRow> =>
+const kindSpecificColumn = (activeKind: MasterKind, t: Translate): DataTableColumn<MasterRow> =>
     activeKind === "Material"
         ? {
               key: "rate",
-              header: "Rate / t",
+              header: t("masters.col.rate"),
               numeric: true,
               render: (row) => {
                   const rate = getMaterialRate(row.Body);
@@ -49,12 +56,12 @@ const kindSpecificColumn = (activeKind: MasterKind): DataTableColumn<MasterRow> 
         : activeKind === "Party"
           ? {
                 key: "email",
-                header: "E-mail",
+                header: t("masters.col.email"),
                 render: (row) => (typeof row.Body.Email === "string" ? row.Body.Email : "—"),
             }
           : {
                 key: "notes",
-                header: "Notes",
+                header: t("masters.col.notes"),
                 render: (row) => (typeof row.Body.Notes === "string" ? row.Body.Notes : "—"),
             };
 
@@ -64,21 +71,26 @@ const kindSpecificColumn = (activeKind: MasterKind): DataTableColumn<MasterRow> 
 export const buildMasterColumns = (
     activeKind: MasterKind,
     styles: CSSModuleClasses,
+    t: Translate,
 ): DataTableColumn<MasterRow>[] => {
-    if (activeKind === "StoredTare") return storedTareColumns(styles);
+    if (activeKind === "StoredTare") return storedTareColumns(styles, t);
     return [
-        { key: "name", header: "Name", render: (row) => row.Name },
-        kindSpecificColumn(activeKind),
+        { key: "name", header: t("masters.col.name"), render: (row) => row.Name },
+        kindSpecificColumn(activeKind, t),
         ...(activeKind === "Party"
             ? [
                   {
                       key: "phone",
-                      header: "Phone",
+                      header: t("masters.col.phone"),
                       render: (row: MasterRow) => (typeof row.Body.Phone === "string" ? row.Body.Phone : "—"),
                   } satisfies DataTableColumn<MasterRow>,
               ]
             : []),
-        { key: "active", header: "Status", render: (row) => (row.IsActive ? "Active" : "Inactive") },
-        { key: "updated", header: "Updated", render: (row) => new Date(row.UpdatedAt).toLocaleString() },
+        {
+            key: "active",
+            header: t("masters.col.status"),
+            render: (row) => (row.IsActive ? t("masters.status.active") : t("masters.status.inactive")),
+        },
+        { key: "updated", header: t("masters.col.updated"), render: (row) => new Date(row.UpdatedAt).toLocaleString() },
     ];
 };

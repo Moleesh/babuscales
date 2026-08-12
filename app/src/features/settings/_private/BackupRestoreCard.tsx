@@ -1,10 +1,11 @@
 import { Card } from "@components/Card";
 import { useDataPort } from "@db/useDataPort";
+import { useTranslation } from "@i18n/useTranslation";
 
 import { useSettings } from "../useSettings";
+import styles from "./_styles/SystemPane.module.css";
 import { BackupActionsRow } from "./BackupActionsRow";
 import { RestoreConfirmRow } from "./RestoreConfirmRow";
-import styles from "./SystemPane.module.css";
 import { useBackupRestoreActions } from "./useBackupRestoreActions";
 
 // PLAN §14 "real data must never exist without a way out of the file it
@@ -24,6 +25,7 @@ import { useBackupRestoreActions } from "./useBackupRestoreActions";
 export const BackupRestoreCard = () => {
     const db = useDataPort();
     const { unlocked } = useSettings();
+    const { t } = useTranslation();
     const {
         message,
         busy,
@@ -36,7 +38,7 @@ export const BackupRestoreCard = () => {
     } = useBackupRestoreActions(db);
 
     return (
-        <Card title={<span className="lbl">Backup &amp; restore</span>}>
+        <Card title={<span className="lbl">{t("settings.backup.cardTitle")}</span>}>
             <div className={styles.body}>
                 <BackupActionsRow
                     busy={busy}
@@ -52,13 +54,7 @@ export const BackupRestoreCard = () => {
                     />
                 )}
                 {message && <p className={message.bad ? styles.bad : styles.applied}>{message.text}</p>}
-                <p className={styles.hint}>
-                    Saving works even when Settings is locked — take a backup any time. Restoring
-                    needs the admin password, since it replaces everything currently saved here.
-                    Keep a copy of the saved file off this machine too — on a USB stick or another
-                    computer — so a backup that only ever lived next to the database it protects
-                    doesn&apos;t go down with it.
-                </p>
+                <p className={styles.hint}>{t("settings.backup.hint")}</p>
             </div>
         </Card>
     );

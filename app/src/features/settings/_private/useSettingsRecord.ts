@@ -5,6 +5,7 @@ import { setTicketNumberFormat } from "@features/weighing";
 
 import { DEFAULT_ADMIN_PASSWORD, hashAdminPassword } from "../adminAuth";
 import {
+    DEFAULT_BOARD,
     DEFAULT_CONNECTIONS,
     DEFAULT_DAILY_SUMMARY,
     DEFAULT_FORMATS,
@@ -17,7 +18,9 @@ import {
     DEFAULT_SKIN,
     DEFAULT_SMTP,
     DEFAULT_STABILITY,
+    DEFAULT_TALLY,
     DEFAULT_TEXT_SCALE,
+    DEFAULT_WEBHOOK,
     SETTINGS_CONFIG_ID,
     settingsBodySchema,
 } from "../settingsSchema";
@@ -38,6 +41,9 @@ const SYNC_DEFAULT_BODY: SettingsBody = {
     Integrations: DEFAULT_INTEGRATIONS,
     RemoteAccess: DEFAULT_REMOTE_ACCESS,
     Smtp: DEFAULT_SMTP,
+    Webhook: DEFAULT_WEBHOOK,
+    Tally: DEFAULT_TALLY,
+    Board: DEFAULT_BOARD,
     DailySummary: DEFAULT_DAILY_SUMMARY,
     OperatorName: DEFAULT_OPERATOR_NAME,
     Skin: DEFAULT_SKIN,

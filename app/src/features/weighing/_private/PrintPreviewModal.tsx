@@ -6,21 +6,10 @@ import { SegmentedControl } from "@components/SegmentedControl";
 import type { SegmentedOption } from "@components/SegmentedControl";
 import type { PaperKind, SlipData } from "@engines/print";
 import { renderMatrixSlip, renderThermalSlip } from "@engines/print";
+import { useTranslation } from "@i18n/useTranslation";
 
-import styles from "./PrintPreviewModal.module.css";
+import styles from "./_styles/PrintPreviewModal.module.css";
 import { SlipA4 } from "./SlipA4";
-
-const PAPER_OPTIONS: SegmentedOption<PaperKind>[] = [
-    { value: "a4", label: "A4" },
-    { value: "th", label: "Thermal · 80mm" },
-    { value: "mx", label: "Dot matrix" },
-];
-
-const PAPER_META: Record<PaperKind, string> = {
-    a4: "A4 · single sheet",
-    th: "80 mm thermal roll",
-    mx: "Continuous dot-matrix",
-};
 
 // The three paper renderers, switched on the live SegmentedControl choice —
 // pulled out of the modal body so that function reads as "the chrome around
@@ -60,7 +49,20 @@ export const PrintPreviewModal = ({
     onSend,
     sending,
 }: PrintPreviewModalProps) => {
+    const { t } = useTranslation();
     const [paper, setPaper] = useState<PaperKind>("a4");
+
+    const PAPER_OPTIONS: SegmentedOption<PaperKind>[] = [
+        { value: "a4", label: t("weigh.paperA4") },
+        { value: "th", label: t("weigh.paperThermal") },
+        { value: "mx", label: t("weigh.paperMatrix") },
+    ];
+
+    const PAPER_META: Record<PaperKind, string> = {
+        a4: t("weigh.paperMetaA4"),
+        th: t("weigh.paperMetaThermal"),
+        mx: t("weigh.paperMetaMatrix"),
+    };
 
     const send = (): void => {
         window.print();
@@ -73,7 +75,7 @@ export const PrintPreviewModal = ({
             open={open}
             title={
                 <>
-                    Print preview
+                    {t("weigh.printPreview")}
                     <span className={`chip ${styles.doc}`}>
                         {data.TicketNo}
                         {data.Copy ? ` · ${data.Copy}` : ""}
@@ -87,15 +89,15 @@ export const PrintPreviewModal = ({
                     options={PAPER_OPTIONS}
                     value={paper}
                     onChange={setPaper}
-                    ariaLabel="Paper size"
+                    ariaLabel={t("weigh.paperSize")}
                 />
                 <PrintSlipPreview paper={paper} data={data} />
                 <div className={styles.footer}>
                     <span className={styles.meta}>{PAPER_META[paper]}</span>
                     <div className={styles.actions}>
-                        <Button onClick={onClose}>Cancel</Button>
+                        <Button onClick={onClose}>{t("weigh.cancel")}</Button>
                         <Button variant="primary" disabled={sending} onClick={send}>
-                            Send to printer
+                            {t("weigh.sendToPrinter")}
                         </Button>
                     </div>
                 </div>

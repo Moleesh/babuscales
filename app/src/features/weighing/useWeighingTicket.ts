@@ -24,6 +24,9 @@ export interface TicketFormFields {
 
 export type RecalledField = "party" | "material" | "transporter";
 
+/** A schema-driven custom field's value (PLAN §8) — keyed by `FieldId`, same value shape as `TicketBody.CustomFields`. */
+export type CustomFieldValue = string | number | boolean | null;
+
 const emptyFields = (): TicketFormFields => ({
     vehicleNo: "",
     party: "",
@@ -39,6 +42,9 @@ export interface UseWeighingTicket {
     setField: (key: keyof TicketFormFields, value: string) => void;
     recalledFields: Set<RecalledField>;
     applyRecalledFields: (values: Partial<Pick<TicketFormFields, RecalledField>>) => void;
+    /** Values for whatever custom Fields the active Schema adds beyond the 5 fixed ones above — keyed by FieldId (PLAN §8). */
+    customFields: Record<string, CustomFieldValue>;
+    setCustomField: (fieldId: string, value: CustomFieldValue) => void;
     captures: Capture[];
     weights: DerivedWeights;
     kind: CaptureType | null;
@@ -71,6 +77,7 @@ interface TicketState {
     docSeq: number | null;
     fields: TicketFormFields;
     recalledFields: Set<RecalledField>;
+    customFields: Record<string, CustomFieldValue>;
     captures: Capture[];
     kind: CaptureType | null;
     isLocked: boolean;
@@ -90,6 +97,7 @@ const buildTicketBody = (
     fields: TicketFormFields,
     captures: Capture[],
     printCount: number,
+    customFields: Record<string, CustomFieldValue>,
 ): TicketBody => ({
     ...emptyTicketBody(),
     VehicleNo: fields.vehicleNo.trim() || undefined,
@@ -99,6 +107,9 @@ const buildTicketBody = (
     ChallanNo: fields.challanNo.trim() || undefined,
     Captures: captures,
     PrintCount: printCount,
+    // Omit the key entirely when there are no custom fields, so a ticket
+    // with none serializes byte-identical to before CustomFields existed.
+    ...(Object.keys(customFields).length > 0 ? { CustomFields: customFields } : {}),
 });
 
 const initialTicketState = (tareFirst: boolean, multiGross: boolean): TicketState => ({
@@ -106,6 +117,7 @@ const initialTicketState = (tareFirst: boolean, multiGross: boolean): TicketStat
     docSeq: null,
     fields: emptyFields(),
     recalledFields: new Set(),
+    customFields: {},
     captures: [],
     kind: defaultCaptureKind([], tareFirst, multiGross),
     isLocked: false,
@@ -116,6 +128,7 @@ const initialTicketState = (tareFirst: boolean, multiGross: boolean): TicketStat
 type TicketAction =
     | { type: "SetField"; key: keyof TicketFormFields; value: string }
     | { type: "ApplyRecalled"; values: Partial<Pick<TicketFormFields, RecalledField>> }
+    | { type: "SetCustomField"; fieldId: string; value: CustomFieldValue }
     | { type: "SetKind"; kind: CaptureType | null }
     | { type: "AddCapture"; capture: Capture }
     | { type: "ResetToNew"; tareFirst: boolean; multiGross: boolean }
@@ -134,6 +147,11 @@ const ticketReducer = (state: TicketState, action: TicketAction): TicketState =>
             for (const key of Object.keys(action.values) as RecalledField[]) recalledFields.add(key);
             return { ...state, fields: { ...state.fields, ...action.values }, recalledFields };
         }
+        case "SetCustomField":
+            return {
+                ...state,
+                customFields: { ...state.customFields, [action.fieldId]: action.value },
+            };
         case "SetKind":
             return { ...state, kind: action.kind };
         case "AddCapture":
@@ -153,6 +171,7 @@ const ticketReducer = (state: TicketState, action: TicketAction): TicketState =>
                 docSeq: action.doc.DocSeq,
                 fields: fieldsFromBody(body),
                 recalledFields: new Set(),
+                customFields: body.CustomFields ?? {},
                 captures: body.Captures,
                 kind: defaultCaptureKind(body.Captures, action.tareFirst, action.multiGross),
                 // Mirrors save()'s own rule: two-or-more captures in means the
@@ -192,6 +211,10 @@ const useTicketFieldActions = (dispatch: Dispatch<TicketAction>) => ({
     applyRecalledFields: useCallback(
         (values: Partial<Pick<TicketFormFields, RecalledField>>) =>
             dispatch({ type: "ApplyRecalled", values }),
+        [dispatch],
+    ),
+    setCustomField: useCallback(
+        (fieldId: string, value: CustomFieldValue) => dispatch({ type: "SetCustomField", fieldId, value }),
         [dispatch],
     ),
     setKind: useCallback(
@@ -254,6 +277,7 @@ interface TicketPersistenceDeps {
     docId: string | null;
     captures: Capture[];
     fields: TicketFormFields;
+    customFields: Record<string, CustomFieldValue>;
     printCount: number;
     isLocked: boolean;
     db: ReturnType<typeof useDataPort>;
@@ -265,6 +289,7 @@ const useTicketPersistenceActions = ({
     docId,
     captures,
     fields,
+    customFields,
     printCount,
     isLocked,
     db,
@@ -278,7 +303,7 @@ const useTicketPersistenceActions = ({
             const row = await db.saveDoc({
                 DocId: docId ?? undefined,
                 DocKind: "Ticket",
-                Body: buildTicketBody(fields, captures, printCount),
+                Body: buildTicketBody(fields, captures, printCount, customFields),
             });
             let seq = row.DocSeq;
             if (seq === null) {
@@ -294,7 +319,7 @@ const useTicketPersistenceActions = ({
         } finally {
             dispatch({ type: "SetSaving", saving: false });
         }
-    }, [captures, db, docId, fields, isLocked, printCount, resetToNew, dispatch]);
+    }, [captures, customFields, db, docId, fields, isLocked, printCount, resetToNew, dispatch]);
 
     const print = useCallback(async () => {
         if (!isLocked || !docId) return;
@@ -305,12 +330,15 @@ const useTicketPersistenceActions = ({
             await db.saveDoc({
                 DocId: docId,
                 DocKind: "Ticket",
-                Body: { ...buildTicketBody(fields, captures, printCount), PrintCount: nextCount },
+                Body: {
+                    ...buildTicketBody(fields, captures, printCount, customFields),
+                    PrintCount: nextCount,
+                },
             });
         } finally {
             dispatch({ type: "SetSaving", saving: false });
         }
-    }, [captures, db, docId, fields, isLocked, printCount, dispatch]);
+    }, [captures, customFields, db, docId, fields, isLocked, printCount, dispatch]);
 
     return { save, print };
 };
@@ -416,6 +444,8 @@ const assembleTicket = ({
     setField: fieldActions.setField,
     recalledFields: state.recalledFields,
     applyRecalledFields: fieldActions.applyRecalledFields,
+    customFields: state.customFields,
+    setCustomField: fieldActions.setCustomField,
     captures: state.captures,
     weights: deriveWeights(state.captures),
     kind: state.kind,
@@ -465,6 +495,7 @@ export const useWeighingTicket = (
         docId: state.docId,
         captures: state.captures,
         fields: state.fields,
+        customFields: state.customFields,
         printCount: state.printCount,
         isLocked: state.isLocked,
         db,

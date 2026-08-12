@@ -13,6 +13,24 @@ const alias = (path: string) => fileURLToPath(new URL(path, import.meta.url));
 export default defineConfig({
     base: process.env.VITE_BASE ?? "/",
     plugins: [react()],
+    css: {
+        // NOTE: deliberately NOT `transformer: "lightningcss"` here — Vite's
+        // `modules.localsConvention` (below) is only honored by the default
+        // postcss pipeline. Under the lightningcss transformer, Vite hands
+        // CSS Modules off to Lightning CSS's own module system instead,
+        // which has no case-convention concept at all: `.cap-bar` would
+        // export as `styles["cap-bar"]`, not `styles.capBar`, silently
+        // breaking every existing `styles.xxx` call site (confirmed by a
+        // failing WeightDisplay test during this migration — verify before
+        // re-enabling if this is revisited).
+        modules: {
+            // CSS class selectors are kebab-case (`.form-actions`) — the
+            // idiomatic CSS spelling. This converts them to a camelCase-only
+            // JS export (`styles.formActions`), so every `styles.xxx` call
+            // site in TSX is unaffected by the kebab-case rename.
+            localsConvention: "camelCaseOnly",
+        },
+    },
     resolve: {
         alias: {
             "@components": alias("./src/components"),
@@ -33,6 +51,10 @@ export default defineConfig({
     build: {
         outDir: "dist",
         emptyOutDir: true,
+        // Lightning CSS still earns its keep here: minification runs after
+        // CSS Modules class names are already resolved to JS, so it can't
+        // touch `localsConvention` — this is the safe half of the tool.
+        cssMinify: "lightningcss",
     },
     test: {
         environment: "jsdom",

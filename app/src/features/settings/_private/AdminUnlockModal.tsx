@@ -3,9 +3,10 @@ import { useState } from "react";
 import { AppModal } from "@components/AppModal";
 import { Button } from "@components/Button";
 import { Field } from "@components/Field";
+import { useTranslation } from "@i18n/useTranslation";
 
 import { useSettings } from "../useSettings";
-import styles from "./AdminUnlockModal.module.css";
+import styles from "./_styles/AdminUnlockModal.module.css";
 
 export interface AdminUnlockModalProps {
     open: boolean;
@@ -18,6 +19,7 @@ export interface AdminUnlockModalProps {
 // that opens it is in the top bar, reachable from every tab.
 export const AdminUnlockModal = ({ open, onClose }: AdminUnlockModalProps) => {
     const { unlock } = useSettings();
+    const { t } = useTranslation();
     const [password, setPassword] = useState("");
     const [error, setError] = useState<string | null>(null);
     const [checking, setChecking] = useState(false);
@@ -42,12 +44,12 @@ export const AdminUnlockModal = ({ open, onClose }: AdminUnlockModalProps) => {
             reset();
             onClose();
         } else {
-            setError("That is not the admin password.");
+            setError(t("settings.adminUnlock.error"));
         }
     };
 
     return (
-        <AppModal open={open} title="Admin unlock" onClose={close} size="small">
+        <AppModal open={open} title={t("settings.adminUnlock.title")} onClose={close} size="small">
             <div className={styles.body}>
                 <Field id="admPw" label={{ en: "Admin password" }}>
                     <input
@@ -63,9 +65,9 @@ export const AdminUnlockModal = ({ open, onClose }: AdminUnlockModalProps) => {
                 </Field>
                 {error && <p className={styles.error}>{error}</p>}
                 <div className={styles.actions}>
-                    <Button onClick={close}>Cancel</Button>
+                    <Button onClick={close}>{t("settings.adminUnlock.cancel")}</Button>
                     <Button variant="primary" disabled={checking} onClick={() => void attempt()}>
-                        Unlock
+                        {t("settings.adminUnlock.unlock")}
                     </Button>
                 </div>
             </div>

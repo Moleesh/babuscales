@@ -6,8 +6,8 @@ import { describeLicenseState } from "@features/licensing/describeLicenseState";
 import { useLicense } from "@features/licensing/useLicense";
 
 import { useSettings } from "../useSettings";
+import styles from "./_styles/SystemPane.module.css";
 import { LicenceActivationFields } from "./LicenceActivationFields";
-import styles from "./SystemPane.module.css";
 import { useLicenceCardState } from "./useLicenceCardState";
 
 // PLAN §4.10 "licence with trial and expiry · UID machine binding", task

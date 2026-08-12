@@ -1,7 +1,7 @@
 import { Card } from "@components/Card";
 
 import { useSettings } from "../useSettings";
-import styles from "./ConnectionsPane.module.css";
+import styles from "./_styles/ConnectionsPane.module.css";
 import { RemoteAccessTokenFields } from "./RemoteAccessTokenFields";
 import { useRemoteAccessConnection } from "./useRemoteAccessConnection";
 

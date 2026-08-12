@@ -1,14 +1,14 @@
 import { buildQrDataUri } from "@engines/print";
 import type { SlipData } from "@engines/print";
 
-import styles from "./SlipA4.module.css";
+import styles from "./_styles/SlipA4.module.css";
 
 // The same fictional site identity already hardcoded in App.tsx's
 // `siteLabel` — there is no site-profile Setting yet (app/README.md known
 // gap), so this and that prop are the one place it lives, kept in sync by
 // hand until a real Settings pane owns it.
-const SITE_NAME = "SRI LAKSHMI BLUE METALS";
-const SITE_ADDRESS = "Babulens Enterprises, Nagercoil";
+const SITE_NAME = "BABULENS ENTERPRISE";
+const SITE_ADDRESS = "Nagercoil · 9789597007";
 
 export interface SlipA4Props {
     data: SlipData;
@@ -27,6 +27,33 @@ const SlipWeightBox = ({ label, kg }: { label: string; kg: string }) => (
     <div>
         {label}
         <b>{kg}</b>kg
+    </div>
+);
+
+// Task #46's itemised per-load breakdown — pulled out of SlipA4 itself
+// (over the line budget — docs/CodingStandards.md) rather than inlined;
+// SlipA4 only ever renders it when there's more than one load to itemise.
+const SlipLoadsTable = ({ loads }: { loads: SlipData["GrossLoads"] }) => (
+    <div className={styles.loads}>
+        <table>
+            <thead>
+                <tr>
+                    <th>Load</th>
+                    <th>Gross</th>
+                    <th>At</th>
+                </tr>
+            </thead>
+            <tbody>
+                {loads.map((load, index) => (
+                    // Index as key is fine here — loads carry no id of their own, are never reordered, and this list only ever grows top-to-bottom during capture.
+                    <tr key={`${load.At}-${index}`}>
+                        <td>{index + 1}</td>
+                        <td>{load.Kg} kg</td>
+                        <td>{load.At}</td>
+                    </tr>
+                ))}
+            </tbody>
+        </table>
     </div>
 );
 
@@ -64,6 +91,7 @@ export const SlipA4 = ({ data }: SlipA4Props) => (
             <SlipWeightBox label="GROSS" kg={data.GrossKg} />
             <SlipWeightBox label="NET" kg={data.NetKg} />
         </div>
+        {data.GrossLoads.length > 1 && <SlipLoadsTable loads={data.GrossLoads} />}
         <div className={styles.grid}>
             <SlipField label="Charge" value={data.Charge} />
             <SlipField label="Operator" value={data.Operator} />

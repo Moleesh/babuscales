@@ -1,10 +1,10 @@
 import { Card } from "@components/Card";
 
 import type { SettingsBody, TicketNumbering } from "../settingsSchema";
+import styles from "./_styles/SystemPane.module.css";
 import { NumberingAutoResetFields } from "./NumberingAutoResetFields";
 import { NumberingPrefixFields } from "./NumberingPrefixFields";
 import { NumberingResetRow } from "./NumberingResetRow";
-import styles from "./SystemPane.module.css";
 
 export interface TicketNumberingCardProps {
     settings: SettingsBody;

@@ -18,6 +18,7 @@ import {
 import type { IndicatorSource } from "@engines/indicator";
 import { createIndicatorSource } from "@engines/indicator/createIndicatorSource";
 import { createLicensingSource } from "@engines/licensing/createLicensingSource";
+import { reconcileOutboxOutcome } from "@engines/outbox";
 import { DEFAULT_TICKET_SCHEMA, SchemaProvider } from "@engines/schemaEngine";
 import type { Schema } from "@engines/schemaEngine";
 import { TunnelProvider } from "@engines/tunnel";
@@ -31,12 +32,18 @@ import { DashboardScreen } from "@features/dashboard";
 import { LicenseProvider, renderLicenseBanner, useLicense } from "@features/licensing";
 import { MastersScreen } from "@features/masters";
 import { ReportsScreen } from "@features/reports";
-import { buildDailySummaryEmail, nowLocalHm, todayLocalDate } from "@features/reports/dailySummaryEmail";
+import {
+    buildDailySummaryEmail,
+    isMoreThanOneDayLate,
+    nowLocalHm,
+    todayLocalDate,
+} from "@features/reports/dailySummaryEmail";
 import {
     AdminChip,
     OperatorChip,
     SettingsProvider,
     SettingsScreen,
+    useOutboxWorker,
     useSettings,
 } from "@features/settings";
 import { useWeighingTicket, WeighingScreen } from "@features/weighing";
@@ -231,7 +238,7 @@ const Shell = ({ onAddLanguagePack }: ShellProps) => {
 
     return (
         <AppShell
-            siteLabel="Sri Lakshmi Blue Metals · Nagercoil · Bridge 1"
+            siteLabel="Babulens Enterprise · Nagercoil · 9789597007"
             tabs={buildNavTabs(t)}
             activeTab={activeTab}
             onNavigate={(key) => setActiveTab(key as (typeof TAB_KEYS)[number])}
@@ -264,7 +271,7 @@ const Shell = ({ onAddLanguagePack }: ShellProps) => {
                 topic={DEFAULT_HELP_TOPICS[activeTab] ?? null}
                 lang={lang}
                 onClose={() => setHelpOpen(false)}
-                labels={{ title: t("help"), close: "Close help" }}
+                labels={{ title: t("help"), close: t("components.contextualHelp.close") }}
             />
         </AppShell>
     );
@@ -370,9 +377,20 @@ const SerialConnectionSync = ({ indicator }: IndicatorSyncProps) => {
 // `DailySummary.LastSentDate` (advanced via `recordDailySummarySent`,
 // regardless of send success) is what stops a satisfied check from firing
 // again next minute, and what stops a relaunch later the same day from
-// re-sending. One attempt, no retry queue — the same honesty as
-// `WeighingScreen`'s own per-ticket e-mail/SMS (see its own comments), so a
-// misconfigured SMTP relay fails once a day here, not once a minute.
+// re-sending. One attempt from here, same as `WeighingScreen`'s own
+// per-ticket e-mail/SMS (see its own comments) — but unlike before the
+// outbox-worker task, a failure here isn't a dead end: `reconcileOutboxOutcome`
+// (outboxBackoff.ts) gives the row a backoff `NextTryAt`, and
+// `useOutboxWorker.ts` is what actually retries it, so a misconfigured SMTP
+// relay gets a few more automatic tries over the following hour, not just
+// once a day.
+//
+// `isMoreThanOneDayLate` (dailySummaryEmail.ts) covers the machine-asleep
+// case PLAN §21 flags: a site whose hours never straddle `cfg.Time` would
+// otherwise never send at all, since nothing here runs while the app is
+// closed. It only shortens "never" to "late" — a real OS-level scheduler
+// (Task Scheduler waking a headless send, or a background service) stays
+// an open gap, not solved here.
 const DailySummarySync = () => {
     const db = useDataPort();
     const { settings, recordDailySummarySent } = useSettings();
@@ -386,7 +404,11 @@ const DailySummarySync = () => {
         const checkDue = (): void => {
             const today = todayLocalDate();
             if (cfg.LastSentDate === today) return;
-            if (nowLocalHm() < cfg.Time) return;
+            // Normally wait for the scheduled time of day — but once a
+            // whole day's been skipped outright (see isMoreThanOneDayLate's
+            // own comment), catch up on this launch instead of waiting for
+            // the clock to hit `cfg.Time` again, which it may never do.
+            if (nowLocalHm() < cfg.Time && !isMoreThanOneDayLate(cfg.LastSentDate, today)) return;
             const to = cfg.Recipient.trim();
             if (!to) return;
             void (async () => {
@@ -404,10 +426,10 @@ const DailySummarySync = () => {
                     subject,
                     body,
                 });
-                await db.updateOutbox(outboxRow.OutboxId, {
-                    State: result.Ok ? "Sent" : "Failed",
-                    Attempts: outboxRow.Attempts + 1,
-                });
+                await db.updateOutbox(
+                    outboxRow.OutboxId,
+                    reconcileOutboxOutcome(result, outboxRow.Attempts),
+                );
                 await recordDailySummarySent(today);
             })();
         };
@@ -426,6 +448,17 @@ const DailySummarySync = () => {
         recordDailySummarySent,
     ]);
 
+    return null;
+};
+
+// Outbox-worker task — the real background worker app/README.md's own
+// "known gap" flagged: everything useOutboxWorker itself does (30s poll,
+// Pending + due-Failed rows, Email/Sms/Webhook/Tally/Board) lives in
+// @features/settings's own file; this is just where it's switched on, same
+// "one Sync component per always-on background concern" shape as
+// DailySummarySync/StabilityGateSync/SerialConnectionSync above.
+const OutboxWorkerSync = () => {
+    useOutboxWorker();
     return null;
 };
 
@@ -516,6 +549,7 @@ export const App = () => {
                                         <VerificationServerSync source={verificationServer} />
                                         <RemoteAccessSync source={tunnel} />
                                         <DailySummarySync />
+                                        <OutboxWorkerSync />
                                         <Shell onAddLanguagePack={addLanguagePack} />
                                     </SchemaProvider>
                                 </TunnelProvider>

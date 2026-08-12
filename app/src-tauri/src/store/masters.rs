@@ -44,11 +44,23 @@ pub fn list_masters(conn: &Connection, query: &MasterQuery) -> Result<Vec<Master
     if query.search.is_some() {
         clauses.push("name LIKE :search");
     }
+    // Keyset pagination: "the next rows after the one the caller last saw",
+    // in the same `name COLLATE NOCASE ASC, master_id` order the query
+    // returns. `name` has no column-level COLLATE, so a plain SQLite
+    // row-value comparison `(name, master_id) > (:n, :m)` would fall back to
+    // binary collation on `name` and disagree with ORDER BY — spelled out
+    // long-hand with an explicit COLLATE NOCASE instead.
+    if query.after.is_some() {
+        clauses.push(
+            "(name COLLATE NOCASE > :after_name \
+              OR (name COLLATE NOCASE = :after_name AND master_id > :after_master_id))",
+        );
+    }
     if !clauses.is_empty() {
         sql.push_str(" WHERE ");
         sql.push_str(&clauses.join(" AND "));
     }
-    sql.push_str(" ORDER BY name COLLATE NOCASE ASC");
+    sql.push_str(" ORDER BY name COLLATE NOCASE ASC, master_id ASC");
     if query.limit.is_some() {
         sql.push_str(" LIMIT :limit");
     }
@@ -65,6 +77,10 @@ pub fn list_masters(conn: &Connection, query: &MasterQuery) -> Result<Vec<Master
     let search_pattern = query.search.as_ref().map(|s| format!("%{s}%"));
     if let Some(v) = &search_pattern {
         named.push((":search", v));
+    }
+    if let Some(after) = &query.after {
+        named.push((":after_name", &after.name));
+        named.push((":after_master_id", &after.master_id));
     }
     if let Some(limit) = &query.limit {
         named.push((":limit", limit));

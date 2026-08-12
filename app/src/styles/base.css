@@ -71,6 +71,101 @@ body {
     outline-offset: 2px;
 }
 
+/* Custom scrollbar — every scroll region in the app (AppShell's `.main`,
+   the top bar's overflow strips, any card list) uses this instead of the
+   OS default, so the look stays consistent across skins/platforms rather
+   than switching to whatever the OS theme draws. Firefox via the
+   `scrollbar-*` properties, everything else via `::-webkit-scrollbar`. */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: var(--line) transparent;
+}
+::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+::-webkit-scrollbar-thumb {
+    background: var(--line);
+    border-radius: 999px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: var(--dim);
+    background-clip: padding-box;
+}
+::-webkit-scrollbar-corner {
+    background: transparent;
+}
+
+/* Cursor + interaction feedback. Every clickable control gets a quick,
+   consistent transition on hover/press rather than snapping instantly —
+   and every disabled control drops the pointer cursor so hover state never
+   implies an action that can't happen. `prefers-reduced-motion` disables
+   the animated part but keeps the cursor/affordance correctness. */
+button,
+[role="button"],
+a,
+input[type="checkbox"],
+input[type="radio"],
+select,
+.chip.act,
+.iconbtn,
+.tab {
+    transition:
+        transform 0.12s ease,
+        opacity 0.12s ease,
+        background-color 0.12s ease,
+        border-color 0.12s ease,
+        color 0.12s ease;
+}
+button:not(:disabled):hover,
+[role="button"]:not([aria-disabled="true"]):hover,
+.chip.act:hover,
+.iconbtn:not(:disabled):hover {
+    transform: translateY(-1px);
+}
+button:not(:disabled):active,
+[role="button"]:not([aria-disabled="true"]):active,
+.chip.act:active,
+.iconbtn:not(:disabled):active {
+    transform: translateY(0);
+    opacity: 0.85;
+}
+
+button:disabled,
+[role="button"][aria-disabled="true"],
+input:disabled,
+select:disabled,
+textarea:disabled,
+.iconbtn:disabled {
+    cursor: not-allowed;
+}
+button:not(:disabled),
+[role="button"]:not([aria-disabled="true"]),
+.iconbtn:not(:disabled) {
+    cursor: pointer;
+}
+/* A field marked readOnly (not disabled) is still "can't type here" —
+   SchemaFieldRow's Formula display, any lookup-only text input. */
+input[readonly],
+textarea[readonly] {
+    cursor: default;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        transition-duration: 0.001ms !important;
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+    }
+}
+
 /* A small square icon-only button — the top-bar "?" and every drawer's ✕.
    Global rather than owned by one component because both AppShell's help
    button and ContextualHelp's close button are this same button. */

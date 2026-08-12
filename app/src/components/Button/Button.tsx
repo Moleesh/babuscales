@@ -1,6 +1,6 @@
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 
-import styles from "./Button.module.css";
+import styles from "./_styles/Button.module.css";
 
 export type ButtonVariant = "default" | "primary" | "danger";
 export type ButtonSize = "default" | "large";

@@ -1,7 +1,8 @@
 import { Field, FieldGrid } from "@components/Field";
+import { useTranslation } from "@i18n/useTranslation";
 
 import type { SettingsBody } from "../settingsSchema";
-import styles from "./SystemPane.module.css";
+import styles from "./_styles/SystemPane.module.css";
 
 export interface AmountAndAdminPasswordFieldsProps {
     settings: SettingsBody;
@@ -24,7 +25,9 @@ export const AmountAndAdminPasswordFields = ({
     setNewPassword,
     pwFlash,
     commitPassword,
-}: AmountAndAdminPasswordFieldsProps) => (
+}: AmountAndAdminPasswordFieldsProps) => {
+    const { t } = useTranslation();
+    return (
     <>
         <FieldGrid columns={2}>
             <Field id="setAmt" label={{ en: "Amount rounding" }}>
@@ -39,8 +42,8 @@ export const AmountAndAdminPasswordFields = ({
                         })
                     }
                 >
-                    <option value="2">2 decimals — ₹ 250.00</option>
-                    <option value="0">Whole rupees — ₹ 250</option>
+                    <option value="2">{t("settings.amountFields.twoDecimals")}</option>
+                    <option value="0">{t("settings.amountFields.wholeRupees")}</option>
                 </select>
             </Field>
             <Field id="setAdmPw" label={{ en: "Admin password" }}>
@@ -48,7 +51,7 @@ export const AmountAndAdminPasswordFields = ({
                     id="setAdmPw"
                     type="password"
                     autoComplete="off"
-                    placeholder="New password"
+                    placeholder={t("settings.amountFields.newPasswordPlaceholder")}
                     value={newPassword}
                     disabled={!unlocked}
                     onChange={(event) => setNewPassword(event.target.value)}
@@ -61,4 +64,5 @@ export const AmountAndAdminPasswordFields = ({
         </FieldGrid>
         {pwFlash && <p className={styles.hint}>{pwFlash}</p>}
     </>
-);
+    );
+};

@@ -82,6 +82,24 @@ export const filterTicketRows = (
     });
 };
 
+/**
+ * Date-range filter over a row's `at` timestamp, by date-only prefix
+ * (`yyyy-MM-dd`) against `from`/`to` (also `yyyy-MM-dd`, from a native
+ * `<input type="date">`). Both bounds inclusive; an empty bound means "no
+ * limit on that side". Empty `from` and empty `to` together is a true
+ * no-op — returns `rows` unchanged — so existing behavior with no date
+ * filter set is completely unaffected.
+ */
+export const filterRowsByDateRange = (rows: TicketRow[], from: string, to: string): TicketRow[] => {
+    if (!from && !to) return rows;
+    return rows.filter((row) => {
+        const date = row.at.slice(0, 10);
+        if (from && date < from) return false;
+        if (to && date > to) return false;
+        return true;
+    });
+};
+
 export const FILTER_OPTIONS: { value: TicketRowFilter; label: string }[] = [
     { value: "all", label: "All" },
     { value: "half", label: "Waiting for the second weight" },

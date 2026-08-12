@@ -2,7 +2,7 @@ import { Card } from "@components/Card";
 
 import { INTEGRATION_FIXTURES } from "../settingsSchema";
 import { useSettings } from "../useSettings";
-import styles from "./ConnectionsPane.module.css";
+import styles from "./_styles/ConnectionsPane.module.css";
 import { IntegrationRow } from "./IntegrationRow";
 import { useFlashMessage } from "./useFlashMessage";
 import { useIntegrationsActions } from "./useIntegrationsActions";

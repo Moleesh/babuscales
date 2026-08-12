@@ -3,6 +3,7 @@ import { createAuditMethods } from "./audit";
 import { createBackupMethods } from "./backup";
 import { createConfigMethods } from "./configs";
 import { createDocMethods } from "./docs";
+import { createIndexMethods } from "./indexes";
 import { createMasterMethods } from "./masters";
 import { createOutboxMethods } from "./outbox";
 import { createMemoryState } from "./state";
@@ -18,6 +19,7 @@ export const createMemoryAdapter = (): DataPort => {
         ...createDocMethods(state),
         ...createMasterMethods(state),
         ...createConfigMethods(state),
+        ...createIndexMethods(state),
         ...createAssetMethods(state),
         ...createAuditMethods(state),
         ...createOutboxMethods(state),

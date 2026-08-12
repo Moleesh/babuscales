@@ -1,9 +1,10 @@
+import { Button } from "@components/Button";
 import { Card } from "@components/Card";
 import { DataTable } from "@components/DataTable";
 import type { DataTableColumn } from "@components/DataTable";
 import type { MasterRow } from "@db/types";
 
-import styles from "../MastersScreen.module.css";
+import styles from "../_styles/MastersScreen.module.css";
 
 export interface MastersListCardProps {
     title: string;
@@ -15,11 +16,16 @@ export interface MastersListCardProps {
     rows: MasterRow[];
     loading: boolean;
     onRowClick: (row: MasterRow) => void;
+    /** Keyset-paginated "Load more" (PLAN §21) — undefined/false hides the button entirely. */
+    hasMore?: boolean;
+    loadingMore?: boolean;
+    onLoadMore?: () => void;
+    t: (key: string) => string;
 }
 
 // Split out of MastersScreen (over the line/complexity budget —
-// docs/CodingStandards.md) — the search input + results DataTable card,
-// unchanged from the inline version it replaces.
+// docs/CodingStandards.md) — the search input + results DataTable card.
+// Now uses the t() function for translatable strings.
 export const MastersListCard = ({
     title,
     count,
@@ -30,6 +36,10 @@ export const MastersListCard = ({
     rows,
     loading,
     onRowClick,
+    hasMore,
+    loadingMore,
+    onLoadMore,
+    t,
 }: MastersListCardProps) => (
     <Card title={<span className="lbl">{title}</span>} headerRight={<span className="chip num">{count}</span>}>
         <div className={styles.body}>
@@ -45,8 +55,13 @@ export const MastersListCard = ({
                 rows={rows}
                 getRowId={(row) => row.MasterId}
                 onRowClick={onRowClick}
-                emptyMessage={loading ? "Loading…" : `No ${title.toLowerCase()} yet`}
+                emptyMessage={loading ? t("masters.loading") : `${t("masters.emptyPrefix")} ${title.toLowerCase()} ${t("masters.emptySuffix")}`}
             />
+            {hasMore && onLoadMore && (
+                <Button onClick={onLoadMore} disabled={loadingMore}>
+                    {loadingMore ? t("masters.loading") : t("masters.loadMore")}
+                </Button>
+            )}
         </div>
     </Card>
 );

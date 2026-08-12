@@ -1,8 +1,8 @@
 import { SegmentedControl } from "@components/SegmentedControl";
 
+import styles from "../_styles/ReportsScreen.module.css";
 import { VIEW_OPTIONS } from "../reportRows";
 import type { ReportView } from "../reportRows";
-import styles from "../ReportsScreen.module.css";
 
 export interface ReportsHeaderActionsProps {
     view: ReportView;

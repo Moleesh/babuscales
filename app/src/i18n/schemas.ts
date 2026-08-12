@@ -7,5 +7,5 @@ export const languagePackSchema = z.object({
     Code: z.string().min(1),
     Name: z.string().min(1),
     Version: z.number().int().positive(),
-    Strings: z.record(z.string()),
+    Strings: z.record(z.string(), z.string()),
 });

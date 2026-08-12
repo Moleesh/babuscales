@@ -20,8 +20,11 @@ Only these. All are things that are unambiguously broken, never matters of taste
 | **Real-bug lint rules only** | `no-explicit-any`, `no-floating-promises`, `no-misused-promises`, `import/no-cycle`, exhaustiveness. Each is a defect, not a preference |
 | **Rust `cargo clippy`** *(correctness + suspicious groups)* | Same standard, same reasoning |
 
-**Auto-fixed, never a gate:** formatting and import order. Prettier and the import organiser run
-`--write` on pre-commit and in CI. Nobody discusses formatting, and nobody is blocked by it.
+**Auto-fixed, never a gate:** formatting and import order — run `npm run format` /
+`npm run imports:write` locally before committing (§12: there is no pre-commit hook doing this for
+you yet). CI only *checks* formatting (`format:check`, advisory) rather than writing it, so a
+forgotten `format` still merges — it just shows up as a report, not a failure. Nobody discusses
+formatting, and nobody is blocked by it.
 
 **Advisory — reported on the pull request, never blocking:** function length, cognitive
 complexity, file size, duplication. These are signals for a human, and a human decides.
@@ -142,10 +145,17 @@ components/Button/
 ├─ index.ts              barrel: export { Button } from './Button';
 ├─ Button.tsx
 ├─ Button.types.ts
+├─ _styles/
+│  └─ Button.module.css  CSS Modules, kebab-case selectors (§5)
+├─ __tests__/
+│  └─ Button.test.tsx
 └─ _private/             internals never imported from outside this folder
 ```
 
 `_private/` is enforced by an ESLint import rule. Anything in it is unreachable from elsewhere.
+`_styles/` and `__tests__/` follow the same convention — every component/feature folder gets
+its own, even single-file ones, including nested folders like `_private/` that have their own
+CSS or tests. This applies uniformly across both `components/` and `features/`.
 
 ---
 
@@ -155,10 +165,17 @@ components/Button/
 
 Never rebuilt per feature — always imported:
 
-`AppShell` · `Sidebar` · `Topbar` · `MobileNav` · `Button` · `IconButton` · `ActionButton` ·
-`ActionBar` · `AppModal` · `AppDrawer` · `AppSheet` · `AppPopover` · `AppConfirmDialog` ·
-`DataTable` · `SearchableDropdown` · `ContextualHelp` · `WeightDisplay` · `CaptureTimeline` ·
-`CameraTile` · `StatusPill` · `FeedbackStates` · `EmptyState` · every `Field` variant.
+`AppShell` (folds the nav bar and mobile layout in directly — there is no separate `Sidebar` /
+`Topbar` / `MobileNav`, PLAN §13.1's tab bar didn't need them split out) · `Button` (variant prop
+covers icon-only and action-bar usage — no separate `IconButton` / `ActionButton` / `ActionBar`) ·
+`AppModal` · `AppDrawer` · `AppPopover` · `DataTable` · `SearchableDropdown` · `ContextualHelp` ·
+`WeightDisplay` · `CaptureTimeline` · `CameraTile` · `StatusPill` · `EmptyState` · every `Field`
+variant.
+
+**Not built yet:** `AppSheet`, `AppConfirmDialog`, `FeedbackStates` (§9 hand-rolls loading/empty/
+error/success today — the "nobody hand-rolls them" line below is the target, not the current
+state). Add real entries here as they land; PLAN §21 does not currently list any of the three as
+scheduled work.
 
 A raw `<button>`, `<input>`, `<table>` or `<dialog>` inside `features/` is a signal that a
 component is missing. ESLint flags it as a **warning** with a pointer to the right primitive —
@@ -237,6 +254,16 @@ import type { TicketViewProps } from './TicketView.types';
 | **SQL** | **`snake_case`** | `doc_kind`, `created_at` |
 | Booleans | `is` / `has` / `can` / `should` | `isStable`, `canCancel` |
 | Event handlers | `handle` / `on` | `handleCapture`, `onCapture` |
+| CSS Modules class | `kebab-case` | `.form-actions`, `.status-row` |
+
+CSS class selectors are `kebab-case` — the idiomatic CSS spelling — regardless of how they're
+accessed in code. `vite.config.ts` sets `css.modules.localsConvention: "camelCaseOnly"`, which
+converts each kebab-case selector to a camelCase-only JS export, so `.form-actions` in the
+stylesheet is still `styles.formActions` at every call site. **This only works through the
+default postcss pipeline** — do not set `css.transformer: "lightningcss"`; Lightning CSS's own
+CSS Modules implementation has no case-convention concept and silently exports kebab-case keys
+instead, breaking every `styles.xxx` access (`build.cssMinify: "lightningcss"` is fine — that
+runs after class names are already resolved).
 
 Domain nouns come from [Terminology.md](Terminology.md) and are used **identically** in code,
 database, UI and templates. A ticket is a `Ticket` everywhere — never `slip` in one place and
@@ -299,8 +326,9 @@ Non-negotiable, because this is a trade-measurement product:
   which is how a failed print or a dropped capture becomes invisible. An empty catch is an
   **error**, one of the few style-adjacent rules that blocks, because the failure it hides is
   exactly the kind this product cannot afford. If it is genuinely ignorable, log it with a reason.
-- Every async surface handles all four of loading, empty, error and success — `FeedbackStates`
-  exists so nobody hand-rolls them.
+- Every async surface handles all four of loading, empty, error and success. Each does today with
+  its own inline markup — a shared `FeedbackStates` component (§3) so nobody hand-rolls this is
+  the target, not yet built.
 - Server state: TanStack Query. UI state: Zustand. Form state: TanStack Form + Zod.
   **Never `useState` for server data.**
 
@@ -328,9 +356,10 @@ Non-negotiable, because this is a trade-measurement product:
 - Branch names: `feat/capture-timeline`, `fix/tare-expiry`.
 - **No build output committed, ever.** No `target/`, no `dist/`, no `node_modules/`, no `.jar`,
   no `.exe`. The previous versions committed a 108MB jar and a 30MB binary — that does not recur.
-- **No secrets, ever.** `npm run scan:secrets` runs in CI and pre-commit. Credentials belong in
-  the Windows Credential Manager. The previous version committed a live tunnel authtoken in
-  plaintext; this is the rule that prevents a repeat.
+- **No secrets, ever.** `npm run scan:secrets` runs in CI (§12) — blocking, not advisory; there is
+  no pre-commit hook running it yet (§12). Credentials belong in the Windows Credential Manager.
+  The previous version committed a live tunnel authtoken in plaintext; this is the rule that
+  prevents a repeat.
 
 ---
 
@@ -358,43 +387,54 @@ test:run       vitest run               task #61's unit suite
 Both are young enough that a false start shouldn't block a merge yet — they report, they just don't
 fail the build. Promote either to the blocking list above once it's proven out over more PRs.
 
-**Auto-applied — runs `--write`, cannot fail a build:**
+**Run locally before committing — not yet automated, so nothing enforces this today but review:**
 
 ```
-format         prettier --write .
-imports:write  import order and grouping
-rustfmt        cargo fmt
+npm run format          prettier --write .
+npm run imports:write   import order and grouping (eslint --fix)
+cargo fmt                rustfmt, run manually in src-tauri/
 ```
 
-**Advisory — comments on the pull request, `continue-on-error: true`:**
+CI's own format/fmt steps (`format:check`, `cargo fmt -- --check`, §12's advisory table above)
+only check — they never write. Wiring a pre-commit hook (Husky or otherwise) to run these `--write`
+automatically is unbuilt; until then, "auto-applied" is the target this section describes, not
+what happens on every commit.
+
+**Advisory — reported by `npm run size:report`, not yet wired into CI as a PR comment:**
 
 ```
-quality:report  function length · cognitive complexity · file budgets ·
-                duplication · @maxLines exceptions
+size:report  scripts/checkFileBudgets.mjs — per-category file-length budgets (§1.2),
+             @maxLines exceptions (§1.3)
 ```
 
-Rust mirrors the same split via `clippy.toml` — thresholds produce warnings, and only the
-`correctness` and `suspicious` lint groups are denied:
+Function length and cognitive complexity (§1.1) are `eslint` rules (`max-lines-per-function`,
+`sonarjs/cognitive-complexity`) reported through the normal `lint`/`lint:strict` output, not a
+separate report. There is no `quality:report` script and no dedicated pull-request comment step —
+`size:report` and `lint` are what actually run; wiring either into a PR comment is unbuilt.
 
-```toml
-too-many-lines-threshold = 60      # per function, not per file — advisory
-cognitive-complexity-threshold = 15
-too-many-arguments-threshold = 4
-```
+Rust's `correctness`/`suspicious` split (§0) runs from the `cargo clippy` command line
+(`-D clippy::correctness -D clippy::suspicious`, see §12's own table) — there is no `clippy.toml`
+in the repo tuning the `pedantic`/`complexity` thresholds mentioned in §1.1's table; those numbers
+describe the target, not an enforced file.
 
-Pre-commit (husky) formats and organises imports automatically, then runs typecheck. It does not
-lecture. **If a check cannot tell you something is broken, it does not get to stop you.**
-
-Pre-commit (husky) runs format, imports, lint, typecheck and the file-length gate on staged files.
+**There is no pre-commit hook today** — no Husky, no `simple-git-hooks`, nothing runs on `git
+commit`. Format, imports, lint and typecheck all run in CI (§0's table, above) instead. **If a
+check cannot tell you something is broken, it does not get to stop you** remains the standard —
+enforced by CI's blocking/advisory split, not by a local hook.
 
 ---
 
 ## 13. Documentation
 
-- Every engine has a `README.md`: what it does, its inputs and outputs, and its invariants.
+- Every engine should carry what it does, its inputs and outputs, and its invariants, ideally as a
+  `README.md` — none of the 18 engines under `src/engines/` has one yet; individual functions carry
+  their own doc comments (next bullet) but there's no per-engine overview file today. Genuinely
+  unbuilt, not documented-elsewhere-instead.
 - Public functions in engines carry a doc comment explaining **why**, not what.
-- Every significant decision goes in [DecisionLog.md](DecisionLog.md), including what was rejected
-  and the reason — so a decision is never silently relitigated.
+- Significant decisions are recorded where the code that embodies them lives — a doc comment on
+  the module, or a paragraph in [PLAN.md](../PLAN.md) — including what was rejected and why, so a
+  decision is never silently relitigated. There is no separate `docs/DecisionLog.md` file; PLAN.md
+  §5.1 ("The decision was challenged and stands") is the pattern this follows today.
 - Comments explain intent and non-obvious constraints. Never narrate the code.
 
 ```ts

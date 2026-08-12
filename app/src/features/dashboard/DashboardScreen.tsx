@@ -8,8 +8,8 @@ import { useSettings } from "@features/settings";
 import { DashboardCharts } from "./_private/DashboardCharts";
 import { DashboardKpis } from "./_private/DashboardKpis";
 import { RecentTicketsCard } from "./_private/RecentTicketsCard";
+import styles from "./_styles/DashboardScreen.module.css";
 import { computeDashboardKpis, computeMaterialSplit, hourlyTicketCounts } from "./dashboardData";
-import styles from "./DashboardScreen.module.css";
 
 export interface DashboardScreenProps {
     /** The KPI tile for open tickets doubles as a shortcut to Reports — no filter is forced across the tab switch (Reports owns its own filter state). */

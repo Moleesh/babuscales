@@ -5,6 +5,7 @@ export type { SettingsProviderProps } from "./SettingsProvider";
 export { SettingsScreen } from "./SettingsScreen";
 export type { SettingsScreenProps } from "./SettingsScreen";
 export { useSettings } from "./useSettings";
+export { useOutboxWorker } from "./useOutboxWorker";
 export type { SettingsContextValue } from "./_private/SettingsContext";
 export { SETTINGS_CONFIG_ID } from "./settingsSchema";
 export type {

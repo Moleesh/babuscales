@@ -2,8 +2,8 @@ import { Card } from "@components/Card";
 
 import { RULE_DEFS } from "../settingsSchema";
 import type { SettingsBody, WeighingRules } from "../settingsSchema";
+import styles from "./_styles/WeighingPane.module.css";
 import { StabilityGateFields } from "./StabilityGateFields";
-import styles from "./WeighingPane.module.css";
 
 export interface WeighingRulesCardProps {
     settings: SettingsBody;

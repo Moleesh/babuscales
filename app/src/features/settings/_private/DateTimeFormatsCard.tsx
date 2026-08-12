@@ -1,9 +1,10 @@
 import { Card } from "@components/Card";
+import { useTranslation } from "@i18n/useTranslation";
 
 import type { SettingsBody } from "../settingsSchema";
+import styles from "./_styles/SystemPane.module.css";
 import { AmountAndAdminPasswordFields } from "./AmountAndAdminPasswordFields";
 import { DateTimeFormatFields } from "./DateTimeFormatFields";
-import styles from "./SystemPane.module.css";
 import { useAdminPasswordField } from "./useAdminPasswordField";
 
 export interface DateTimeFormatsCardProps {
@@ -29,9 +30,10 @@ export const DateTimeFormatsCard = ({
 }: DateTimeFormatsCardProps) => {
     const { newPassword, setNewPassword, pwFlash, commitPassword } =
         useAdminPasswordField(changeAdminPassword);
+    const { t } = useTranslation();
 
     return (
-        <Card title={<span className="lbl">Date, time &amp; amounts</span>}>
+        <Card title={<span className="lbl">{t("settings.dateTimeFormats.title")}</span>}>
             <div className={styles.body}>
                 <DateTimeFormatFields settings={settings} unlocked={unlocked} onSave={onSave} />
                 <AmountAndAdminPasswordFields
@@ -43,11 +45,7 @@ export const DateTimeFormatsCard = ({
                     pwFlash={pwFlash}
                     commitPassword={commitPassword}
                 />
-                <p className={styles.hint}>
-                    Date, time and amount formats are saved here but not yet read anywhere else in
-                    the app — Reports, Dashboard and printed tickets still use the browser&apos;s own
-                    formatting (known gap, app/README.md).
-                </p>
+                <p className={styles.hint}>{t("settings.dateTimeFormats.hint")}</p>
             </div>
         </Card>
     );

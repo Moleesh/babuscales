@@ -1,4 +1,4 @@
-import styles from "./SystemPane.module.css";
+import styles from "./_styles/SystemPane.module.css";
 import { useTicketNumberReset } from "./useTicketNumberReset";
 
 export interface NumberingResetRowProps {

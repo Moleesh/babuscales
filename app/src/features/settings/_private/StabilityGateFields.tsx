@@ -1,5 +1,5 @@
 import type { SettingsBody } from "../settingsSchema";
-import styles from "./WeighingPane.module.css";
+import styles from "./_styles/WeighingPane.module.css";
 
 const clampInt = (value: string, min: number, max: number, fallback: number): number => {
     const n = Number.parseInt(value, 10);

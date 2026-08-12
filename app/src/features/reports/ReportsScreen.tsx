@@ -11,8 +11,8 @@ import { ReportsHeaderActions } from "./_private/ReportsHeaderActions";
 import { useReportDocs } from "./_private/useReportDocs";
 import { useReportsScreenData } from "./_private/useReportsScreenData";
 import { useSavedReportActions } from "./_private/useSavedReportActions";
+import styles from "./_styles/ReportsScreen.module.css";
 import type { GroupKey, ReportView, TicketRowFilter } from "./reportRows";
-import styles from "./ReportsScreen.module.css";
 
 export interface ReportsScreenProps {
     /** Resumes (open ticket) or reopens (completed ticket, to reprint) into the shared Weighing deck and switches there. */
@@ -50,11 +50,13 @@ export const ReportsScreen = ({ onOpenTicket }: ReportsScreenProps) => {
     const [view, setView] = useState<ReportView>("tickets");
     const [query, setQuery] = useState("");
     const [filter, setFilter] = useState<TicketRowFilter>("all");
+    const [dateFrom, setDateFrom] = useState("");
+    const [dateTo, setDateTo] = useState("");
     const [groupBy, setGroupBy] = useState<GroupKey>("material");
     const [printOpen, setPrintOpen] = useState(false);
     const savedReportActions = useSavedReportActions({ db, view, groupBy, filter, setView, setGroupBy, setFilter });
     const { waitingCount, visibleRows, summaryRows, reportSlipData, ticketColumns, summaryColumns } =
-        useReportsScreenData({ docs, view, query, filter, groupBy, onOpenTicket, amountDp, styles });
+        useReportsScreenData({ docs, view, query, filter, dateFrom, dateTo, groupBy, onOpenTicket, amountDp, styles });
 
     const showWaiting = (): void => {
         setView("tickets");
@@ -81,6 +83,10 @@ export const ReportsScreen = ({ onOpenTicket }: ReportsScreenProps) => {
                     onQueryChange={setQuery}
                     filter={filter}
                     onFilterChange={setFilter}
+                    dateFrom={dateFrom}
+                    onDateFromChange={setDateFrom}
+                    dateTo={dateTo}
+                    onDateToChange={setDateTo}
                     groupBy={groupBy}
                     onGroupByChange={setGroupBy}
                     ticketColumns={ticketColumns}

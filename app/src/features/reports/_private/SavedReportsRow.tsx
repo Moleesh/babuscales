@@ -1,6 +1,6 @@
 import type { ReportDefinition } from "@db/reportDefs";
 
-import styles from "./SavedReportsRow.module.css";
+import styles from "./_styles/SavedReportsRow.module.css";
 
 export interface SavedReportsRowProps {
     savedReports: ReportDefinition[];

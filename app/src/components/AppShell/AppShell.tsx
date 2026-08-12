@@ -1,8 +1,10 @@
 import type { ReactNode } from "react";
 
+import { useTranslation } from "@i18n/useTranslation";
+
 import { BrandMark } from "./_private/BrandMark";
 import { useEnterAsTab } from "./_private/useEnterAsTab";
-import styles from "./AppShell.module.css";
+import styles from "./_styles/AppShell.module.css";
 
 export interface AppShellTab {
     key: string;
@@ -11,7 +13,7 @@ export interface AppShellTab {
 }
 
 export interface AppShellProps {
-    /** e.g. "Sri Lakshmi Blue Metals · Nagercoil · Bridge 1" — configured per site. */
+    /** e.g. "Babulens Enterprise · Nagercoil · 9789597007" — configured per site. */
     siteLabel: string;
     tabs: AppShellTab[];
     activeTab: string;
@@ -39,6 +41,7 @@ export const AppShell = ({
     children,
 }: AppShellProps) => {
     useEnterAsTab();
+    const { t } = useTranslation();
 
     return (
         <div className={styles.app}>
@@ -54,7 +57,7 @@ export const AppShell = ({
                     </div>
                 </div>
 
-                <nav className={styles.tabs} aria-label="Sections">
+                <nav className={styles.tabs} aria-label={t("components.appShell.sections")}>
                     {tabs.map((tab) => (
                         <button
                             key={tab.key}

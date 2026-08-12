@@ -2,11 +2,12 @@ import { Card } from "@components/Card";
 import { Field } from "@components/Field";
 import { SegmentedControl } from "@components/SegmentedControl";
 import type { SegmentedOption } from "@components/SegmentedControl";
+import { useTranslation } from "@i18n/useTranslation";
 
 import { SKIN_FIXTURES, TEXT_SCALE_OPTIONS } from "../settingsSchema";
 import type { TextScale } from "../settingsSchema";
 import { useSettings } from "../useSettings";
-import styles from "./AppearancePane.module.css";
+import styles from "./_styles/AppearancePane.module.css";
 
 // Appearance pane (demo/BabuScales-demo.html's `data-pane="look"`) — the
 // mock's own comment marks this whole pane "not admin-gated: this is
@@ -24,12 +25,13 @@ const textScaleOptions: SegmentedOption<string>[] = TEXT_SCALE_OPTIONS.map((scal
 
 export const AppearancePane = () => {
     const { settings, setOperatorName, setSkin, setTextScale } = useSettings();
+    const { t } = useTranslation();
 
     return (
         <div className={styles.grid}>
-            <Card title={<span className="lbl">Theme</span>}>
+            <Card title={<span className="lbl">{t("settings.appearance.theme")}</span>}>
                 <div className={styles.themeBody}>
-                    <div className={styles.skins} role="group" aria-label="Theme">
+                    <div className={styles.skins} role="group" aria-label={t("settings.appearance.theme")}>
                         {SKIN_FIXTURES.map((skin) => (
                             <button
                                 key={skin.key}
@@ -56,12 +58,12 @@ export const AppearancePane = () => {
                             options={textScaleOptions}
                             value={String(settings.TextScale)}
                             onChange={(value) => void setTextScale(Number(value) as TextScale)}
-                            ariaLabel="Text size"
+                            ariaLabel={t("settings.appearance.textSize")}
                         />
                     </Field>
                 </div>
             </Card>
-            <Card title={<span className="lbl">Operator on duty</span>}>
+            <Card title={<span className="lbl">{t("settings.appearance.operatorOnDuty")}</span>}>
                 <Field id="setOp" label={{ en: "Name" }}>
                     <input
                         id="setOp"

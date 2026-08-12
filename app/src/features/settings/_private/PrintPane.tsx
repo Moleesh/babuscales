@@ -6,9 +6,9 @@ import { createPrinterSource } from "@engines/printers/createPrinterSource";
 
 import type { PrintersConfig } from "../settingsSchema";
 import { useSettings } from "../useSettings";
+import styles from "./_styles/PrintPane.module.css";
 import { DetectedPrintersCard } from "./DetectedPrintersCard";
 import { PrinterFixturesCard } from "./PrinterFixturesCard";
-import styles from "./PrintPane.module.css";
 
 // Module-level, not per-render — this is a stateless OS query, same
 // reasoning as ConnectionsPane.tsx not recreating its indicator source on

@@ -1,6 +1,6 @@
 import { formatWeightKg } from "@constants/numberFormat";
 
-import styles from "./StatusPill.module.css";
+import styles from "./_styles/StatusPill.module.css";
 
 export interface StatusPillLabels {
     tare: string;

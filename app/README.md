@@ -85,9 +85,9 @@ the frontend, via throwaway `cargo run` examples for the Rust store, deleted onc
 7. **CI gates + README + Pages demo live.** ✅ `.github/workflows/{ci,pages,release}.yml`
    authored per PLAN §20, `eslint.config.js` rule severities corrected to match
    `docs/CodingStandards.md`'s blocking/advisory split exactly, `npm run size:report` is a real
-   file-budget checker (with `@maxLines` support), `npm run scan:secrets` uses `secretlint`. **Not
-   yet live**: this folder isn't pushed to a GitHub remote yet, so the Pages workflow has never
-   run — see the open item in `../PLAN.md` §23.
+   file-budget checker (with `@maxLines` support), `npm run scan:secrets` uses `secretlint`. Pushed
+   to GitHub as of 2026-08-12 — the Pages workflow now runs on `main`; see the repo's Actions tab
+   for the current run status.
 
 **Phase 2 — the features, in build order.** All built against the memory adapter (the same one
 that makes the Pages demo real), typechecked, linted (zero blocking errors) and exercised end to

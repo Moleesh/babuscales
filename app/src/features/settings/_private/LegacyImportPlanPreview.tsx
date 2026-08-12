@@ -1,6 +1,6 @@
 import type { LegacyImportPlan } from "@engines/importEngine/legacyImportPlan";
 
-import styles from "./SystemPane.module.css";
+import styles from "./_styles/SystemPane.module.css";
 import type { LegacyImportKindCount } from "./useLegacyImportActions";
 
 export interface LegacyImportPlanPreviewProps {

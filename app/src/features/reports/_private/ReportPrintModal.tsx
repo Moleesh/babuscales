@@ -7,8 +7,8 @@ import type { SegmentedOption } from "@components/SegmentedControl";
 import type { PaperKind, ReportSlipData } from "@engines/print";
 import { renderReportMatrixSlip, renderReportThermalSlip } from "@engines/print";
 
+import styles from "./_styles/ReportPrintModal.module.css";
 import { ReportA4 } from "./ReportA4";
-import styles from "./ReportPrintModal.module.css";
 
 const PAPER_OPTIONS: SegmentedOption<PaperKind>[] = [
     { value: "a4", label: "A4" },

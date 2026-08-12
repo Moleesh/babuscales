@@ -86,6 +86,14 @@ pub struct MasterDraft {
     pub is_active: Option<bool>,
 }
 
+/// Keyset cursor for `list_masters` — see `MasterQuery::after`.
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "PascalCase")]
+pub struct MasterAfter {
+    pub name: String,
+    pub master_id: String,
+}
+
 #[derive(Debug, Clone, Default, Deserialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct MasterQuery {
@@ -93,6 +101,9 @@ pub struct MasterQuery {
     pub is_active: Option<bool>,
     pub search: Option<String>,
     pub limit: Option<i64>,
+    /// The last row's `name`/`master_id` from a previous page, in
+    /// `name COLLATE NOCASE ASC` order. `None` asks for page 1.
+    pub after: Option<MasterAfter>,
 }
 
 #[derive(Debug, Clone, Serialize)]

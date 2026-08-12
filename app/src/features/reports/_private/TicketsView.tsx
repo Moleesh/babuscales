@@ -2,9 +2,9 @@ import { DataTable } from "@components/DataTable";
 import type { DataTableColumn } from "@components/DataTable";
 import { SegmentedControl } from "@components/SegmentedControl";
 
+import styles from "../_styles/ReportsScreen.module.css";
 import { FILTER_OPTIONS } from "../reportRows";
 import type { TicketRow, TicketRowFilter } from "../reportRows";
-import styles from "../ReportsScreen.module.css";
 
 export interface TicketsViewProps {
     query: string;

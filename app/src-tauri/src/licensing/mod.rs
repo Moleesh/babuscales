@@ -19,10 +19,12 @@
 use std::path::Path;
 
 use chrono::NaiveDate;
-use serde::Serialize;
+use rusqlite::Connection;
+use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
 use crate::error::AppError;
+use crate::store;
 
 /// Placeholder pending PLAN §23 item 4 (see this module's own doc comment).
 pub const TRIAL_DAYS: i64 = 14;
@@ -143,5 +145,65 @@ pub fn evaluate(
     match payload.expires_on {
         Some(expiry) if expiry < today => LicenseState::Expired { expired_on: expiry },
         expires_on => LicenseState::Licensed { expires_on },
+    }
+}
+
+/// Mirrors the frontend's `licenseSchema.ts` field-for-field — this is the
+/// same `ConfigId: "license"` row, just read from the Rust side instead of
+/// through `get_config`.
+#[derive(Deserialize)]
+struct LicenseBody {
+    #[serde(rename = "TrialStartedOn")]
+    trial_started_on: String,
+    #[serde(rename = "ActivationCode")]
+    activation_code: Option<String>,
+}
+
+/// `ConfigId` of the one license row (`licenseSchema.ts`'s `LICENSE_CONFIG_ID`).
+const LICENSE_CONFIG_ID: &str = "license";
+
+/// The Rust-side half of task #62's "license enforcement is entirely
+/// advisory" finding. Until now, `evaluate_license` computed the right
+/// answer but nothing *acted* on it in Rust — `WeighingScreen`'s
+/// `licenseGated` prop disabled Save in the UI, but a direct
+/// `invoke("save_doc", ...)` call (devtools, a patched build, a replayed
+/// request) still wrote the ticket. Call this at the top of any command a
+/// license is meant to gate; today that's `save_doc` only — reads,
+/// settings, prints and everything else in PLAN §12's "Operator" tier stay
+/// open regardless of license state, matching what the frontend already
+/// allows through unconditionally.
+///
+/// A missing config row (a database the frontend has never opened, e.g. a
+/// bare `cargo test` fixture, or truly the first moment after install)
+/// allows rather than blocks — the row is seeded by the frontend "once, on
+/// first run" (`licenseSchema.ts`'s own comment), so its absence means
+/// "hasn't started yet", not "expired".
+pub fn require_licensed(conn: &Connection, app_data_dir: &Path) -> Result<(), AppError> {
+    let Some(row) = store::get_config(conn, LICENSE_CONFIG_ID)? else {
+        return Ok(());
+    };
+    let body: LicenseBody = serde_json::from_value(row.body)
+        .map_err(|e| AppError::Message(format!("license config row is malformed: {e}")))?;
+    let trial_started_on = NaiveDate::parse_from_str(&body.trial_started_on, "%Y-%m-%d")
+        .map_err(|e| AppError::Message(format!("bad TrialStartedOn date: {e}")))?;
+    let today = chrono::Utc::now().date_naive();
+    let machine_hash = machine_id_hash(app_data_dir)?;
+
+    match evaluate(
+        today,
+        trial_started_on,
+        machine_hash,
+        body.activation_code.as_deref(),
+    ) {
+        LicenseState::Trial { .. } | LicenseState::Licensed { .. } => Ok(()),
+        LicenseState::TrialExpired => Err(AppError::Message(
+            "trial period has ended — activate a licence in Settings to keep saving tickets".into(),
+        )),
+        LicenseState::Expired { expired_on } => Err(AppError::Message(format!(
+            "licence expired on {expired_on} — renew in Settings to keep saving tickets"
+        ))),
+        LicenseState::Invalid { reason } => Err(AppError::Message(format!(
+            "licence is invalid ({reason}) — check Settings"
+        ))),
     }
 }

@@ -67,6 +67,7 @@ export const useWeighingScreenDerived = ({
         settings,
         partyCache: caches.party,
         verifyUrl,
+        chargeInr: billing.charge,
         onDelivered: bumpRefresh,
     });
     const slipData = useSlipData({ ticket, settings, charge: billing.charge, verifyUrl });

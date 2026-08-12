@@ -1,4 +1,4 @@
-import styles from "../AppShell.module.css";
+import styles from "../_styles/AppShell.module.css";
 
 // The weighbridge seen from the side: the deck carries the letters, the
 // load cells carry the deck. BS is a constant maker's mark, not the real

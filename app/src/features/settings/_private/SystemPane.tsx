@@ -1,10 +1,11 @@
 import { useSettings } from "../useSettings";
+import styles from "./_styles/SystemPane.module.css";
 import { BackupRestoreCard } from "./BackupRestoreCard";
 import { DailySummaryCard } from "./DailySummaryCard";
 import { DateTimeFormatsCard } from "./DateTimeFormatsCard";
+import { IndexManagerCard } from "./IndexManagerCard";
 import { LegacyImportCard } from "./LegacyImportCard";
 import { LicenceCard } from "./LicenceCard";
-import styles from "./SystemPane.module.css";
 import { TicketNumberingCard } from "./TicketNumberingCard";
 
 export interface SystemPaneProps {
@@ -36,6 +37,7 @@ export const SystemPane = ({ onResetTicketSeries }: SystemPaneProps) => {
             <BackupRestoreCard />
             <LegacyImportCard />
             <LicenceCard />
+            <IndexManagerCard />
         </div>
     );
 };

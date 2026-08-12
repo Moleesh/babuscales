@@ -57,6 +57,25 @@ fn read_until(
     }
 }
 
+/// `to` is formatted straight into a quoted AT command string (`send`,
+/// below) — a `"` or an embedded CR/LF would break out of the quotes and
+/// inject arbitrary AT commands into the modem. Phone numbers never need
+/// more than digits, a leading `+`, and light punctuation, so anything
+/// outside that narrow charset is rejected rather than stripped: silently
+/// dropping characters could still let a crafted string collide with a
+/// legitimate-looking number while quietly changing what gets dialled.
+fn validate_destination(to: &str) -> Result<(), AppError> {
+    let valid = to
+        .chars()
+        .all(|c| c.is_ascii_digit() || matches!(c, '+' | '-' | ' ' | '(' | ')'));
+    if !valid {
+        return Err(AppError::Message(format!(
+            "phone number {to:?} contains characters that aren't allowed — use digits, +, -, spaces or parentheses only"
+        )));
+    }
+    Ok(())
+}
+
 fn write_command(
     port: &mut Box<dyn serialport::SerialPort>,
     command: &str,
@@ -89,6 +108,7 @@ pub(crate) fn send(
             "party has no phone number saved — add one in Masters first".into(),
         ));
     }
+    validate_destination(to)?;
 
     let mut port = serialport::new(port_name, baud_rate)
         .timeout(Duration::from_millis(500))

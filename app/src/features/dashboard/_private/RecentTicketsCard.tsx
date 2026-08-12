@@ -1,28 +1,31 @@
+import { useMemo } from "react";
+
 import { Card } from "@components/Card";
 import { DataTable } from "@components/DataTable";
 import type { DataTableColumn } from "@components/DataTable";
 import { formatWeightKg } from "@constants/numberFormat";
 import type { TicketRow } from "@features/reports";
 import { formatTicketNo } from "@features/weighing";
+import { useTranslation } from "@i18n/useTranslation";
 
 const RECENT_COUNT = 6;
 
-const RECENT_COLUMNS: DataTableColumn<TicketRow>[] = [
+const buildRecentColumns = (t: (key: string) => string): DataTableColumn<TicketRow>[] => [
     {
         key: "no",
-        header: "Ticket",
+        header: t("dashboard.recent.col.ticket"),
         render: (row) => <span className="num">{formatTicketNo(row.docSeq)}</span>,
     },
-    { key: "veh", header: "Vehicle", render: (row) => row.vehicleNo || "—" },
-    { key: "party", header: "Party", render: (row) => row.party || "—" },
-    { key: "mat", header: "Material", render: (row) => row.material || "—" },
+    { key: "veh", header: t("dashboard.recent.col.vehicle"), render: (row) => row.vehicleNo || "—" },
+    { key: "party", header: t("dashboard.recent.col.party"), render: (row) => row.party || "—" },
+    { key: "mat", header: t("dashboard.recent.col.material"), render: (row) => row.material || "—" },
     {
         key: "net",
-        header: "Net",
+        header: t("dashboard.recent.col.net"),
         numeric: true,
         render: (row) => (row.netKg !== null ? `${formatWeightKg(row.netKg)} kg` : "—"),
     },
-    { key: "at", header: "At", render: (row) => new Date(row.at).toLocaleString() },
+    { key: "at", header: t("dashboard.recent.col.at"), render: (row) => new Date(row.at).toLocaleString() },
 ];
 
 export interface RecentTicketsCardProps {
@@ -30,18 +33,23 @@ export interface RecentTicketsCardProps {
 }
 
 // Split out of DashboardScreen (over the line budget — docs/CodingStandards.md)
-// — the bottom "Recent tickets" card, unchanged from the inline version it
-// replaces. Columns are a module constant since they don't depend on props.
-export const RecentTicketsCard = ({ rows }: RecentTicketsCardProps) => (
-    <Card
-        title={<span className="lbl">Recent tickets</span>}
-        headerRight={<span className="lbl">Updates as tickets are saved</span>}
-    >
-        <DataTable
-            columns={RECENT_COLUMNS}
-            rows={rows.slice(0, RECENT_COUNT)}
-            getRowId={(row) => row.docId}
-            emptyMessage="No tickets yet"
-        />
-    </Card>
-);
+// — the bottom "Recent tickets" card. Now uses the t() function for
+// translatable strings. Columns are built dynamically since they depend on t().
+export const RecentTicketsCard = ({ rows }: RecentTicketsCardProps) => {
+    const { t } = useTranslation();
+    const columns = useMemo(() => buildRecentColumns(t), [t]);
+
+    return (
+        <Card
+            title={<span className="lbl">{t("dashboard.recent.title")}</span>}
+            headerRight={<span className="lbl">{t("dashboard.recent.subtitle")}</span>}
+        >
+            <DataTable
+                columns={columns}
+                rows={rows.slice(0, RECENT_COUNT)}
+                getRowId={(row) => row.docId}
+                emptyMessage={t("dashboard.recent.empty")}
+            />
+        </Card>
+    );
+};

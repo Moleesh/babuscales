@@ -3,8 +3,8 @@ import type { LanguagePack } from "@i18n/types";
 import { useTranslation } from "@i18n/useTranslation";
 
 import { useSettings } from "../useSettings";
+import styles from "./_styles/FieldsLanguagePane.module.css";
 import { FieldSchemaCard } from "./FieldSchemaCard";
-import styles from "./FieldsLanguagePane.module.css";
 import { LanguagePacksCard } from "./LanguagePacksCard";
 import { useFieldSchemaUpload } from "./useFieldSchemaUpload";
 import { useLanguagePackUpload } from "./useLanguagePackUpload";

@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 
 import { EmptyState } from "@components/EmptyState";
 
-import styles from "./DataTable.module.css";
+import styles from "./_styles/DataTable.module.css";
 
 export interface DataTableColumn<Row> {
     key: string;
@@ -55,6 +55,18 @@ export const DataTable = <Row,>({
                             key={getRowId(row)}
                             className={onRowClick ? styles.clickable : undefined}
                             onClick={onRowClick ? () => onRowClick(row) : undefined}
+                            tabIndex={onRowClick ? 0 : undefined}
+                            role={onRowClick ? "button" : undefined}
+                            onKeyDown={
+                                onRowClick
+                                    ? (event) => {
+                                          if (event.key === "Enter" || event.key === " ") {
+                                              event.preventDefault();
+                                              onRowClick(row);
+                                          }
+                                      }
+                                    : undefined
+                            }
                         >
                             {columns.map((column) => (
                                 <td
