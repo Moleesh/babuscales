@@ -36,10 +36,10 @@ export const LanguagePacksCard = ({ packs, unlocked, busy, message, onFile }: La
         <div className={styles.body}>
             <label className={`${styles.drop} ${!unlocked ? styles.dropDisabled : ""}`}>
                 <span className={styles.dropIcon}>⬆</span>
-                <span>{busy ? "Applying…" : "Drop a language .json here, or click to choose"}</span>
+                <span>{busy ? "Applying…" : "Drop a language .lang file here, or click to choose"}</span>
                 <input
                     type="file"
-                    accept=".json,application/json"
+                    accept=".lang,.txt,text/plain,.json,application/json"
                     hidden
                     disabled={busy || !unlocked}
                     onChange={(event) => {

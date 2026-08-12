@@ -50,28 +50,10 @@ import { useWeighingTicket, WeighingScreen } from "@features/weighing";
 import type { UseWeighingTicket } from "@features/weighing";
 import { DEFAULT_HELP_TOPICS } from "@i18n/helpTopics";
 import { I18nProvider } from "@i18n/I18nProvider";
-import { loadLanguagePacks, saveLanguagePack } from "@i18n/loadLanguagePacks";
+import { loadLanguagePacks, mergeLanguagePacks, saveLanguagePack } from "@i18n/loadLanguagePacks";
+import { BUILT_IN_PACKS } from "@i18n/packs";
 import type { LanguagePack } from "@i18n/types";
 import { useTranslation } from "@i18n/useTranslation";
-
-// The day-one seed, saved as a real `config` row on first run (see
-// `loadLanguagePacks`'s effect below) rather than a hardcoded prop — proves
-// a pack overrides a subset of keys and everything else falls through to
-// English (PLAN §8.3). Not real Tamil content (that's authoring work, not
-// infrastructure); real packs after this one come from Settings' Fields &
-// language pane, same upload path, same shape.
-const DEMO_TAMIL_PACK: LanguagePack = {
-    Code: "ta",
-    Name: "தமிழ்",
-    Version: 1,
-    Strings: {
-        "nav.dash": "முகப்பு",
-        "nav.weigh": "நிறுத்தல்",
-        tare: "காலி எடை",
-        gross: "மொத்த எடை",
-        net: "நிகர எடை",
-    },
-};
 
 const TAB_KEYS = ["dash", "weigh", "cameras", "reports", "masters", "settings"] as const;
 const TAB_ICONS: Record<(typeof TAB_KEYS)[number], string> = {
@@ -462,24 +444,19 @@ const OutboxWorkerSync = () => {
     return null;
 };
 
-// Loaded from `config` (ConfigKind: "LanguagePack") — I18nProvider's own doc
-// comment: "loading is the caller's job", this is that job. A fresh install
-// has no rows yet, so the one pack this build ships with is seeded as a real
-// row rather than kept as a hardcoded prop — same "create the default row on
-// first run" shape SettingsProvider already uses for its own config row.
+// `BUILT_IN_PACKS` (src/i18n/packs/) ship this app's own baseline
+// translation in source — always present, no database row required. What's
+// loaded from `config` (ConfigKind: "LanguagePack") is only ever a site's
+// own upload: a genuinely new language, or an override of a built-in one
+// (Settings → Fields & language pane) — `mergeLanguagePacks` layers the two,
+// key by key, uploaded winning (`loadLanguagePacks.ts`).
 const useAppLanguagePacks = (db: ReturnType<typeof useDataPort>) => {
-    const [packs, setPacks] = useState<LanguagePack[]>([]);
+    const [uploaded, setUploaded] = useState<LanguagePack[]>([]);
 
     useEffect(() => {
         let cancelled = false;
-        void loadLanguagePacks(db).then(async (loaded) => {
-            if (cancelled) return;
-            if (loaded.length > 0) {
-                setPacks(loaded);
-                return;
-            }
-            await saveLanguagePack(db, DEMO_TAMIL_PACK);
-            if (!cancelled) setPacks([DEMO_TAMIL_PACK]);
+        void loadLanguagePacks(db).then((loaded) => {
+            if (!cancelled) setUploaded(loaded);
         });
         return () => {
             cancelled = true;
@@ -491,10 +468,10 @@ const useAppLanguagePacks = (db: ReturnType<typeof useDataPort>) => {
     // pack is immediately selectable without a reload.
     const addLanguagePack = async (pack: LanguagePack): Promise<void> => {
         await saveLanguagePack(db, pack);
-        setPacks((prev) => [...prev.filter((existing) => existing.Code !== pack.Code), pack]);
+        setUploaded((prev) => [...prev.filter((existing) => existing.Code !== pack.Code), pack]);
     };
 
-    return { packs, addLanguagePack };
+    return { packs: mergeLanguagePacks(BUILT_IN_PACKS, uploaded), addLanguagePack };
 };
 
 // Loaded from `config` (ConfigKind: "Schema") — same "caller loads, provider

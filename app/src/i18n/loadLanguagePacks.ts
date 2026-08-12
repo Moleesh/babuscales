@@ -30,3 +30,27 @@ export const saveLanguagePack = (db: DataPort, pack: LanguagePack): Promise<void
             Body: pack,
         })
         .then(() => undefined);
+
+// Built-in packs (src/i18n/packs/) ship the app's own baseline translation,
+// in source, for real — the upload path is for a site's own custom schema
+// field labels or a genuinely new language, not for re-typing what this app
+// already ships. A DB-stored pack sharing a `Code` with a built-in one wins
+// key-by-key (its own `Strings` merged over the built-in's), the same
+// "half-translated pack still runs" fallback `LanguagePack.Strings`'s own
+// doc comment already describes one level up — an uploaded override doesn't
+// need to repeat every key the built-in pack already has, only the ones an
+// admin actually wants to change or add (e.g. a new custom field's label).
+export const mergeLanguagePacks = (
+    builtIn: LanguagePack[],
+    uploaded: LanguagePack[],
+): LanguagePack[] => {
+    const byCode = new Map<string, LanguagePack>(builtIn.map((pack) => [pack.Code, pack]));
+    for (const pack of uploaded) {
+        const base = byCode.get(pack.Code);
+        byCode.set(pack.Code, {
+            ...pack,
+            Strings: base ? { ...base.Strings, ...pack.Strings } : pack.Strings,
+        });
+    }
+    return [...byCode.values()];
+};
