@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import type { ReactNode } from "react";
 
 import { useTranslation } from "@i18n/useTranslation";
@@ -5,7 +6,7 @@ import { useTranslation } from "@i18n/useTranslation";
 import { BrandMark } from "./_private/BrandMark";
 import { TopBarOverflow } from "./_private/TopBarOverflow";
 import { useEnterAsTab } from "./_private/useEnterAsTab";
-import { useVisibleTabCount } from "./_private/useVisibleTabCount";
+import { useTopBarFit } from "./_private/useTopBarFit";
 import styles from "./_styles/AppShell.module.css";
 
 export interface AppShellTab {
@@ -67,12 +68,13 @@ interface TopBarProps extends Pick<AppShellProps, "siteLabel" | "activeTab" | "o
 // #62's overflow split (which tabs render inline vs. inside
 // TopBarOverflow's menu) is still decided by AppShell, not here.
 const TopBar = ({ siteLabel, tabs, activeTab, onNavigate, topRight, pin, sectionsLabel }: TopBarProps) => {
-    const visibleCount = useVisibleTabCount(tabs.length);
-    const visibleTabs = tabs.slice(0, visibleCount);
-    const overflowTabs = tabs.slice(visibleCount);
+    const barRef = useRef<HTMLElement>(null);
+    const { visibleTabCount, secondaryCollapsed } = useTopBarFit(barRef, tabs.length);
+    const visibleTabs = tabs.slice(0, visibleTabCount);
+    const overflowTabs = tabs.slice(visibleTabCount);
 
     return (
-        <header className={styles.top}>
+        <header className={styles.top} ref={barRef}>
             <div className={styles.brandbox}>
                 <BrandMark />
                 <div style={{ minWidth: 0 }}>
@@ -91,7 +93,7 @@ const TopBar = ({ siteLabel, tabs, activeTab, onNavigate, topRight, pin, section
 
             <div className={styles.topRight}>
                 {pin}
-                <TopBarOverflow>
+                <TopBarOverflow collapsed={secondaryCollapsed || overflowTabs.length > 0}>
                     {overflowTabs.map((tab) => (
                         <TabButton
                             key={tab.key}

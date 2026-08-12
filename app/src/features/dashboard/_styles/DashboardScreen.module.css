@@ -84,7 +84,6 @@ button.kpi {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 12px;
-    align-items: start;
 }
 @media (max-width: 899px) {
     .grid2 {

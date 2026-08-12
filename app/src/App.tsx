@@ -752,12 +752,24 @@ const useAppTicketSchema = (db: ReturnType<typeof useDataPort>) => {
 // index.html's #app-splash covers the gap before Settings (the last thing
 // Shell needs before its first real paint — everything else in App's
 // provider stack renders unconditionally with a sane default) finishes its
-// first load. `useLayoutEffect` removes it just before the browser paints
-// the real shell, so there's no flash of both.
+// first load. `useLayoutEffect` fires just before the browser paints the
+// real shell underneath, then the splash fades itself out on top of it
+// (base.css's `.app-splash-out` transition) rather than vanishing instantly
+// — an instant `.remove()` read as a glitch, not the end of a load.
 const useRemoveInitialSplash = (ready: boolean): void => {
     useLayoutEffect(() => {
         if (!ready) return;
-        document.getElementById("app-splash")?.remove();
+        const splash = document.getElementById("app-splash");
+        if (!splash) return;
+        splash.classList.add("app-splash-out");
+        const remove = () => splash.remove();
+        splash.addEventListener("transitionend", remove, { once: true });
+        // Belt-and-suspenders: `prefers-reduced-motion` sets `transition:
+        // none` in CSS, which never fires `transitionend` at all — without
+        // this fallback the splash would sit fully transparent but still
+        // blocking clicks (it's `position: fixed; inset: 0`) forever.
+        const fallback = window.setTimeout(remove, 300);
+        return () => window.clearTimeout(fallback);
     }, [ready]);
 };
 

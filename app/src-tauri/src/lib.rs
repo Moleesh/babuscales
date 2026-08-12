@@ -15,7 +15,7 @@ pub mod state;
 pub mod store;
 
 use tauri::menu::{Menu, MenuItem};
-use tauri::tray::TrayIconBuilder;
+use tauri::tray::{TrayIconBuilder, TrayIconEvent};
 use tauri::{Manager, WindowEvent};
 use tauri_plugin_autostart::MacosLauncher;
 
@@ -66,6 +66,19 @@ pub fn run() -> tauri::Result<()> {
                     api.prevent_close();
                     let _ = window.hide();
                 }
+                // Minimize-to-tray: Tauri has no dedicated "minimized" event
+                // (Windows/webview2 report it as an ordinary `Resized`), so
+                // the only reliable signal is asking the OS after the fact —
+                // `is_minimized()` reflects the real window state at the
+                // point the resize fired. Restoring (un-minimizing) also
+                // fires `Resized`, but by then `is_minimized()` is false, so
+                // this only ever fires on the way down, never re-hides an
+                // already-visible window.
+                if let WindowEvent::Resized(_) = event {
+                    if window.is_minimized().unwrap_or(false) {
+                        let _ = window.hide();
+                    }
+                }
             }
         })
         .setup(|app| {
@@ -83,7 +96,24 @@ pub fn run() -> tauri::Result<()> {
                         .ok_or("no default window icon")?,
                 )
                 .menu(&tray_menu)
-                .show_menu_on_left_click(true)
+                // Left click restores the window directly (task: "opening
+                // from tray") rather than popping the menu — right-click
+                // still reaches Show/Quit via the OS's own tray-menu
+                // handling, unaffected by this flag.
+                .show_menu_on_left_click(false)
+                .on_tray_icon_event(|tray, event| {
+                    if let TrayIconEvent::Click {
+                        button: tauri::tray::MouseButton::Left,
+                        button_state: tauri::tray::MouseButtonState::Up,
+                        ..
+                    } = event
+                    {
+                        if let Some(window) = tray.app_handle().get_webview_window("main") {
+                            let _ = window.show();
+                            let _ = window.set_focus();
+                        }
+                    }
+                })
                 .on_menu_event(|app, event| match event.id.as_ref() {
                     "quit" => app.exit(0),
                     "show" => {

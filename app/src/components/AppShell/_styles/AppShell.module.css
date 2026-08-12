@@ -115,11 +115,13 @@
     gap: 2px;
     flex: 1;
     min-width: 0;
-    overflow-x: auto;
-    scrollbar-width: none;
-}
-.tabs::-webkit-scrollbar {
-    display: none;
+    /* No internal scroll here on purpose (task #62, third attempt) — an
+       `overflow-x: auto` absorbed the row's real overflow silently instead
+       of letting it reach `.top`, which is what useTopBarFit.ts measures
+       (`.top`'s own scrollWidth vs clientWidth) to decide what to collapse
+       into TopBarOverflow's menu. A scrollable-but-invisible-scrollbar tab
+       row (the previous behaviour) is also just bad UX on its own: nothing
+       hinted a tab existed off to the side. */
 }
 .tab {
     display: flex;

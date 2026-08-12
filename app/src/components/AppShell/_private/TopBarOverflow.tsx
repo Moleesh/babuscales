@@ -3,15 +3,18 @@ import type { ReactNode } from "react";
 
 import { useTranslation } from "@i18n/useTranslation";
 
-import { useIsNarrowTopBar } from "./useIsNarrowTopBar";
 import styles from "../_styles/AppShell.module.css";
 
 export interface TopBarOverflowProps {
     /** The secondary controls (Settings/Language/Operator/Help) plus any
         primary tabs AppShell itself has decided don't fit (task #62) —
-        rendered inline above the breakpoint, behind the "..." menu below
-        it. Opaque to this component either way. */
+        rendered inline when `collapsed` is false, behind the "..." menu
+        when it's true. Opaque to this component either way. */
     children: ReactNode;
+    /** Measured by AppShell's `useTopBarFit` (real scrollWidth/clientWidth
+        fit, not a guessed breakpoint — see that hook's own comment) —
+        whether the row actually has room to show `children` inline. */
+    collapsed: boolean;
 }
 
 // Closes the menu on an outside click/tap — the one bit of behaviour this
@@ -30,18 +33,18 @@ const useCloseOnOutsideClick = (open: boolean, onClose: () => void) => {
     return ref;
 };
 
-// Collapses whatever it's given behind a "..." menu once the top bar is too
-// narrow to show it inline (useIsNarrowTopBar, AppShell.module.css's own
-// 880px breakpoint) — task #62. AppShell.tsx feeds it the secondary
-// top-bar controls (App.tsx's `topRight`) and any primary tabs that no
-// longer fit; the always-visible pin toggle stays outside it entirely.
-export const TopBarOverflow = ({ children }: TopBarOverflowProps) => {
+// Collapses whatever it's given behind a "..." menu once the top bar
+// doesn't actually have room to show it inline (`collapsed`, from
+// AppShell's `useTopBarFit` — task #62). AppShell.tsx feeds it the
+// secondary top-bar controls (App.tsx's `topRight`) and any primary tabs
+// that no longer fit; the always-visible pin toggle stays outside it
+// entirely.
+export const TopBarOverflow = ({ children, collapsed }: TopBarOverflowProps) => {
     const { t } = useTranslation();
-    const narrow = useIsNarrowTopBar();
     const [open, setOpen] = useState(false);
     const ref = useCloseOnOutsideClick(open, () => setOpen(false));
 
-    if (!narrow) return <>{children}</>;
+    if (!collapsed) return <>{children}</>;
 
     return (
         <div className={styles.overflow} ref={ref}>
