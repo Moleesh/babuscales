@@ -53,7 +53,7 @@ export const AppearancePane = () => {
                             </button>
                         ))}
                     </div>
-                    <Field id="setFs" label={{ en: "Text size" }}>
+                    <Field id="setFs" label={{ en: "Text size", ta: "எழுத்து அளவு" }}>
                         <SegmentedControl
                             options={textScaleOptions}
                             value={String(settings.TextScale)}
@@ -64,7 +64,7 @@ export const AppearancePane = () => {
                 </div>
             </Card>
             <Card title={<span className="lbl">{t("settings.appearance.operatorOnDuty")}</span>}>
-                <Field id="setOp" label={{ en: "Name" }}>
+                <Field id="setOp" label={{ en: "Name", ta: "பெயர்" }}>
                     <input
                         id="setOp"
                         defaultValue={settings.OperatorName}

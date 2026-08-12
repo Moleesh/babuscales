@@ -25,7 +25,7 @@ export const RemoteAccessTokenFields = ({
     onCheckStatus,
 }: RemoteAccessTokenFieldsProps) => (
     <>
-        <Field id="tunnelToken" label={{ en: "Cloudflare Tunnel token" }}>
+        <Field id="tunnelToken" label={{ en: "Cloudflare Tunnel token", ta: "Cloudflare Tunnel டோக்கன்" }}>
             <input
                 id="tunnelToken"
                 type="password"

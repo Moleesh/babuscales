@@ -15,7 +15,7 @@ export const WebhookFields = ({ settings, unlocked, onSave }: WebhookFieldsProps
     const webhook = settings.Webhook;
     return (
         <FieldGrid columns={2}>
-            <Field id="webhookEndpoint" label={{ en: "Endpoint URL" }}>
+            <Field id="webhookEndpoint" label={{ en: "Endpoint URL", ta: "இறுதிமுனை URL" }}>
                 <input
                     id="webhookEndpoint"
                     placeholder="https://example.com/hooks/babuscales"
@@ -26,7 +26,7 @@ export const WebhookFields = ({ settings, unlocked, onSave }: WebhookFieldsProps
                     }
                 />
             </Field>
-            <Field id="webhookSecret" label={{ en: "Signing secret (optional)" }}>
+            <Field id="webhookSecret" label={{ en: "Signing secret (optional)", ta: "கையொப்ப ரகசியம் (விருப்பம்)" }}>
                 <input
                     id="webhookSecret"
                     type="password"

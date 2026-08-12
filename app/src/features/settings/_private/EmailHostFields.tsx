@@ -15,7 +15,7 @@ export interface EmailHostFieldsProps {
 export const EmailHostFields = ({ settings, smtp, unlocked, onSave }: EmailHostFieldsProps) => (
     <>
         <FieldGrid columns={2}>
-            <Field id="smtpHost" label={{ en: "SMTP host" }}>
+            <Field id="smtpHost" label={{ en: "SMTP host", ta: "SMTP ஹோஸ்ட்" }}>
                 <input
                     id="smtpHost"
                     placeholder="smtp.example.com"
@@ -24,7 +24,7 @@ export const EmailHostFields = ({ settings, smtp, unlocked, onSave }: EmailHostF
                     onChange={(event) => onSave({ ...settings, Smtp: { ...smtp, Host: event.target.value } })}
                 />
             </Field>
-            <Field id="smtpPort" label={{ en: "Port" }}>
+            <Field id="smtpPort" label={{ en: "Port", ta: "போர்ட்" }}>
                 <input
                     id="smtpPort"
                     type="number"
@@ -39,7 +39,7 @@ export const EmailHostFields = ({ settings, smtp, unlocked, onSave }: EmailHostF
                 />
             </Field>
         </FieldGrid>
-        <Field id="smtpUsername" label={{ en: "Username / from address" }}>
+        <Field id="smtpUsername" label={{ en: "Username / from address", ta: "பயனர்பெயர் / அனுப்புநர் முகவரி" }}>
             <input
                 id="smtpUsername"
                 type="email"

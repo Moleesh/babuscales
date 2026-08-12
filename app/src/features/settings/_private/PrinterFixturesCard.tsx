@@ -1,15 +1,16 @@
 import { Card } from "@components/Card";
 import { Field, FieldGrid } from "@components/Field";
+import type { Localized } from "@i18n/types";
 import { useTranslation } from "@i18n/useTranslation";
 
 import { PRINTER_FIXTURES } from "../settingsSchema";
 import type { PrinterKind, PrintersConfig } from "../settingsSchema";
 import styles from "./_styles/PrintPane.module.css";
 
-const PRINTER_ROWS: readonly [key: keyof PrintersConfig, kind: PrinterKind, label: string][] = [
-    ["A4", "a4", "Default · A4 laser / inkjet"],
-    ["Mx", "mx", "Default · dot matrix"],
-    ["Th", "th", "Default · thermal roll"],
+const PRINTER_ROWS: readonly [key: keyof PrintersConfig, kind: PrinterKind, label: Localized][] = [
+    ["A4", "a4", { en: "Default · A4 laser / inkjet", ta: "இயல்பு · A4 லேசர் / இங்க்ஜெட்" }],
+    ["Mx", "mx", { en: "Default · dot matrix", ta: "இயல்பு · டாட் மேட்ரிக்ஸ்" }],
+    ["Th", "th", { en: "Default · thermal roll", ta: "இயல்பு · தெர்மல் ரோல்" }],
 ];
 
 export interface PrinterFixturesCardProps {
@@ -32,7 +33,7 @@ export const PrinterFixturesCard = ({ printers, unlocked, onChange }: PrinterFix
         >
             <FieldGrid columns={3}>
                 {PRINTER_ROWS.map(([key, kind, label]) => (
-                    <Field key={key} id={`prn-${key}`} label={{ en: label }}>
+                    <Field key={key} id={`prn-${key}`} label={label}>
                         <select
                             id={`prn-${key}`}
                             value={printers[key]}

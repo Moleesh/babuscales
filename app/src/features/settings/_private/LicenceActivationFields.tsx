@@ -25,7 +25,7 @@ export const LicenceActivationFields = ({
     onClear,
 }: LicenceActivationFieldsProps) => (
     <>
-        <Field id="licReqCode" label={{ en: "Request code — send to Babulens" }}>
+        <Field id="licReqCode" label={{ en: "Request code — send to Babulens", ta: "கோரிக்கை குறியீடு — Babulens-க்கு அனுப்பவும்" }}>
             <input
                 id="licReqCode"
                 readOnly
@@ -33,7 +33,7 @@ export const LicenceActivationFields = ({
                 onFocus={(event) => event.target.select()}
             />
         </Field>
-        <Field id="licActCode" label={{ en: "Activation code" }}>
+        <Field id="licActCode" label={{ en: "Activation code", ta: "செயல்படுத்தல் குறியீடு" }}>
             <input
                 id="licActCode"
                 placeholder="Paste the code Babulens sent back"

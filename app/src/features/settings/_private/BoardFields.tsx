@@ -15,7 +15,7 @@ export const BoardFields = ({ settings, unlocked, onSave }: BoardFieldsProps) =>
     const board = settings.Board;
     return (
         <FieldGrid columns={2}>
-            <Field id="boardHost" label={{ en: "Host / IP address" }}>
+            <Field id="boardHost" label={{ en: "Host / IP address", ta: "ஹோஸ்ட் / IP முகவரி" }}>
                 <input
                     id="boardHost"
                     placeholder="192.168.1.50"
@@ -24,7 +24,7 @@ export const BoardFields = ({ settings, unlocked, onSave }: BoardFieldsProps) =>
                     onChange={(event) => onSave({ ...settings, Board: { ...board, Host: event.target.value } })}
                 />
             </Field>
-            <Field id="boardPort" label={{ en: "Port" }}>
+            <Field id="boardPort" label={{ en: "Port", ta: "போர்ட்" }}>
                 <input
                     id="boardPort"
                     type="number"

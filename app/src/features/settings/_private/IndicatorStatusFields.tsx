@@ -30,7 +30,7 @@ export const IndicatorStatusFields = ({
     reading,
 }: IndicatorStatusFieldsProps) => (
     <>
-        <Field id="connPattern" label={{ en: "Custom pattern (advanced)" }}>
+        <Field id="connPattern" label={{ en: "Custom pattern (advanced)", ta: "தனிப்பயன் மாதிரி (மேம்பட்டது)" }}>
             <input
                 id="connPattern"
                 placeholder="Leave blank to auto-extract the number from each line"

@@ -12,7 +12,7 @@ export interface TallyFieldsProps {
 // docs/CodingStandards.md) — the export-folder field, unchanged from the
 // inline version it replaces.
 export const TallyFields = ({ settings, unlocked, onSave }: TallyFieldsProps) => (
-    <Field id="tallyFolder" label={{ en: "Export folder" }}>
+    <Field id="tallyFolder" label={{ en: "Export folder", ta: "ஏற்றுமதி கோப்புறை" }}>
         <input
             id="tallyFolder"
             placeholder="C:\BabuScales\TallyExport"

@@ -30,7 +30,7 @@ export const AmountAndAdminPasswordFields = ({
     return (
     <>
         <FieldGrid columns={2}>
-            <Field id="setAmt" label={{ en: "Amount rounding" }}>
+            <Field id="setAmt" label={{ en: "Amount rounding", ta: "தொகை வட்டமிடல்" }}>
                 <select
                     id="setAmt"
                     value={String(settings.Formats.AmountDp)}
@@ -46,7 +46,7 @@ export const AmountAndAdminPasswordFields = ({
                     <option value="0">{t("settings.amountFields.wholeRupees")}</option>
                 </select>
             </Field>
-            <Field id="setAdmPw" label={{ en: "Admin password" }}>
+            <Field id="setAdmPw" label={{ en: "Admin password", ta: "நிர்வாகி கடவுச்சொல்" }}>
                 <input
                     id="setAdmPw"
                     type="password"

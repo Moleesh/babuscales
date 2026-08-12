@@ -35,7 +35,7 @@ export const DailySummaryScheduleFields = ({
             <span>{t("settings.dailySummary.sendAutomatically")}</span>
         </label>
         <FieldGrid columns={2}>
-            <Field id="dsTime" label={{ en: "Send at" }}>
+            <Field id="dsTime" label={{ en: "Send at", ta: "அனுப்ப வேண்டிய நேரம்" }}>
                 <input
                     id="dsTime"
                     type="time"
@@ -46,7 +46,7 @@ export const DailySummaryScheduleFields = ({
                     }
                 />
             </Field>
-            <Field id="dsRecipient" label={{ en: "Recipient e-mail" }}>
+            <Field id="dsRecipient" label={{ en: "Recipient e-mail", ta: "பெறுநர் மின்னஞ்சல்" }}>
                 <input
                     id="dsRecipient"
                     type="email"

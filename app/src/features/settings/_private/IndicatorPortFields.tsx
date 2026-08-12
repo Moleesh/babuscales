@@ -16,7 +16,7 @@ export interface IndicatorPortFieldsProps {
 // replaces.
 export const IndicatorPortFields = ({ settings, conn, unlocked, onSave, ports }: IndicatorPortFieldsProps) => (
     <FieldGrid columns={2}>
-        <Field id="connPort" label={{ en: "Serial port" }}>
+        <Field id="connPort" label={{ en: "Serial port", ta: "சீரியல் போர்ட்" }}>
             <select
                 id="connPort"
                 value={conn.IndicatorPort}
@@ -33,7 +33,7 @@ export const IndicatorPortFields = ({ settings, conn, unlocked, onSave, ports }:
                 ))}
             </select>
         </Field>
-        <Field id="connBaud" label={{ en: "Baud rate" }}>
+        <Field id="connBaud" label={{ en: "Baud rate", ta: "பாட் விகிதம்" }}>
             <select
                 id="connBaud"
                 value={conn.IndicatorBaud}

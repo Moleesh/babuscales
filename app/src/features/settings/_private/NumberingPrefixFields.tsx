@@ -18,7 +18,7 @@ export interface NumberingPrefixFieldsProps {
 // — the Prefix/Digits fields, unchanged from the inline version it replaces.
 export const NumberingPrefixFields = ({ numbering, unlocked, onChange }: NumberingPrefixFieldsProps) => (
     <FieldGrid columns={3}>
-        <Field id="numPrefix" label={{ en: "Prefix" }}>
+        <Field id="numPrefix" label={{ en: "Prefix", ta: "முன்னொட்டு" }}>
             <input
                 id="numPrefix"
                 value={numbering.Prefix}
@@ -26,7 +26,7 @@ export const NumberingPrefixFields = ({ numbering, unlocked, onChange }: Numberi
                 onChange={(event) => onChange({ ...numbering, Prefix: event.target.value })}
             />
         </Field>
-        <Field id="numWidth" label={{ en: "Digits" }}>
+        <Field id="numWidth" label={{ en: "Digits", ta: "இலக்கங்கள்" }}>
             <input
                 id="numWidth"
                 type="number"

@@ -23,7 +23,7 @@ export const EmailPasswordFields = ({
     onClearPassword,
 }: EmailPasswordFieldsProps) => (
     <>
-        <Field id="smtpPassword" label={{ en: "Password" }}>
+        <Field id="smtpPassword" label={{ en: "Password", ta: "கடவுச்சொல்" }}>
             <input
                 id="smtpPassword"
                 type="password"

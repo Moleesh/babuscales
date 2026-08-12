@@ -28,7 +28,7 @@ export const SmsPortFields = ({
 }: SmsPortFieldsProps) => (
     <>
         <FieldGrid columns={2}>
-            <Field id="gsmPort" label={{ en: "Modem serial port" }}>
+            <Field id="gsmPort" label={{ en: "Modem serial port", ta: "மோடம் சீரியல் போர்ட்" }}>
                 <select
                     id="gsmPort"
                     value={conn.GsmPort}
@@ -45,7 +45,7 @@ export const SmsPortFields = ({
                     ))}
                 </select>
             </Field>
-            <Field id="gsmBaud" label={{ en: "Baud rate" }}>
+            <Field id="gsmBaud" label={{ en: "Baud rate", ta: "பாட் விகிதம்" }}>
                 <select
                     id="gsmBaud"
                     value={conn.GsmBaud}

@@ -31,7 +31,7 @@ export const IndexCreateForm = ({
 }: IndexCreateFormProps) => (
     <>
         <FieldGrid columns={2}>
-            <Field id="ixTable" label={{ en: "Table" }}>
+            <Field id="ixTable" label={{ en: "Table", ta: "அட்டவணை" }}>
                 <select
                     id="ixTable"
                     value={table}
@@ -42,7 +42,7 @@ export const IndexCreateForm = ({
                     <option value="master">master</option>
                 </select>
             </Field>
-            <Field id="ixPath" label={{ en: "JSON path" }}>
+            <Field id="ixPath" label={{ en: "JSON path", ta: "JSON பாதை" }}>
                 <input
                     id="ixPath"
                     type="text"

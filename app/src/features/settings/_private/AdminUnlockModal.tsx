@@ -51,7 +51,7 @@ export const AdminUnlockModal = ({ open, onClose }: AdminUnlockModalProps) => {
     return (
         <AppModal open={open} title={t("settings.adminUnlock.title")} onClose={close} size="small">
             <div className={styles.body}>
-                <Field id="admPw" label={{ en: "Admin password" }}>
+                <Field id="admPw" label={{ en: "Admin password", ta: "நிர்வாகி கடவுச்சொல்" }}>
                     <input
                         id="admPw"
                         type="password"
