@@ -1270,7 +1270,8 @@ accuracy pass · print preview verification · test coverage for pure logic (324
 `app/src/components/Field`'s `label`/`searchTitle` migrated to `string | Localized` so static
 captions route through the flat `t()`/JSON-pack system instead of inline literals.
 
-**Next up — pick in this order once current work lands:**
+**Next up — pick in this order once current work lands. Test/verify/CI/push (tasks #19/#20) are
+held until every item below is done, then run once at the end — not per item, to save churn:**
 
 1. **Wire the formula engine to live billing.** `Charge`/`Value` are still hand-computed even
    though the formula engine itself is built and tested (§2 Core). Nobody has touched this yet.
@@ -1290,9 +1291,13 @@ captions route through the flat `t()`/JSON-pack system instead of inline literal
 6. **ANPR, visual template designer, anomaly detection** (Phase 8). Designed for, not built.
 7. **WhatsApp delivery.** Permanently decorative — no compliant free delivery path exists.
 
-**Blocked externally — always kept open at the bottom, nothing to schedule until it clears:**
+**Blocked externally / permanently open at the bottom — nothing to schedule until they clear:**
 
-8. **MiMaS integration.** Tamil Nadu's e-permit-to-weighbridge mandate. Blocked on the spec from
+8. **Logo and app-name.** `BS`-on-a-weighbridge-deck is a placeholder mark (`demo/`'s SVG and
+   `app/src-tauri/icons/`), and "BabuScales" itself may not be final — both need a real design/
+   naming decision before an engineering swap (§23 item 1). Kept open here rather than closed
+   silently in case a decision lands mid-cycle.
+9. **MiMaS integration.** Tamil Nadu's e-permit-to-weighbridge mandate. Blocked on the spec from
    the external body — task #48 is blocked, not in progress. Revisit the moment a spec arrives.
 
 **On tests.** Your call stands and I will not revisit it. Recorded once so the trade is explicit:
