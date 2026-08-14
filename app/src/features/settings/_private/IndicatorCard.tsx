@@ -6,6 +6,7 @@ import type { ConnectionsConfig, SettingsBody } from "../settingsSchema";
 import styles from "./_styles/ConnectionsPane.module.css";
 import { IndicatorPortFields } from "./IndicatorPortFields";
 import { IndicatorStatusFields } from "./IndicatorStatusFields";
+import { StabilityGateFields } from "./StabilityGateFields";
 
 export interface IndicatorCardProps {
     settings: SettingsBody;
@@ -17,6 +18,7 @@ export interface IndicatorCardProps {
     onRescan: () => void;
     error: string | null;
     reading: IndicatorReading;
+    onSetStability: (next: SettingsBody["Stability"]) => void;
 }
 
 // Split out of ConnectionsPane (over the line budget — docs/CodingStandards.md)
@@ -25,7 +27,10 @@ export interface IndicatorCardProps {
 // serial indicator source is present — see ConnectionsPane's own comment on
 // why the desktop-only "watch raw bytes live" wizard steps aren't built.
 // Further split into IndicatorPortFields/IndicatorStatusFields, each still
-// over its own budget on its own.
+// over its own budget on its own. The stability gate (moved here from
+// WeighingRulesCard, by request) leads the card — it's the indicator's own
+// settle-detection tuning, so it belongs with the rest of the indicator's
+// own config rather than among the weighing rules.
 export const IndicatorCard = ({
     settings,
     conn,
@@ -36,6 +41,7 @@ export const IndicatorCard = ({
     onRescan,
     error,
     reading,
+    onSetStability,
 }: IndicatorCardProps) => {
     const { t } = useTranslation();
     return (
@@ -46,6 +52,7 @@ export const IndicatorCard = ({
             }
         >
             <div className={styles.body}>
+                <StabilityGateFields stability={settings.Stability} unlocked={unlocked} onChange={onSetStability} />
                 <IndicatorPortFields
                     settings={settings}
                     conn={conn}

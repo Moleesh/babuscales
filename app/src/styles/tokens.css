@@ -63,4 +63,21 @@
 }
 
 
+/* The custom cursor (CustomCursor.module.css) used plain `--led` and
+   vanished against every `--led`-colored KPI/chart accent it passed over.
+   A literal invert (`mix-blend-mode: difference`) fixed visibility but lost
+   the theme color entirely — task: "make the cursor darker/lighter based
+   on the theme, not just white". `--cursor` keeps the same hue as `--led`
+   but pushed toward white on dark-scheme skins (where it needs to read
+   *brighter* than the void/panel it mostly sits over) and toward black on
+   light-scheme skins (where it needs to read *darker* than the paper/white
+   panel) — distinct enough in lightness from `--led`'s own usage to stay
+   legible next to it, without picking an unrelated hue. */
+:root{
+  --cursor: color-mix(in srgb, var(--led) 65%, white 35%);
+}
+:root[data-skin="paper"], :root[data-skin="daylight"]{
+  --cursor: color-mix(in srgb, var(--led) 60%, black 40%);
+}
+
 html{ font-size:calc(16px * var(--s)); }

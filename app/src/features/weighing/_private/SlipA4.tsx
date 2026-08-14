@@ -1,6 +1,7 @@
-import { formatDateTime } from "@constants/numberFormat";
+import { formatDateTimeInFmt } from "@constants/numberFormat";
 import { buildQrDataUri } from "@engines/print";
 import type { SlipData } from "@engines/print";
+import { useSettings } from "@features/settings";
 import { useTranslation } from "@i18n/useTranslation";
 
 import styles from "./_styles/SlipA4.module.css";
@@ -25,10 +26,13 @@ const SlipField = ({ label, value }: { label: string; value: string }) => (
     </div>
 );
 
+// `kg` is already the fully-formatted weight-with-unit string
+// (SlipData.TareKg/GrossKg/NetKg, via buildSlipData's formatWeightIn) — no
+// literal "kg" suffix here, or a "t" display unit would render "1.5 t kg".
 const SlipWeightBox = ({ label, kg }: { label: string; kg: string }) => (
     <div>
         {label}
-        <b>{kg}</b>kg
+        <b>{kg}</b>
     </div>
 );
 
@@ -50,7 +54,7 @@ const SlipLoadsTable = ({ loads }: { loads: SlipData["GrossLoads"] }) => (
                     // Index as key is fine here — loads carry no id of their own, are never reordered, and this list only ever grows top-to-bottom during capture.
                     <tr key={`${load.At}-${index}`}>
                         <td>{index + 1}</td>
-                        <td>{load.Kg} kg</td>
+                        <td>{load.Kg}</td>
                         <td>{load.At}</td>
                     </tr>
                 ))}
@@ -70,6 +74,7 @@ const SlipLoadsTable = ({ loads }: { loads: SlipData["GrossLoads"] }) => (
 // line at all rather than a dead link.
 export const SlipA4 = ({ data }: SlipA4Props) => {
     const { lang } = useTranslation();
+    const { settings } = useSettings();
     return (
         <div className={styles.paper}>
             <div className={styles.head}>
@@ -101,7 +106,15 @@ export const SlipA4 = ({ data }: SlipA4Props) => {
                 <SlipField label="Operator" value={data.Operator} />
             </div>
             <div className={styles.footer}>
-                <span>Printed {formatDateTime(new Date(), lang)}</span>
+                <span>
+                    Printed{" "}
+                    {formatDateTimeInFmt(
+                        new Date(),
+                        lang,
+                        settings.Formats.DateFmt,
+                        settings.Formats.TimeFmt,
+                    )}
+                </span>
                 {data.VerifyUrl && (
                     <span className={styles.verify}>
                         <img

@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 
 import type { DataTableColumn } from "@components/DataTable";
+import type { WeightUnit } from "@constants/numberFormat";
 import type { DocRow } from "@db/types";
 
 import { buildSummaryColumns, buildTicketColumns } from "./reportColumns";
@@ -8,6 +9,7 @@ import { buildReportsScreenSlipData } from "./reportSlipData";
 import {
     buildTicketRows,
     filterRowsByDateRange,
+    filterRowsBySeries,
     filterTicketRows,
     sortTicketRows,
     summarizeTicketRows,
@@ -31,12 +33,19 @@ export interface UseReportsScreenDataArgs {
     filter: TicketRowFilter;
     dateFrom: string;
     dateTo: string;
+    /** `Numbering.CurrentEpoch` — the epoch `filterRowsBySeries` treats as "current". */
+    currentEpoch: number;
+    /** Reports' own "include tickets from before the last reset" toggle — true is a no-op (filterRowsBySeries). */
+    includeBacked: boolean;
     groupBy: GroupKey;
     sortKey: TicketSortKey;
     sortDir: SortDir;
     visibleColumnKeys: TicketColumnKey[] | null;
     onOpenTicket: (doc: DocRow) => void;
     amountDp: 0 | 2;
+    weightUnit: WeightUnit;
+    dateFmt: string;
+    timeFmt: "24" | "12";
     styles: CSSModuleClasses;
     t: Translate;
     lang: string;
@@ -62,12 +71,17 @@ export const useReportsScreenData = ({
     filter,
     dateFrom,
     dateTo,
+    currentEpoch,
+    includeBacked,
     groupBy,
     sortKey,
     sortDir,
     visibleColumnKeys,
     onOpenTicket,
     amountDp,
+    weightUnit,
+    dateFmt,
+    timeFmt,
     styles,
     t,
     lang,
@@ -78,9 +92,13 @@ export const useReportsScreenData = ({
     // have selected, so this reads the full unfiltered `rows`, not
     // `dateFilteredRows` below.
     const waitingCount = useMemo(() => rows.filter((row) => row.isOpen).length, [rows]);
+    const seriesFilteredRows = useMemo(
+        () => filterRowsBySeries(rows, currentEpoch, includeBacked),
+        [rows, currentEpoch, includeBacked],
+    );
     const dateFilteredRows = useMemo(
-        () => filterRowsByDateRange(rows, dateFrom, dateTo),
-        [rows, dateFrom, dateTo],
+        () => filterRowsByDateRange(seriesFilteredRows, dateFrom, dateTo),
+        [seriesFilteredRows, dateFrom, dateTo],
     );
     const visibleRows = useMemo(
         () => sortTicketRows(filterTicketRows(dateFilteredRows, query, filter), sortKey, sortDir),
@@ -99,12 +117,26 @@ export const useReportsScreenData = ({
                 visibleRows,
                 amountDp,
                 lang,
+                weightUnit,
+                dateFmt,
+                timeFmt,
             }),
-        [view, summaryRows, dateFilteredRows, visibleRows, amountDp, lang],
+        [view, summaryRows, dateFilteredRows, visibleRows, amountDp, lang, weightUnit, dateFmt, timeFmt],
     );
     const ticketColumns = useMemo(
-        () => buildTicketColumns({ onOpenTicket, amountDp, styles, t, lang, visibleColumnKeys }),
-        [onOpenTicket, amountDp, styles, t, lang, visibleColumnKeys],
+        () =>
+            buildTicketColumns({
+                onOpenTicket,
+                amountDp,
+                weightUnit,
+                styles,
+                t,
+                lang,
+                dateFmt,
+                timeFmt,
+                visibleColumnKeys,
+            }),
+        [onOpenTicket, amountDp, weightUnit, styles, t, lang, dateFmt, timeFmt, visibleColumnKeys],
     );
     const summaryColumns = useMemo(
         () => buildSummaryColumns({ groupBy, amountDp, t }),

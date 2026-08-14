@@ -1,4 +1,4 @@
-import { formatMoney, formatWeightIn, formatWeightKg } from "@constants/numberFormat";
+import { formatMoney, formatWeightIn } from "@constants/numberFormat";
 import type { WeightUnit } from "@constants/numberFormat";
 import { useTranslation } from "@i18n/useTranslation";
 
@@ -49,7 +49,9 @@ export const DashboardKpis = ({ kpis, amountDp, weightUnit, onNavigateToReports 
             <div className={styles.kpi}>
                 <span className="lbl">{t("dashboard.kpi.avgNet")}</span>
                 <b className={styles.value}>
-                    {kpis.avgNetKgPerTicket ? formatWeightKg(Math.round(kpis.avgNetKgPerTicket)) : "—"} kg
+                    {kpis.avgNetKgPerTicket
+                        ? formatWeightIn(Math.round(kpis.avgNetKgPerTicket), weightUnit)
+                        : "—"}
                 </b>
             </div>
         </div>

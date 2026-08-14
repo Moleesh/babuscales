@@ -1,16 +1,22 @@
 import { Card } from "@components/Card";
 import { StatusPill } from "@components/StatusPill";
-import { formatDateTime, formatMoney, formatWeightKg } from "@constants/numberFormat";
+import { formatDateTimeInFmt, formatMoney, formatWeightIn } from "@constants/numberFormat";
+import type { WeightUnit } from "@constants/numberFormat";
 import type { Capture, CaptureType } from "@db/ticketBody";
 import type { DerivedWeights } from "@db/ticketBody";
+import { hasCapture } from "@db/ticketBody";
 import { useTranslation } from "@i18n/useTranslation";
 
 import { CalcFormula } from "./CalcFormula";
 import { ManualCalcBox } from "./ManualCalcBox";
 import styles from "../_styles/WeighingScreen.module.css";
 
-const formatStamp = (iso: string | undefined, lang: string): string =>
-    iso ? formatDateTime(iso, lang) : "—";
+const formatStamp = (
+    iso: string | undefined,
+    lang: string,
+    dateFmt: string,
+    timeFmt: "24" | "12",
+): string => (iso ? formatDateTimeInFmt(iso, lang, dateFmt, timeFmt) : "—");
 
 interface CalcBoxProps {
     label: string;
@@ -39,7 +45,10 @@ interface TareGrossBoxesProps {
     grossCaptures: Capture[];
     manualTare: boolean;
     manualGross: boolean;
-    onManualCapture: (weightKg: number) => void;
+    onManualCapture: (weightKg: number, kind: CaptureType) => void;
+    weightUnit: WeightUnit;
+    dateFmt: string;
+    timeFmt: "24" | "12";
 }
 
 // Pulled out of CalcCard's own body (over the line budget —
@@ -52,27 +61,30 @@ const TareGrossBoxes = ({
     manualTare,
     manualGross,
     onManualCapture,
+    weightUnit,
+    dateFmt,
+    timeFmt,
 }: TareGrossBoxesProps) => {
     const { t, lang } = useTranslation();
     return (
         <>
             {manualTare ? (
-                <ManualCalcBox label={t("tare")} onSubmit={onManualCapture} />
+                <ManualCalcBox label={t("tare")} onSubmit={(weightKg) => onManualCapture(weightKg, "Tare")} />
             ) : (
                 <CalcBox
                     label={t("tare")}
-                    value={weights.tareKg !== null ? formatWeightKg(weights.tareKg) : "—"}
-                    stamp={formatStamp(captures.find((c) => c.Type === "Tare")?.At, lang)}
+                    value={weights.tareKg !== null ? formatWeightIn(weights.tareKg, weightUnit) : "—"}
+                    stamp={formatStamp(captures.find((c) => c.Type === "Tare")?.At, lang, dateFmt, timeFmt)}
                 />
             )}
             {manualGross ? (
-                <ManualCalcBox label={t("gross")} onSubmit={onManualCapture} />
+                <ManualCalcBox label={t("gross")} onSubmit={(weightKg) => onManualCapture(weightKg, "Gross")} />
             ) : (
                 <CalcBox
                     label={t("gross")}
-                    value={weights.grossKg !== null ? formatWeightKg(weights.grossKg) : "—"}
+                    value={weights.grossKg !== null ? formatWeightIn(weights.grossKg, weightUnit) : "—"}
                     stamp={
-                        formatStamp(grossCaptures[grossCaptures.length - 1]?.At, lang) +
+                        formatStamp(grossCaptures[grossCaptures.length - 1]?.At, lang, dateFmt, timeFmt) +
                         (grossCaptures.length > 1
                             ? ` · ${grossCaptures.length} ${t("weigh.loadsSuffix")}`
                             : "")
@@ -92,11 +104,16 @@ export interface CalcCardProps {
     amountDp: 0 | 2;
     /** Settings → Weighing → Rules.ManualEntry — off leaves Tare/Gross exactly the read-only boxes they've always been. */
     manualEntry: boolean;
-    /** `ticket.kind` — which of the two boxes (if either) is the one still waiting on a weight; also gates the manual input the same way it already gates the physical capture button. */
+    /** `ticket.kind` — which of the two boxes (if either) is the one still waiting on a weight; still gates the physical capture button, but no longer alone gates manual entry (see `manualTare`/`manualGross` below). */
     kind: CaptureType | null;
     isLocked: boolean;
-    /** `ticket.manualCapture` — same `pushCapture` pipeline the physical capture button uses, just `Source: "Manual"`. */
-    onManualCapture: (weightKg: number) => void;
+    /** `ticket.manualCapture` — same `pushCapture` pipeline the physical capture button uses, just `Source: "Manual"`; takes an explicit kind so both boxes can submit independently. */
+    onManualCapture: (weightKg: number, kind: CaptureType) => void;
+    /** Settings' `Formats.WeightUnit` — the Tare/Gross/Net boxes, formula and status pill all display in this unit. */
+    weightUnit: WeightUnit;
+    /** Settings' `Formats.DateFmt`/`TimeFmt` — the Tare/Gross capture stamps display in these. */
+    dateFmt: string;
+    timeFmt: "24" | "12";
 }
 
 // Split out of WeighingScreen (over the 300-line budget — docs/CodingStandards.md)
@@ -114,19 +131,24 @@ export const CalcCard = ({
     value,
     amountDp,
     manualEntry,
-    kind,
     isLocked,
     onManualCapture,
+    weightUnit,
+    dateFmt,
+    timeFmt,
 }: CalcCardProps) => {
     const { t } = useTranslation();
     // Task #46 — every Gross capture, in the order they were taken; length 1
     // covers today's single-gross ticket unchanged.
     const grossCaptures = captures.filter((c) => c.Type === "Gross");
     // Manual entry mode replaces a not-yet-captured Tare/Gross box with an
-    // editable input — same gate (`kind`/`isLocked`) the physical capture
-    // button already uses, so a manual entry can never race a scale one.
-    const manualTare = manualEntry && !isLocked && kind === "Tare";
-    const manualGross = manualEntry && !isLocked && kind === "Gross";
+    // editable input. Gated on whether that type has been captured yet, not
+    // on the ambient `kind` — `kind` goes null between captures (the
+    // forced-save gate), but manual entry lets the operator fill in both
+    // Tare and Gross without an intervening Save, so each box only needs to
+    // know whether *it specifically* still needs a weight.
+    const manualTare = manualEntry && !isLocked && !hasCapture(captures, "Tare");
+    const manualGross = manualEntry && !isLocked && !hasCapture(captures, "Gross");
     return (
         <Card title={<span className="lbl">{t("weigh.capturedAndCalculated")}</span>}>
             <div className={styles.calc}>
@@ -137,10 +159,13 @@ export const CalcCard = ({
                     manualTare={manualTare}
                     manualGross={manualGross}
                     onManualCapture={onManualCapture}
+                    weightUnit={weightUnit}
+                    dateFmt={dateFmt}
+                    timeFmt={timeFmt}
                 />
                 <CalcBox
                     label={t("net")}
-                    value={weights.netKg !== null ? formatWeightKg(weights.netKg) : "—"}
+                    value={weights.netKg !== null ? formatWeightIn(weights.netKg, weightUnit) : "—"}
                     lead={weights.netKg !== null}
                 />
                 <CalcBox
@@ -158,8 +183,14 @@ export const CalcCard = ({
                 value={value}
                 amountDp={amountDp}
                 grossWeightsKg={grossCaptures.map((c) => c.WeightKg)}
+                weightUnit={weightUnit}
             />
-            <StatusPill tareKg={weights.tareKg} grossKg={weights.grossKg} netKg={weights.netKg} />
+            <StatusPill
+                tareKg={weights.tareKg}
+                grossKg={weights.grossKg}
+                netKg={weights.netKg}
+                weightUnit={weightUnit}
+            />
         </Card>
     );
 };

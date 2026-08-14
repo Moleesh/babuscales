@@ -13,75 +13,94 @@
     will-change: transform;
 }
 
+/* Every size/offset below is `<base> * var(--s, 1)` — `--s` is the same
+   Appearance-pane text-scale variable (SettingsProvider → `useSettingsRecord`)
+   applied to `<html>` as `--s`, 0.9–1.28. The cursor was fixed-size while
+   everything else in the app grew/shrank with that setting — this makes the
+   follower track it too instead of looking undersized at the larger steps. */
+/* Task: "these potions [KPI/chart values] have the same color as the
+   cursor" — every skin paints its accent numbers/bars in `--led`, which is
+   exactly what the ring/dot used, so the follower vanished against its own
+   highlight color. Fixed with `--cursor` (tokens.css) — same hue as
+   `--led`, shaded lighter on dark skins / darker on light skins, so it's
+   still "themed" (task: "I want the theme color as previous, just make the
+   cursor darker/lighter based on the theme") rather than a hue-blind
+   invert, plus a heavier 3px border/9px dot so it reads as "ours" rather
+   than a thin OS-cursor outline. */
 .ring {
     position: absolute;
-    top: -14px;
-    left: -14px;
-    width: 28px;
-    height: 28px;
+    top: calc(-14px * var(--s, 1));
+    left: calc(-14px * var(--s, 1));
+    width: calc(28px * var(--s, 1));
+    height: calc(28px * var(--s, 1));
     border-radius: 50%;
-    border: 1.5px solid var(--led-dim);
+    border: calc(3px * var(--s, 1)) solid var(--cursor);
+    filter: drop-shadow(0 0 4px var(--led-ghost));
     transition:
         width 0.15s ease,
         height 0.15s ease,
         top 0.15s ease,
         left 0.15s ease,
-        border-color 0.15s ease,
         opacity 0.15s ease;
 }
 
 .dot {
     position: absolute;
-    top: -3px;
-    left: -3px;
-    width: 6px;
-    height: 6px;
+    top: calc(-4.5px * var(--s, 1));
+    left: calc(-4.5px * var(--s, 1));
+    width: calc(9px * var(--s, 1));
+    height: calc(9px * var(--s, 1));
     border-radius: 50%;
-    background: var(--led);
-    transition:
-        transform 0.1s ease,
-        background-color 0.15s ease;
+    background: var(--cursor);
+    box-shadow: 0 0 4px var(--led-ghost);
+    transition: transform 0.1s ease;
 }
 
 .cursor.hover .ring {
-    width: 38px;
-    height: 38px;
-    top: -19px;
-    left: -19px;
-    border-color: var(--led);
+    width: calc(38px * var(--s, 1));
+    height: calc(38px * var(--s, 1));
+    top: calc(-19px * var(--s, 1));
+    left: calc(-19px * var(--s, 1));
 }
 .cursor.hover .dot {
-    background: var(--led);
     transform: scale(1.3);
 }
 
 .cursor.pressed .ring {
-    width: 22px;
-    height: 22px;
-    top: -11px;
-    left: -11px;
+    width: calc(22px * var(--s, 1));
+    height: calc(22px * var(--s, 1));
+    top: calc(-11px * var(--s, 1));
+    left: calc(-11px * var(--s, 1));
     opacity: 0.7;
 }
 .cursor.pressed .dot {
     transform: scale(0.7);
 }
 
-/* Native cursor is hidden app-wide while the follower is active — except
-   over anything that already tells the operator "you can type here" per
-   base.css's own text-cursor selector list (Cursor + interaction feedback
-   section). Reusing that list rather than re-deriving it keeps the two in
-   sync; if base.css ever adds a text-input case, mirror it here. */
-:global(body.custom-cursor-active) {
-    cursor: none;
+/* Over an edit field: no fallback to the native caret (the operator asked
+   for "ours" everywhere, not a mix) — the ring shrinks away and the dot
+   morphs into a thin vertical bar standing in for an I-beam, still in the
+   same follower graphic. */
+.cursor.hoverText .ring {
+    opacity: 0;
 }
+.cursor.hoverText .dot {
+    top: calc(-8px * var(--s, 1));
+    left: calc(-1px * var(--s, 1));
+    width: calc(2px * var(--s, 1));
+    height: calc(16px * var(--s, 1));
+    border-radius: 1px;
+    transform: none;
+}
+
+/* Native cursor is hidden app-wide, including over edit fields — the
+   follower supplies its own text-mode look above instead of falling back
+   to the native caret. `!important`: base.css's own `button:not(:disabled)`
+   etc. (element + :not(pseudo-class), specificity 0,1,1) otherwise outrank
+   this single-class selector (0,1,0) and the native pointer/hand cursor
+   would keep winning on hover — confirmed as the actual cause of the
+   native cursor still showing over buttons. */
+:global(body.custom-cursor-active),
 :global(body.custom-cursor-active *) {
-    cursor: none;
-}
-:global(body.custom-cursor-active)
-    input:not([type="checkbox"]):not([type="radio"]):not([type="button"]):not([type="submit"]):not(
-        [type="range"]
-    ):not([readonly]):not(:disabled),
-:global(body.custom-cursor-active) textarea:not([readonly]):not(:disabled),
-:global(body.custom-cursor-active) [contenteditable="true"] {
-    cursor: text;
+    cursor: none !important;
 }

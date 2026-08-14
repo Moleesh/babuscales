@@ -1,0 +1,77 @@
+/* Matches Field.module.css's `.f select` look exactly (same panel/border/
+   radius tokens) so swapping a native `<select>` for this component here
+   doesn't change how the field reads inside a FieldGrid. */
+.wrap {
+    position: relative;
+    min-width: 0;
+}
+.trigger {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 8px 10px;
+    color: var(--text);
+    font: inherit;
+    font-size: 0.8125rem;
+    width: 100%;
+    min-width: 0;
+    text-align: left;
+}
+.trigger:focus-visible {
+    border-color: var(--led);
+    outline: none;
+}
+.trigger:disabled {
+    opacity: 0.5;
+}
+.label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.chevron {
+    flex: none;
+    color: var(--dim);
+    font-size: 0.6875rem;
+}
+
+.list {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    z-index: 30;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    padding: 4px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+    max-height: 240px;
+    overflow-y: auto;
+}
+.option {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 7px 9px;
+    border-radius: 6px;
+    border: none;
+    background: none;
+    color: var(--text);
+    font: inherit;
+    font-size: 0.8125rem;
+}
+.option:hover {
+    background: var(--panel-2);
+}
+.option.active {
+    background: var(--led-ghost);
+    color: var(--led);
+}

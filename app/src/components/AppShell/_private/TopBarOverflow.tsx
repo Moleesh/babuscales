@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 
+import { Tooltip } from "@components/Tooltip";
 import { useTranslation } from "@i18n/useTranslation";
 
 import styles from "../_styles/AppShell.module.css";
@@ -48,16 +49,17 @@ export const TopBarOverflow = ({ children, collapsed }: TopBarOverflowProps) => 
 
     return (
         <div className={styles.overflow} ref={ref}>
-            <button
-                className="iconbtn"
-                aria-haspopup="menu"
-                aria-expanded={open}
-                aria-label={t("components.appShell.more")}
-                title={t("components.appShell.more")}
-                onClick={() => setOpen((value) => !value)}
-            >
-                ⋯
-            </button>
+            <Tooltip label={t("components.appShell.more")}>
+                <button
+                    className="iconbtn"
+                    aria-haspopup="menu"
+                    aria-expanded={open}
+                    aria-label={t("components.appShell.more")}
+                    onClick={() => setOpen((value) => !value)}
+                >
+                    ⋯
+                </button>
+            </Tooltip>
             {open && (
                 <div className={styles.overflowMenu} role="menu" onClick={() => setOpen(false)}>
                     {children}

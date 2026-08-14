@@ -10,6 +10,13 @@
     gap: 12px;
 }
 
+/* Separates the two field groups folded into one merged card (e.g. Ticket
+   numbering + Date & time — see TicketAndDateTimeCard). */
+.divider {
+    border-top: 1px solid var(--line);
+    margin: 4px 0;
+}
+
 .mini {
     padding: 3px 9px;
     border-radius: 7px;

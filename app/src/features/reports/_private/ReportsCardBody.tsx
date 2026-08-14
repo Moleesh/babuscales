@@ -33,6 +33,9 @@ export interface ReportsCardBodyProps {
     onDateFromChange: (date: string) => void;
     dateTo: string;
     onDateToChange: (date: string) => void;
+    /** Reports' "include tickets from before the last reset" toggle — off by default (reportRows.ts's filterRowsBySeries). */
+    includeBacked: boolean;
+    onIncludeBackedChange: (includeBacked: boolean) => void;
     groupBy: GroupKey;
     onGroupByChange: (groupBy: GroupKey) => void;
     ticketColumns: DataTableColumn<TicketRow>[];
@@ -109,7 +112,16 @@ const ReportsActiveView = ({
 // docs/CodingStandards.md) — the Card's body: saved-reports row and the
 // active view (Tickets or Summary). The Print/Export button row moved out
 // to ReportsScreen's own sticky bottom bar (task: Reports rework, item 3).
-export const ReportsCardBody = ({ dateFrom, onDateFromChange, dateTo, onDateToChange, savedReportActions, ...view }: ReportsCardBodyProps) => (
+export const ReportsCardBody = ({
+    dateFrom,
+    onDateFromChange,
+    dateTo,
+    onDateToChange,
+    includeBacked,
+    onIncludeBackedChange,
+    savedReportActions,
+    ...view
+}: ReportsCardBodyProps) => (
     <div className={styles.body}>
         <SavedReportsRow
             savedReports={savedReportActions.savedReports}
@@ -124,6 +136,8 @@ export const ReportsCardBody = ({ dateFrom, onDateFromChange, dateTo, onDateToCh
             onDateFromChange={onDateFromChange}
             dateTo={dateTo}
             onDateToChange={onDateToChange}
+            includeBacked={includeBacked}
+            onIncludeBackedChange={onIncludeBackedChange}
         />
         <ReportsActiveView {...view} />
     </div>

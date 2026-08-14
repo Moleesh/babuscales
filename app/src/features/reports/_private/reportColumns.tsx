@@ -1,23 +1,29 @@
 import { Button } from "@components/Button";
 import type { DataTableColumn } from "@components/DataTable";
-import { formatDateTime, formatMoney, formatWeightKg } from "@constants/numberFormat";
+import { formatDateTimeInFmt, formatMoney, formatWeightIn } from "@constants/numberFormat";
+import type { WeightUnit } from "@constants/numberFormat";
 import type { DocRow } from "@db/types";
 import { formatTicketNo } from "@features/weighing";
 
 import { groupLabel } from "../reportRows";
 import type { GroupKey, SummaryRow, TicketColumnKey, TicketRow, Translate } from "../reportRows";
 
-const formatWeightCell = (kg: number | null): string =>
-    kg === null ? "—" : `${formatWeightKg(kg)} kg`;
+const formatWeightCell = (kg: number | null, weightUnit: WeightUnit): string =>
+    kg === null ? "—" : formatWeightIn(kg, weightUnit);
 
 export interface BuildTicketColumnsArgs {
     onOpenTicket: (doc: DocRow) => void;
     amountDp: 0 | 2;
+    /** Settings' `Formats.WeightUnit` — the Tare/Gross/Net columns display in it. */
+    weightUnit: WeightUnit;
     styles: CSSModuleClasses;
     t: Translate;
     /** i18n's active language — decides the locale the "at" column's
-     * timestamp renders in (@constants/numberFormat's formatDateTime). */
+     * timestamp renders in (@constants/numberFormat's formatDateTimeInFmt). */
     lang: string;
+    /** Settings' `Formats.DateFmt`/`TimeFmt` — the "at" column renders in them. */
+    dateFmt: string;
+    timeFmt: "24" | "12";
     /** Report-builder wizard MVP (task: Reports rework, item 4) — `null`
      * (the default) shows every column, same as before the wizard existed.
      * A non-null list restricts the table to just those keys plus the
@@ -47,9 +53,12 @@ const renderActionCell = (row: TicketRow, onOpenTicket: (doc: DocRow) => void, t
 const buildAllTicketColumns = ({
     onOpenTicket,
     amountDp,
+    weightUnit,
     styles,
     t,
     lang,
+    dateFmt,
+    timeFmt,
 }: BuildTicketColumnsArgs): DataTableColumn<TicketRow>[] => [
     {
         key: "no",
@@ -63,19 +72,19 @@ const buildAllTicketColumns = ({
         key: "tare",
         header: t("reports.col.tare"),
         numeric: true,
-        render: (row) => formatWeightCell(row.tareKg),
+        render: (row) => formatWeightCell(row.tareKg, weightUnit),
     },
     {
         key: "gross",
         header: t("reports.col.gross"),
         numeric: true,
-        render: (row) => formatWeightCell(row.grossKg),
+        render: (row) => formatWeightCell(row.grossKg, weightUnit),
     },
     {
         key: "net",
         header: t("reports.col.net"),
         numeric: true,
-        render: (row) => formatWeightCell(row.netKg),
+        render: (row) => formatWeightCell(row.netKg, weightUnit),
     },
     {
         key: "charge",
@@ -83,7 +92,11 @@ const buildAllTicketColumns = ({
         numeric: true,
         render: (row) => (row.charge === null ? "—" : formatMoney(row.charge, amountDp)),
     },
-    { key: "at", header: t("reports.col.at"), render: (row) => formatDateTime(row.at, lang) },
+    {
+        key: "at",
+        header: t("reports.col.at"),
+        render: (row) => formatDateTimeInFmt(row.at, lang, dateFmt, timeFmt),
+    },
     {
         key: "status",
         header: t("reports.col.status"),

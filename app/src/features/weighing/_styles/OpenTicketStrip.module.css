@@ -1,18 +1,20 @@
-/* Ported from demo/BabuScales-demo.html's ".strip". */
+/* Ported from demo/BabuScales-demo.html's ".strip". Task: "we need a scroll
+   here" — with several parked lorries the row overflows off the right edge
+   with nothing to show more exist; the demo's hidden-scrollbar opt-out
+   (scrollbar-width: none + `::-webkit-scrollbar { display: none }`) made
+   that overflow undiscoverable. Dropped in favour of base.css's global thin
+   themed scrollbar (same one every other scroll region in the app uses),
+   so the strip reads as scrollable instead of silently truncated. */
 .strip {
     display: flex;
     align-items: center;
     gap: 9px;
-    padding: 7px 11px;
+    padding: 7px 11px 10px;
     flex: none;
     border: 1px solid var(--line);
     border-radius: var(--radius);
     background: var(--panel);
     overflow-x: auto;
-    scrollbar-width: none;
-}
-.strip::-webkit-scrollbar {
-    display: none;
 }
 
 .label {

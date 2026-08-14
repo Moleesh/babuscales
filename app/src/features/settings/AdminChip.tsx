@@ -1,5 +1,6 @@
 import { useState } from "react";
 
+import { Tooltip } from "@components/Tooltip";
 import { useTranslation } from "@i18n/useTranslation";
 
 import { AdminUnlockModal } from "./_private/AdminUnlockModal";
@@ -16,13 +17,14 @@ export const AdminChip = () => {
 
     return (
         <>
-            <button
-                className={`chip act${unlocked ? " on" : ""}`}
-                title={t("settings.adminChip.title")}
-                onClick={() => (unlocked ? lock() : setModalOpen(true))}
-            >
-                {unlocked ? `🔓 ${t("settings.adminChip.admin")}` : `🔒 ${t("settings.adminChip.locked")}`}
-            </button>
+            <Tooltip label={t("settings.adminChip.title")}>
+                <button
+                    className={`chip act${unlocked ? " on" : ""}`}
+                    onClick={() => (unlocked ? lock() : setModalOpen(true))}
+                >
+                    {unlocked ? `🔓 ${t("settings.adminChip.admin")}` : `🔒 ${t("settings.adminChip.locked")}`}
+                </button>
+            </Tooltip>
             <AdminUnlockModal open={modalOpen} onClose={() => setModalOpen(false)} />
         </>
     );

@@ -1,4 +1,5 @@
-import { formatMoney, formatWeightKg, INDIAN_LOCALE } from "@constants/numberFormat";
+import { formatMoney, formatWeightIn, INDIAN_LOCALE } from "@constants/numberFormat";
+import type { WeightUnit } from "@constants/numberFormat";
 import { GROSS_CHARGE_INR, TARE_CHARGE_INR } from "@engines/billing";
 
 import styles from "../_styles/WeighingScreen.module.css";
@@ -11,8 +12,10 @@ export interface CalcFormulaProps {
     materialRate: number | null;
     value: number | null;
     amountDp: 0 | 2;
-    /** Task #46 — every Gross capture's own weight, in capture order; length 1 in the non-multi-gross case, where the formula collapses back to the original single-pair line. */
+    /** The ticket's Gross capture weight, as a length-1 (or length-0, before it's captured) array — kept as an array so the formula's own reduce over it stays simple. */
     grossWeightsKg: number[];
+    /** Settings' `Formats.WeightUnit` — every weight in this derivation renders in it. */
+    weightUnit: WeightUnit;
 }
 
 // Ported from the mock's own `#formula` derivation text (demo/BabuScales-demo.html's
@@ -30,30 +33,30 @@ export const CalcFormula = ({
     value,
     amountDp,
     grossWeightsKg,
+    weightUnit,
 }: CalcFormulaProps) => {
     if (netKg === null || tareKg === null || grossKg === null) return null;
-    // Task #46 — `netKg` is `grossKg - tareKg` ONLY when there's exactly one
-    // Gross capture; with more than one (Settings → Weighing → Rules.MultiGross),
-    // `db/ticketBody.ts`'s `deriveWeights` sums each load's own net instead,
-    // so the single-pair line above would show a false equation. Spell out
-    // every load's term instead of hiding the sum behind one subtraction.
+    // `netKg` is always `grossKg - tareKg` (via `Math.abs`) — a ticket has
+    // exactly one Tare and one Gross, so `grossWeightsKg` is length 1 here.
+    // `formatWeightIn` already appends the unit itself, so the formula's
+    // own literal " kg" suffixes are gone below.
     const netLine =
         grossWeightsKg.length > 1 ? (
             <span>
                 Net = Σ(Gross − Tare) over {grossWeightsKg.length} loads ={" "}
                 <em>
                     {grossWeightsKg
-                        .map((g) => formatWeightKg(Math.abs(g - tareKg)))
+                        .map((g) => formatWeightIn(Math.abs(g - tareKg), weightUnit))
                         .join(" + ")}{" "}
-                    = {formatWeightKg(netKg)} kg
+                    = {formatWeightIn(netKg, weightUnit)}
                 </em>
             </span>
         ) : (
             <span>
                 Net = Gross − Tare ={" "}
                 <em>
-                    {formatWeightKg(grossKg)} − {formatWeightKg(tareKg)} = {formatWeightKg(netKg)}{" "}
-                    kg
+                    {formatWeightIn(grossKg, weightUnit)} − {formatWeightIn(tareKg, weightUnit)} ={" "}
+                    {formatWeightIn(netKg, weightUnit)}
                 </em>
             </span>
         );

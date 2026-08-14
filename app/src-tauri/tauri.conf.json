@@ -15,18 +15,16 @@
                 "title": "BabuScales",
                 "width": 1280,
                 "height": 800,
-                "maximized": true,
-                "resizable": true,
-                "maximizable": true,
+                "resizable": false,
+                "maximizable": false,
                 "minimizable": true,
-                "alwaysOnTop": true
+                "closable": true,
+                "alwaysOnTop": true,
+                "decorations": false
             }
         ],
         "security": {
             "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'"
-        },
-        "trayIcon": {
-            "iconPath": "icons/icon.png"
         }
     },
     "bundle": {

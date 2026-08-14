@@ -1,4 +1,5 @@
-import { formatDateTime, formatWeightKg } from "@constants/numberFormat";
+import { formatDateTimeInFmt, formatWeightIn } from "@constants/numberFormat";
+import type { WeightUnit } from "@constants/numberFormat";
 import { isStoredTareBody, isStoredTareStale, storedTareAgeDays } from "@db/storedTare";
 import type { DocRow } from "@db/types";
 import type { UseMasterCache } from "@db/useMasterCache";
@@ -8,8 +9,12 @@ import type { RecallOffer } from "../RecallBanner";
 import { formatTicketNo } from "../ticketNumber";
 import type { TicketFormFields, UseWeighingTicket } from "../useWeighingTicket";
 
-const formatStamp = (iso: string | undefined, lang: string): string =>
-    iso ? formatDateTime(iso, lang) : "—";
+const formatStamp = (
+    iso: string | undefined,
+    lang: string,
+    dateFmt: string,
+    timeFmt: "24" | "12",
+): string => (iso ? formatDateTimeInFmt(iso, lang, dateFmt, timeFmt) : "—");
 
 export interface BuildRecallOffersArgs {
     ticket: UseWeighingTicket;
@@ -19,6 +24,13 @@ export interface BuildRecallOffersArgs {
     strictTare: boolean;
     /** i18n's active language — decides the locale the "resume" offer's timestamp renders in. */
     lang: string;
+    /** Task: these three offers were hardcoded English, unlike the rest of the screen — resolves the labels/hints against the active language pack. */
+    t: (key: string) => string;
+    /** Settings' `Formats.WeightUnit` — the resume/stored-tare hints display in it. */
+    weightUnit: WeightUnit;
+    /** Settings' `Formats.DateFmt`/`TimeFmt` — the "resume" offer's timestamp displays in these. */
+    dateFmt: string;
+    timeFmt: "24" | "12";
 }
 
 // Split out of WeighingScreen (which was creeping past the 300-line budget —
@@ -32,6 +44,10 @@ export const buildRecallOffers = ({
     storedTareCache,
     strictTare,
     lang,
+    t,
+    weightUnit,
+    dateFmt,
+    timeFmt,
 }: BuildRecallOffersArgs): RecallOffer[] => {
     if (ticket.isLocked || !ticket.fields.vehicleNo.trim()) return [];
     const offers: RecallOffer[] = [];
@@ -43,8 +59,8 @@ export const buildRecallOffers = ({
     if (openMatch) {
         offers.push({
             key: "resume",
-            label: `Resume ${formatTicketNo(openMatch.doc.DocSeq)}`,
-            hint: `${openMatch.kind} ${formatWeightKg(openMatch.weightKg)} kg · ${formatStamp(openMatch.capturedAt, lang)}`,
+            label: `${t("weigh.recall.resume")} ${formatTicketNo(openMatch.doc.DocSeq)}`,
+            hint: `${t(openMatch.kind === "Tare" ? "tare" : "gross")} ${formatWeightIn(openMatch.weightKg, weightUnit)} · ${formatStamp(openMatch.capturedAt, lang, dateFmt, timeFmt)}`,
             onAccept: () => ticket.resume(openMatch.doc),
         });
     }
@@ -57,8 +73,8 @@ export const buildRecallOffers = ({
             const body = storedTare.Body;
             offers.push({
                 key: "storedTare",
-                label: `Use stored tare ${formatWeightKg(body.WeightKg)} kg`,
-                hint: `taken ${storedTareAgeDays(body.CapturedAt)} days ago`,
+                label: `${t("weigh.recall.useStoredTare")} ${formatWeightIn(body.WeightKg, weightUnit)}`,
+                hint: `${t("weigh.recall.takenAgo")} ${storedTareAgeDays(body.CapturedAt)} ${t("weigh.recall.daysAgo")}`,
                 onAccept: () => ticket.useStoredTare(body.WeightKg, body.CapturedAt),
             });
         }
@@ -77,10 +93,10 @@ export const buildRecallOffers = ({
         };
         offers.push({
             key: "fill",
-            label: `Fill from ${formatTicketNo(latest.doc.DocSeq)}`,
+            label: `${t("weigh.recall.fillFrom")} ${formatTicketNo(latest.doc.DocSeq)}`,
             hint:
                 [latest.body.Party, latest.body.Material].filter(Boolean).join(" · ") ||
-                "Previous ticket",
+                t("weigh.recall.previousTicket"),
             onAccept: () => ticket.applyRecalledFields(fill),
         });
     }

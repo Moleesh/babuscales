@@ -58,6 +58,19 @@
     outline: none;
 }
 
+.ck {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.8125rem;
+    cursor: pointer;
+}
+.ck input {
+    accent-color: var(--led);
+    width: 15px;
+    height: 15px;
+}
+
 .actions {
     display: flex;
     gap: 9px;

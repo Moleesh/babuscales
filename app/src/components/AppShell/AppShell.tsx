@@ -1,6 +1,7 @@
 import { useRef } from "react";
 import type { ReactNode } from "react";
 
+import { Tooltip } from "@components/Tooltip";
 import { useTranslation } from "@i18n/useTranslation";
 
 import { BrandMark } from "./_private/BrandMark";
@@ -45,17 +46,18 @@ interface TabButtonProps {
 }
 
 const TabButton = ({ tab, active, onNavigate, inMenu }: TabButtonProps) => (
-    <button
-        className={`${styles.tab} ${active ? styles.active : ""}`}
-        role={inMenu ? "menuitem" : undefined}
-        aria-current={active ? "page" : undefined}
-        aria-label={tab.label}
-        title={tab.label}
-        onClick={() => onNavigate(tab.key)}
-    >
-        <span className={styles.tabIcon}>{tab.icon}</span>
-        <span className={inMenu ? undefined : styles.tabLabel}>{tab.label}</span>
-    </button>
+    <Tooltip label={tab.label}>
+        <button
+            className={`${styles.tab} ${active ? styles.active : ""}`}
+            role={inMenu ? "menuitem" : undefined}
+            aria-current={active ? "page" : undefined}
+            aria-label={tab.label}
+            onClick={() => onNavigate(tab.key)}
+        >
+            <span className={styles.tabIcon}>{tab.icon}</span>
+            <span className={inMenu ? undefined : styles.tabLabel}>{tab.label}</span>
+        </button>
+    </Tooltip>
 );
 
 interface TopBarProps extends Pick<AppShellProps, "siteLabel" | "activeTab" | "onNavigate" | "topRight" | "pin"> {
@@ -74,7 +76,12 @@ const TopBar = ({ siteLabel, tabs, activeTab, onNavigate, topRight, pin, section
     const overflowTabs = tabs.slice(visibleTabCount);
 
     return (
-        <header className={styles.top} ref={barRef}>
+        // `data-tauri-drag-region`: decorations are off (tauri.conf.json),
+        // so this bar is the window's whole title bar now — without this,
+        // there'd be no way to drag/move the window at all. Buttons/inputs
+        // inside still get their own clicks; Tauri only starts a drag from
+        // the bar's own background, not its interactive children.
+        <header className={styles.top} ref={barRef} data-tauri-drag-region>
             <div className={styles.brandbox}>
                 <BrandMark />
                 <div style={{ minWidth: 0 }}>
@@ -147,7 +154,17 @@ export const AppShell = ({
             />
 
             <div className={styles.main} data-enter-scope>
-                {header}
+                {/* Task: "while scrolling any tab the top weight should not
+                    move, it's fixed, except for mobile view" — `.main` is
+                    the screen's own scroll container, so the header
+                    (WeightDisplay) scrolled away with the rest of the
+                    content unless pinned. `position: sticky` (not
+                    `fixed` — this still needs to occupy its normal-flow
+                    slot above `.screen`, just stop scrolling past `.main`'s
+                    own top edge) does that; AppShell.module.css drops the
+                    sticky behavior back to plain scroll under the same
+                    ~880px mobile breakpoint the tab bar itself uses. */}
+                {header && <div className={styles.headerSticky}>{header}</div>}
                 <div className={styles.screen}>{children}</div>
             </div>
         </div>

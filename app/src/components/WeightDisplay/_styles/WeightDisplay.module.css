@@ -86,21 +86,38 @@
 }
 
 .readout {
-    position: relative;
     display: flex;
     align-items: baseline;
-    justify-content: center;
-    gap: 8px;
+    /* Right-aligned, odometer-style: the ghost digits (`88,888`) mark the
+       widest expected reading and the live value sits flush against their
+       rightmost place, growing left as it gets bigger — the previous
+       center-justified layout let a short reading (e.g. a single "0")
+       drift to the middle of the ghost pattern instead of sitting off to
+       one side of it. */
+    justify-content: flex-end;
+    gap: 10px;
     min-width: 0;
 }
+/* The ghost stays in normal flow (not absolutely positioned over the whole
+   `.readout` row) so it — not a guessed padding value accounting for the
+   unit label's width — is what sizes this box. `.digits` is then laid
+   directly on top of it via `inset: 0`, right-aligned the same way, so the
+   live reading always overlaps the ghost's own digit positions exactly
+   instead of drifting off them once the unit label enters the mix. */
+.digitsWrap {
+    position: relative;
+    display: inline-flex;
+    align-items: baseline;
+}
 .ghost {
-    position: absolute;
-    inset: 0;
     display: flex;
     align-items: baseline;
-    justify-content: center;
     pointer-events: none;
     color: var(--led-ghost);
+    visibility: hidden;
+}
+.ghost span {
+    visibility: visible;
 }
 .digits,
 .ghost span {
@@ -113,12 +130,23 @@
     transition: font-size 0.16s ease;
 }
 .digits {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: baseline;
+    justify-content: flex-end;
     color: var(--led);
     text-shadow: 0 0 26px var(--led-ghost);
 }
 .unit {
+    flex: none;
     font-size: 0.9375rem;
     color: var(--dim);
+    /* Anchors to its own baseline rather than the (much taller) digit row,
+       so it reads as a unit label sitting beside the number instead of
+       crowding into it. */
+    align-self: flex-end;
+    padding-bottom: 0.35em;
 }
 
 .head-right {

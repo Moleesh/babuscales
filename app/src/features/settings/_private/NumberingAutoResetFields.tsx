@@ -1,4 +1,5 @@
 import { Field, FieldGrid } from "@components/Field";
+import { Select } from "@components/Select";
 import { useTranslation } from "@i18n/useTranslation";
 
 import { RESET_EVERY_OPTIONS } from "../settingsSchema";
@@ -40,20 +41,13 @@ export const NumberingAutoResetFields = ({
         {numbering.AutoReset && (
             <FieldGrid columns={2}>
                 <Field id="resetEvery" label={t("settings.numbering.every")}>
-                    <select
+                    <Select
                         id="resetEvery"
                         value={numbering.ResetEvery}
                         disabled={!unlocked}
-                        onChange={(event) =>
-                            onChange({ ...numbering, ResetEvery: event.target.value as ResetEvery })
-                        }
-                    >
-                        {RESET_EVERY_OPTIONS.map((value) => (
-                            <option key={value} value={value}>
-                                {resetEveryLabel[value]}
-                            </option>
-                        ))}
-                    </select>
+                        options={RESET_EVERY_OPTIONS.map((value) => ({ value, label: resetEveryLabel[value] }))}
+                        onChange={(next) => onChange({ ...numbering, ResetEvery: next })}
+                    />
                 </Field>
                 <Field id="resetOn" label={t("settings.numbering.startingAt")}>
                     <input

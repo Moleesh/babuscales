@@ -1,13 +1,9 @@
-import { useEffect, useState } from "react";
-
 import { Card } from "@components/Card";
-import { isSerialIndicatorSource, useIndicator, useIndicatorReading } from "@engines/indicator";
+import { isSerialIndicatorSource, useIndicator } from "@engines/indicator";
 import { useTranslation } from "@i18n/useTranslation";
 
-import { useSettings } from "../useSettings";
 import styles from "./_styles/ConnectionsPane.module.css";
 import { EmailCard } from "./EmailCard";
-import { IndicatorCard } from "./IndicatorCard";
 import { IntegrationConfigCard } from "./IntegrationConfigCard";
 import { IntegrationsCard } from "./IntegrationsCard";
 import { RemoteAccessCard } from "./RemoteAccessCard";
@@ -20,33 +16,16 @@ import { SmsCard } from "./SmsCard";
 // (src-tauri/src/devices/indicator.rs's `parse_weight`), see the live
 // reading once saved. App.tsx's SerialConnectionSync opens/reopens the
 // port automatically whenever this saves — "Applied immediately", the
-// same shape as the Weighing pane's Stability gate (see IndicatorCard).
-// The full wizard's "watch raw bytes live, confirm" steps aren't built:
-// genuinely untestable without real hardware in hand, unlike everything
-// else here (app/README.md known gap). The mock's own Integrations card
-// lives on this same pane (below the serial config, in both branches) —
-// see IntegrationsCard.
+// same shape as the Weighing pane's Stability gate. The weight-indicator
+// card itself (port/baud/pattern, live reading) now lives on the Weighing
+// pane instead (moved by request — it's about the scale feeding that
+// screen's own rules, not a generic connection); this pane keeps the
+// desktop-only hint plus the mock's own Integrations/Email/SMS/webhook
+// cards, which don't depend on a serial indicator being present.
 export const ConnectionsPane = () => {
-    const { settings, unlocked, save } = useSettings();
     const { t } = useTranslation();
     const indicator = useIndicator();
-    const reading = useIndicatorReading();
     const serial = isSerialIndicatorSource(indicator) ? indicator : null;
-    const [ports, setPorts] = useState<string[]>([]);
-    const [refreshing, setRefreshing] = useState(false);
-
-    const conn = settings.Connections;
-
-    const rescan = (): void => {
-        if (!serial) return;
-        setRefreshing(true);
-        void serial
-            .listPorts()
-            .then(setPorts)
-            .finally(() => setRefreshing(false));
-    };
-
-    useEffect(rescan, [serial]);
 
     if (!serial) {
         return (
@@ -65,17 +44,6 @@ export const ConnectionsPane = () => {
 
     return (
         <div className={styles.grid}>
-            <IndicatorCard
-                settings={settings}
-                conn={conn}
-                unlocked={unlocked}
-                onSave={(next) => void save(next)}
-                ports={ports}
-                refreshing={refreshing}
-                onRescan={rescan}
-                error={serial.getConnectionError()}
-                reading={reading}
-            />
             <IntegrationsCard />
             <EmailCard />
             <SmsCard />

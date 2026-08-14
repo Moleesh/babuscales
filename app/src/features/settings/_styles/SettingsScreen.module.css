@@ -22,6 +22,18 @@
     min-width: 0;
 }
 
+/* "biz" pane only — Business details and Theme now each render a single
+   Card (Operator on duty moved out to the top-bar chip), so stacking them
+   via BusinessPane's/AppearancePane's own single-item grids left one narrow
+   column with wasted width either side. This wraps both panes in one
+   shared two-up grid instead. */
+.biz-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 12px;
+    align-items: start;
+}
+
 .lockbar {
     display: flex;
     align-items: center;

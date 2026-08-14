@@ -12,7 +12,6 @@ pub mod board;
 pub mod configs;
 pub mod docs;
 pub mod email;
-pub mod indexes;
 pub mod indicator;
 pub mod licensing;
 pub mod masters;

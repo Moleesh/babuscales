@@ -23,6 +23,8 @@ export const TA_PACK: LanguagePack = {
         "nav.masters": "அடிப்படைத் தரவு",
         "nav.settings": "அமைப்புகள்",
         "nav.help": "இந்தத் தாவலுக்கான உதவி",
+        "nav.minimize": "சிறிதாக்கு",
+        "nav.close": "மூடு",
 
         tare: "காலி எடை",
         gross: "மொத்த எடை",
@@ -38,7 +40,13 @@ export const TA_PACK: LanguagePack = {
         recalled: "மீட்டெடுக்கப்பட்டது",
 
         "weigh.open": "திற",
-        "weigh.recallTitle": "இந்த வாகனம் ஏற்கெனவே தரவுத்தளத்தில் உள்ளது",
+        "weigh.recallTitle": "இந்த வாகனத்திற்கு ஏற்கெனவே டிக்கெட் வரலாறு உள்ளது",
+        "weigh.recall.resume": "தொடரவும்",
+        "weigh.recall.fillFrom": "இதிலிருந்து நிரப்பு",
+        "weigh.recall.useStoredTare": "சேமித்த காலி எடையைப் பயன்படுத்து",
+        "weigh.recall.takenAgo": "எடுக்கப்பட்டது",
+        "weigh.recall.daysAgo": "நாட்களுக்கு முன்",
+        "weigh.recall.previousTicket": "முந்தைய டிக்கெட்",
 
         "weigh.captureAs": "பதிவு செய்யும் வகை",
         "weigh.actions": "செயல்கள்",
@@ -54,9 +62,8 @@ export const TA_PACK: LanguagePack = {
             "உரிமத்தில் கவனம் தேவை — மேலே உள்ள பட்டையைப் பார்க்கவும். தொடர அமைப்புகள் → கணினி-இல் செயல்படுத்தவும்.",
         "weigh.printed": "அச்சிடப்பட்டது.",
         "weigh.savedReadyToPrint": "சேமிக்கப்பட்டது — அச்சிட தயார்.",
-        "weigh.captureAnotherGross":
-            "மற்றொரு சுமையைச் சேர்க்க மொத்த எடையைப் பதிவு செய்யவும், அல்லது டிக்கெட்டை முடிக்க சேமி.",
         "weigh.bothWeightsCaptured": "இரண்டு எடைகளும் பதிவாகிவிட்டன — முடிக்க சேமி.",
+        "weigh.awaitingSave": "பதிவானது — அடுத்த எடைக்கு முன் சேமி (அல்லது சேமித்து நிறுத்திவை).",
         "weigh.deckEmpty": "வரிசை காலியாக உள்ளது. தொடங்க ஒரு லாரியை அனுப்பவும்.",
         "weigh.stableCaptureNow": "நிலையானது — இப்போது பதிவு செய்யவும்.",
         "weigh.weightInMotion": "எடை அசைவில் உள்ளது — நிலையாகும் வரை பதிவு தடுக்கப்பட்டுள்ளது.",
@@ -64,10 +71,11 @@ export const TA_PACK: LanguagePack = {
         "weigh.capturedAndCalculated": "பதிவு செய்து கணக்கிடப்பட்டது",
         "weigh.draft": "வரைவு",
         "weigh.capture.bothCaptured": "இரு எடைகளும் பதிவு செய்யப்பட்டன",
-        "weigh.capture.anotherGross": "மற்றொரு மொத்த எடையைப் பதிவு செய்",
+        "weigh.capture.awaitingSave": "முதலில் சேமி",
         "weigh.capture.gross": "மொத்த எடையைப் பதிவு செய்",
         "weigh.capture.tare": "காலி எடையைப் பதிவு செய்",
         "weigh.capture.saveToFinish": "இந்த டிக்கெட்டை முடிக்க சேமிக்கவும்",
+        "weigh.capture.awaitingSaveHint": "முதலில் சேமி",
         "weigh.capture.stableNow": "நிலையானது — இப்போது பதிவு செய்யவும்",
         "weigh.capture.waitingForStable": "நிலையான அளவீட்டிற்காக காத்திருக்கிறது",
         charge: "கட்டணம்",
@@ -157,10 +165,9 @@ export const TA_PACK: LanguagePack = {
         "masters.storedTare.search": "வாகன எண் மூலம் தேடு…",
         "masters.storedTare.addNew": "காலி எடையைச் சேர்",
 
-        "settings.pane.biz": "வணிகம்",
+        "settings.pane.biz": "வணிகம் & தோற்றம்",
         "settings.pane.fields": "புலங்கள் & மொழி",
         "settings.pane.print": "அச்சு & பிரிண்டர்கள்",
-        "settings.pane.look": "தோற்றம்",
         "settings.pane.weigh": "எடைபோடல்",
         "settings.pane.conn": "இணைப்புகள்",
         "settings.pane.sys": "கணினி",
@@ -196,6 +203,8 @@ export const TA_PACK: LanguagePack = {
         "dashboard.chart.activity.all": "ஆண்டு வாரியாக டிக்கெட்டுகள்",
         "dashboard.chart.material": "பொருள் பிரிவு",
         "dashboard.chart.noMaterial": "இந்த காலகட்டத்தில் முடிந்த டிக்கெட்டுகள் இல்லை.",
+        "dashboard.chart.tickets": "டிக்கெட்டுகள்",
+        "dashboard.chart.loads": "லோடுகள்",
 
         "dashboard.period.ariaLabel": "காலம்",
         "dashboard.period.day": "நாள்",
@@ -266,9 +275,8 @@ export const TA_PACK: LanguagePack = {
         "components.appShell.pinOff": "சாளரத்தை மேலே வைத்திரு (அணைக்கப்பட்டது) — இயக்க கிளிக் செய்யவும்",
         "components.contextualHelp.close": "உதவியை மூடு",
 
-        "settings.dateTimeFormats.title": "தேதி, நேரம் & தொகைகள்",
-        "settings.dateTimeFormats.hint":
-            "தேதி, நேரம் மற்றும் தொகை வடிவங்கள் இங்கே சேமிக்கப்படுகின்றன, ஆனால் செயலியில் வேறு எங்கும் இன்னும் படிக்கப்படவில்லை — அறிக்கைகள், முகப்பு மற்றும் அச்சிடப்பட்ட டிக்கெட்டுகள் இன்னும் உலாவியின் சொந்த வடிவமைப்பையே பயன்படுத்துகின்றன (அறியப்பட்ட குறை, app/README.md).",
+        "settings.dateTimeFormats.title": "தேதி & நேரம்",
+        "settings.amountAdmin.title": "தொகைகள் & நிர்வாக கடவுச்சொல்",
         "settings.dateTimeFormats.date": "தேதி வடிவம்",
         "settings.dateTimeFormats.time": "நேர வடிவம்",
         "settings.printers.detectedTitle": "கண்டறியப்பட்ட பிரிண்டர்கள்",
@@ -279,21 +287,15 @@ export const TA_PACK: LanguagePack = {
 
         "settings.weighingRules.title": "எடைபோடல் விதிகள்",
         "settings.weighingRules.appliedImmediately": "உடனடியாகப் பயன்படுத்தப்படும்",
-        "settings.weighingRules.tareFirst.label": "முதலில் காலி எடையை எடு",
-        "settings.weighingRules.tareFirst.note":
-            "அணைக்கப்பட்டால், ஏற்றப்பட்ட லாரி முதலில் எடைபோடப்படும் — வெளியேறுவதற்குப் பதிலாக உள்ளே வரும் டெலிவரி.",
-        "settings.weighingRules.strictTare.label": "கண்டிப்பான காலி எடை",
+        "settings.weighingRules.strictTare.label": "ஒரு காலி எடை, ஒரு மொத்த எடை",
         "settings.weighingRules.strictTare.note":
-            "ஒவ்வொரு பயணத்திலும் காலி லாரியை மீண்டும் எடைபோடு. அணைக்கப்பட்டால் வாகன அடிப்படைத் தரவிலிருந்து சேமிக்கப்பட்ட காலி எடையைப் பயன்படுத்தலாம்.",
-        "settings.weighingRules.autoCapture.label": "நிலைப்பட்டதும் தானாக எடு",
-        "settings.weighingRules.autoCapture.note":
-            "இயக்குநர் பட்டனைத் தொடமாட்டார்; அளவீடு நிலைப்பட்ட உடனேயே எடுக்கப்படும்.",
-        "settings.weighingRules.multiGross.label": "பல மொத்த எடைகள் (ஒரு டிக்கெட்டில் பல ஏற்றங்கள்)",
-        "settings.weighingRules.multiGross.note":
-            "காலி லாரியின் காலி எடையை ஒருமுறை எடுத்து, பின் அதே டிக்கெட்டின் கீழ் ஒன்றுக்கு மேற்பட்ட ஏற்றப்பட்ட (மொத்த) எடைகளை எடுக்கவும் — நிகர எடை ஒவ்வொரு ஏற்றத்தின் மொத்த எடையிலிருந்தும் அந்த ஒரு காலி எடையைக் கழித்ததன் கூட்டுத்தொகை. அணைக்கப்பட்டால் ஒவ்வொரு டிக்கெட்டும் வழக்கமான ஒரு காலி/ஒரு மொத்த எடை ஜோடியாகவே இருக்கும்.",
+            "இயக்கத்தில்: ஒவ்வொரு டிக்கெட்டுக்கும் புதிய காலி எடை வேண்டும் — மறுபயன்பாடு இல்லை. அணைக்கப்பட்டால்: முன்பு எடுத்த காலி எடையை (\"சேமித்த காலி எடையைப் பயன்படுத்து\" வாய்ப்பு மூலம்) அந்த வாகனத்தின் பல மொத்த எடைகளுக்கும் மீண்டும் மீண்டும் பயன்படுத்தலாம்.",
         "settings.weighingRules.manualEntry.label": "கை மூலம் எடை உள்ளீடு",
         "settings.weighingRules.manualEntry.note":
             "காலி மற்றும் மொத்த எடை பெட்டிகள் படிக்க-மட்டும் மீட்டர் வாசிப்புக்குப் பதிலாக தட்டச்சு செய்யும் எண் புலங்களாக மாறும் — மீட்டர் இணைக்கப்படாத தளத்திற்கு. அணைக்கப்பட்டால் இரண்டு பெட்டிகளும் உண்மையான மீட்டர் வாசிப்பால் மட்டுமே நிரப்பப்படும்.",
+        "settings.weighingRules.sameTicketNo.label": "காலி & மொத்த எடைக்கு ஒரே டிக்கெட் எண்",
+        "settings.weighingRules.sameTicketNo.note":
+            "இயக்கத்தில்: இரண்டாவதாக எடுக்கப்படும் எடை, முதல் எடையின் டிக்கெட் எண்ணையே தக்கவைக்கும். அணைக்கப்பட்டால்: இரண்டாவது எடை முடிந்ததும் புதிய டிக்கெட் எண் வழங்கப்படும்; முதல் ஒற்றை-எடை டிக்கெட் தனி பதிவாகவே நிலைத்திருக்கும்.",
         "settings.weighingRules.showSendLorry.label": "\"லாரிக்கு அனுப்பு\" பட்டனைக் காட்டு",
         "settings.weighingRules.showSendLorry.note":
             "உண்மையான தராசு அளவீட்டிற்குப் பதிலாக ஒரு எடையை நேரடியாகக் காட்டிக்கு அனுப்பும் சோதனை/டெமோ குறுக்குவழி — உருவகப்படுத்தப்பட்ட காட்டியில் மட்டுமே தோன்றும். அணைக்கப்பட்டால் அங்கும் மறைந்துவிடும்.",
@@ -307,16 +309,12 @@ export const TA_PACK: LanguagePack = {
         "settings.numbering.resetEvery.day": "நாள்",
         "settings.numbering.prefix": "முன்னொட்டு",
         "settings.numbering.digits": "இலக்கங்கள்",
-
-        "settings.fixedPolicy.title": "நிலையான கொள்கை",
-        "settings.fixedPolicy.reprints.title": "மறு அச்சுகள் எப்போதும் அனுமதிக்கப்படும்",
-        "settings.fixedPolicy.reprints.detail":
-            "முதலாவதற்குப் பிறகு ஒவ்வொரு நகலும் DUPLICATE என முத்திரையிடப்பட்டு தணிக்கை பதிவில் கணக்கிடப்படும்.",
-        "settings.fixedPolicy.cancellation.title": "ரத்து செய்வதற்கு எப்போதும் ஒரு காரணம் தேவை",
-        "settings.fixedPolicy.cancellation.detail":
-            "வரிசை ஒருபோதும் நீக்கப்படாது — அது கோடிடப்பட்டு, காரணம் பதிவு செய்யப்பட்டு அப்படியே இருக்கும்.",
-        "settings.fixedPolicy.noFile.title": "எதுவும் கோப்பில் எழுதப்படாது",
-        "settings.fixedPolicy.noFile.detail": "இந்தத் திரையிலுள்ள ஒவ்வொரு அமைப்பும் தரவுத்தளத்தில் ஒரு வரிசை.",
+        "settings.numbering.resetNow": "எண்ணிக்கையை இப்போது மீட்டமை",
+        "settings.numbering.resetConfirm":
+            "இது ஒரு புதிய டிக்கெட் தொடரைத் தொடங்கும் — எண்ணிடல் மீண்டும் 1 முதல் தொடங்கும். பழைய டிக்கெட்டுகள் நீக்கப்படாமல் பாதுகாக்கப்படும், ஆனால் \"கடைசி மீட்டமைப்பிற்கு முந்தைய டிக்கெட்டுகளையும் சேர்\" என்பதை இயக்கும் வரை அறிக்கைகளில் இயல்பாக மறைக்கப்படும்.",
+        "settings.numbering.resetResetting": "மீட்டமைக்கிறது…",
+        "settings.numbering.resetYes": "ஆம், மீட்டமை",
+        "settings.numbering.resetCancel": "ரத்துசெய்",
 
         "reports.title": "அறிக்கைகள்",
         "reports.loading": "டிக்கெட்டுகள் ஏற்றுகிறது…",
@@ -336,6 +334,7 @@ export const TA_PACK: LanguagePack = {
         "reports.groupByLabel": "இதன் அடிப்படையில் குழு",
         "reports.dateFromAriaLabel": "தொடக்க தேதி",
         "reports.dateToAriaLabel": "முடிவு தேதி",
+        "reports.includeBacked": "கடைசி மீட்டமைப்பிற்கு முந்தைய டிக்கெட்டுகளையும் சேர்",
         "reports.searchPlaceholder": "வாகனம், தரப்பு, டிக்கெட் எண், சலான்…",
         "reports.searchAriaLabel": "டிக்கெட்டுகளைத் தேடு",
         "reports.summaryEmpty": "இந்தக் குழுவில் இன்னும் முடிக்கப்பட்ட டிக்கெட்டுகள் இல்லை",
@@ -413,12 +412,6 @@ export const TA_PACK: LanguagePack = {
         "settings.fieldSchema.dropPrompt": "ஒரு புலத் திட்டம் .json கோப்பை இங்கே இழுத்து விடவும், அல்லது தேர்ந்தெடுக்க கிளிக் செய்யவும்",
         "settings.fieldSchema.resetToDefault": "இயல்புநிலைக்கு மீட்டமை",
         "settings.fieldSchema.empty": "இந்தத் திட்டத்தில் புலங்கள் இல்லை",
-
-        "settings.indexManager.title": "தனிப்பயன் குறியீடுகள்",
-        "settings.indexManager.hint":
-            "ஒரு டிக்கெட் அல்லது மாஸ்டரின் JSON உள்ளடக்கத்தில் உள்ள ஒரு புலத்தில் தேடுதலை வேகப்படுத்துகிறது — அட்டவணையே ஒருபோதும் மாறாது. குறியீட்டை நீக்குவது எப்போது வேண்டுமானாலும் பாதுகாப்பானது; இது தரவைத் தொடாது.",
-        "settings.indexManager.table": "அட்டவணை",
-        "settings.indexManager.jsonPath": "JSON பாதை",
 
         "settings.indicator.title": "எடை காட்டி",
         "settings.indicator.customPattern": "தனிப்பயன் மாதிரி (மேம்பட்டது)",

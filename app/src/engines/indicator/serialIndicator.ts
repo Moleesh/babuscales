@@ -8,9 +8,17 @@ import type {
     SerialIndicatorSource,
     StabilityOptions,
 } from "./types";
+import { resetLorryTicker, startLoadLorry, stopLorryTicker } from "./_private/lorryPhysics";
 
 const DEFAULT_SETTLE_TICKS = 5;
 const DEFAULT_CLOSE_ENOUGH_KG = 20;
+
+// Same demo ranges as simulatedIndicator.ts's defaults — kept in step here
+// rather than exported/shared, since this adapter's "Send to lorry" is a
+// manual test aid layered on top of real hardware, not the primary way this
+// build gets readings (unlike the simulated adapter, where it is).
+const LORRY_TARE_RANGE_KG: readonly [number, number] = [12340, 13240];
+const LORRY_GROSS_RANGE_KG: readonly [number, number] = [30500, 34000];
 
 interface RawReadingEvent {
     WeightKg: number;
@@ -29,6 +37,16 @@ interface SerialIndicatorState {
     reading: IndicatorReading;
     connectionError: string | null;
     listeners: Set<IndicatorListener>;
+    // "Send to lorry" on the real adapter (Settings' `ShowSendLorry`, off by
+    // default here — see settingsSchema.ts) layers the same settle physics
+    // simulatedIndicator.ts uses over this adapter's own readings, for
+    // testing/demoing on hardware that isn't connected/available right now.
+    // `target`/`settleCount`/`timer` are lorryPhysics.ts's own state shape;
+    // while `timer` is running, incoming real hardware samples are ignored
+    // (see pushSample) so the two don't fight over `state.reading`.
+    target: number;
+    settleCount: number;
+    timer: ReturnType<typeof setInterval> | null;
 }
 
 const notifyAll = (state: SerialIndicatorState): void => {
@@ -45,6 +63,11 @@ const notifyAll = (state: SerialIndicatorState): void => {
 // entangled with its tick-physics `target`/`settleCount`, which a real
 // device doesn't have — same policy, a different, hardware-free input.
 const pushSample = (state: SerialIndicatorState, weightKg: number): void => {
+    // A "Send to lorry" simulation is running — let it own `state.reading`
+    // until it settles/is reset, same as a real deck would ignore nothing
+    // but for a fundamentally different reason (there's no real deck under
+    // this test aid to begin with).
+    if (state.timer !== null) return;
     state.connectionError = null;
     state.history.push(weightKg);
     if (state.history.length > state.settleTicks) {
@@ -61,6 +84,7 @@ const connectSerial = async (
     state: SerialIndicatorState,
     config: IndicatorConnectionConfig,
 ): Promise<void> => {
+    stopLorryTicker(state);
     state.connectionError = null;
     state.history = [];
     state.reading = { WeightKg: 0, Stable: true };
@@ -81,6 +105,7 @@ const connectSerial = async (
 };
 
 const disconnectSerial = async (state: SerialIndicatorState): Promise<void> => {
+    stopLorryTicker(state);
     try {
         await invoke("close_indicator_port");
     } catch (reason) {
@@ -99,6 +124,9 @@ export const createSerialIndicator = (): SerialIndicatorSource => {
         reading: { WeightKg: 0, Stable: true },
         connectionError: null,
         listeners: new Set<IndicatorListener>(),
+        target: 0,
+        settleCount: 0,
+        timer: null,
     };
 
     // Set up once, for the app's lifetime — same singleton shape as the
@@ -122,6 +150,17 @@ export const createSerialIndicator = (): SerialIndicatorSource => {
         connect: (config) => connectSerial(state, config),
         disconnect: () => disconnectSerial(state),
         getConnectionError: () => state.connectionError,
+        // Settings-gated (`ShowSendLorry` — WeighingScreen.tsx only passes
+        // this through when the checkbox is on, off by default here). Always
+        // present on the object itself, unlike the old accidental
+        // adapter-tied hiding this replaces — see settingsSchema.ts's
+        // `ShowSendLorry` comment.
+        loadLorry: (kind) =>
+            startLoadLorry(state, kind, {
+                tareRangeKg: LORRY_TARE_RANGE_KG,
+                grossRangeKg: LORRY_GROSS_RANGE_KG,
+            }),
+        reset: () => resetLorryTicker(state),
         updateOptions: (next: StabilityOptions) => {
             if (next.settleTicks !== undefined) state.settleTicks = next.settleTicks;
             if (next.closeEnoughKg !== undefined) state.closeEnoughKg = next.closeEnoughKg;

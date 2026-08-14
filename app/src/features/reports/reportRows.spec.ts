@@ -2,12 +2,14 @@ import { describe, expect, it } from "vitest";
 
 import {
     filterOptions,
+    filterRowsBySeries,
     groupLabel,
     groupOptions,
     viewOptions,
     GROUP_KEY_VALUES,
     TICKET_ROW_FILTER_VALUES,
 } from "./reportRows";
+import type { TicketRow } from "./reportRows";
 
 // Task: extend i18n coverage to Reports — these option-builders/labels used
 // to be static arrays of English strings; now they're functions of `t` so a
@@ -55,5 +57,27 @@ describe("value-only option lists (no t needed)", () => {
 
     it("GROUP_KEY_VALUES matches groupOptions' values", () => {
         expect(GROUP_KEY_VALUES).toEqual(groupOptions(fakeT).map((o) => o.value));
+    });
+});
+
+// Task: fresh-series reset — "Reset the counter now" bumps `SeriesEpoch`
+// without touching existing ticket rows, so old/backed tickets need a pure
+// display filter (never a query-level exclusion) to stop looking like
+// duplicates of the new series in Reports' default view.
+describe("filterRowsBySeries", () => {
+    const rowAt = (seriesEpoch: number): TicketRow =>
+        ({ seriesEpoch }) as TicketRow;
+    const rows = [rowAt(1), rowAt(2), rowAt(2)];
+
+    it("keeps only rows matching the current epoch by default", () => {
+        expect(filterRowsBySeries(rows, 2, false)).toEqual([rowAt(2), rowAt(2)]);
+    });
+
+    it("returns every row unchanged when includeBacked is true", () => {
+        expect(filterRowsBySeries(rows, 2, true)).toEqual(rows);
+    });
+
+    it("returns an empty array when nothing matches the current epoch", () => {
+        expect(filterRowsBySeries(rows, 99, false)).toEqual([]);
     });
 });

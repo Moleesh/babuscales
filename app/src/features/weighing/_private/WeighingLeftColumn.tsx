@@ -1,3 +1,5 @@
+import type { WeightUnit } from "@constants/numberFormat";
+
 import type { RecallOffer } from "../RecallBanner";
 import type { UseWeighingTicket } from "../useWeighingTicket";
 import { CalcCard } from "./CalcCard";
@@ -14,6 +16,11 @@ export interface WeighingLeftColumnProps {
     amountDp: 0 | 2;
     /** Settings → Weighing → Rules.ManualEntry — threaded to CalcCard's Tare/Gross boxes. */
     manualEntry: boolean;
+    /** Settings' `Formats.WeightUnit` — threaded to CalcCard's boxes/formula/status pill. */
+    weightUnit: WeightUnit;
+    /** Settings' `Formats.DateFmt`/`TimeFmt` — threaded to CalcCard's Tare/Gross capture stamps. */
+    dateFmt: string;
+    timeFmt: "24" | "12";
 }
 
 // Split out of WeighingScreen (over the line budget — docs/CodingStandards.md)
@@ -27,6 +34,9 @@ export const WeighingLeftColumn = ({
     billing,
     amountDp,
     manualEntry,
+    weightUnit,
+    dateFmt,
+    timeFmt,
 }: WeighingLeftColumnProps) => (
     <>
         <TicketFieldsCard
@@ -49,6 +59,9 @@ export const WeighingLeftColumn = ({
             kind={ticket.kind}
             isLocked={ticket.isLocked}
             onManualCapture={ticket.manualCapture}
+            weightUnit={weightUnit}
+            dateFmt={dateFmt}
+            timeFmt={timeFmt}
         />
     </>
 );

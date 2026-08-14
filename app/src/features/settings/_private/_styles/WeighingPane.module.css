@@ -1,7 +1,19 @@
 /* Ported from demo/BabuScales-demo.html's ".grid2"/".checks"/".ck"/".inline"/".tw". */
+/* Three explicit top-level columns (by request): weight indicator / ticket
+   numbering + date & time stacked together / weighing rules. Fixed 3-up
+   instead of `auto-fit`, since the column contents are now assigned by
+   position (see WeighingPane.tsx), not left for the grid to place. */
 .grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    align-items: start;
+}
+
+/* Each column stacks its card(s) top to bottom — column 2 holds two cards
+   (ticket numbering, then date & time) directly on top of each other. */
+.col {
+    display: grid;
     gap: 12px;
     align-items: start;
 }
@@ -11,6 +23,10 @@
     color: var(--stable);
 }
 
+/* Simple stack — the rules card now lives in its own single narrow column
+   (see .col above), so there's no width left to lay checkboxes out
+   side-by-side; a multi-column checklist only made sense back when Rules
+   spanned the full row. */
 .checks {
     display: grid;
     gap: 10px;
@@ -47,6 +63,13 @@
     gap: 5px;
 }
 
+.hint {
+    font-size: 0.75rem;
+    color: var(--dim);
+    line-height: 1.5;
+    margin: 0;
+}
+
 .inline {
     display: flex;
     align-items: center;
@@ -68,27 +91,4 @@
 .inline input:disabled {
     opacity: 0.5;
     cursor: not-allowed;
-}
-
-.policy-table {
-    overflow-x: auto;
-}
-.policy-table table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.8125rem;
-}
-.policy-table td {
-    padding: 9px 0;
-    border-bottom: 1px solid var(--line);
-    vertical-align: top;
-}
-.policy-table tr:last-child td {
-    border-bottom: none;
-}
-.policy-detail {
-    font-size: 0.6875rem;
-    color: var(--dim);
-    margin-top: 2px;
-    line-height: 1.5;
 }

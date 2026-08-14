@@ -46,21 +46,10 @@ export interface DataPort {
     listMasters(query?: MasterQuery): Promise<MasterRow[]>;
     saveMaster(draft: MasterDraft): Promise<MasterRow>;
 
-    // config — schemas, layouts, templates, settings, formats, presets, indexes
+    // config — schemas, layouts, templates, settings, formats, presets
     getConfig(configId: string): Promise<ConfigRow | null>;
     listConfig(query?: ConfigQuery): Promise<ConfigRow[]>;
     saveConfig(draft: ConfigDraft): Promise<ConfigRow>;
-
-    // custom indexes (PLAN §6.3) — SQLite expression indexes on a JSON path
-    // inside `doc.body`/`master.body`. The definitions themselves live as
-    // ordinary `config` rows (`ConfigKind: "Index"`) read/written through
-    // `getConfig`/`listConfig`/`saveConfig` above; these two methods exist
-    // only because creating/dropping one also means running real DDL
-    // (Tauri) or the memory adapter's equivalent no-op stand-in.
-    /** Validates `table`/`path` server-side, creates `CREATE INDEX IF NOT EXISTS`, and persists the definition as a `config` row. */
-    createCustomIndex(table: "doc" | "master", path: string): Promise<ConfigRow>;
-    /** Drops the index and flips the stored definition's `Body.Active` to `false` (soft-delete — there is no generic delete-config method). */
-    dropCustomIndex(configId: string): Promise<ConfigRow>;
 
     // asset — all binary content. Metadata and bytes are fetched separately
     // on purpose: `SELECT *` on this table would materialise every image

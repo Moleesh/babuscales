@@ -91,20 +91,27 @@ button.kpi {
     }
 }
 
-/* Ported from the mock's ".bars"/".bars div"/".bars div.q"/".bars div span". */
+/* Ported from the mock's ".bars"/".bars div"/".bars div.q"/".bars div span".
+   173px content height (+17px reserved below for the axis-label row = 190px
+   total) matches `.split`'s own fixed 190px — task: "we have more space
+   below the chart" — the two `.grid2` cards used to differ (130px vs
+   190px), and CSS Grid's default `align-items: stretch` grew this card's
+   *body* to match its taller sibling without growing `.bars` itself,
+   leaving a dead gap underneath. DashboardCharts.tsx's `BAR_AREA_PX`
+   constant must be kept in sync with the 173 here — it drives each bar's
+   actual px height. */
 .bars {
     display: flex;
     align-items: flex-end;
     gap: 5px;
-    height: 130px;
+    height: 173px;
     padding-bottom: 17px;
 }
 .bar {
-    flex: 1;
     background: var(--led-dim);
     border-radius: 3px 3px 0 0;
     position: relative;
-    min-height: 2px;
+    width: 100%;
 }
 .bar-now {
     background: var(--led);
@@ -119,22 +126,54 @@ button.kpi {
     color: var(--faint);
 }
 
-/* Ported from the mock's ".split"/".split .r"/".track"/".track i". */
+/* Ported from the mock's ".split"/".split .r"/".track"/".track i". Capped and
+   scrollable, not open-ended — a site with more than a handful of distinct
+   materials (task: "material split increasing the height") would otherwise
+   grow this card past its `.bars` sibling on every fresh material, pushing
+   everything below Dashboard's fold further down each time. A *fixed*
+   height (not max-height) — task: "year and month has different height" —
+   a content-dependent cap still lets the row's CSS Grid `align-items:
+   stretch` jump when switching periods changes how close to the cap this
+   card sits; fixed height keeps the `.grid2` row the same regardless of
+   period or material count. 190px fits ~5 rows before scrolling, roughly
+   matching `.bars`' own 130px + label. */
 .split {
     display: grid;
+    align-content: start;
     gap: 9px;
+    height: 190px;
+    overflow-x: hidden;
+    overflow-y: auto;
+    padding-right: 4px;
 }
+/* Task: "1,48,165 l" — the fixed 80px value column clipped its own
+   `white-space: nowrap` content (e.g. "1,48,165 kg") once `.split`'s
+   scrollbar (overflow-y: auto) ate into the row's available width;
+   `.split-row` never knew the scrollbar had shown up, so the value column
+   stayed 80px and `overflow-x: hidden` on `.split` sliced the tail off.
+   `auto` sizes the column to its own longest rendered value instead of a
+   guessed fixed width, so it can never clip regardless of scrollbar
+   presence or locale-driven digit-grouping/unit width. */
 .split-row {
     display: grid;
-    grid-template-columns: 110px 1fr 62px;
+    grid-template-columns: 110px 1fr auto;
     gap: 9px;
     align-items: center;
     font-size: 0.75rem;
 }
 @media (max-width: 899px) {
     .split-row {
-        grid-template-columns: 88px 1fr 54px;
+        grid-template-columns: 88px 1fr auto;
     }
+}
+/* Task: "kg is in next line" — the weight + load-count stack was wrapping
+   mid-value inside the tight 80px/68px column; nowrap keeps each line intact
+   and right-aligns the pair as a unit. */
+.split-value {
+    display: grid;
+    justify-items: end;
+    text-align: right;
+    white-space: nowrap;
 }
 .track {
     height: 7px;

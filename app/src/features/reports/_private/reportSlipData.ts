@@ -1,3 +1,4 @@
+import type { WeightUnit } from "@constants/numberFormat";
 import { buildReportSlipData } from "@engines/print";
 import type { ReportSlipData } from "@engines/print";
 
@@ -11,6 +12,9 @@ export interface BuildReportsScreenSlipDataArgs {
     visibleRows: TicketRow[];
     amountDp: 0 | 2;
     lang: string;
+    weightUnit: WeightUnit;
+    dateFmt: string;
+    timeFmt: "24" | "12";
 }
 
 // Split out of ReportsScreen (over the line/complexity budget —
@@ -27,6 +31,9 @@ export const buildReportsScreenSlipData = ({
     visibleRows,
     amountDp,
     lang,
+    weightUnit,
+    dateFmt,
+    timeFmt,
 }: BuildReportsScreenSlipDataArgs): ReportSlipData => {
     if (view === "summary") {
         const { head, rows: printRows } = buildSummaryPrintRows(summaryRows, amountDp);
@@ -39,14 +46,18 @@ export const buildReportsScreenSlipData = ({
             rows: printRows,
             rowTimestamps: timestamps,
             lang,
+            dateFmt,
+            timeFmt,
         });
     }
-    const { head, rows: printRows } = buildTicketPrintRows(visibleRows);
+    const { head, rows: printRows } = buildTicketPrintRows(visibleRows, weightUnit);
     return buildReportSlipData({
         title: "TICKET REGISTER",
         head,
         rows: printRows,
         rowTimestamps: visibleRows.map((row) => row.at),
         lang,
+        dateFmt,
+        timeFmt,
     });
 };

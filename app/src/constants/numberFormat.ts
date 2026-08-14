@@ -30,7 +30,62 @@ export const formatTime = (
     options?: Intl.DateTimeFormatOptions,
 ): string => new Date(value).toLocaleTimeString(dateLocaleFor(lang), options);
 
-export const formatWeightKg = (kg: number): string => kg.toLocaleString(INDIAN_LOCALE);
+// Settings → Date & time's `Formats.DateFmt` — a fixed pattern the operator
+// picked, not the browser's locale default (which is all formatDate above
+// ever honoured). Manual, not a date-formatting library: only four fixed
+// layouts exist, so a switch is simpler and lighter than pulling one in.
+// "MMM" still routes through Intl so `ta` gets a Tamil month name, same as
+// every other date on screen — only the day/month/year *arrangement* is
+// fixed, not the month name itself.
+export const DATE_FORMATS = ["dd MMM yyyy", "dd-MM-yyyy", "dd/MM/yy", "yyyy-MM-dd"] as const;
+export type DateFmt = (typeof DATE_FORMATS)[number];
+
+const pad2 = (n: number): string => String(n).padStart(2, "0");
+
+const monthShort = (date: Date, lang: string): string =>
+    date.toLocaleDateString(dateLocaleFor(lang), { month: "short" });
+
+/** Date only, in Settings' `Formats.DateFmt` pattern — an unrecognised
+ * pattern (e.g. an old settings row saved before this existed) falls back
+ * to `formatDate`'s locale-default rendering rather than throwing. */
+export const formatDateInFmt = (value: Date | string, lang: string, fmt: string): string => {
+    const date = new Date(value);
+    const dd = pad2(date.getDate());
+    const MM = pad2(date.getMonth() + 1);
+    const yyyy = String(date.getFullYear());
+    switch (fmt as DateFmt) {
+        case "dd MMM yyyy":
+            return `${dd} ${monthShort(date, lang)} ${yyyy}`;
+        case "dd-MM-yyyy":
+            return `${dd}-${MM}-${yyyy}`;
+        case "dd/MM/yy":
+            return `${dd}/${MM}/${yyyy.slice(-2)}`;
+        case "yyyy-MM-dd":
+            return `${yyyy}-${MM}-${dd}`;
+        default:
+            return formatDate(date, lang);
+    }
+};
+
+/** Time only, in Settings' `Formats.TimeFmt` ("24" or "12"-hour). */
+export const formatTimeInFmt = (value: Date | string, lang: string, timeFmt: "24" | "12"): string =>
+    new Date(value).toLocaleTimeString(dateLocaleFor(lang), { hour12: timeFmt === "12" });
+
+/** Date + time, each rendered in Settings' own `Formats.DateFmt`/`TimeFmt`
+ * — every ticket/print timestamp that has real settings in reach should
+ * use this instead of `formatDateTime`'s locale-default rendering. */
+export const formatDateTimeInFmt = (
+    value: Date | string,
+    lang: string,
+    dateFmt: string,
+    timeFmt: "24" | "12",
+): string => `${formatDateInFmt(value, lang, dateFmt)} ${formatTimeInFmt(value, lang, timeFmt)}`;
+
+// Rounded to whole kg — no fractional kg on a screen meant to be read at a
+// glance (matches formatWeightIn's `dp = 0` for kg below). Without the
+// round, the "Send to lorry" bounce animation's jittery intermediate
+// readings showed decimals mid-flight.
+export const formatWeightKg = (kg: number): string => Math.round(kg).toLocaleString(INDIAN_LOCALE);
 
 // "Display unit" (Settings' Appearance pane) — most Indian sites weigh in
 // kg, not tonnes, so a chart/KPI reading "3.4 t" reads as an unfamiliar

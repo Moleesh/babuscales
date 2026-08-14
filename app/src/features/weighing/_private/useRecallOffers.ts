@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 
+import type { WeightUnit } from "@constants/numberFormat";
 import type { DocRow } from "@db/types";
 import type { UseMasterCache } from "@db/useMasterCache";
 
@@ -13,6 +14,10 @@ export interface UseRecallOffersArgs {
     storedTareCache: UseMasterCache;
     strictTare: boolean;
     lang: string;
+    t: (key: string) => string;
+    weightUnit: WeightUnit;
+    dateFmt: string;
+    timeFmt: "24" | "12";
 }
 
 // Split out of WeighingScreen (over the line budget — docs/CodingStandards.md)
@@ -24,8 +29,23 @@ export const useRecallOffers = ({
     storedTareCache,
     strictTare,
     lang,
+    t,
+    weightUnit,
+    dateFmt,
+    timeFmt,
 }: UseRecallOffersArgs): RecallOffer[] =>
     useMemo(
-        () => buildRecallOffers({ ticket, allTicketDocs, storedTareCache, strictTare, lang }),
-        [ticket, allTicketDocs, storedTareCache, strictTare, lang],
+        () =>
+            buildRecallOffers({
+                ticket,
+                allTicketDocs,
+                storedTareCache,
+                strictTare,
+                lang,
+                t,
+                weightUnit,
+                dateFmt,
+                timeFmt,
+            }),
+        [ticket, allTicketDocs, storedTareCache, strictTare, lang, t, weightUnit, dateFmt, timeFmt],
     );

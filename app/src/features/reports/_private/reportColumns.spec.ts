@@ -14,9 +14,12 @@ describe("buildTicketColumns: headers route through t", () => {
         const columns = buildTicketColumns({
             onOpenTicket: () => undefined,
             amountDp: 2,
+            weightUnit: "kg",
             styles: noopStyles,
             t: fakeT,
             lang: "en",
+            dateFmt: "dd MMM yyyy",
+            timeFmt: "24",
         });
         const headers = columns
             .map((c) => c.header)

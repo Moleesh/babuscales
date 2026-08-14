@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 
+import type { WeightUnit } from "@constants/numberFormat";
 import type { DataPort } from "@db/DataPort";
 import type { DocRow } from "@db/types";
 
@@ -20,6 +21,11 @@ export interface UseReportsScreenControllerArgs {
     docs: DocRow[];
     onOpenTicket: (doc: DocRow) => void;
     amountDp: 0 | 2;
+    weightUnit: WeightUnit;
+    dateFmt: string;
+    timeFmt: "24" | "12";
+    /** `Numbering.CurrentEpoch` — threaded down to the series filter (reportRows.ts's filterRowsBySeries). */
+    currentEpoch: number;
     styles: CSSModuleClasses;
     t: Translate;
     lang: string;
@@ -42,6 +48,12 @@ const useReportsScreenFilters = () => {
     const [filter, setFilter] = useState<TicketRowFilter>("all");
     const [dateFrom, setDateFrom] = useState("");
     const [dateTo, setDateTo] = useState("");
+    // Reports' own "include tickets from before the last reset" toggle —
+    // plain local state, not persisted, same as every other filter here
+    // (dateFrom/dateTo aren't persisted either, only saved-report
+    // definitions are — useSavedReportActions.ts). Off by default so a
+    // "Reset the counter now" reads as a genuine fresh start.
+    const [includeBacked, setIncludeBacked] = useState(false);
     const [groupBy, setGroupBy] = useState<GroupKey>("material");
     const [printOpen, setPrintOpen] = useState(false);
     const [builderOpen, setBuilderOpen] = useState(false);
@@ -59,6 +71,8 @@ const useReportsScreenFilters = () => {
         setDateFrom,
         dateTo,
         setDateTo,
+        includeBacked,
+        setIncludeBacked,
         groupBy,
         setGroupBy,
         printOpen,
@@ -103,6 +117,10 @@ export const useReportsScreenController = ({
     docs,
     onOpenTicket,
     amountDp,
+    weightUnit,
+    dateFmt,
+    timeFmt,
+    currentEpoch,
     styles,
     t,
     lang,
@@ -144,6 +162,10 @@ export const useReportsScreenController = ({
         ...filters,
         onOpenTicket,
         amountDp,
+        weightUnit,
+        dateFmt,
+        timeFmt,
+        currentEpoch,
         styles,
         t,
         lang,

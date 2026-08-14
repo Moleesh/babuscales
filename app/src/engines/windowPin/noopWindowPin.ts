@@ -5,4 +5,6 @@ import type { WindowPinSource } from "./types";
 // noop source.
 export const createNoopWindowPin = (): WindowPinSource => ({
     setAlwaysOnTop: () => Promise.resolve(),
+    minimize: () => Promise.resolve(),
+    close: () => Promise.resolve(),
 });

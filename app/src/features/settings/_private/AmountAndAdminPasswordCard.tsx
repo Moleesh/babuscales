@@ -4,38 +4,32 @@ import { useTranslation } from "@i18n/useTranslation";
 import type { SettingsBody } from "../settingsSchema";
 import styles from "./_styles/SystemPane.module.css";
 import { AmountAndAdminPasswordFields } from "./AmountAndAdminPasswordFields";
-import { DateTimeFormatFields } from "./DateTimeFormatFields";
 import { useAdminPasswordField } from "./useAdminPasswordField";
 
-export interface DateTimeFormatsCardProps {
+export interface AmountAndAdminPasswordCardProps {
     settings: SettingsBody;
     unlocked: boolean;
     onSave: (next: SettingsBody) => void;
     changeAdminPassword: (newPassword: string) => Promise<void>;
 }
 
-// Split out of SystemPane (over the line budget — docs/CodingStandards.md)
-// — date/time/amount format preferences plus the admin-password field,
-// unchanged from the inline version it replaces. Persisted and editable
-// here but nothing else in the app reads Formats back yet — a narrower
-// version of Settings than the mock's, documented in app/README.md's known
-// gaps rather than silently pretended away. Further split into
-// DateTimeFormatFields/AmountAndAdminPasswordFields, each still over its
-// own budget on its own.
-export const DateTimeFormatsCard = ({
+// Split out of DateTimeFormatsCard — date/time moved to WeighingPane (ticket
+// numbering/date-time are about the weighing flow; amount rounding and the
+// admin password aren't, so they keep their own card here instead of
+// following). Unchanged from the fields' inline version otherwise.
+export const AmountAndAdminPasswordCard = ({
     settings,
     unlocked,
     onSave,
     changeAdminPassword,
-}: DateTimeFormatsCardProps) => {
+}: AmountAndAdminPasswordCardProps) => {
     const { newPassword, setNewPassword, pwFlash, commitPassword } =
         useAdminPasswordField(changeAdminPassword);
     const { t } = useTranslation();
 
     return (
-        <Card title={<span className="lbl">{t("settings.dateTimeFormats.title")}</span>}>
+        <Card title={<span className="lbl">{t("settings.amountAdmin.title")}</span>}>
             <div className={styles.body}>
-                <DateTimeFormatFields settings={settings} unlocked={unlocked} onSave={onSave} />
                 <AmountAndAdminPasswordFields
                     settings={settings}
                     unlocked={unlocked}
@@ -45,7 +39,6 @@ export const DateTimeFormatsCard = ({
                     pwFlash={pwFlash}
                     commitPassword={commitPassword}
                 />
-                <p className={styles.hint}>{t("settings.dateTimeFormats.hint")}</p>
             </div>
         </Card>
     );

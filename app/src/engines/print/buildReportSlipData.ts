@@ -1,4 +1,4 @@
-import { formatDate, formatDateTime } from "@constants/numberFormat";
+import { formatDateInFmt, formatDateTimeInFmt } from "@constants/numberFormat";
 
 import type { ReportSlipData } from "./types";
 
@@ -11,17 +11,21 @@ export interface ReportSlipInput {
     rowTimestamps: string[];
     /** i18n's active language — decides the locale DateRange/PrintedAt render in. */
     lang: string;
+    /** Settings' `Formats.DateFmt`. */
+    dateFmt: string;
+    /** Settings' `Formats.TimeFmt`. */
+    timeFmt: "24" | "12";
 }
 
-const dateRangeOf = (timestamps: string[], lang: string): string => {
+const dateRangeOf = (timestamps: string[], lang: string, dateFmt: string): string => {
     if (timestamps.length === 0) return "No tickets";
     const sorted = [...timestamps].sort();
     const earliest = sorted.at(0);
     const latest = sorted.at(-1);
     if (earliest === undefined || latest === undefined) return "No tickets";
     return earliest === latest
-        ? formatDate(earliest, lang)
-        : `${formatDate(earliest, lang)} – ${formatDate(latest, lang)}`;
+        ? formatDateInFmt(earliest, lang, dateFmt)
+        : `${formatDateInFmt(earliest, lang, dateFmt)} – ${formatDateInFmt(latest, lang, dateFmt)}`;
 };
 
 // Mirrors buildSlipData.ts's role for the per-ticket slip: turns already-
@@ -30,8 +34,8 @@ const dateRangeOf = (timestamps: string[], lang: string): string => {
 // consumes.
 export const buildReportSlipData = (input: ReportSlipInput): ReportSlipData => ({
     Title: input.title,
-    DateRange: dateRangeOf(input.rowTimestamps, input.lang),
+    DateRange: dateRangeOf(input.rowTimestamps, input.lang, input.dateFmt),
     Head: input.head,
     Rows: input.rows,
-    PrintedAt: formatDateTime(new Date(), input.lang),
+    PrintedAt: formatDateTimeInFmt(new Date(), input.lang, input.dateFmt, input.timeFmt),
 });

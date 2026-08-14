@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 
+import { Tooltip } from "@components/Tooltip";
 import { resolveLocalized } from "@i18n/types";
 import type { Localized } from "@i18n/types";
 import { useTranslation } from "@i18n/useTranslation";
@@ -40,9 +41,11 @@ export const Field = ({ id, label, searchTitle, recalled, children }: FieldProps
             <label className={styles.lbl} htmlFor={id}>
                 <span>{resolveLabel(label, lang)}</span>
                 {searchTitle && (
-                    <span className={styles.mst} title={resolveLabel(searchTitle, lang)}>
-                        ⌕
-                    </span>
+                    <Tooltip label={resolveLabel(searchTitle, lang)}>
+                        <span className={styles.mst}>
+                            ⌕
+                        </span>
+                    </Tooltip>
                 )}
                 {recalled && <span className={styles.tag}>{t("recalled")}</span>}
             </label>

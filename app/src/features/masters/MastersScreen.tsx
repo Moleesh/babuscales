@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { SegmentedControl } from "@components/SegmentedControl";
 import type { MasterKind } from "@db/types";
+import { useSettings } from "@features/settings";
 import { useTranslation } from "@i18n/useTranslation";
 
 import { buildMasterColumns } from "./_private/masterColumns";
@@ -25,6 +26,7 @@ import { buildKindOptions } from "./masterKindMeta";
 // useMasterFormActions (form JSX + handlers) — see _private/ for each.
 export const MastersScreen = () => {
     const { lang, t } = useTranslation();
+    const { settings } = useSettings();
     const [activeKind, setActiveKind] = useState<MasterKind>("Party");
     const [query, setQuery] = useState("");
     const { totalCount, reload, list, form } = useMastersScreenState(activeKind, query);
@@ -35,8 +37,17 @@ export const MastersScreen = () => {
 
     const kindLower = activeKind.toLowerCase();
     const columns = useMemo(
-        () => buildMasterColumns(activeKind, styles, t, lang),
-        [activeKind, t, lang],
+        () =>
+            buildMasterColumns(
+                activeKind,
+                styles,
+                t,
+                lang,
+                settings.Formats.WeightUnit,
+                settings.Formats.DateFmt,
+                settings.Formats.TimeFmt,
+            ),
+        [activeKind, t, lang, settings.Formats.WeightUnit, settings.Formats.DateFmt, settings.Formats.TimeFmt],
     );
     const kindOptions = useMemo(() => buildKindOptions(lang, t), [lang, t]);
 

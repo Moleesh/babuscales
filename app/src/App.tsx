@@ -1,9 +1,11 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import type { ReactNode } from "react";
 
 import { AppShell } from "@components/AppShell";
 import type { AppShellTab } from "@components/AppShell";
 import { ContextualHelp } from "@components/ContextualHelp";
 import { CustomCursor } from "@components/CustomCursor";
+import { Tooltip } from "@components/Tooltip";
 import { WeightDisplay } from "@components/WeightDisplay";
 import { createDataPort } from "@db/createDataPort";
 import { DataPortProvider } from "@db/DataPortProvider";
@@ -90,6 +92,15 @@ interface TopBarActionsProps {
     helpTitle: string;
     settingsTitle: string;
     onOpenSettings: () => void;
+    /** Rendered as its own button directly before Close (task #62's "next to
+        Close", not off on its own at the far left of the row) — passed in as
+        a ready element rather than pinned/onToggle props since App.tsx's
+        `PinToggle` already owns its own icon/label wiring. */
+    pin: ReactNode;
+    minimizeTitle: string;
+    onMinimize: () => void;
+    closeTitle: string;
+    onClose: () => void;
 }
 
 const TopBarActions = ({
@@ -101,6 +112,11 @@ const TopBarActions = ({
     helpTitle,
     settingsTitle,
     onOpenSettings,
+    pin,
+    minimizeTitle,
+    onMinimize,
+    closeTitle,
+    onClose,
 }: TopBarActionsProps) => (
     <>
         {otherPackName && (
@@ -109,18 +125,39 @@ const TopBarActions = ({
             </button>
         )}
         <OperatorChip />
-        <button className="iconbtn" title={settingsTitle} onClick={onOpenSettings}>
-            ⚙
-        </button>
-        <button
-            className="iconbtn"
-            aria-expanded={helpOpen}
-            title={helpTitle}
-            data-help-toggle
-            onClick={onToggleHelp}
-        >
-            ?
-        </button>
+        <Tooltip label={settingsTitle}>
+            <button className="iconbtn" onClick={onOpenSettings}>
+                ⚙
+            </button>
+        </Tooltip>
+        <Tooltip label={helpTitle}>
+            <button
+                className="iconbtn"
+                aria-expanded={helpOpen}
+                data-help-toggle
+                onClick={onToggleHelp}
+            >
+                ?
+            </button>
+        </Tooltip>
+        {/* Set off from Help with its own margin rather than sitting flush
+            against it — the pin toggle and Close are a pair (task #62
+            follow-up), so the gap belongs before the pin, not between the
+            pin and Close. */}
+        <span style={{ marginLeft: 10 }}>{pin}</span>
+        {/* The window's native title bar is gone (`decorations: false`,
+            tauri.conf.json) — Minimize/Close here are the only controls
+            left for either. */}
+        <Tooltip label={minimizeTitle}>
+            <button className="iconbtn" onClick={onMinimize}>
+                ─
+            </button>
+        </Tooltip>
+        <Tooltip label={closeTitle}>
+            <button className="iconbtn" onClick={onClose}>
+                ✕
+            </button>
+        </Tooltip>
     </>
 );
 
@@ -152,14 +189,15 @@ interface PinToggleProps {
 // relaunch always comes back to the config's own default, exactly as the
 // "temporary" ask wants.
 const PinToggle = ({ pinned, onToggle, labelOn, labelOff }: PinToggleProps) => (
-    <button
-        className="iconbtn"
-        aria-pressed={pinned}
-        title={pinned ? labelOn : labelOff}
-        onClick={onToggle}
-    >
-        <PinIcon pinned={pinned} />
-    </button>
+    <Tooltip label={pinned ? labelOn : labelOff}>
+        <button
+            className="iconbtn"
+            aria-pressed={pinned}
+            onClick={onToggle}
+        >
+            <PinIcon pinned={pinned} />
+        </button>
+    </Tooltip>
 );
 
 interface TabContentProps {
@@ -168,7 +206,7 @@ interface TabContentProps {
     onOpenTicket: (doc: DocRow) => void;
     onNavigateToReports: () => void;
     onNavigateToCameras: () => void;
-    onResetTicketSeries: () => Promise<void>;
+    onResetTicketSeries: () => Promise<{ Epoch: number }>;
     onAddLanguagePack: (pack: LanguagePack) => Promise<void>;
     /** `useLicense().isGated` — the one place licensing actually changes what the operator can do (task #38); see WeighingScreen's own `licenseGated` prop comment. */
     licenseGated: boolean;
@@ -227,11 +265,13 @@ const ShellWeightHeader = ({
     compact,
     t,
     lang,
+    timeFmt,
 }: {
     reading: ReturnType<typeof useIndicatorReading>;
     compact: boolean;
     t: ReturnType<typeof useTranslation>["t"];
     lang: ReturnType<typeof useTranslation>["lang"];
+    timeFmt: "24" | "12";
 }) => (
     <WeightDisplay
         weightKg={reading.WeightKg}
@@ -240,6 +280,7 @@ const ShellWeightHeader = ({
         motion={!reading.Stable}
         mode={compact ? "compact" : "full"}
         lang={lang}
+        timeFmt={timeFmt}
         labels={{
             indicator: t("ind"),
             stable: t("stable"),
@@ -277,8 +318,8 @@ const useShellTicketActions = (
         setActiveTab("weigh");
     };
 
-    const resetTicketSeries = async (): Promise<void> => {
-        await db.resetDocSeries("Ticket", "default");
+    const resetTicketSeries = async (): Promise<{ Epoch: number }> => {
+        return await db.resetDocSeries("Ticket", "default");
     };
     return { openTicket, resetTicketSeries };
 };
@@ -297,15 +338,12 @@ const useReportsNavigation = (setActiveTab: (tab: (typeof TAB_KEYS)[number]) => 
     return { reportsIntent, onNavigateToReports };
 };
 
-// Bug fix: formatTicketNo's "Draft" placeholder was a bare English literal
-// (ticketNumber.ts has no React context of its own — same reasoning as
-// setTicketNumberFormat's push-on-change) — push the translated string down
-// on every language change. Split out for the same line-budget reason as
-// the two hooks above.
+// Bug fix: formatTicketNo's "Draft" placeholder wasn't updating until a
+// refresh — pushing it via `useEffect` ran too late (after children already
+// rendered with the old label). Called directly in Shell's render body
+// instead, so it's current before any child reads it.
 const useDraftLabelSync = (t: ReturnType<typeof useTranslation>["t"]): void => {
-    useEffect(() => {
-        setTicketNumberDraftLabel(t("weigh.draft"));
-    }, [t]);
+    setTicketNumberDraftLabel(t("weigh.draft"));
 };
 
 interface ShellProps {
@@ -339,6 +377,10 @@ const useShellTopBar = ({
 }: UseShellTopBarArgs) => {
     const { t } = useTranslation();
     const { pinned, onToggle } = usePinToggle(windowPin);
+    // Rendered inline as part of `topRight` now, directly before Close
+    // (task #62 follow-up: "pin next to close", not off on its own at the
+    // row's left edge — AppShell's separate always-visible `pin` slot is no
+    // longer used for this).
     const pin = (
         <PinToggle
             pinned={pinned}
@@ -357,9 +399,14 @@ const useShellTopBar = ({
             helpTitle={t("nav.help")}
             settingsTitle={t("nav.settings")}
             onOpenSettings={onOpenSettings}
+            pin={pin}
+            minimizeTitle={t("nav.minimize")}
+            onMinimize={() => void windowPin.minimize()}
+            closeTitle={t("nav.close")}
+            onClose={() => void windowPin.close()}
         />
     );
-    return { pin, topRight };
+    return { topRight };
 };
 
 const Shell = ({ onAddLanguagePack, windowPin }: ShellProps) => {
@@ -371,16 +418,12 @@ const Shell = ({ onAddLanguagePack, windowPin }: ShellProps) => {
     const { settings, loading: settingsLoading } = useSettings();
     const license = useLicense();
     useRemoveInitialSplash(!settingsLoading);
-    const ticket = useWeighingTicket(
-        settings.Rules.TareFirst,
-        settings.OperatorName,
-        settings.Rules.MultiGross,
-    );
+    const ticket = useWeighingTicket(settings.OperatorName, settings.Rules.SameTicketNo);
     const otherPack = packs.find((pack) => pack.Code !== "en") ?? null;
     const { openTicket, resetTicketSeries } = useShellTicketActions(ticket, db, setActiveTab);
     const { reportsIntent, onNavigateToReports } = useReportsNavigation(setActiveTab);
     useDraftLabelSync(t);
-    const { pin, topRight } = useShellTopBar({
+    const { topRight } = useShellTopBar({
         windowPin,
         lang,
         setLang,
@@ -396,9 +439,16 @@ const Shell = ({ onAddLanguagePack, windowPin }: ShellProps) => {
             tabs={buildNavTabs(t)}
             activeTab={activeTab}
             onNavigate={(key) => setActiveTab(key as (typeof TAB_KEYS)[number])}
-            pin={pin}
             topRight={topRight}
-            header={<ShellWeightHeader reading={reading} compact={!BIG_HEADER_TABS.has(activeTab)} t={t} lang={lang} />}
+            header={
+                <ShellWeightHeader
+                    reading={reading}
+                    compact={!BIG_HEADER_TABS.has(activeTab)}
+                    t={t}
+                    lang={lang}
+                    timeFmt={settings.Formats.TimeFmt}
+                />
+            }
             banner={renderLicenseBanner(license.state, license.isGated)}
         >
             <TabContent

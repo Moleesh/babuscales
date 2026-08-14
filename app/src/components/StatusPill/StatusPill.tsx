@@ -1,4 +1,5 @@
-import { formatWeightKg } from "@constants/numberFormat";
+import { formatWeightIn } from "@constants/numberFormat";
+import type { WeightUnit } from "@constants/numberFormat";
 
 import styles from "./_styles/StatusPill.module.css";
 
@@ -23,6 +24,9 @@ export interface StatusPillProps {
     /** Struck through, faded — a cancellation is a flag, not a status (PLAN §7.4). */
     cancelled?: boolean;
     labels?: StatusPillLabels;
+    /** Settings' `Formats.WeightUnit` — defaults to "kg" so a caller that predates this
+     * setting (or doesn't have it in reach) keeps the pill's original look. */
+    weightUnit?: WeightUnit;
 }
 
 const DEFAULT_LABELS: StatusPillLabels = { tare: "Tare", gross: "Gross", net: "Net" };
@@ -31,9 +35,10 @@ interface SegmentProps {
     label: string;
     kg: number | null;
     net?: boolean;
+    weightUnit: WeightUnit;
 }
 
-const Segment = ({ label, kg, net }: SegmentProps) => {
+const Segment = ({ label, kg, net, weightUnit }: SegmentProps) => {
     const on = kg !== null && kg !== undefined;
     const className = [styles.segment, on && styles.on, net && styles.net]
         .filter(Boolean)
@@ -41,7 +46,7 @@ const Segment = ({ label, kg, net }: SegmentProps) => {
     return (
         <i className={className}>
             {label}
-            <b className={styles.value}>{on ? formatWeightKg(kg) : "—"}</b>
+            <b className={styles.value}>{on ? formatWeightIn(kg, weightUnit) : "—"}</b>
         </i>
     );
 };
@@ -55,6 +60,7 @@ export const StatusPill = ({
     netKg,
     cancelled,
     labels = DEFAULT_LABELS,
+    weightUnit = "kg",
 }: StatusPillProps) => {
     const tare = tareKg ?? null;
     const gross = grossKg ?? null;
@@ -67,9 +73,9 @@ export const StatusPill = ({
 
     return (
         <span className={`${styles.pill} ${cancelled ? styles.cancelled : ""}`}>
-            <Segment label={labels.tare} kg={tare} />
-            <Segment label={labels.gross} kg={gross} />
-            <Segment label={labels.net} kg={net} net />
+            <Segment label={labels.tare} kg={tare} weightUnit={weightUnit} />
+            <Segment label={labels.gross} kg={gross} weightUnit={weightUnit} />
+            <Segment label={labels.net} kg={net} net weightUnit={weightUnit} />
         </span>
     );
 };

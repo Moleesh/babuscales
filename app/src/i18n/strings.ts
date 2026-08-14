@@ -10,6 +10,8 @@ export const EN_STRINGS: Record<string, string> = {
     "nav.masters": "Masters",
     "nav.settings": "Settings",
     "nav.help": "Help for this tab",
+    "nav.minimize": "Minimize",
+    "nav.close": "Close",
 
     tare: "Tare",
     gross: "Gross",
@@ -25,7 +27,13 @@ export const EN_STRINGS: Record<string, string> = {
     recalled: "Recalled",
 
     "weigh.open": "Open",
-    "weigh.recallTitle": "The database already knows this vehicle",
+    "weigh.recallTitle": "This vehicle already has ticket history",
+    "weigh.recall.resume": "Resume",
+    "weigh.recall.fillFrom": "Fill from",
+    "weigh.recall.useStoredTare": "Use stored tare",
+    "weigh.recall.takenAgo": "taken",
+    "weigh.recall.daysAgo": "days ago",
+    "weigh.recall.previousTicket": "Previous ticket",
 
     "weigh.captureAs": "Capture as",
     "weigh.actions": "Actions",
@@ -41,9 +49,8 @@ export const EN_STRINGS: Record<string, string> = {
         "Licence needs attention — see the banner above. Activate in Settings → System to resume.",
     "weigh.printed": "Printed.",
     "weigh.savedReadyToPrint": "Saved — ready to print.",
-    "weigh.captureAnotherGross":
-        "Capture another Gross to add a load, or Save to finish this ticket.",
     "weigh.bothWeightsCaptured": "Both weights captured — Save to finish.",
+    "weigh.awaitingSave": "Captured — Save (or Save & park) before the next weight.",
     "weigh.deckEmpty": "Deck empty. Send a lorry to begin.",
     "weigh.stableCaptureNow": "Stable — capture now.",
     "weigh.weightInMotion": "Weight in motion — capture is locked until it settles.",
@@ -51,10 +58,11 @@ export const EN_STRINGS: Record<string, string> = {
     "weigh.capturedAndCalculated": "Captured & calculated",
     "weigh.draft": "Draft",
     "weigh.capture.bothCaptured": "Both weights captured",
-    "weigh.capture.anotherGross": "Capture another Gross",
+    "weigh.capture.awaitingSave": "Save first",
     "weigh.capture.gross": "Capture Gross",
     "weigh.capture.tare": "Capture Tare",
     "weigh.capture.saveToFinish": "Save to finish this ticket",
+    "weigh.capture.awaitingSaveHint": "Save first",
     "weigh.capture.stableNow": "Stable — capture now",
     "weigh.capture.waitingForStable": "Waiting for a stable reading",
     charge: "Charge",
@@ -144,10 +152,9 @@ export const EN_STRINGS: Record<string, string> = {
     "masters.storedTare.search": "Search by vehicle…",
     "masters.storedTare.addNew": "Add stored tare",
 
-    "settings.pane.biz": "Business",
+    "settings.pane.biz": "Business & Appearance",
     "settings.pane.fields": "Fields & language",
     "settings.pane.print": "Print & printers",
-    "settings.pane.look": "Appearance",
     "settings.pane.weigh": "Weighing",
     "settings.pane.conn": "Connections",
     "settings.pane.sys": "System",
@@ -183,6 +190,8 @@ export const EN_STRINGS: Record<string, string> = {
     "dashboard.chart.activity.all": "Tickets by year",
     "dashboard.chart.material": "Material split",
     "dashboard.chart.noMaterial": "No completed tickets in this period.",
+    "dashboard.chart.tickets": "tickets",
+    "dashboard.chart.loads": "loads",
 
     "dashboard.period.ariaLabel": "Period",
     "dashboard.period.day": "Day",
@@ -253,9 +262,8 @@ export const EN_STRINGS: Record<string, string> = {
     "components.appShell.pinOff": "Keep window on top (off) — click to turn on",
     "components.contextualHelp.close": "Close help",
 
-    "settings.dateTimeFormats.title": "Date, time & amounts",
-    "settings.dateTimeFormats.hint":
-        "Date, time and amount formats are saved here but not yet read anywhere else in the app — Reports, Dashboard and printed tickets still use the browser's own formatting (known gap, app/README.md).",
+    "settings.dateTimeFormats.title": "Date & time",
+    "settings.amountAdmin.title": "Amounts & admin password",
     "settings.dateTimeFormats.date": "Date format",
     "settings.dateTimeFormats.time": "Time format",
     "settings.printers.detectedTitle": "Detected printers",
@@ -266,24 +274,18 @@ export const EN_STRINGS: Record<string, string> = {
 
     "settings.weighingRules.title": "Weighing rules",
     "settings.weighingRules.appliedImmediately": "Applied immediately",
-    "settings.weighingRules.tareFirst.label": "Weigh tare first",
-    "settings.weighingRules.tareFirst.note":
-        "Off means the loaded lorry is weighed first — a delivery coming in rather than going out.",
-    "settings.weighingRules.strictTare.label": "Strict tare",
+    "settings.weighingRules.strictTare.label": "One tare per gross",
     "settings.weighingRules.strictTare.note":
-        "Re-weigh the empty lorry every trip. Off lets a stored tare be pulled in from the vehicle master.",
-    "settings.weighingRules.autoCapture.label": "Auto-capture when stable",
-    "settings.weighingRules.autoCapture.note":
-        "The operator never touches the button; the reading is taken the moment it settles.",
-    "settings.weighingRules.multiGross.label": "Multi-gross (multiple loads per ticket)",
-    "settings.weighingRules.multiGross.note":
-        "Weigh the empty lorry's tare once, then capture more than one loaded (Gross) weight under the same ticket — net is the sum of every load's own gross minus that one tare. Off keeps every ticket to the usual single tare/single gross pair.",
+        "On: every ticket needs its own fresh tare — one tare, one gross, no reuse. Off: a previously captured tare can be reused (the \"Use stored tare\" offer) for any number of later gross weighings of that vehicle.",
     "settings.weighingRules.showSendLorry.label": "Show \"Send to lorry\" button",
     "settings.weighingRules.showSendLorry.note":
         "A testing/demo shortcut that feeds a weight straight to the indicator instead of a real scale reading — only ever appears on the simulated indicator to begin with. Off hides it even there.",
     "settings.weighingRules.manualEntry.label": "Manual weight entry",
     "settings.weighingRules.manualEntry.note":
         "Tare and Gross become typed number inputs instead of read-only scale readouts — for a site with no connected indicator. Off keeps both boxes read-only, filled only by an actual scale reading.",
+    "settings.weighingRules.sameTicketNo.label": "Same ticket no. for tare & gross",
+    "settings.weighingRules.sameTicketNo.note":
+        "On: whichever weight is captured second keeps the ticket number the first one already has. Off: completing the second weight issues a brand-new ticket number, and the original single-weight ticket stays on record as its own entry.",
 
     "settings.numbering.autoResetAutomatically": "Also reset automatically",
     "settings.numbering.every": "Every",
@@ -294,16 +296,11 @@ export const EN_STRINGS: Record<string, string> = {
     "settings.numbering.resetEvery.day": "Day",
     "settings.numbering.prefix": "Prefix",
     "settings.numbering.digits": "Digits",
-
-    "settings.fixedPolicy.title": "Fixed policy",
-    "settings.fixedPolicy.reprints.title": "Reprints are always allowed",
-    "settings.fixedPolicy.reprints.detail":
-        "Every copy after the first is stamped DUPLICATE and counted on the audit trail.",
-    "settings.fixedPolicy.cancellation.title": "A cancellation always needs a reason",
-    "settings.fixedPolicy.cancellation.detail":
-        "The row is never deleted — it stays, struck through, with the reason recorded.",
-    "settings.fixedPolicy.noFile.title": "Nothing is written to a file",
-    "settings.fixedPolicy.noFile.detail": "Every setting on this screen is a row in the database.",
+    "settings.numbering.resetNow": "Reset the counter now",
+    "settings.numbering.resetConfirm": "This starts a brand-new ticket series — numbering restarts from 1. Old tickets are kept, never deleted, but Reports will hide them by default until you switch on \"Include tickets from before the last reset\".",
+    "settings.numbering.resetResetting": "Resetting…",
+    "settings.numbering.resetYes": "Yes, reset",
+    "settings.numbering.resetCancel": "Cancel",
 
     "reports.title": "Reports",
     "reports.loading": "Loading tickets…",
@@ -323,6 +320,7 @@ export const EN_STRINGS: Record<string, string> = {
     "reports.groupByLabel": "Group by",
     "reports.dateFromAriaLabel": "From date",
     "reports.dateToAriaLabel": "To date",
+    "reports.includeBacked": "Include tickets from before the last reset",
     "reports.searchPlaceholder": "Search vehicle, party, ticket no, challan…",
     "reports.searchAriaLabel": "Search tickets",
     "reports.summaryEmpty": "No completed tickets in this group yet",
@@ -399,12 +397,6 @@ export const EN_STRINGS: Record<string, string> = {
     "settings.fieldSchema.dropPrompt": "Drop a field schema .json here, or click to choose",
     "settings.fieldSchema.resetToDefault": "Reset to default",
     "settings.fieldSchema.empty": "No fields in this schema",
-
-    "settings.indexManager.title": "Custom indexes",
-    "settings.indexManager.hint":
-        "Speeds up lookups on a field inside a ticket or master's JSON body — the table itself never changes. Dropping an index is safe at any time; it never touches the data.",
-    "settings.indexManager.table": "Table",
-    "settings.indexManager.jsonPath": "JSON path",
 
     "settings.indicator.title": "Weight indicator",
     "settings.indicator.customPattern": "Custom pattern (advanced)",

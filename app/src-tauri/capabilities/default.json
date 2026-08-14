@@ -3,5 +3,15 @@
     "identifier": "default",
     "description": "Capabilities granted to the main window. Extended per module as commands land — see PLAN §6 (store), §16 (devices), §15 (print).",
     "windows": ["main"],
-    "permissions": ["core:default", "core:window:allow-set-always-on-top"]
+    "permissions": [
+        "core:default",
+        "core:window:allow-set-always-on-top",
+        "core:window:allow-minimize",
+        "core:window:allow-unminimize",
+        "core:window:allow-hide",
+        "core:window:allow-show",
+        "core:window:allow-close",
+        "core:window:allow-set-focus",
+        "core:window:allow-is-minimized"
+    ]
 }

@@ -13,6 +13,8 @@ export interface TicketRow {
     doc: DocRow;
     docId: string;
     docSeq: number | null;
+    /** `doc.SeriesEpoch` — which "Reset the counter now" generation this ticket belongs to. Used only by `filterRowsBySeries` to tell current-series tickets from old/backed ones; never shown as its own column. */
+    seriesEpoch: number;
     vehicleNo: string;
     party: string;
     material: string;
@@ -39,6 +41,7 @@ export const buildTicketRows = (docs: DocRow[]): TicketRow[] =>
                 doc,
                 docId: doc.DocId,
                 docSeq: doc.DocSeq,
+                seriesEpoch: doc.SeriesEpoch,
                 vehicleNo: body.VehicleNo ?? "",
                 party: body.Party ?? "",
                 material: body.Material ?? "",
@@ -103,6 +106,26 @@ export const filterRowsByDateRange = (rows: TicketRow[], from: string, to: strin
         if (to && date > to) return false;
         return true;
     });
+};
+
+/**
+ * By default only "current series" tickets show — `row.seriesEpoch`
+ * matching `Numbering.CurrentEpoch` (settingsSchema.ts, bumped whenever
+ * "Reset the counter now" runs). Older tickets from before a reset are
+ * kept forever, never dropped at the query layer (useReportDocs.ts still
+ * fetches every doc) — this is a pure display filter, same shape as
+ * `filterRowsByDateRange` above, so a reset can never produce two tickets
+ * that look identical (same formatted number) in the same default view.
+ * `includeBacked` is the opt-in escape hatch (Reports' own toggle) — true
+ * is a no-op, same "no bounds set" convention as the date-range filter.
+ */
+export const filterRowsBySeries = (
+    rows: TicketRow[],
+    currentEpoch: number,
+    includeBacked: boolean,
+): TicketRow[] => {
+    if (includeBacked) return rows;
+    return rows.filter((row) => row.seriesEpoch === currentEpoch);
 };
 
 export const filterOptions = (t: Translate): { value: TicketRowFilter; label: string }[] => [

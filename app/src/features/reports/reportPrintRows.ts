@@ -1,4 +1,5 @@
-import { formatMoney, formatWeightKg } from "@constants/numberFormat";
+import { formatMoney, formatWeightIn } from "@constants/numberFormat";
+import type { WeightUnit } from "@constants/numberFormat";
 import { formatTicketNo } from "@features/weighing";
 
 import type { SummaryRow, TicketRow } from "./reportRows";
@@ -9,13 +10,13 @@ export interface ReportPrintRows {
     rows: string[][];
 }
 
-export const buildTicketPrintRows = (rows: TicketRow[]): ReportPrintRows => ({
-    head: ["Ticket", "Vehicle", "Party", "Net kg"],
+export const buildTicketPrintRows = (rows: TicketRow[], weightUnit: WeightUnit): ReportPrintRows => ({
+    head: [`Ticket`, `Vehicle`, `Party`, `Net ${weightUnit}`],
     rows: rows.map((row) => [
         formatTicketNo(row.docSeq),
         row.vehicleNo || "—",
         row.party || "—",
-        row.isCancelled ? "CANCELLED" : row.netKg !== null ? formatWeightKg(row.netKg) : "open",
+        row.isCancelled ? "CANCELLED" : row.netKg !== null ? formatWeightIn(row.netKg, weightUnit) : "open",
     ]),
 });
 

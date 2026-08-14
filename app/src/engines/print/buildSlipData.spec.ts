@@ -19,6 +19,9 @@ const baseInput: SlipInput = {
     printCount: 0,
     charge: 250,
     amountDp: 2,
+    weightUnit: "kg",
+    dateFmt: "dd MMM yyyy",
+    timeFmt: "24",
     verifyUrl: "https://example.com/v/doc1",
     lang: "en",
 };

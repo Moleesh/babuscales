@@ -3,7 +3,8 @@ import { useMemo } from "react";
 import { Card } from "@components/Card";
 import { DataTable } from "@components/DataTable";
 import type { DataTableColumn } from "@components/DataTable";
-import { formatDateTime, formatWeightKg } from "@constants/numberFormat";
+import { formatDateTimeInFmt, formatWeightIn } from "@constants/numberFormat";
+import type { WeightUnit } from "@constants/numberFormat";
 import type { TicketRow } from "@features/reports";
 import { formatTicketNo } from "@features/weighing";
 import { useTranslation } from "@i18n/useTranslation";
@@ -13,6 +14,9 @@ const RECENT_COUNT = 6;
 const buildRecentColumns = (
     t: (key: string) => string,
     lang: string,
+    weightUnit: WeightUnit,
+    dateFmt: string,
+    timeFmt: "24" | "12",
 ): DataTableColumn<TicketRow>[] => [
     {
         key: "no",
@@ -26,25 +30,33 @@ const buildRecentColumns = (
         key: "net",
         header: t("dashboard.recent.col.net"),
         numeric: true,
-        render: (row) => (row.netKg !== null ? `${formatWeightKg(row.netKg)} kg` : "—"),
+        render: (row) => (row.netKg !== null ? formatWeightIn(row.netKg, weightUnit) : "—"),
     },
     {
         key: "at",
         header: t("dashboard.recent.col.at"),
-        render: (row) => formatDateTime(row.at, lang),
+        render: (row) => formatDateTimeInFmt(row.at, lang, dateFmt, timeFmt),
     },
 ];
 
 export interface RecentTicketsCardProps {
     rows: TicketRow[];
+    /** Settings' `Formats.WeightUnit` — the Net column displays in it. */
+    weightUnit: WeightUnit;
+    /** Settings' `Formats.DateFmt`/`TimeFmt` — the "at" column renders in them. */
+    dateFmt: string;
+    timeFmt: "24" | "12";
 }
 
 // Split out of DashboardScreen (over the line budget — docs/CodingStandards.md)
 // — the bottom "Recent tickets" card. Now uses the t() function for
 // translatable strings. Columns are built dynamically since they depend on t().
-export const RecentTicketsCard = ({ rows }: RecentTicketsCardProps) => {
+export const RecentTicketsCard = ({ rows, weightUnit, dateFmt, timeFmt }: RecentTicketsCardProps) => {
     const { t, lang } = useTranslation();
-    const columns = useMemo(() => buildRecentColumns(t, lang), [t, lang]);
+    const columns = useMemo(
+        () => buildRecentColumns(t, lang, weightUnit, dateFmt, timeFmt),
+        [t, lang, weightUnit, dateFmt, timeFmt],
+    );
 
     return (
         <Card

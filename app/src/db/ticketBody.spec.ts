@@ -122,34 +122,18 @@ describe("isOpenTicket", () => {
 });
 
 describe("defaultCaptureKind", () => {
-    it("offers Tare first when tareFirst=true and nothing captured", () => {
-        expect(defaultCaptureKind([], true)).toBe("Tare");
-    });
-
-    it("offers Gross first when tareFirst=false and nothing captured", () => {
-        expect(defaultCaptureKind([], false)).toBe("Gross");
+    it("offers Tare first when nothing captured", () => {
+        expect(defaultCaptureKind([])).toBe("Tare");
     });
 
     it("offers whichever of the pair is still missing", () => {
-        expect(defaultCaptureKind([capture({ Type: "Tare" })], true)).toBe("Gross");
-        expect(defaultCaptureKind([capture({ Type: "Gross" })], false)).toBe("Tare");
+        expect(defaultCaptureKind([capture({ Type: "Tare" })])).toBe("Gross");
+        expect(defaultCaptureKind([capture({ Type: "Gross" })])).toBe("Tare");
     });
 
-    it("both present, multiGross off: null (ticket is final)", () => {
+    it("both present: null (ticket is final)", () => {
         const captures = [capture({ Type: "Tare" }), capture({ Type: "Gross", CaptureId: "g1" })];
-        expect(defaultCaptureKind(captures, true, false)).toBeNull();
-        expect(defaultCaptureKind(captures, true)).toBeNull(); // default multiGross=false
-    });
-
-    it("both present, multiGross on: offers another Gross, never Tare again", () => {
-        const captures = [capture({ Type: "Tare" }), capture({ Type: "Gross", CaptureId: "g1" })];
-        expect(defaultCaptureKind(captures, true, true)).toBe("Gross");
-        expect(defaultCaptureKind(captures, false, true)).toBe("Gross");
-    });
-
-    it("multiGross on but no Tare yet: still asks for Tare in order, not Gross", () => {
-        const captures = [capture({ Type: "Gross", CaptureId: "g1" })];
-        expect(defaultCaptureKind(captures, true, true)).toBe("Tare");
+        expect(defaultCaptureKind(captures)).toBeNull();
     });
 });
 

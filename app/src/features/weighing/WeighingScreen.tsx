@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-import { formatDateTime } from "@constants/numberFormat";
+import { formatDateTimeInFmt } from "@constants/numberFormat";
 import { useIndicator, useIndicatorReading } from "@engines/indicator";
 import { useSchema } from "@engines/schemaEngine";
 import { useSettings } from "@features/settings";
@@ -18,8 +18,12 @@ import styles from "./_styles/WeighingScreen.module.css";
 import { OpenTicketStrip } from "./OpenTicketStrip";
 import type { UseWeighingTicket } from "./useWeighingTicket";
 
-const formatStamp = (iso: string | undefined, lang: string): string =>
-    iso ? formatDateTime(iso, lang) : "—";
+const formatStamp = (
+    iso: string | undefined,
+    lang: string,
+    dateFmt: string,
+    timeFmt: "24" | "12",
+): string => (iso ? formatDateTimeInFmt(iso, lang, dateFmt, timeFmt) : "—");
 
 // Split out of WeighingScreen (over the 60-line function budget —
 // docs/CodingStandards.md) — the same visible/Validate/Block check
@@ -64,7 +68,7 @@ export const WeighingScreen = ({ ticket, licenseGated, onNavigateToCameras }: We
     const indicator = useIndicator();
     const reading = useIndicatorReading();
     const { settings } = useSettings();
-    const { lang } = useTranslation();
+    const { lang, t } = useTranslation();
     const { email, sms } = useDeliveryChannels();
     const { ticketSchema } = useSchema();
 
@@ -84,14 +88,24 @@ export const WeighingScreen = ({ ticket, licenseGated, onNavigateToCameras }: We
         sms,
         bumpRefresh,
         lang,
+        t,
     });
 
-    const ticketDate = formatStamp(ticket.captures[0]?.At, lang);
+    const ticketDate = formatStamp(
+        ticket.captures[0]?.At,
+        lang,
+        settings.Formats.DateFmt,
+        settings.Formats.TimeFmt,
+    );
     const hasBlockingCustomFieldErrorValue = computeHasBlockingCustomFieldError(ticket, ticketSchema);
 
     return (
         <div className={styles.screen}>
-            <OpenTicketStrip tickets={openTickets} onResume={handleResume} />
+            <OpenTicketStrip
+                tickets={openTickets}
+                onResume={handleResume}
+                weightUnit={settings.Formats.WeightUnit}
+            />
             <WeighingBody
                 left={{
                     ticket,
@@ -101,16 +115,18 @@ export const WeighingScreen = ({ ticket, licenseGated, onNavigateToCameras }: We
                     billing,
                     amountDp: settings.Formats.AmountDp,
                     manualEntry: settings.Rules.ManualEntry,
+                    weightUnit: settings.Formats.WeightUnit,
+                    dateFmt: settings.Formats.DateFmt,
+                    timeFmt: settings.Formats.TimeFmt,
                 }}
                 right={{
                     ticket,
                     reading,
-                    // `indicator.loadLorry` is only ever defined on the
-                    // simulated adapter to start with (real serial never has
-                    // it) — `ShowSendLorry` (Settings → Weighing Rules) adds
-                    // an explicit off switch on top of that, PLAN §21.
+                    // Both adapters implement `indicator.loadLorry` now
+                    // (serialIndicator.ts layers the same settle physics over
+                    // its own readings) — `ShowSendLorry` (Settings →
+                    // Weighing Rules) is the only gate left, PLAN §21.
                     loadLorry: settings.Rules.ShowSendLorry ? indicator.loadLorry : undefined,
-                    multiGross: settings.Rules.MultiGross,
                     armed,
                     gated: licenseGated,
                     hasBlockingCustomFieldError: hasBlockingCustomFieldErrorValue,

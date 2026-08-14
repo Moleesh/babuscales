@@ -15,7 +15,7 @@ export interface DateTimeFormatFieldsProps {
 export const DateTimeFormatFields = ({ settings, unlocked, onSave }: DateTimeFormatFieldsProps) => {
     const { t } = useTranslation();
     return (
-    <FieldGrid columns={3}>
+    <FieldGrid columns={2}>
         <Field id="setDate" label={t("settings.dateTimeFormats.date")}>
             <select
                 id="setDate"

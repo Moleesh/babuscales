@@ -66,19 +66,19 @@ pub fn run() -> tauri::Result<()> {
                     api.prevent_close();
                     let _ = window.hide();
                 }
-                // Minimize-to-tray: Tauri has no dedicated "minimized" event
-                // (Windows/webview2 report it as an ordinary `Resized`), so
-                // the only reliable signal is asking the OS after the fact —
-                // `is_minimized()` reflects the real window state at the
-                // point the resize fired. Restoring (un-minimizing) also
-                // fires `Resized`, but by then `is_minimized()` is false, so
-                // this only ever fires on the way down, never re-hides an
-                // already-visible window.
-                if let WindowEvent::Resized(_) = event {
-                    if window.is_minimized().unwrap_or(false) {
-                        let _ = window.hide();
-                    }
-                }
+                // No Resized-based "hide on minimize" here on purpose — an
+                // earlier version of this handler treated every minimize
+                // the same as a close (hiding the window from the taskbar
+                // entirely, via `is_minimized()` checked on each `Resized`
+                // event, since Windows/webview2 report minimize as an
+                // ordinary resize with no dedicated event). That conflated
+                // the app's two window-affordances into one: Minimize
+                // (App.tsx's `─` button, `windowPin.minimize`) is meant to
+                // send the window to the taskbar like any normal window: a
+                // plain `.minimize()` call, no handler needed here at all.
+                // Close (the `✕` button and the OS's own X, both funnelled
+                // through `CloseRequested` above) is the only thing that
+                // hides to the tray.
             }
         })
         .setup(|app| {
@@ -86,9 +86,39 @@ pub fn run() -> tauri::Result<()> {
             use tauri_plugin_autostart::ManagerExt;
             let _ = app.autolaunch().enable();
 
+            // Fills the screen without asking Windows for either of its own
+            // "fill the screen" window states — both were tried and each had
+            // a real cost. `fullscreen: true` (tauri.conf.json) put the
+            // window into genuine OS exclusive/borderless-fullscreen mode,
+            // which on Windows silently blocks programmatic `.minimize()`
+            // (and made `.hide()` unreliable) regardless of `minimizable`/
+            // capability settings. `maximized: true` avoided that, but a
+            // borderless (`decorations: false`) + maximized window has a
+            // well-known Windows/DWM quirk where the invisible resize border
+            // pokes a sliver of the desktop out past the bottom edge — the
+            // "white bottom bar" bug. Matching the primary monitor's size
+            // and pinning position to (0,0) directly gets the same visual
+            // result as either flag while keeping the window in Windows'
+            // ordinary, unmaximized/unfullscreened state, where minimize
+            // and hide behave normally and there's no maximize-border
+            // artifact to draw.
+            if let Some(window) = app.get_webview_window("main") {
+                if let Ok(Some(monitor)) = window.primary_monitor() {
+                    let _ = window.set_size(*monitor.size());
+                    let _ = window.set_position(*monitor.position());
+                }
+            }
+
+            // The only tray icon this app creates — tauri.conf.json used to
+            // also declare `app.trayIcon`, which auto-builds a second,
+            // menu-less default tray icon at startup alongside this one
+            // (Tauri's own config-driven convenience feature, unaware this
+            // app already builds its own with a real menu below). That
+            // config block is removed; this is the single source of truth.
             let show = MenuItem::with_id(app, "show", "Show BabuScales", true, None::<&str>)?;
+            let restart = MenuItem::with_id(app, "restart", "Restart", true, None::<&str>)?;
             let quit = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
-            let tray_menu = Menu::with_items(app, &[&show, &quit])?;
+            let tray_menu = Menu::with_items(app, &[&show, &restart, &quit])?;
             TrayIconBuilder::new()
                 .icon(
                     app.default_window_icon()
@@ -122,6 +152,13 @@ pub fn run() -> tauri::Result<()> {
                 })
                 .on_menu_event(|app, event| match event.id.as_ref() {
                     "quit" => app.exit(0),
+                    // Relaunch in place — the tray-icon-cleanup-on-drop that
+                    // `app.exit`/quitting does normally can't run mid-`restart`
+                    // call (it terminates the process directly), so the old
+                    // tray icon can linger as a stale/ghost entry until
+                    // Explorer refreshes; same artifact as a manual
+                    // taskkill-based restart, not a new bug this introduces.
+                    "restart" => app.restart(),
                     "show" => {
                         if let Some(window) = app.get_webview_window("main") {
                             let _ = window.unminimize();
@@ -152,7 +189,8 @@ pub fn run() -> tauri::Result<()> {
             // background send. `App.tsx` still boots normally underneath —
             // it's the one that notices the same flag, runs the send, and
             // calls `exit_app` when done.
-            if commands::scheduler::is_headless_daily_summary() {
+            let headless = commands::scheduler::is_headless_daily_summary();
+            if headless {
                 if let Some(window) = app.get_webview_window("main") {
                     window.hide()?;
                 }
@@ -174,8 +212,6 @@ pub fn run() -> tauri::Result<()> {
             commands::configs::get_config,
             commands::configs::list_config,
             commands::configs::save_config,
-            commands::indexes::create_custom_index,
-            commands::indexes::drop_custom_index,
             commands::assets::get_asset_meta,
             commands::assets::get_asset_bytes,
             commands::assets::list_asset_meta,

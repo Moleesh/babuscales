@@ -19,10 +19,10 @@ import {
 // indistinguishable from real ones to every other screen — Tickets,
 // Summary, Dashboard KPIs, exports all just see more `Ticket` docs.
 
-/** How many fake tickets one click adds: 20 completed, 5 open (waiting on
- * the second weight), 5 cancelled — enough variety to populate every view
- * without needing a click-count knob nobody would use. */
-export const DEMO_TICKET_COUNTS = { completed: 20, open: 5, cancelled: 5 } as const;
+/** How many fake tickets one click adds: 80 completed, 10 open (waiting on
+ * the second weight), 10 cancelled — 100 total, enough variety to populate
+ * every view without needing a click-count knob nobody would use. */
+export const DEMO_TICKET_COUNTS = { completed: 80, open: 10, cancelled: 10 } as const;
 
 const randomItem = <T>(items: readonly T[]): T => {
     const item = items[Math.floor(Math.random() * items.length)];
@@ -33,11 +33,11 @@ const randomItem = <T>(items: readonly T[]): T => {
 const randomInt = (min: number, max: number): number =>
     Math.floor(min + Math.random() * (max - min + 1));
 
-/** A timestamp somewhere in the last ~4 months, so seeded tickets spread
+/** A timestamp somewhere in the last ~2 years, so seeded tickets spread
  * across Dashboard's day/week/month/year periods instead of all landing
  * "today". */
 const randomPastIso = (): string => {
-    const daysBack = randomInt(0, 120);
+    const daysBack = randomInt(0, 730);
     const hour = randomInt(7, 18);
     const minute = randomInt(0, 59);
     const at = new Date();

@@ -8,6 +8,7 @@ import { listOpenTickets } from "../recall";
 import type { OpenTicketSummary } from "../recall";
 import type { UseWeighingTicket } from "../useWeighingTicket";
 import { useTicketDocs } from "./useTicketDocs";
+import { upsertTypedMasters } from "./upsertTypedMasters";
 
 // The five master caches this screen reads, bundled into one value —
 // everything downstream (WeighingLeftColumn, useWeighingScreenDerived's
@@ -54,6 +55,11 @@ export const useWeighingScreenTickets = (ticket: UseWeighingTicket): UseWeighing
     };
 
     const handleSave = async (): Promise<void> => {
+        // Task: reconcile whatever the operator typed into Vehicle/Party/
+        // Material/Transporter into the Masters table before the doc save
+        // itself — no more inline "＋ Add" button in TicketFieldsCard.tsx,
+        // this is where that used to happen instead.
+        await upsertTypedMasters(caches, ticket.fields);
         await ticket.save();
         bumpRefresh();
     };

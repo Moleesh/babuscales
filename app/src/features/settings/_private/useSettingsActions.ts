@@ -83,5 +83,12 @@ export const useSettingsActions = ({
         [settings, persist],
     );
 
-    return { save, changeAdminPassword, setOperatorName, setSkin, setTextScale, recordDailySummarySent };
+    return {
+        save,
+        changeAdminPassword,
+        setOperatorName,
+        setSkin,
+        setTextScale,
+        recordDailySummarySent,
+    };
 };

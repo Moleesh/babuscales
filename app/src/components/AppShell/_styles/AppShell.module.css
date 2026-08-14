@@ -223,6 +223,22 @@
     gap: 12px;
 }
 
+/* Pins the weight readout to `.main`'s own top edge while its content
+   scrolls underneath (task: "the top weight should not move"). Needs its
+   own opaque background — sticky doesn't clip scrolled-past content, it'd
+   otherwise show through around/behind the readout's own rounded corners. */
+.header-sticky {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    background: var(--void);
+}
+@media (max-width: 880px) {
+    .header-sticky {
+        position: static;
+    }
+}
+
 .screen {
     padding: 12px;
     display: grid;

@@ -194,6 +194,11 @@ export interface MaterialSplitEntry {
     material: string;
     tonnes: number;
     share: number;
+    /** How many completed tickets fed this material's tonnage — task:
+     * "get a load count on both the charts", shown next to each row's
+     * weight so a heavy-but-rare material reads differently from a
+     * light-but-frequent one. */
+    count: number;
 }
 
 // PLAN §18 "where the tonnage is coming from" — the selected period's
@@ -210,13 +215,20 @@ export const computeMaterialSplit = (
         (row) => !row.isCancelled && row.netKg !== null && isInPeriod(row.at, referenceIso, period),
     );
     const totals = new Map<string, number>();
+    const counts = new Map<string, number>();
     for (const row of today) {
         const key = row.material || "—";
         totals.set(key, (totals.get(key) ?? 0) + (row.netKg ?? 0) / 1000);
+        counts.set(key, (counts.get(key) ?? 0) + 1);
     }
     const totalTonnes = Array.from(totals.values()).reduce((a, b) => a + b, 0) || 1;
     return Array.from(totals.entries())
-        .map(([material, tonnes]) => ({ material, tonnes, share: tonnes / totalTonnes }))
+        .map(([material, tonnes]) => ({
+            material,
+            tonnes,
+            share: tonnes / totalTonnes,
+            count: counts.get(material) ?? 0,
+        }))
         .sort((a, b) => b.tonnes - a.tonnes)
         .slice(0, limit);
 };

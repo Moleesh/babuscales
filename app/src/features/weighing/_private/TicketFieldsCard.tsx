@@ -18,7 +18,6 @@ import { FIXED_FIELD_IDS } from "./ticketFieldIds";
 
 interface MasterDropdownFieldProps {
     id: string;
-    masterKind: MasterKind;
     label: string;
     searchTitle?: string;
     recalled?: boolean;
@@ -30,12 +29,14 @@ interface MasterDropdownFieldProps {
 }
 
 // The four ⌕ fields (Vehicle, Party, Material, Transporter) are all the same
-// shape — search a master, offer "＋ Add" for a query with no match — so one
-// component driven by `masterKind`/`cache`/`value`/`onChange` replaces four
-// near-identical SearchableDropdown blocks below.
+// shape — search a master, take whatever text the operator types — so one
+// component driven by `cache`/`value`/`onChange` replaces four
+// near-identical SearchableDropdown blocks below. Task: no more inline
+// "＋ Add" row — a value that doesn't match an existing master is just typed
+// text until save time, when useWeighingScreenTickets.ts's handleSave
+// reconciles it into the Masters table itself (upsertTypedMasters.ts).
 const MasterDropdownField = ({
     id,
-    masterKind,
     label,
     searchTitle,
     recalled,
@@ -58,7 +59,6 @@ const MasterDropdownField = ({
             onSearch={(query) =>
                 cache.search(query).map((row) => ({ Value: row.MasterId, Label: row.Name }))
             }
-            onAddNew={(query) => void cache.save({ MasterKind: masterKind, Name: query.trim(), Body: {} })}
             readOnly={readOnly}
             spellCheck={spellCheck}
         />
@@ -78,7 +78,6 @@ const VehicleDateRow = ({ ticket, vehicleCache, vehicleLabel, ticketDate }: Vehi
         <FieldGrid columns={2}>
             <MasterDropdownField
                 id="fVeh"
-                masterKind="Vehicle"
                 label={vehicleLabel}
                 searchTitle={t("weigh.searchVehicles")}
                 value={ticket.fields.vehicleNo}
@@ -114,7 +113,6 @@ const PartyMaterialRow = ({
         <FieldGrid columns={2}>
             <MasterDropdownField
                 id="fParty"
-                masterKind="Party"
                 label={partyLabel}
                 searchTitle={t("weigh.searchParties")}
                 recalled={ticket.recalledFields.has("party")}
@@ -125,7 +123,6 @@ const PartyMaterialRow = ({
             />
             <MasterDropdownField
                 id="fMat"
-                masterKind="Material"
                 label={materialLabel}
                 searchTitle={t("weigh.searchMaterials")}
                 recalled={ticket.recalledFields.has("material")}
@@ -163,7 +160,6 @@ const ChallanTransporterRow = ({
             </Field>
             <MasterDropdownField
                 id="fTrans"
-                masterKind="Transporter"
                 label={transporterLabel}
                 recalled={ticket.recalledFields.has("transporter")}
                 value={ticket.fields.transporter}

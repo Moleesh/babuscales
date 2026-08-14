@@ -56,8 +56,8 @@ export interface UseWeighingTicket {
     printCount: number;
     saving: boolean;
     capture: (weightKg: number) => void;
-    /** Settings → Weighing → Rules.ManualEntry (CalcCard's typed inputs) — same `pushCapture` pipeline as `capture`, just `Source: "Manual"` instead of `"Indicator"`. */
-    manualCapture: (weightKg: number) => void;
+    /** Settings → Weighing → Rules.ManualEntry (CalcCard's typed inputs) — same `pushCapture` pipeline as `capture`, just `Source: "Manual"` instead of `"Indicator"`. Takes an explicit `CaptureType` so both the Tare and Gross boxes can submit independently, regardless of the awaitingSave gate that blocks `capture`. */
+    manualCapture: (weightKg: number, kind: CaptureType) => void;
     useStoredTare: (weightKg: number, capturedAtIso: string) => void;
     save: () => Promise<void>;
     startNew: () => void;
@@ -81,6 +81,12 @@ interface TicketState {
     customFields: Record<string, CustomFieldValue>;
     captures: Capture[];
     kind: CaptureType | null;
+    /** A capture just landed and hasn't been saved yet — blocks starting the
+     * next one. Forces exactly one Save (or Save & Park) between any two
+     * captures, even a Tare immediately followed by a Gross in the same
+     * sitting. Cleared by "Saved" (a save actually went through) and implied
+     * false by "ResetToNew"/"Resumed" (both rebuild state from scratch). */
+    awaitingSave: boolean;
     isLocked: boolean;
     printCount: number;
     saving: boolean;
@@ -113,14 +119,15 @@ const buildTicketBody = (
     ...(Object.keys(customFields).length > 0 ? { CustomFields: customFields } : {}),
 });
 
-const initialTicketState = (tareFirst: boolean, multiGross: boolean): TicketState => ({
+const initialTicketState = (): TicketState => ({
     docId: null,
     docSeq: null,
     fields: emptyFields(),
     recalledFields: new Set(),
     customFields: {},
     captures: [],
-    kind: defaultCaptureKind([], tareFirst, multiGross),
+    kind: defaultCaptureKind([]),
+    awaitingSave: false,
     isLocked: false,
     printCount: 0,
     saving: false,
@@ -132,11 +139,11 @@ type TicketAction =
     | { type: "SetCustomField"; fieldId: string; value: CustomFieldValue }
     | { type: "SetKind"; kind: CaptureType | null }
     | { type: "AddCapture"; capture: Capture }
-    | { type: "ResetToNew"; tareFirst: boolean; multiGross: boolean }
+    | { type: "ResetToNew" }
     | { type: "SetSaving"; saving: boolean }
     | { type: "Saved"; docId: string; docSeq: number | null }
     | { type: "Lock" }
-    | { type: "Resumed"; doc: DocRow; tareFirst: boolean; multiGross: boolean }
+    | { type: "Resumed"; doc: DocRow }
     | { type: "Printed" };
 
 const ticketReducer = (state: TicketState, action: TicketAction): TicketState => {
@@ -156,13 +163,21 @@ const ticketReducer = (state: TicketState, action: TicketAction): TicketState =>
         case "SetKind":
             return { ...state, kind: action.kind };
         case "AddCapture":
-            return { ...state, captures: [...state.captures, action.capture] };
+            // `kind: null` (not the effect's usual defaultCaptureKind
+            // recompute) is what actually forces the save-between-captures
+            // rule — see `awaitingSave`'s own doc comment.
+            return {
+                ...state,
+                captures: [...state.captures, action.capture],
+                kind: null,
+                awaitingSave: true,
+            };
         case "ResetToNew":
-            return initialTicketState(action.tareFirst, action.multiGross);
+            return initialTicketState();
         case "SetSaving":
             return { ...state, saving: action.saving };
         case "Saved":
-            return { ...state, docId: action.docId, docSeq: action.docSeq };
+            return { ...state, docId: action.docId, docSeq: action.docSeq, awaitingSave: false };
         case "Lock":
             return { ...state, isLocked: true };
         case "Resumed": {
@@ -173,16 +188,29 @@ const ticketReducer = (state: TicketState, action: TicketAction): TicketState =>
                 fields: fieldsFromBody(body),
                 recalledFields: new Set(),
                 customFields: body.CustomFields ?? {},
+                // `captures` carries whichever single weight the parked ticket
+                // already has straight into Captured & Calculated (CalcCard
+                // reads off `ticket.captures`/`ticket.weights`, no separate
+                // "resumed weight" plumbing needed) — resuming a Tare-only
+                // ticket shows that Tare immediately, no re-weighing it.
+                // `defaultCaptureKind` then reads that same array and returns
+                // whichever of Tare/Gross is still missing, so the Tare/Gross
+                // toggle (ActionsCard's SegmentedControl, bound to
+                // `ticket.kind`) auto-flips to the correct side on its own —
+                // resume a Tare-only ticket and it's already armed for Gross,
+                // resume a Gross-only one (a loaded lorry weighed in first)
+                // and it's already armed for Tare. No manual toggle needed
+                // either way.
                 captures: body.Captures,
-                kind: defaultCaptureKind(body.Captures, action.tareFirst, action.multiGross),
-                // Mirrors save()'s own rule: two-or-more captures in means the
-                // ticket is already finalised — `save()` is the only path that
-                // ever locks a ticket (task #46: still triggered at
-                // captures.length>=2 regardless of how many Gross captures that
-                // includes), so anything resumed at that length was already
-                // locked when it was saved. Only PLAN §7.5's open (one-weight)
-                // tickets should come back editable — a completed ticket resumed
-                // from Reports must stay locked, not reopen for editing.
+                kind: defaultCaptureKind(body.Captures),
+                awaitingSave: false,
+                // Mirrors save()'s own rule: two captures in means the
+                // ticket is already finalised — `save()` is the only path
+                // that ever locks a ticket, so anything resumed at that
+                // length was already locked when it was saved. Only PLAN
+                // §7.5's open (one-weight) tickets should come back
+                // editable — a completed ticket resumed from Reports must
+                // stay locked, not reopen for editing.
                 isLocked: body.Captures.length >= 2,
                 printCount: body.PrintCount ?? 0,
                 saving: false,
@@ -229,7 +257,6 @@ interface TicketCaptureDeps {
     dispatch: Dispatch<TicketAction>;
     indicator: ReturnType<typeof useIndicator>;
     operatorName: string;
-    multiGross: boolean;
 }
 
 const useTicketCaptureActions = ({
@@ -237,21 +264,19 @@ const useTicketCaptureActions = ({
     dispatch,
     indicator,
     operatorName,
-    multiGross,
 }: TicketCaptureDeps) => {
     const { kind, isLocked, captures } = state;
 
     const pushCapture = useCallback(
-        (weightKg: number, source: Capture["Source"], capturedAtIso?: string) => {
-            if (!kind || isLocked) return;
-            // Task #46: a repeat "Gross" is the one case `hasCapture` must not
-            // block once MultiGross is on — everything else (a second Tare)
-            // still refuses exactly as before.
-            const blocked = hasCapture(captures, kind) && !(multiGross && kind === "Gross");
+        (weightKg: number, source: Capture["Source"], captureKind: CaptureType | null, capturedAtIso?: string) => {
+            if (!captureKind || isLocked) return;
+            // Exactly one Tare and one Gross per ticket — once a kind has
+            // been captured, it cannot be recaptured until Save.
+            const blocked = hasCapture(captures, captureKind);
             if (blocked) return;
             const capture: Capture = {
                 CaptureId: newId(),
-                Type: kind,
+                Type: captureKind,
                 WeightKg: Math.round(weightKg),
                 At: capturedAtIso ?? new Date().toISOString(),
                 Operator: operatorName,
@@ -261,16 +286,24 @@ const useTicketCaptureActions = ({
             dispatch({ type: "AddCapture", capture });
             if (source === "Indicator") indicator.reset?.();
         },
-        [captures, indicator, isLocked, kind, multiGross, operatorName, dispatch],
+        [captures, indicator, isLocked, operatorName, dispatch],
     );
 
     return {
-        capture: useCallback((weightKg: number) => pushCapture(weightKg, "Indicator"), [pushCapture]),
-        manualCapture: useCallback((weightKg: number) => pushCapture(weightKg, "Manual"), [pushCapture]),
+        capture: useCallback((weightKg: number) => pushCapture(weightKg, "Indicator", kind), [pushCapture, kind]),
+        // Manual entry takes an explicit kind rather than the ambient `kind`
+        // state — the forced-save-between-captures gate nulls `kind` right
+        // after any capture, but Settings → Weighing → Rules.ManualEntry lets
+        // the operator fill in both Tare and Gross boxes independently, so
+        // each box has to say which one it is instead of relying on that gate.
+        manualCapture: useCallback(
+            (weightKg: number, captureKind: CaptureType) => pushCapture(weightKg, "Manual", captureKind),
+            [pushCapture],
+        ),
         useStoredTare: useCallback(
             (weightKg: number, capturedAtIso: string) =>
-                pushCapture(weightKg, "StoredTare", capturedAtIso),
-            [pushCapture],
+                pushCapture(weightKg, "StoredTare", kind, capturedAtIso),
+            [pushCapture, kind],
         ),
     };
 };
@@ -282,9 +315,12 @@ interface TicketPersistenceDeps {
     customFields: Record<string, CustomFieldValue>;
     printCount: number;
     isLocked: boolean;
+    /** Settings' `Rules.SameTicketNo` (default true — today's only behaviour). Off, and this ticket already carries a number from an earlier single-weight save, means the completing weight is saved as a brand-new doc/number of its own rather than reusing that one — see the `save` comment below. */
+    sameTicketNo: boolean;
     db: ReturnType<typeof useDataPort>;
     dispatch: Dispatch<TicketAction>;
     resetToNew: () => void;
+    indicator: ReturnType<typeof useIndicator>;
 }
 
 const useTicketPersistenceActions = ({
@@ -294,16 +330,30 @@ const useTicketPersistenceActions = ({
     customFields,
     printCount,
     isLocked,
+    sameTicketNo,
     db,
     dispatch,
     resetToNew,
+    indicator,
 }: TicketPersistenceDeps) => {
     const save = useCallback(async () => {
         if (isLocked || captures.length === 0) return;
         dispatch({ type: "SetSaving", saving: true });
         try {
+            // Task: `docId` only exists here already if an earlier save
+            // persisted this same ticket with fewer captures in it (a
+            // parked/resumed single-weight ticket). With SameTicketNo off,
+            // the weight that completes the pair is deliberately NOT folded
+            // into that earlier doc — it's saved as a fresh doc (DocId
+            // undefined) with its own new number, and the original
+            // single-weight doc is left exactly as it already was in the
+            // DB: a standalone, permanent record under its own number. Both
+            // weights being captured before the very first save (docId
+            // still null) has nothing to split from, so it always behaves
+            // like SameTicketNo on regardless of the setting.
+            const splitIntoNewDoc = !sameTicketNo && docId !== null && captures.length >= 2;
             const row = await db.saveDoc({
-                DocId: docId ?? undefined,
+                DocId: splitIntoNewDoc ? undefined : (docId ?? undefined),
                 DocKind: "Ticket",
                 Body: buildTicketBody(fields, captures, printCount, customFields),
             });
@@ -314,14 +364,32 @@ const useTicketPersistenceActions = ({
             }
             dispatch({ type: "Saved", docId: row.DocId, docSeq: seq });
             if (captures.length >= 2) {
+                // Bug fix: locking used to skip the indicator entirely, unlike
+                // the resetToNew() branch below — "New ticket" can reach this
+                // branch (see startNew's save() call) while a "Send to lorry"
+                // animation for the last capture is still mid-flight, and
+                // that ticker was never told to stop.
                 dispatch({ type: "Lock" });
+                indicator.reset?.();
             } else {
                 resetToNew();
             }
         } finally {
             dispatch({ type: "SetSaving", saving: false });
         }
-    }, [captures, customFields, db, docId, fields, isLocked, printCount, resetToNew, dispatch]);
+    }, [
+        captures,
+        customFields,
+        db,
+        docId,
+        fields,
+        indicator,
+        isLocked,
+        printCount,
+        sameTicketNo,
+        resetToNew,
+        dispatch,
+    ]);
 
     const print = useCallback(async () => {
         if (!isLocked || !docId) return;
@@ -352,8 +420,6 @@ interface TicketLifecycleDeps {
     save: () => Promise<void>;
     dispatch: Dispatch<TicketAction>;
     indicator: ReturnType<typeof useIndicator>;
-    tareFirst: boolean;
-    multiGross: boolean;
 }
 
 // startNew/clear/resume: the three ways a ticket's identity changes out from
@@ -366,8 +432,6 @@ const useTicketLifecycleActions = ({
     save,
     dispatch,
     indicator,
-    tareFirst,
-    multiGross,
 }: TicketLifecycleDeps) => {
     // PLAN mock parity: the first "New ticket" click while work is unsaved
     // saves (and, with both weights in, locks) it rather than discarding it;
@@ -382,50 +446,46 @@ const useTicketLifecycleActions = ({
 
     const resume = useCallback(
         (doc: DocRow) => {
-            dispatch({ type: "Resumed", doc, tareFirst, multiGross });
+            dispatch({ type: "Resumed", doc });
             indicator.reset?.();
         },
-        [dispatch, indicator, tareFirst, multiGross],
+        [dispatch, indicator],
     );
 
     return { startNew, resume };
 };
 
 // The reducer itself plus the one derived effect that keeps `kind` in sync
-// with `captures`/tareFirst/multiGross, and the `resetToNew` action every
-// other sub-hook above needs a reference to — kept together since they all
-// revolve around the same `dispatch`.
-const useTicketState = (
-    tareFirst: boolean,
-    multiGross: boolean,
-    indicator: ReturnType<typeof useIndicator>,
-) => {
-    const [state, dispatch] = useReducer(ticketReducer, undefined, () =>
-        initialTicketState(tareFirst, multiGross),
-    );
+// with `captures`, and the `resetToNew` action every other sub-hook above
+// needs a reference to — kept together since they all revolve around the
+// same `dispatch`.
+const useTicketState = (indicator: ReturnType<typeof useIndicator>) => {
+    const [state, dispatch] = useReducer(ticketReducer, undefined, initialTicketState);
 
     useEffect(() => {
+        // `awaitingSave` wins outright: a capture just landed and `kind` was
+        // deliberately nulled by the reducer to force a Save before the next
+        // one — this effect must not resurrect it (see `awaitingSave`'s own
+        // doc comment on `TicketState`).
+        if (state.awaitingSave) return;
         // Only steps in when the *current* kind has genuinely stopped being
-        // a valid choice (captured already, and MultiGross doesn't allow
-        // re-picking it) or there's no kind at all yet. Bug fix: this used
-        // to unconditionally recompute "the" default from `captures` alone
-        // and overwrite `state.kind` whenever it differed — which fired
-        // right after the operator's own manual SegmentedControl pick
-        // (ActionsCard.tsx) dispatched a *different* kind than the
-        // order-based default, silently snapping it back and making the
-        // Tare/Gross toggle look broken.
-        const kindStillValid =
-            state.kind !== null &&
-            !(hasCapture(state.captures, state.kind) && !(multiGross && state.kind === "Gross"));
+        // a valid choice (already captured) or there's no kind at all yet.
+        // Bug fix: this used to unconditionally recompute "the" default
+        // from `captures` alone and overwrite `state.kind` whenever it
+        // differed — which fired right after the operator's own manual
+        // SegmentedControl pick (ActionsCard.tsx) dispatched a *different*
+        // kind than the order-based default, silently snapping it back and
+        // making the Tare/Gross toggle look broken.
+        const kindStillValid = state.kind !== null && !hasCapture(state.captures, state.kind);
         if (kindStillValid) return;
-        const next = defaultCaptureKind(state.captures, tareFirst, multiGross);
+        const next = defaultCaptureKind(state.captures);
         if (next !== state.kind) dispatch({ type: "SetKind", kind: next });
-    }, [state.captures, state.kind, tareFirst, multiGross]);
+    }, [state.captures, state.kind, state.awaitingSave]);
 
     const resetToNew = useCallback(() => {
-        dispatch({ type: "ResetToNew", tareFirst, multiGross });
+        dispatch({ type: "ResetToNew" });
         indicator.reset?.();
-    }, [indicator, tareFirst, multiGross]);
+    }, [indicator]);
 
     return { state, dispatch, resetToNew };
 };
@@ -474,33 +534,25 @@ const assembleTicket = ({
     print: persistenceActions.print,
 });
 
-// `tareFirst` (Settings, Weighing pane — "Applied immediately" per the
-// mock's own card header) only sets which weight is offered first; it can
-// change mid-session, so every place it decides the default kind re-derives
-// on change rather than being captured once at mount. `operatorName` is the
-// mock's own "Operator on duty" (Settings' Appearance pane, not admin-gated
-// — a free-text label, not a login) stamped onto every capture; it too can
-// change mid-shift, so it's read fresh at capture time rather than closed
-// over once. `multiGross` (Settings → Weighing → Rules, task #46, default
-// off) is the same shape — read fresh, not captured once — and only ever
-// widens what `pushCapture`/`defaultCaptureKind` allow; with it off every
-// code path below behaves exactly as it did before task #46.
+// `operatorName` is the mock's own "Operator on duty" (Settings' Appearance
+// pane, not admin-gated — a free-text label, not a login) stamped onto
+// every capture; it can change mid-shift, so it's read fresh at capture
+// time rather than closed over once. `sameTicketNo` (Settings → Weighing →
+// Rules, default on) only affects `save` — see its own comment there.
 export const useWeighingTicket = (
-    tareFirst: boolean,
     operatorName: string,
-    multiGross = false,
+    sameTicketNo = true,
 ): UseWeighingTicket => {
     const db = useDataPort();
     const indicator = useIndicator();
 
-    const { state, dispatch, resetToNew } = useTicketState(tareFirst, multiGross, indicator);
+    const { state, dispatch, resetToNew } = useTicketState(indicator);
     const fieldActions = useTicketFieldActions(dispatch);
     const captureActions = useTicketCaptureActions({
         state: { kind: state.kind, isLocked: state.isLocked, captures: state.captures },
         dispatch,
         indicator,
         operatorName,
-        multiGross,
     });
     const persistenceActions = useTicketPersistenceActions({
         docId: state.docId,
@@ -509,9 +561,11 @@ export const useWeighingTicket = (
         customFields: state.customFields,
         printCount: state.printCount,
         isLocked: state.isLocked,
+        sameTicketNo,
         db,
         dispatch,
         resetToNew,
+        indicator,
     });
     const lifecycleActions = useTicketLifecycleActions({
         captures: state.captures,
@@ -520,8 +574,6 @@ export const useWeighingTicket = (
         save: persistenceActions.save,
         dispatch,
         indicator,
-        tareFirst,
-        multiGross,
     });
 
     return assembleTicket({ state, fieldActions, captureActions, persistenceActions, lifecycleActions });

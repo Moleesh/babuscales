@@ -47,12 +47,17 @@ export const ReportsScreen = ({ onOpenTicket, reportsIntent = null }: ReportsScr
     const { t, lang } = useTranslation();
     const { settings } = useSettings();
     const amountDp = settings.Formats.AmountDp;
+    const currentEpoch = settings.Numbering.CurrentEpoch;
     const { docs, loading } = useReportDocs(db);
     const s = useReportsScreenController({
         db,
         docs,
         onOpenTicket,
         amountDp,
+        weightUnit: settings.Formats.WeightUnit,
+        dateFmt: settings.Formats.DateFmt,
+        timeFmt: settings.Formats.TimeFmt,
+        currentEpoch,
         styles,
         t,
         lang,

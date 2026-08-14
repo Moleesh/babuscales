@@ -24,7 +24,7 @@ const textScaleOptions: SegmentedOption<string>[] = TEXT_SCALE_OPTIONS.map((scal
 }));
 
 export const AppearancePane = () => {
-    const { settings, setOperatorName, setSkin, setTextScale } = useSettings();
+    const { settings, setSkin, setTextScale } = useSettings();
     const { t } = useTranslation();
 
     return (
@@ -62,19 +62,6 @@ export const AppearancePane = () => {
                         />
                     </Field>
                 </div>
-            </Card>
-            <Card title={<span className="lbl">{t("settings.appearance.operatorOnDuty")}</span>}>
-                <Field id="setOp" label={t("settings.appearance.operatorName")}>
-                    <input
-                        id="setOp"
-                        defaultValue={settings.OperatorName}
-                        key={settings.OperatorName}
-                        onBlur={(event) => void setOperatorName(event.target.value)}
-                        onKeyDown={(event) => {
-                            if (event.key === "Enter") event.currentTarget.blur();
-                        }}
-                    />
-                </Field>
             </Card>
         </div>
     );

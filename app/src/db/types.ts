@@ -32,7 +32,6 @@ export const CONFIG_KINDS = [
     "Settings",
     "Format",
     "Preset",
-    "Index",
     "LanguagePack",
     /** Per-tab/per-field guidance shown by the help control — PLAN §11. Editable without a release, travels with backups. */
     "Help",

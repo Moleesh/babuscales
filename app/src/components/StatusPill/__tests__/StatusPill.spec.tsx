@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
-import { formatWeightKg } from "@constants/numberFormat";
+import { formatWeightIn } from "@constants/numberFormat";
 
 import { cssClass } from "../../../testUtils";
 import styles from "../_styles/StatusPill.module.css";
@@ -15,16 +15,16 @@ describe("StatusPill", () => {
 
     it("computes net as gross - tare when netKg isn't supplied (single-gross fallback)", () => {
         render(<StatusPill tareKg={1000} grossKg={3500} />);
-        expect(screen.getByText(formatWeightKg(1000))).toBeInTheDocument();
-        expect(screen.getByText(formatWeightKg(3500))).toBeInTheDocument();
-        expect(screen.getByText(formatWeightKg(2500))).toBeInTheDocument();
+        expect(screen.getByText(formatWeightIn(1000, "kg"))).toBeInTheDocument();
+        expect(screen.getByText(formatWeightIn(3500, "kg"))).toBeInTheDocument();
+        expect(screen.getByText(formatWeightIn(2500, "kg"))).toBeInTheDocument();
     });
 
     it("uses the ticket's own netKg (task #46 multi-gross) instead of gross - tare when given", () => {
         // Two Gross captures summing to more net than grossKg - tareKg would.
         render(<StatusPill tareKg={1000} grossKg={3500} netKg={4200} />);
-        expect(screen.getByText(formatWeightKg(4200))).toBeInTheDocument();
-        expect(screen.queryByText(formatWeightKg(2500))).toBeNull();
+        expect(screen.getByText(formatWeightIn(4200, "kg"))).toBeInTheDocument();
+        expect(screen.queryByText(formatWeightIn(2500, "kg"))).toBeNull();
     });
 
     it("renders custom labels when given", () => {

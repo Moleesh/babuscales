@@ -1,5 +1,6 @@
 import type { DataTableColumn } from "@components/DataTable";
-import { formatDateTime, formatMoney } from "@constants/numberFormat";
+import { formatDateTimeInFmt, formatMoney, formatWeightIn } from "@constants/numberFormat";
+import type { WeightUnit } from "@constants/numberFormat";
 import { getMaterialRate } from "@db/materialBody";
 import { isStoredTareBody, isStoredTareStale, storedTareAgeDays } from "@db/storedTare";
 import type { MasterKind, MasterRow } from "@db/types";
@@ -7,13 +8,17 @@ import type { MasterKind, MasterRow } from "@db/types";
 /** Same shape as useTranslation()'s `t` — threaded in as a param since this is a plain helper, not a component. */
 type Translate = (key: string) => string;
 
-const storedTareColumns = (styles: CSSModuleClasses, t: Translate): DataTableColumn<MasterRow>[] => [
+const storedTareColumns = (
+    styles: CSSModuleClasses,
+    t: Translate,
+    weightUnit: WeightUnit,
+): DataTableColumn<MasterRow>[] => [
     { key: "name", header: t("masters.col.vehicle"), render: (row) => row.Name },
     {
         key: "weight",
         header: t("masters.col.weight"),
         numeric: true,
-        render: (row) => (isStoredTareBody(row.Body) ? `${row.Body.WeightKg} kg` : "—"),
+        render: (row) => (isStoredTareBody(row.Body) ? formatWeightIn(row.Body.WeightKg, weightUnit) : "—"),
     },
     {
         key: "age",
@@ -73,8 +78,11 @@ export const buildMasterColumns = (
     styles: CSSModuleClasses,
     t: Translate,
     lang: string,
+    weightUnit: WeightUnit,
+    dateFmt: string,
+    timeFmt: "24" | "12",
 ): DataTableColumn<MasterRow>[] => {
-    if (activeKind === "StoredTare") return storedTareColumns(styles, t);
+    if (activeKind === "StoredTare") return storedTareColumns(styles, t, weightUnit);
     return [
         { key: "name", header: t("masters.col.name"), render: (row) => row.Name },
         kindSpecificColumn(activeKind, t),
@@ -95,7 +103,7 @@ export const buildMasterColumns = (
         {
             key: "updated",
             header: t("masters.col.updated"),
-            render: (row) => formatDateTime(row.UpdatedAt, lang),
+            render: (row) => formatDateTimeInFmt(row.UpdatedAt, lang, dateFmt, timeFmt),
         },
     ];
 };

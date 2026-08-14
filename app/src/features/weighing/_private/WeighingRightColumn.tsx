@@ -12,7 +12,6 @@ export interface WeighingRightColumnProps {
     ticket: UseWeighingTicket;
     reading: IndicatorReading;
     loadLorry: ((kind: CaptureType) => void) | undefined;
-    multiGross: boolean;
     armed: boolean;
     gated: boolean;
     /** A custom Field's Block-severity Validate rule is currently failing — computed once in WeighingScreen (it has both ticketSchema and ticket in scope) and threaded down to gate Save. */
@@ -32,7 +31,6 @@ export const WeighingRightColumn = ({
     ticket,
     reading,
     loadLorry,
-    multiGross,
     armed,
     gated,
     hasBlockingCustomFieldError,
@@ -50,11 +48,10 @@ export const WeighingRightColumn = ({
                 ticket={ticket}
                 reading={reading}
                 loadLorry={loadLorry}
-                multiGross={multiGross}
                 armed={armed}
                 gated={gated}
                 hasBlockingCustomFieldError={hasBlockingCustomFieldError}
-                captureLabel={captureLabel(ticket, multiGross, t)}
+                captureLabel={captureLabel(ticket, t)}
                 captureHint={captureHint(ticket, armed, t)}
                 onSave={onSave}
                 onOpenPrintModal={onOpenPrintModal}

@@ -23,6 +23,10 @@ export interface WeightDisplayProps {
      * prop (not useTranslation()) so this component stays usable outside an I18nProvider,
      * same reasoning as `labels` below. */
     lang?: string;
+    /** Settings' `Formats.TimeFmt` ("24"/"12") — a plain prop (not useSettings()) for the
+     * same reason `lang` is, defaults to 24-hour so a caller without settings in reach
+     * keeps the pre-Settings-wiring clock unchanged. */
+    timeFmt?: "24" | "12";
 }
 
 const DEFAULT_LABELS: WeightDisplayLabels = {
@@ -46,8 +50,9 @@ export const WeightDisplay = ({
     labels = DEFAULT_LABELS,
     ghostPattern = "88,888",
     lang = "en",
+    timeFmt = "24",
 }: WeightDisplayProps) => {
-    const { time, day } = useClock(lang);
+    const { time, day } = useClock(lang, timeFmt);
     const fillPct = Math.min(100, Math.round((weightKg / capacityKg) * 100));
 
     return (
@@ -70,10 +75,16 @@ export const WeightDisplay = ({
             </div>
 
             <div className={styles.readout}>
-                <div className={styles.ghost} aria-hidden="true">
-                    <span>{ghostPattern}</span>
+                <div className={styles.digitsWrap}>
+                    <div className={styles.ghost} aria-hidden="true">
+                        <span>{ghostPattern}</span>
+                    </div>
+                    {/* Deliberately fixed-kg, not Formats.WeightUnit — this is the live
+                        indicator readout itself, and the indicator hardware always reports
+                        kg regardless of the display-unit setting (numberFormat.ts's own
+                        comment on formatWeightIn). */}
+                    <span className={`${styles.digits} num`}>{formatWeightKg(weightKg)}</span>
                 </div>
-                <span className={`${styles.digits} num`}>{formatWeightKg(weightKg)}</span>
                 <span className={styles.unit}>{labels.unit}</span>
             </div>
 

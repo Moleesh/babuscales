@@ -40,6 +40,8 @@ interface DashboardLoadedProps {
     period: DashboardPeriod;
     amountDp: 0 | 2;
     weightUnit: WeightUnit;
+    dateFmt: string;
+    timeFmt: "24" | "12";
     onNavigateToReports?: () => void;
 }
 
@@ -54,6 +56,8 @@ const DashboardLoaded = ({
     period,
     amountDp,
     weightUnit,
+    dateFmt,
+    timeFmt,
     onNavigateToReports,
 }: DashboardLoadedProps) => (
     <>
@@ -64,7 +68,7 @@ const DashboardLoaded = ({
             onNavigateToReports={onNavigateToReports}
         />
         <DashboardCharts buckets={buckets} period={period} materialSplit={materialSplit} weightUnit={weightUnit} />
-        <RecentTicketsCard rows={rows} />
+        <RecentTicketsCard rows={rows} weightUnit={weightUnit} dateFmt={dateFmt} timeFmt={timeFmt} />
     </>
 );
 
@@ -143,6 +147,8 @@ export const DashboardScreen = ({ onNavigateToReports }: DashboardScreenProps) =
                     period={period}
                     amountDp={settings.Formats.AmountDp}
                     weightUnit={settings.Formats.WeightUnit}
+                    dateFmt={settings.Formats.DateFmt}
+                    timeFmt={settings.Formats.TimeFmt}
                     onNavigateToReports={onNavigateToReports}
                 />
             )}

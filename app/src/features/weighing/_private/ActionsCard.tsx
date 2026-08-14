@@ -14,23 +14,19 @@ const kindOptions = (t: ReturnType<typeof useTranslation>["t"]): SegmentedOption
     { value: "Gross", label: t("gross") },
 ];
 
-// Task #46: with MultiGross on, a Gross that's already been captured once
-// stays selectable (there's still exactly one Tare per ticket either way).
-const kindOptionDisabled = (
-    ticket: UseWeighingTicket,
-    optionValue: CaptureType,
-    multiGross: boolean,
-): boolean =>
-    (ticket.captures.some((c) => c.Type === optionValue) &&
-        !(multiGross && optionValue === "Gross")) ||
-    ticket.isLocked;
+// Exactly one Tare and one Gross per ticket — once a kind is captured it's
+// no longer selectable. `ticket.kind === null` also covers the
+// awaiting-save moment right after any capture (useWeighingTicket's
+// `awaitingSave`): the toggle must not offer the still-open kind either,
+// or picking it would bypass the forced Save between captures.
+const kindOptionDisabled = (ticket: UseWeighingTicket, optionValue: CaptureType): boolean =>
+    ticket.captures.some((c) => c.Type === optionValue) || ticket.isLocked || ticket.kind === null;
 
 interface ActionsHintArgs {
     ticket: UseWeighingTicket;
     reading: IndicatorReading;
     armed: boolean;
     gated: boolean;
-    multiGross: boolean;
     t: ReturnType<typeof useTranslation>["t"];
 }
 
@@ -39,14 +35,16 @@ interface ActionsHintArgs {
 // toward cognitive complexity) on its own instead of stacking with the ones
 // around it. Args bundled into one object (rather than five positional
 // params) to stay under the params budget too.
-const actionsHint = ({ ticket, reading, armed, gated, multiGross, t }: ActionsHintArgs): string => {
+const actionsHint = ({ ticket, reading, armed, gated, t }: ActionsHintArgs): string => {
     if (gated && !ticket.isLocked) {
         return t("weigh.licenceHint");
     }
     if (ticket.isLocked) return ticket.printCount > 0 ? t("weigh.printed") : t("weigh.savedReadyToPrint");
-    if (ticket.isComplete) {
-        return multiGross ? t("weigh.captureAnotherGross") : t("weigh.bothWeightsCaptured");
-    }
+    if (ticket.isComplete) return t("weigh.bothWeightsCaptured");
+    // Awaiting-save: a capture just landed and `kind` was nulled to force a
+    // Save before the next one — distinct from `isComplete` (both weights
+    // in) and from the ordinary "nothing on the deck yet" hints below.
+    if (!ticket.kind && ticket.captures.length > 0) return t("weigh.awaitingSave");
     if (reading.WeightKg === 0 && reading.Stable) return t("weigh.deckEmpty");
     return armed ? t("weigh.stableCaptureNow") : t("weigh.weightInMotion");
 };
@@ -114,10 +112,8 @@ const SendLorryRow = ({ ticket, loadLorry }: Pick<ActionsCardProps, "ticket" | "
     return (
         <div className={styles.actions}>
             <Button
-                // Task #46: `!ticket.kind` alone is the correct gate now — `defaultCaptureKind`
-                // already returns null exactly when nothing more should be captured (the old
-                // `captures.length >= 2` check would have blocked a second Gross under
-                // MultiGross even though `kind` still offers one).
+                // `!ticket.kind` alone is the correct gate — `defaultCaptureKind`
+                // returns null once both Tare and Gross have been captured.
                 disabled={ticket.isLocked || !ticket.kind}
                 onClick={() => ticket.kind && loadLorry(ticket.kind)}
             >
@@ -132,8 +128,6 @@ export interface ActionsCardProps {
     reading: IndicatorReading;
     /** `IndicatorSource.loadLorry` — undefined on a real serial adapter, present only on the simulated one (demo/dev). */
     loadLorry: ((kind: CaptureType) => void) | undefined;
-    /** Settings → Weighing → Rules.MultiGross (task #46) — whether the "Capture as" toggle keeps offering Gross once a Tare+Gross pair already exists. */
-    multiGross: boolean;
     armed: boolean;
     /** `useLicense().isGated` — blocks Save (a new row hitting the DB) in addition to `armed` already blocking capture; see WeighingScreen's own `licenseGated` prop comment for why Print/Reprint of an already-saved ticket stays open. */
     gated: boolean;
@@ -153,7 +147,6 @@ export const ActionsCard = ({
     ticket,
     reading,
     loadLorry,
-    multiGross,
     armed,
     gated,
     hasBlockingCustomFieldError,
@@ -176,7 +169,7 @@ export const ActionsCard = ({
                 <SegmentedControl
                     options={kindOptions(t).map((option) => ({
                         ...option,
-                        disabled: kindOptionDisabled(ticket, option.value, multiGross),
+                        disabled: kindOptionDisabled(ticket, option.value),
                     }))}
                     value={ticket.kind ?? "Tare"}
                     onChange={ticket.setKind}
@@ -202,7 +195,7 @@ export const ActionsCard = ({
                 <ReprintRow ticket={ticket} onOpenPrintModal={onOpenPrintModal} />
                 <SendLorryRow ticket={ticket} loadLorry={loadLorry} />
                 <p className={styles.hint}>
-                    {actionsHint({ ticket, reading, armed, gated, multiGross, t })}
+                    {actionsHint({ ticket, reading, armed, gated, t })}
                 </p>
             </div>
         </Card>

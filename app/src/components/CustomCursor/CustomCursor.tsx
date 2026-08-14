@@ -11,13 +11,18 @@ import styles from "./_styles/CustomCursor.module.css";
 // pointer (touch), matching base.css's own reduced-motion posture.
 export const CustomCursor = () => {
     const enabled = useCursorEnabled();
-    const { dotRef, hoverInteractive, pressed } = useCursorTracking(enabled);
+    const { dotRef, hoverInteractive, hoverText, pressed } = useCursorTracking(enabled);
 
     if (!enabled) return null;
 
     const stateClass = pressed ? styles.pressed : hoverInteractive ? styles.hover : "";
+    // Over an edit field the native caret/I-beam is deliberately left on
+    // (CustomCursor.module.css's own text-cursor carve-out) — without this
+    // the follower's ring+dot kept rendering on top of it, i.e. two visible
+    // cursors at once over any input/textarea/contenteditable.
+    const textClass = hoverText ? styles.hoverText : "";
     return (
-        <div ref={dotRef} className={`${styles.cursor} ${stateClass}`} aria-hidden="true">
+        <div ref={dotRef} className={`${styles.cursor} ${stateClass} ${textClass}`} aria-hidden="true">
             <span className={styles.ring} />
             <span className={styles.dot} />
         </div>

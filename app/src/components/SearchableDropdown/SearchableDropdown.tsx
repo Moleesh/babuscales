@@ -93,6 +93,7 @@ export const SearchableDropdown = ({
     return (
         <div className={styles.wrapper}>
             <input
+                autoComplete="off"
                 {...inputProps}
                 value={value}
                 onChange={(e) => handleInputChange(e.target.value)}

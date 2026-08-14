@@ -137,7 +137,7 @@ on Reports and Dashboard).
     stays a documented placeholder — see Known gap). The top-bar admin chip
     (`AdminChip`) and unlock modal (`AppModal`, newly built — PLAN §10's deferred component,
     built now that a feature needs it) gate every pane's controls, with the mock's own 10-minute
-    silent auto-lock. `Rules.TareFirst`/`StrictTare`/`AutoCapture` reach `useWeighingTicket` and
+    silent auto-lock. `Rules.StrictTare`/`AutoCapture` reach `useWeighingTicket` and
     `WeighingScreen` live ("Applied immediately", per the mock's own card header); the Stability
     gate reaches the simulated indicator's settle physics the same way. Ticket numbering's
     prefix/width reach `formatTicketNo` live, and "Reset the counter now" calls

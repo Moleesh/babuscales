@@ -24,7 +24,16 @@
                 <rect x="27" y="24" width="4" height="3.6" rx="1.2" fill="var(--led-dim)" />
                 <rect x="3.5" y="28.4" width="31" height="2.2" rx="1.1" fill="var(--led-dim)" />
             </svg>
-            <span id="app-splash-ring"></span>
+            <div id="app-splash-truck-track" aria-hidden="true">
+                <svg id="app-splash-truck" viewBox="0 0 46 26" width="88" height="50">
+                    <rect x="1" y="9" width="21" height="11" rx="1.2" fill="var(--led-dim)" />
+                    <path d="M22 11h8.5l6.5 6.2V20H22z" fill="var(--led)" />
+                    <rect x="26.5" y="13" width="6" height="4.6" rx="0.6" fill="var(--void)" />
+                    <circle id="app-splash-wheel-1" cx="9" cy="21" r="3.4" fill="var(--text)" />
+                    <circle id="app-splash-wheel-2" cx="32" cy="21" r="3.4" fill="var(--text)" />
+                </svg>
+                <span id="app-splash-road"></span>
+            </div>
             <span class="app-splash-sr">Loading BabuScales…</span>
         </div>
         <script type="module" src="/src/main.tsx"></script>

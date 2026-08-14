@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { AppModal } from "@components/AppModal";
 import { Button } from "@components/Button";
@@ -23,6 +23,15 @@ export const AdminUnlockModal = ({ open, onClose }: AdminUnlockModalProps) => {
     const [password, setPassword] = useState("");
     const [error, setError] = useState<string | null>(null);
     const [checking, setChecking] = useState(false);
+    const passwordRef = useRef<HTMLInputElement>(null);
+
+    // Task: `useModalFocus` only moves focus to the dialog's own outer
+    // sheet (so Escape/Tab-trap keep working) — this is the one extra step
+    // that puts the caret straight in the password field on open, since
+    // typing the password is the only thing this modal is for.
+    useEffect(() => {
+        if (open) passwordRef.current?.focus();
+    }, [open]);
 
     const reset = (): void => {
         setPassword("");
@@ -54,6 +63,7 @@ export const AdminUnlockModal = ({ open, onClose }: AdminUnlockModalProps) => {
                 <Field id="admPw" label={t("settings.adminPassword")}>
                     <input
                         id="admPw"
+                        ref={passwordRef}
                         type="password"
                         autoComplete="off"
                         value={password}

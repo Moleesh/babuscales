@@ -53,6 +53,9 @@ export const IndicatorStatusFields = ({
                     <span className={styles.statusBad}>⚠ {error}</span>
                 ) : (
                     <span className={styles.statusOk}>
+                        {/* Deliberately fixed-kg — the live indicator readout, and the
+                            indicator hardware always reports kg regardless of Formats.WeightUnit
+                            (numberFormat.ts's own comment on formatWeightIn). */}
                         {reading.Stable ? "Reading" : "Connected"} — {formatWeightKg(reading.WeightKg)} kg
                     </span>
                 )

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
+import { Tooltip } from "@components/Tooltip";
 import { useTranslation } from "@i18n/useTranslation";
 
 import styles from "./_styles/OperatorChip.module.css";
@@ -58,12 +59,13 @@ export const OperatorChip = () => {
     }
 
     return (
-        <button
-            className="chip act"
-            title={t("settings.operatorChip.changeTitle")}
-            onClick={() => setEditing(true)}
-        >
-            {t("settings.operatorChip.label")}&nbsp;<b>{settings.OperatorName}</b>&nbsp;✎
-        </button>
+        <Tooltip label={t("settings.operatorChip.changeTitle")}>
+            <button
+                className="chip act"
+                onClick={() => setEditing(true)}
+            >
+                {t("settings.operatorChip.label")}&nbsp;<b>{settings.OperatorName}</b>&nbsp;✎
+            </button>
+        </Tooltip>
     );
 };

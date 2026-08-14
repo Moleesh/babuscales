@@ -1,23 +1,16 @@
 import type { UseWeighingTicket } from "../useWeighingTicket";
 
 // Split out of WeighingScreen (over the line budget — docs/CodingStandards.md)
-// — the capture button's own label. Task #46: gate the "done" branch on
-// `!ticket.kind`, not `isComplete` — under MultiGross, isComplete goes true
-// after the first Gross and stays true while more loads are still
-// capturable, but `kind` only turns null once the operator has actually run
-// out of things to capture. `t`-threaded (bug fix — these were hardcoded
-// English strings, never localized even in the Tamil UI).
-export const captureLabel = (
-    ticket: UseWeighingTicket,
-    multiGross: boolean,
-    t: (key: string) => string,
-): string => {
-    if (!ticket.kind) return t("weigh.capture.bothCaptured");
-    if (ticket.kind === "Gross") {
-        return multiGross && ticket.isComplete
-            ? t("weigh.capture.anotherGross")
-            : t("weigh.capture.gross");
-    }
+// — the capture button's own label. `!ticket.kind` alone is ambiguous now:
+// it's true both once genuinely both weights are in (`isComplete`) AND
+// right after any single capture, while `awaitingSave` blocks the next one
+// (useWeighingTicket) — those need different wording, so `isComplete` is
+// checked first. `t`-threaded (bug fix — these were hardcoded English
+// strings, never localized even in the Tamil UI).
+export const captureLabel = (ticket: UseWeighingTicket, t: (key: string) => string): string => {
+    if (ticket.isComplete) return t("weigh.capture.bothCaptured");
+    if (!ticket.kind) return t("weigh.capture.awaitingSave");
+    if (ticket.kind === "Gross") return t("weigh.capture.gross");
     return t("weigh.capture.tare");
 };
 
@@ -27,6 +20,7 @@ export const captureHint = (
     armed: boolean,
     t: (key: string) => string,
 ): string => {
-    if (!ticket.kind) return t("weigh.capture.saveToFinish");
+    if (ticket.isComplete) return t("weigh.capture.saveToFinish");
+    if (!ticket.kind) return t("weigh.capture.awaitingSaveHint");
     return armed ? t("weigh.capture.stableNow") : t("weigh.capture.waitingForStable");
 };

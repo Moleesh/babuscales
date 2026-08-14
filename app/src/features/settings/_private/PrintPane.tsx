@@ -21,7 +21,7 @@ const printerSource = createPrinterSource();
 // template designer as a Phase 8 item — "designed for, not built" — so it
 // stays out of scope here; the three built-in layouts (A4/Thermal/Matrix,
 // Tasks 23 & 26) are the only templates this build has. `t`-threaded (task
-// #16, mirrors ruleDefs(t)/fixedPolicy(t) in settingsSchema.ts) since it
+// #16, mirrors ruleDefs(t) in settingsSchema.ts) since it
 // needs to re-render on language change — no longer a static module constant.
 const templatesCard = (t: (key: string) => string) => (
     <Card title={<span className="lbl">{t("settings.printTemplates.title")}</span>}>
