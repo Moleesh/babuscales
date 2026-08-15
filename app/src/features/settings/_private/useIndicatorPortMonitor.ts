@@ -63,6 +63,19 @@ export const useIndicatorPortMonitor = (conn: ConnectionsConfig) => {
                 port: conn.IndicatorPort,
                 baud: conn.IndicatorBaud,
                 pattern: null,
+                // Data bits/parity/stop bits/line ending come from the
+                // fields above it (Listen is how the operator confirms
+                // those are actually right — garbled text here means try a
+                // different value). ReverseDigits doesn't matter: it only
+                // affects the parsed `indicator-reading` event, and Listen
+                // only ever looks at the raw `indicator-raw-line` one.
+                framing: {
+                    DataBits: conn.IndicatorDataBits,
+                    Parity: conn.IndicatorParity,
+                    StopBits: conn.IndicatorStopBits,
+                    LineEnding: conn.IndicatorLineEnding,
+                    ReverseDigits: false,
+                },
             });
             setListening(true);
         } catch (reason) {

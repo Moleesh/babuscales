@@ -1,6 +1,7 @@
 use tauri::{AppHandle, State};
 
 use crate::devices::indicator;
+use crate::devices::indicator::IndicatorFraming;
 use crate::error::AppError;
 use crate::state::AppState;
 
@@ -16,8 +17,16 @@ pub fn open_indicator_port(
     port: String,
     baud: u32,
     pattern: Option<String>,
+    framing: Option<IndicatorFraming>,
 ) -> Result<(), AppError> {
-    indicator::open(&app, &state.indicator, &port, baud, pattern.as_deref())
+    indicator::open(
+        &app,
+        &state.indicator,
+        &port,
+        baud,
+        pattern.as_deref(),
+        framing.unwrap_or_default(),
+    )
 }
 
 #[tauri::command]

@@ -94,6 +94,13 @@ export type DisplayFormats = z.infer<typeof formatsSchema>;
 
 export const BAUD_RATE_OPTIONS = [1200, 2400, 4800, 9600, 19200, 38400, 57600, 115200] as const;
 
+/** Options for the framing `Select`s (IndicatorFramingFields.tsx) — every
+ * value serialport (the Rust crate) actually supports, nothing more. */
+export const DATA_BITS_OPTIONS = [5, 6, 7, 8] as const;
+export const STOP_BITS_OPTIONS = [1, 2] as const;
+export const PARITY_OPTIONS = ["none", "odd", "even"] as const;
+export const LINE_ENDING_OPTIONS = ["lf", "cr", "crlf"] as const;
+
 // demo/BabuScales-demo.html's PRINTERS fixture, verbatim. The browser print
 // dialog (window.print(), engines/print) always lets the operator pick the
 // real target printer themselves, on both the demo and the desktop build —
@@ -276,6 +283,20 @@ const connectionsSchema = z.object({
     IndicatorBaud: z.number().int().positive(),
     /** A regex with one capture group around the weight — PLAN §17's "custom-pattern fallback so any indicator works without a code change" (src-tauri/src/devices/indicator.rs's `parse_weight`). Empty uses that function's built-in numeric-extraction fallback instead. */
     IndicatorPattern: z.string(),
+    /** Wire framing (task: "for capturing the indicator setting ... what
+     * all settings do we use") — previously hardcoded on the Rust side to
+     * 8-N-1/LF/not-reversed with no way to change any of it. Mirrors
+     * src-tauri/src/devices/indicator.rs's `IndicatorFraming` field-for-field
+     * (its `#[serde(rename_all = "PascalCase")]` is what makes the
+     * `IndicatorDataBits: 8 -> DataBits: 8` mapping in
+     * serialIndicator.ts/useIndicatorPortMonitor.ts a straight rename, not
+     * a reshape). */
+    IndicatorDataBits: z.union([z.literal(5), z.literal(6), z.literal(7), z.literal(8)]),
+    IndicatorParity: z.enum(["none", "odd", "even"]),
+    IndicatorStopBits: z.union([z.literal(1), z.literal(2)]),
+    IndicatorLineEnding: z.enum(["lf", "cr", "crlf"]),
+    /** Some indicators send a weight's digits least-significant-first. */
+    IndicatorReverseDigits: z.boolean(),
     /** Task #43's GSM modem, on its own serial port — same "empty = not configured yet" shape as `IndicatorPort`, checked the same way before a send is attempted. */
     GsmPort: z.string(),
     GsmBaud: z.number().int().positive(),
@@ -385,6 +406,14 @@ export const DEFAULT_CONNECTIONS: ConnectionsConfig = {
     IndicatorPort: "",
     IndicatorBaud: 9600,
     IndicatorPattern: "",
+    // 8-N-1/LF/not-reversed — the industry-standard default most
+    // weighbridge indicators ship with, and what the Rust side always used
+    // before these became configurable.
+    IndicatorDataBits: 8,
+    IndicatorParity: "none",
+    IndicatorStopBits: 1,
+    IndicatorLineEnding: "lf",
+    IndicatorReverseDigits: false,
     GsmPort: "",
     GsmBaud: 9600,
 };

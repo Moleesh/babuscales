@@ -410,6 +410,17 @@ export const EN_STRINGS: Record<string, string> = {
     "settings.indicator.listen": "Listen",
     "settings.indicator.stopListening": "Stop",
     "settings.indicator.monitorEmpty": "No data yet — press Listen, then send a weight from the indicator.",
+    "settings.indicator.dataBits": "Data bits",
+    "settings.indicator.parity": "Parity",
+    "settings.indicator.parity.none": "None",
+    "settings.indicator.parity.odd": "Odd",
+    "settings.indicator.parity.even": "Even",
+    "settings.indicator.stopBits": "Stop bits",
+    "settings.indicator.lineEnding": "Line ending",
+    "settings.indicator.lineEnding.lf": "LF (\\n)",
+    "settings.indicator.lineEnding.cr": "CR (\\r)",
+    "settings.indicator.lineEnding.crlf": "CRLF (\\r\\n)",
+    "settings.indicator.reverseDigits": "Reverse digits",
 
     "settings.integrationConfig.title": "Webhook · Accounting export · Display board",
     "settings.integrationConfig.hint":

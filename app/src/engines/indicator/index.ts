@@ -5,7 +5,10 @@ export type { IndicatorProviderProps } from "./IndicatorProvider";
 export { isSerialIndicatorSource } from "./types";
 export type {
     IndicatorConnectionConfig,
+    IndicatorFramingConfig,
+    IndicatorLineEnding,
     IndicatorListener,
+    IndicatorParity,
     IndicatorReading,
     IndicatorSource,
     SerialIndicatorSource,

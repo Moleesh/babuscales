@@ -14,10 +14,111 @@ use std::thread::JoinHandle;
 use std::time::Duration;
 
 use regex::Regex;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
+use serialport::{DataBits, Parity, StopBits};
 use tauri::{AppHandle, Emitter};
 
 use crate::error::AppError;
+
+/// Everything about the wire framing that "just build the Listen button"
+/// (task: serial-port indicator settings) turned out to still be missing —
+/// data bits/parity/stop bits weren't configurable at all (always the
+/// crate's 8-N-1 default), the line terminator was hardcoded to `\n`, and
+/// there was no way to handle an indicator that sends its digits reversed.
+/// One struct instead of five loose params on `open()` below (Rust has no
+/// max-params lint the way `docs/CodingStandards.md`'s ESLint budget does
+/// for TS, but five positional `u8`/`String`/`bool`s at a call site is just
+/// as easy to transpose by accident). `#[serde(rename_all = "PascalCase")]`
+/// matches `docs/CodingStandards.md`'s "JSON config keys: PascalCase" —
+/// same convention `ConnectionsConfig` (settingsSchema.ts) already uses for
+/// `IndicatorPort`/`IndicatorBaud`/etc, so the frontend can hand this
+/// struct the matching slice of `conn` almost verbatim.
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "PascalCase")]
+pub struct IndicatorFraming {
+    pub data_bits: u8,
+    /// "none" | "odd" | "even" — case-insensitive.
+    pub parity: String,
+    pub stop_bits: u8,
+    /// "lf" | "cr" | "crlf" — case-insensitive. Whichever is chosen, the
+    /// trailing `\r`/`\n` is stripped from every line before it reaches
+    /// `parse_weight`, so callers never see the terminator itself.
+    pub line_ending: String,
+    /// Some indicators transmit a weight's digits least-significant-first
+    /// (e.g. 1234 kg as "4321"). When set, `parse_weight` mirrors the
+    /// numeric string (sign held in place) before parsing it.
+    pub reverse_digits: bool,
+}
+
+impl Default for IndicatorFraming {
+    /// The crate's own previous hardcoded behaviour — 8-N-1, LF-terminated,
+    /// not reversed — so anything that doesn't care can just ask for this.
+    fn default() -> Self {
+        Self {
+            data_bits: 8,
+            parity: "none".into(),
+            stop_bits: 1,
+            line_ending: "lf".into(),
+            reverse_digits: false,
+        }
+    }
+}
+
+fn to_data_bits(n: u8) -> Result<DataBits, AppError> {
+    match n {
+        5 => Ok(DataBits::Five),
+        6 => Ok(DataBits::Six),
+        7 => Ok(DataBits::Seven),
+        8 => Ok(DataBits::Eight),
+        other => Err(AppError::Message(format!("unsupported data bits: {other}"))),
+    }
+}
+
+fn to_parity(s: &str) -> Result<Parity, AppError> {
+    match s.to_ascii_lowercase().as_str() {
+        "none" => Ok(Parity::None),
+        "odd" => Ok(Parity::Odd),
+        "even" => Ok(Parity::Even),
+        other => Err(AppError::Message(format!("unsupported parity: {other}"))),
+    }
+}
+
+fn to_stop_bits(n: u8) -> Result<StopBits, AppError> {
+    match n {
+        1 => Ok(StopBits::One),
+        2 => Ok(StopBits::Two),
+        other => Err(AppError::Message(format!("unsupported stop bits: {other}"))),
+    }
+}
+
+/// The byte `read_until` (below) hunts for. CRLF-terminated lines still end
+/// in `\n`, so "crlf" and "lf" share the same terminator byte — the
+/// leftover `\r` is trimmed off the line afterwards, same as "lf" already
+/// tolerates a stray `\r` from a CRLF sender today.
+fn terminator_byte(line_ending: &str) -> u8 {
+    match line_ending.to_ascii_lowercase().as_str() {
+        "cr" => b'\r',
+        _ => b'\n',
+    }
+}
+
+/// Mirrors a numeric string's digits (and decimal point) while keeping a
+/// leading sign fixed — "should we reverse the number" from the operator's
+/// own report of how some indicators transmit. There's no way to tell from
+/// the software side alone whether a given brand reverses the whole numeral
+/// (including the decimal point) or just the digit run; the Listen panel
+/// (Settings' IndicatorPortMonitor) is how the operator confirms which one
+/// their hardware actually needs before flipping this on.
+fn reverse_numeric(s: &str) -> String {
+    let (sign, rest) = match s.strip_prefix('-') {
+        Some(rest) => ("-", rest),
+        None => match s.strip_prefix('+') {
+            Some(rest) => ("+", rest),
+            None => ("", s),
+        },
+    };
+    format!("{sign}{}", rest.chars().rev().collect::<String>())
+}
 
 /// One line off the wire, already turned into a weight — PascalCase to
 /// match `src/engines/indicator/types.ts`'s `IndicatorReading`, same
@@ -57,20 +158,21 @@ pub struct RawLinePayload {
 /// module actually exercised in this environment, the same way the store's
 /// own logic was: a throwaway `cargo run --example`, deleted once it
 /// passed (app/README.md documents what that run covered).
-pub fn parse_weight(line: &str, pattern: Option<&Regex>) -> Option<f64> {
-    if let Some(re) = pattern {
+pub fn parse_weight(line: &str, pattern: Option<&Regex>, reverse_digits: bool) -> Option<f64> {
+    let numeric = if let Some(re) = pattern {
         let caught = re.captures(line)?;
         let group = caught.get(1).or_else(|| caught.get(0))?;
-        return group.as_str().trim().replace(',', "").parse::<f64>().ok();
-    }
-    let stripped: String = line
-        .chars()
-        .filter(|c| c.is_ascii_digit() || *c == '+' || *c == '-' || *c == '.')
-        .collect();
-    if stripped.is_empty() {
+        group.as_str().trim().replace(',', "")
+    } else {
+        line.chars()
+            .filter(|c| c.is_ascii_digit() || *c == '+' || *c == '-' || *c == '.')
+            .collect()
+    };
+    if numeric.is_empty() {
         return None;
     }
-    stripped.parse::<f64>().ok()
+    let numeric = if reverse_digits { reverse_numeric(&numeric) } else { numeric };
+    numeric.parse::<f64>().ok()
 }
 
 // Everything below is `pub(crate)`, not `pub` — this connection handle is
@@ -123,16 +225,25 @@ pub(crate) fn open(
     port_name: &str,
     baud_rate: u32,
     pattern: Option<&str>,
+    framing: IndicatorFraming,
 ) -> Result<(), AppError> {
     let compiled = pattern
         .filter(|p| !p.is_empty())
         .map(|p| Regex::new(p).map_err(|e| AppError::Message(format!("invalid pattern: {e}"))))
         .transpose()?;
+    let data_bits = to_data_bits(framing.data_bits)?;
+    let parity = to_parity(&framing.parity)?;
+    let stop_bits = to_stop_bits(framing.stop_bits)?;
+    let terminator = terminator_byte(&framing.line_ending);
+    let reverse_digits = framing.reverse_digits;
 
     close(state);
 
     let port = serialport::new(port_name, baud_rate)
         .timeout(Duration::from_millis(500))
+        .data_bits(data_bits)
+        .parity(parity)
+        .stop_bits(stop_bits)
         .open()
         .map_err(|e| AppError::Message(format!("could not open {port_name}: {e}")))?;
 
@@ -141,10 +252,10 @@ pub(crate) fn open(
     let thread_app = app.clone();
     let handle = std::thread::spawn(move || {
         let mut reader = BufReader::new(port);
-        let mut line = String::new();
+        let mut buf: Vec<u8> = Vec::new();
         while !thread_stop.load(Ordering::Relaxed) {
-            line.clear();
-            match reader.read_line(&mut line) {
+            buf.clear();
+            match reader.read_until(terminator, &mut buf) {
                 Ok(0) => {
                     // A real EOF on a serial port means it went away —
                     // unplugged, or the OS reclaimed it. Not a timeout.
@@ -157,14 +268,21 @@ pub(crate) fn open(
                     break;
                 }
                 Ok(_) => {
-                    let trimmed = line.trim_end();
+                    // `from_utf8_lossy` rather than requiring valid UTF-8:
+                    // a mid-frame read (right after opening the port) can
+                    // land on a partial multi-byte sequence, and a
+                    // misconfigured data-bits/parity choice can corrupt
+                    // bytes outright — neither should crash the reader
+                    // thread, just produce a line that fails to parse.
+                    let raw = String::from_utf8_lossy(&buf);
+                    let trimmed = raw.trim_end_matches(['\r', '\n']);
                     let _ = thread_app.emit(
                         "indicator-raw-line",
                         RawLinePayload {
                             line: trimmed.to_string(),
                         },
                     );
-                    if let Some(weight_kg) = parse_weight(trimmed, compiled.as_ref()) {
+                    if let Some(weight_kg) = parse_weight(trimmed, compiled.as_ref(), reverse_digits) {
                         let _ = thread_app.emit("indicator-reading", RawReading { weight_kg });
                     }
                     // A line that doesn't parse is dropped silently —

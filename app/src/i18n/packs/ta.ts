@@ -425,6 +425,17 @@ export const TA_PACK: LanguagePack = {
         "settings.indicator.listen": "கேட்க தொடங்கு",
         "settings.indicator.stopListening": "நிறுத்து",
         "settings.indicator.monitorEmpty": "இன்னும் தரவு இல்லை — Listen ஐ அழுத்தி, காட்டியில் இருந்து ஒரு எடையை அனுப்பவும்.",
+        "settings.indicator.dataBits": "டேட்டா பிட்கள்",
+        "settings.indicator.parity": "பாரிட்டி",
+        "settings.indicator.parity.none": "இல்லை",
+        "settings.indicator.parity.odd": "ஆட்",
+        "settings.indicator.parity.even": "ஈவன்",
+        "settings.indicator.stopBits": "ஸ்டாப் பிட்கள்",
+        "settings.indicator.lineEnding": "வரி முடிவு",
+        "settings.indicator.lineEnding.lf": "LF (\\n)",
+        "settings.indicator.lineEnding.cr": "CR (\\r)",
+        "settings.indicator.lineEnding.crlf": "CRLF (\\r\\n)",
+        "settings.indicator.reverseDigits": "இலக்கங்களை தலைகீழாக்கு",
 
         "settings.integrationConfig.title": "வெப்ஹூக் · கணக்கியல் ஏற்றுமதி · காட்சிப் பலகை",
         "settings.integrationConfig.hint":

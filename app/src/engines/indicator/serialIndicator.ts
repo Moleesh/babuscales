@@ -93,6 +93,13 @@ const connectSerial = async (
             port: config.port,
             baud: config.baud,
             pattern: config.pattern || null,
+            framing: {
+                DataBits: config.framing.dataBits,
+                Parity: config.framing.parity,
+                StopBits: config.framing.stopBits,
+                LineEnding: config.framing.lineEnding,
+                ReverseDigits: config.framing.reverseDigits,
+            },
         });
     } catch (reason) {
         // Surfaced through getConnectionError(), not thrown — a bad

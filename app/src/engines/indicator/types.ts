@@ -41,11 +41,32 @@ export interface StabilityOptions {
     closeEnoughKg?: number;
 }
 
+/** "none" | "odd" | "even" — mirrors src-tauri/src/devices/indicator.rs's `IndicatorFraming.parity`. */
+export type IndicatorParity = "none" | "odd" | "even";
+/** "lf" | "cr" | "crlf" — mirrors the same struct's `line_ending`. */
+export type IndicatorLineEnding = "lf" | "cr" | "crlf";
+
+/** The wire framing Rust wasn't previously asked about at all (task: "for
+ * capturing the indicator setting ... what all settings do we use") — data
+ * bits/parity/stop bits were hardcoded to 8-N-1, the line terminator to
+ * `\n`, and there was no way to handle a reversed-digit indicator. Kept as
+ * its own object (not flattened into `IndicatorConnectionConfig`) so it
+ * maps 1:1 onto Rust's `IndicatorFraming` struct at the `invoke()` call
+ * site in serialIndicator.ts. */
+export interface IndicatorFramingConfig {
+    dataBits: 5 | 6 | 7 | 8;
+    parity: IndicatorParity;
+    stopBits: 1 | 2;
+    lineEnding: IndicatorLineEnding;
+    reverseDigits: boolean;
+}
+
 export interface IndicatorConnectionConfig {
     port: string;
     baud: number;
     /** Empty = the Rust side's built-in numeric-extraction fallback (src-tauri/src/devices/indicator.rs's `parse_weight`) rather than a per-brand pattern. */
     pattern: string;
+    framing: IndicatorFramingConfig;
 }
 
 export interface SerialIndicatorSource extends IndicatorSource {

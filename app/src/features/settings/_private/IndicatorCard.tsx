@@ -4,6 +4,7 @@ import { useTranslation } from "@i18n/useTranslation";
 
 import type { ConnectionsConfig, SettingsBody } from "../settingsSchema";
 import styles from "./_styles/ConnectionsPane.module.css";
+import { IndicatorFramingFields } from "./IndicatorFramingFields";
 import { IndicatorPortFields } from "./IndicatorPortFields";
 import { IndicatorPortMonitor } from "./IndicatorPortMonitor";
 import { IndicatorStatusFields } from "./IndicatorStatusFields";
@@ -61,6 +62,7 @@ export const IndicatorCard = ({
                     onSave={onSave}
                     ports={ports}
                 />
+                <IndicatorFramingFields settings={settings} conn={conn} unlocked={unlocked} onSave={onSave} />
                 <IndicatorStatusFields
                     settings={settings}
                     conn={conn}

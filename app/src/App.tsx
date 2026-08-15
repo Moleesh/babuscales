@@ -584,8 +584,25 @@ const SerialConnectionSync = ({ indicator }: IndicatorSyncProps) => {
             port: conn.IndicatorPort,
             baud: conn.IndicatorBaud,
             pattern: conn.IndicatorPattern,
+            framing: {
+                dataBits: conn.IndicatorDataBits,
+                parity: conn.IndicatorParity,
+                stopBits: conn.IndicatorStopBits,
+                lineEnding: conn.IndicatorLineEnding,
+                reverseDigits: conn.IndicatorReverseDigits,
+            },
         });
-    }, [indicator, conn.IndicatorPort, conn.IndicatorBaud, conn.IndicatorPattern]);
+    }, [
+        indicator,
+        conn.IndicatorPort,
+        conn.IndicatorBaud,
+        conn.IndicatorPattern,
+        conn.IndicatorDataBits,
+        conn.IndicatorParity,
+        conn.IndicatorStopBits,
+        conn.IndicatorLineEnding,
+        conn.IndicatorReverseDigits,
+    ]);
     return null;
 };
 

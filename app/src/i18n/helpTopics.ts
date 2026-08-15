@@ -269,6 +269,13 @@ export const DEFAULT_HELP_TOPICS: Record<string, HelpTopic> = {
                 ],
             ),
             point(
+                ["Data bits / Parity / Stop bits / Line ending / Reverse digits", "Data bits / Parity / Stop bits / Line ending / Reverse digits"],
+                [
+                    "the indicator's serial framing. Defaults (8, None, 1, LF) match the most common indicators and most installations never touch them — only change one if Listen below shows garbled or misaligned text. Reverse digits flips a reading's digit order (sign stays put) for indicators that send the number backwards; it only affects parsed readings, not the raw text Listen shows.",
+                    "காட்டியின் serial framing. இயல்புநிலைகள் (8, None, 1, LF) பொதுவான காட்டிகளுக்குப் பொருந்தும், பெரும்பாலான நிறுவல்கள் இவற்றைத் தொடாது — கீழே உள்ள Listen சிதைந்த உரையைக் காட்டினால் மட்டும் மாற்றவும். Reverse digits எண்ணின் இலக்க வரிசையை தலைகீழாக்கும் (குறி மாறாது) — இது பாகுபடுத்தப்பட்ட அளவீடுகளை மட்டுமே பாதிக்கும், Listen காட்டும் மூல உரையை அல்ல.",
+                ],
+            ),
+            point(
                 ["Custom pattern", "தனிப்பயன் மாதிரி"],
                 [
                     "a regex with one capture group around the weight, for indicators the built-in numeric extraction can't parse cleanly (a checksum byte or station ID mixed into the same line). Most installations leave this blank.",
