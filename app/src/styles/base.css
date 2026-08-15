@@ -100,6 +100,17 @@ body {
 ::-webkit-scrollbar-corner {
     background: transparent;
 }
+/* The custom cursor's `body.custom-cursor-active *` rule (CustomCursor
+   .module.css) can't reach these — `::-webkit-scrollbar-*` are
+   browser-drawn chrome, not real DOM elements a wildcard selector matches
+   — so hovering the scrollbar fell back to the OS's own default arrow
+   (task: "scroll using cursor is displaying default cursor there"). Same
+   hide, targeted at the pseudo-elements directly. */
+body.custom-cursor-active ::-webkit-scrollbar-thumb,
+body.custom-cursor-active ::-webkit-scrollbar-track,
+body.custom-cursor-active ::-webkit-scrollbar-corner {
+    cursor: none;
+}
 
 /* Cursor + interaction feedback. Every clickable control gets a quick,
    consistent transition on hover/press rather than snapping instantly —
