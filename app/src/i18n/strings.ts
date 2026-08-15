@@ -407,6 +407,11 @@ export const EN_STRINGS: Record<string, string> = {
     "settings.indicator.title": "Weight indicator",
     "settings.indicator.customPattern": "Custom pattern (advanced)",
     "settings.indicator.serialPort": "Serial port",
+    "settings.indicator.listen": "Listen",
+    "settings.indicator.stopListening": "Stop",
+    "settings.indicator.monitorEmpty": "No data yet — press Listen, then send a weight from the indicator.",
+    "settings.indicator.monitorHint":
+        "Opens the selected port and shows each raw line exactly as it arrives, ignoring the pattern above — use this to work out the indicator's framing (start/end characters, line ending, byte order) before writing a custom pattern.",
 
     "settings.integrationConfig.title": "Webhook · Accounting export · Display board",
     "settings.integrationConfig.hint":

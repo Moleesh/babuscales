@@ -12,3 +12,17 @@ import "@testing-library/jest-dom/vitest";
 // global `afterEach` — never fires on its own; wire it up by hand so
 // each test unmounts into a clean document.
 afterEach(cleanup);
+
+// jsdom doesn't implement ResizeObserver — ScrollArea's useCustomScrollbar
+// (app/src/components/ScrollArea/_private/useCustomScrollbar.ts) uses one
+// to re-measure the thumb on layout changes, which every AppShell/DataTable
+// render now goes through. A minimal stub (no-op observe/unobserve/
+// disconnect) is enough: these tests assert on rendered markup and
+// behaviour, not on the custom scrollbar thumb's own live sizing.
+class ResizeObserverStub {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+}
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- jsdom's global type has no ResizeObserver to assign against
+(globalThis as any).ResizeObserver ??= ResizeObserverStub;

@@ -26,7 +26,13 @@ export const ReportsActionsRow = ({
             <Button variant="primary" onClick={onPrint}>
                 {t("reports.print")}
             </Button>
-            <Button disabled caption={t("reports.exportPdfCaption")}>
+            {/* `style`, not a new CSS class — Button's own caption has no
+                width limit, so this button's long one-line caption sentence
+                stretched it wide enough to dominate the row next to Print/
+                Export (reported: "not that good", layout/spacing). Capping
+                the width lets the caption wrap to two lines instead, back
+                in scale with its neighbours. */}
+            <Button disabled caption={t("reports.exportPdfCaption")} style={{ maxWidth: 200 }}>
                 {t("reports.exportPdf")}
             </Button>
             <ExportMenu onExportXlsx={onExportXlsx} onExportCsv={onExportCsv} />

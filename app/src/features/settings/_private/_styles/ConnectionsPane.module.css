@@ -59,6 +59,29 @@
     line-height: 1.6;
 }
 
+.monitor {
+    display: grid;
+    gap: 6px;
+}
+
+.monitorLog {
+    max-height: 160px;
+    overflow-y: auto;
+    border: 1px solid var(--line);
+    border-radius: 9px;
+    background: var(--panel-2);
+    padding: 8px 10px;
+    font-family: var(--mono);
+    font-size: 0.6875rem;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+
+.monitorEmpty {
+    color: var(--dim);
+}
+
 /* Integrations list — mock's own `.tpls`/`.tpl`/`.badge` (demo/BabuScales-demo.html), reused here since nothing else in this codebase built the template-list look yet. */
 .tpls {
     display: grid;

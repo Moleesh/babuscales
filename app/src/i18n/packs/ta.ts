@@ -422,6 +422,11 @@ export const TA_PACK: LanguagePack = {
         "settings.indicator.title": "எடை காட்டி",
         "settings.indicator.customPattern": "தனிப்பயன் மாதிரி (மேம்பட்டது)",
         "settings.indicator.serialPort": "சீரியல் போர்ட்",
+        "settings.indicator.listen": "கேட்க தொடங்கு",
+        "settings.indicator.stopListening": "நிறுத்து",
+        "settings.indicator.monitorEmpty": "இன்னும் தரவு இல்லை — Listen ஐ அழுத்தி, காட்டியில் இருந்து ஒரு எடையை அனுப்பவும்.",
+        "settings.indicator.monitorHint":
+            "தேர்ந்தெடுக்கப்பட்ட போர்ட்டைத் திறந்து, மேலே உள்ள மாதிரியைப் பொருட்படுத்தாமல் ஒவ்வொரு மூல வரியையும் வந்தவுடன் காட்டுகிறது — தனிப்பயன் மாதிரியை எழுதும் முன் காட்டியின் framing (தொடக்க/முடிவு எழுத்துகள், வரி முடிவு, byte வரிசை) கண்டறிய இதைப் பயன்படுத்தவும்.",
 
         "settings.integrationConfig.title": "வெப்ஹூக் · கணக்கியல் ஏற்றுமதி · காட்சிப் பலகை",
         "settings.integrationConfig.hint":

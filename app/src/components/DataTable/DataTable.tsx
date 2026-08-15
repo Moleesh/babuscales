@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { useCallback, useLayoutEffect, useRef, useState } from "react";
 
 import { EmptyState } from "@components/EmptyState";
+import { ScrollArea } from "@components/ScrollArea";
 
 import styles from "./_styles/DataTable.module.css";
 
@@ -108,7 +109,7 @@ export const DataTable = <Row,>({
     const bottomSpacerHeight = (rows.length - end) * rowHeight;
 
     return (
-        <div className={styles.wrapper} onScroll={recompute} ref={wrapperRef}>
+        <ScrollArea contentRef={wrapperRef} contentClassName={styles.wrapper} onScroll={recompute}>
             <table className={styles.table}>
                 <thead>
                     <tr>
@@ -163,6 +164,6 @@ export const DataTable = <Row,>({
                     )}
                 </tbody>
             </table>
-        </div>
+        </ScrollArea>
     );
 };

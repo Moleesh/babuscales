@@ -5,6 +5,7 @@ import { useTranslation } from "@i18n/useTranslation";
 import type { ConnectionsConfig, SettingsBody } from "../settingsSchema";
 import styles from "./_styles/ConnectionsPane.module.css";
 import { IndicatorPortFields } from "./IndicatorPortFields";
+import { IndicatorPortMonitor } from "./IndicatorPortMonitor";
 import { IndicatorStatusFields } from "./IndicatorStatusFields";
 import { StabilityGateFields } from "./StabilityGateFields";
 
@@ -70,6 +71,7 @@ export const IndicatorCard = ({
                     error={error}
                     reading={reading}
                 />
+                <IndicatorPortMonitor conn={conn} unlocked={unlocked} />
             </div>
         </Card>
     );
