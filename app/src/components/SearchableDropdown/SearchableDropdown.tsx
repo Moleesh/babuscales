@@ -37,6 +37,7 @@ const DropdownResults = ({
                 key={option.Value}
                 type="button"
                 className={`${styles.option} ${index === highlightedIndex ? styles.highlighted : ""}`}
+                data-cursor="compact"
                 /* Reachable by mouse/click, not by Enter-as-Tab's field walk (PLAN §13) —
                    it lives outside the natural tab sequence on purpose (useEnterAsTab.ts).
                    Keyboard reach comes from the input's own onKeyDown instead. */
@@ -54,6 +55,7 @@ const DropdownResults = ({
                 className={`${styles.option} ${styles.add} ${
                     results.length === highlightedIndex ? styles.highlighted : ""
                 }`}
+                data-cursor="compact"
                 tabIndex={-1}
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={() => onAddNew(query)}
@@ -95,6 +97,7 @@ export const SearchableDropdown = ({
             <input
                 autoComplete="off"
                 {...inputProps}
+                className={open ? styles.inputOpen : undefined}
                 value={value}
                 onChange={(e) => handleInputChange(e.target.value)}
                 onFocus={() => setOpen(true)}

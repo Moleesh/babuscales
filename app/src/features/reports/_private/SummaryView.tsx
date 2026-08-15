@@ -1,6 +1,7 @@
 import { DataTable } from "@components/DataTable";
 import type { DataTableColumn } from "@components/DataTable";
 import { Field, FieldGrid } from "@components/Field";
+import { Select } from "@components/Select";
 import { Spinner } from "@components/Spinner";
 import { useTranslation } from "@i18n/useTranslation";
 
@@ -26,17 +27,7 @@ export const SummaryView = ({ groupBy, onGroupByChange, columns, rows, loading }
         <>
             <FieldGrid columns={2}>
                 <Field id="rGroup" label={t("reports.groupByLabel")}>
-                    <select
-                        id="rGroup"
-                        value={groupBy}
-                        onChange={(event) => onGroupByChange(event.target.value as GroupKey)}
-                    >
-                        {groupOptions(t).map((option) => (
-                            <option key={option.value} value={option.value}>
-                                {option.label}
-                            </option>
-                        ))}
-                    </select>
+                    <Select id="rGroup" value={groupBy} options={groupOptions(t)} onChange={onGroupByChange} />
                 </Field>
             </FieldGrid>
             <DataTable

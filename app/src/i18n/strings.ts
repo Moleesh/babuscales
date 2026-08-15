@@ -27,6 +27,7 @@ export const EN_STRINGS: Record<string, string> = {
     recalled: "Recalled",
 
     "weigh.open": "Open",
+    "weigh.loadingTickets": "Loading tickets…",
     "weigh.recallTitle": "This vehicle already has ticket history",
     "weigh.recall.resume": "Resume",
     "weigh.recall.fillFrom": "Fill from",
@@ -214,8 +215,8 @@ export const EN_STRINGS: Record<string, string> = {
     "settings.amountFields.twoDecimals": "2 decimals — ₹ 250.00",
     "settings.amountFields.wholeRupees": "Whole rupees — ₹ 250",
     "settings.amountFields.weightUnit": "Weight display unit",
-    "settings.amountFields.weightUnitKg": "Kilograms — 1,250 kg",
-    "settings.amountFields.weightUnitT": "Tonnes — 1.3 t",
+    "settings.amountFields.weightUnitKg": "Kilograms",
+    "settings.amountFields.weightUnitT": "Tonnes",
     "settings.amountFields.newPasswordPlaceholder": "New password",
     "settings.amountFields.rounding": "Amount rounding",
     "settings.adminPassword": "Admin password",
@@ -287,13 +288,6 @@ export const EN_STRINGS: Record<string, string> = {
     "settings.weighingRules.sameTicketNo.note":
         "On: whichever weight is captured second keeps the ticket number the first one already has. Off: completing the second weight issues a brand-new ticket number, and the original single-weight ticket stays on record as its own entry.",
 
-    "settings.numbering.autoResetAutomatically": "Also reset automatically",
-    "settings.numbering.every": "Every",
-    "settings.numbering.startingAt": "Starting",
-    "settings.numbering.resetEvery.year": "Financial year",
-    "settings.numbering.resetEvery.cal": "Calendar year",
-    "settings.numbering.resetEvery.month": "Month",
-    "settings.numbering.resetEvery.day": "Day",
     "settings.numbering.prefix": "Prefix",
     "settings.numbering.digits": "Digits",
     "settings.numbering.resetNow": "Reset the counter now",
@@ -301,6 +295,7 @@ export const EN_STRINGS: Record<string, string> = {
     "settings.numbering.resetResetting": "Resetting…",
     "settings.numbering.resetYes": "Yes, reset",
     "settings.numbering.resetCancel": "Cancel",
+    "settings.numbering.resetStartAt": "Start numbering at",
 
     "reports.title": "Reports",
     "reports.loading": "Loading tickets…",
@@ -321,6 +316,17 @@ export const EN_STRINGS: Record<string, string> = {
     "reports.dateFromAriaLabel": "From date",
     "reports.dateToAriaLabel": "To date",
     "reports.includeBacked": "Include tickets from before the last reset",
+
+    "datePicker.openLabel": "Choose date",
+    "datePicker.prevMonth": "Previous month",
+    "datePicker.nextMonth": "Next month",
+    "datePicker.today": "Today",
+    "datePicker.clear": "Clear",
+
+    "contextMenu.label": "Edit options",
+    "contextMenu.cut": "Cut",
+    "contextMenu.copy": "Copy",
+    "contextMenu.paste": "Paste",
     "reports.searchPlaceholder": "Search vehicle, party, ticket no, challan…",
     "reports.searchAriaLabel": "Search tickets",
     "reports.summaryEmpty": "No completed tickets in this group yet",

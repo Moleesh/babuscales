@@ -51,7 +51,8 @@ export const WeighingLeftColumn = ({
         <CalcCard
             weights={ticket.weights}
             captures={ticket.captures}
-            charge={billing.charge}
+            chargeValue={ticket.fields.charge}
+            onChargeChange={(value) => ticket.setField("charge", value)}
             materialRate={billing.materialRate}
             value={billing.value}
             amountDp={amountDp}

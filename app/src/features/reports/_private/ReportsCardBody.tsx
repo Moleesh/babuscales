@@ -36,6 +36,8 @@ export interface ReportsCardBodyProps {
     /** Reports' "include tickets from before the last reset" toggle — off by default (reportRows.ts's filterRowsBySeries). */
     includeBacked: boolean;
     onIncludeBackedChange: (includeBacked: boolean) => void;
+    /** Settings' `Formats.DateFmt`, passed straight through to ReportsDateRangeRow's DatePicker pair. */
+    dateFmt: string;
     groupBy: GroupKey;
     onGroupByChange: (groupBy: GroupKey) => void;
     ticketColumns: DataTableColumn<TicketRow>[];
@@ -119,6 +121,7 @@ export const ReportsCardBody = ({
     onDateToChange,
     includeBacked,
     onIncludeBackedChange,
+    dateFmt,
     savedReportActions,
     ...view
 }: ReportsCardBodyProps) => (
@@ -138,6 +141,7 @@ export const ReportsCardBody = ({
             onDateToChange={onDateToChange}
             includeBacked={includeBacked}
             onIncludeBackedChange={onIncludeBackedChange}
+            dateFmt={dateFmt}
         />
         <ReportsActiveView {...view} />
     </div>

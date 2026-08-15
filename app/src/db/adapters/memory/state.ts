@@ -14,6 +14,8 @@ export interface MemoryState {
     outbox: Map<string, OutboxRow>;
     /** Current numbering epoch per `${DocKind}:${ProfileId}` — PLAN §6.1. */
     seriesEpoch: Map<string, number>;
+    /** Operator-chosen first number for the current epoch, per `${DocKind}:${ProfileId}`. Defaults to 1 when a series has never been reset. */
+    seriesStart: Map<string, number>;
 }
 
 export const createMemoryState = (): MemoryState => ({
@@ -24,6 +26,7 @@ export const createMemoryState = (): MemoryState => ({
     audit: [],
     outbox: new Map(),
     seriesEpoch: new Map(),
+    seriesStart: new Map(),
 });
 
 export const seriesKey = (docKind: string, profileId: string): string => `${docKind}:${profileId}`;

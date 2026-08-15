@@ -262,7 +262,10 @@ body {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 14px;
+    /* More air between the logo and the vehicle scene below it (task: "the
+       logo and the aniomation shoulkd have some space") — was 14px, tight
+       enough the two read as one cramped block once the logo grew. */
+    gap: 30px;
     background: var(--void);
     /* Fades the whole splash out before useRemoveInitialSplash actually
        detaches it (App.tsx adds .app-splash-out, waits for this transition,
@@ -277,17 +280,18 @@ body {
 #app-splash > svg {
     animation: app-splash-mark-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
-/* Truck loader — replaced the plain spinner ring (task: "truck loading
-   screen motion instead of the round one"). A fixed-width track holding the
-   truck SVG plus a dashed "road" strip underneath: the truck itself rocks
-   back and forth along the track (a real drive motion reads better here
-   than a one-way loop, since there's no fixed "finish line" — it's an
-   indeterminate wait, same as the ring it replaces), its wheels spin
-   continuously regardless of travel direction, and the road's dashes scroll
-   to sell the motion under it. `app-splash-truck-in` reuses the same
-   fade+rise entrance the ring had (`app-splash-ring-in`, renamed
-   generically since it's no longer ring-specific). */
+/* Vehicle loader — replaced the plain spinner ring (task: "truck loading
+   screen motion instead of the round one"), then reworked into the app's
+   own workflow (task: "lorry comming to weightbridge checking weight and
+   going out"): the lorry drives in from the left, stops centred on the
+   weighbridge deck for a beat while its LED readout blinks "WEIGHING", then
+   drives off to the right — one pass per cycle, forward-only (task: "only
+   forward no backward"), snapping back off-screen-left for the next. Wheels
+   spin and the road's dashes scroll only while the lorry is actually
+   moving, freezing during the weigh-stop so it reads as parked, not stalled
+   mid-roll. */
 #app-splash-truck-track {
+    position: relative;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -295,21 +299,113 @@ body {
     animation: app-splash-elem-in 0.4s ease 0.15s both;
 }
 #app-splash-truck {
-    animation: app-splash-truck-drive 1.6s ease-in-out infinite;
+    animation: app-splash-truck-weigh 6s linear infinite;
 }
-#app-splash-wheel-1,
-#app-splash-wheel-2 {
+#app-splash-truck .app-splash-wheel {
     transform-box: fill-box;
     transform-origin: center;
-    animation: app-splash-wheel-spin 0.5s linear infinite;
+    animation: app-splash-wheel-spin 6s linear infinite;
 }
 #app-splash-road {
     display: inline-block;
-    width: 88px;
+    width: 280px;
     height: 3px;
     background-image: repeating-linear-gradient(to right, var(--led-dim) 0 10px, transparent 10px 20px);
     background-size: 40px 3px;
-    animation: app-splash-road-scroll 0.5s linear infinite;
+    animation: app-splash-road-scroll 6s linear infinite;
+}
+/* The weighbridge deck itself — fixed at the road's centre, directly under
+   where the lorry parks (both anchored via the same `left: 50%` centring,
+   so they line up without coordinating pixel offsets). */
+#app-splash-weighbridge {
+    position: absolute;
+    bottom: 2px;
+    left: 50%;
+    width: 58px;
+    height: 5px;
+    transform: translateX(-50%);
+    background: var(--panel-2);
+    border: 1px solid var(--led-dim);
+    border-radius: 2px;
+}
+/* Its readout — hidden while the lorry is arriving/leaving, blinks
+   "WEIGHING" only during the parked window (see the keyframes below, timed
+   to the same 6s cycle as the lorry itself). */
+#app-splash-readout {
+    position: absolute;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 1px 5px;
+    border-radius: 4px;
+    background: var(--void);
+    border: 1px solid var(--led-dim);
+    color: var(--led);
+    font-family: var(--mono);
+    font-size: 0.5rem;
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+    opacity: 0;
+    animation: app-splash-readout-blink 6s linear infinite;
+}
+/* Plantation trees — plain CSS shapes (trunk + triangle canopy), no SVG
+   needed. Spread across both sides of the road, clear of the weighbridge
+   deck at centre so the two scenes don't overlap; deliberately static (no
+   animation) so they read as background scenery the lorry is passing, not
+   more foreground motion to compete with it. */
+#app-splash-trees {
+    position: absolute;
+    bottom: 3px;
+    left: 50%;
+    width: 280px;
+    transform: translateX(-50%);
+    pointer-events: none;
+}
+.app-splash-tree {
+    position: absolute;
+    bottom: 0;
+    width: 1px;
+}
+.app-splash-tree:nth-child(1) {
+    left: 3%;
+}
+.app-splash-tree:nth-child(2) {
+    left: 13%;
+}
+.app-splash-tree:nth-child(3) {
+    left: 23%;
+}
+.app-splash-tree:nth-child(4) {
+    left: 77%;
+}
+.app-splash-tree:nth-child(5) {
+    left: 87%;
+}
+.app-splash-tree:nth-child(6) {
+    left: 97%;
+}
+.app-splash-tree::before {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 3px;
+    height: 5px;
+    background: var(--led-dim);
+}
+.app-splash-tree::after {
+    content: "";
+    position: absolute;
+    bottom: 4px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-bottom: 12px solid var(--led-dim);
+    opacity: 0.6;
 }
 @keyframes app-splash-mark-in {
     from {
@@ -340,30 +436,86 @@ body {
     white-space: nowrap;
     border: 0;
 }
-@keyframes app-splash-truck-drive {
-    0%,
-    100% {
-        transform: translateX(-17px);
+/* One 6s cycle, three acts — arrive (0–38%), weigh (38–62%, held still),
+   leave (62–100%) — eased in on approach and out on departure so the stops
+   read as a real slow-down/pull-away rather than a linear snap. Wheel-spin
+   and road-scroll below repeat these exact percentages so all three freeze
+   together during the weigh act. */
+@keyframes app-splash-truck-weigh {
+    0% {
+        transform: translateX(-120px);
+        animation-timing-function: ease-out;
     }
-    50% {
-        transform: translateX(17px);
+    38% {
+        transform: translateX(0);
+        animation-timing-function: linear;
+    }
+    62% {
+        transform: translateX(0);
+        animation-timing-function: ease-in;
+    }
+    100% {
+        transform: translateX(120px);
     }
 }
 @keyframes app-splash-wheel-spin {
-    to {
-        transform: rotate(360deg);
+    0% {
+        transform: rotate(0deg);
+    }
+    38% {
+        transform: rotate(480deg);
+    }
+    62% {
+        transform: rotate(480deg);
+    }
+    100% {
+        transform: rotate(960deg);
     }
 }
 @keyframes app-splash-road-scroll {
-    to {
-        background-position: 40px 0;
+    0% {
+        background-position: 0 0;
+    }
+    38% {
+        background-position: 200px 0;
+    }
+    62% {
+        background-position: 200px 0;
+    }
+    100% {
+        background-position: 400px 0;
+    }
+}
+/* The readout stays invisible through most of the cycle, blinks
+   "WEIGHING" a couple of times during the weigh act (38–62%, same window
+   the lorry is parked in above), then fades out again before departure. */
+@keyframes app-splash-readout-blink {
+    0%,
+    36% {
+        opacity: 0;
+    }
+    40%,
+    46% {
+        opacity: 1;
+    }
+    43%,
+    50% {
+        opacity: 0.25;
+    }
+    56%,
+    60% {
+        opacity: 1;
+    }
+    64%,
+    100% {
+        opacity: 0;
     }
 }
 @media (prefers-reduced-motion: reduce) {
     #app-splash-truck,
-    #app-splash-wheel-1,
-    #app-splash-wheel-2,
-    #app-splash-road {
+    #app-splash-truck .app-splash-wheel,
+    #app-splash-road,
+    #app-splash-readout {
         animation: none;
     }
     #app-splash,

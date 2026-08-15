@@ -74,7 +74,7 @@ export const WeighingScreen = ({ ticket, licenseGated, onNavigateToCameras }: We
 
     const [printModalOpen, setPrintModalOpen] = useState(false);
 
-    const { caches, allTicketDocs, openTickets, bumpRefresh, handleResume, handleSave } =
+    const { caches, allTicketDocs, ticketsLoading, openTickets, bumpRefresh, handleResume, handleSave } =
         useWeighingScreenTickets(ticket);
 
     const { armed, recallOffers, billing, handlePrint, slipData } = useWeighingScreenDerived({
@@ -103,6 +103,7 @@ export const WeighingScreen = ({ ticket, licenseGated, onNavigateToCameras }: We
         <div className={styles.screen}>
             <OpenTicketStrip
                 tickets={openTickets}
+                loading={ticketsLoading}
                 onResume={handleResume}
                 weightUnit={settings.Formats.WeightUnit}
             />

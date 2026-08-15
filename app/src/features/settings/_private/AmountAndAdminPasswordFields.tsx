@@ -1,4 +1,5 @@
 import { Field, FieldGrid } from "@components/Field";
+import { Select } from "@components/Select";
 import { useTranslation } from "@i18n/useTranslation";
 
 import type { SettingsBody } from "../settingsSchema";
@@ -31,20 +32,21 @@ export const AmountAndAdminPasswordFields = ({
     <>
         <FieldGrid columns={2}>
             <Field id="setAmt" label={t("settings.amountFields.rounding")}>
-                <select
+                <Select
                     id="setAmt"
                     value={String(settings.Formats.AmountDp)}
+                    options={[
+                        { value: "2", label: t("settings.amountFields.twoDecimals") },
+                        { value: "0", label: t("settings.amountFields.wholeRupees") },
+                    ]}
                     disabled={!unlocked}
-                    onChange={(event) =>
+                    onChange={(value) =>
                         onSave({
                             ...settings,
-                            Formats: { ...settings.Formats, AmountDp: event.target.value === "0" ? 0 : 2 },
+                            Formats: { ...settings.Formats, AmountDp: value === "0" ? 0 : 2 },
                         })
                     }
-                >
-                    <option value="2">{t("settings.amountFields.twoDecimals")}</option>
-                    <option value="0">{t("settings.amountFields.wholeRupees")}</option>
-                </select>
+                />
             </Field>
             <Field id="setAdmPw" label={t("settings.adminPassword")}>
                 <input

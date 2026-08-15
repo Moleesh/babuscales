@@ -5,7 +5,9 @@ import { Tooltip } from "@components/Tooltip";
 import { useTranslation } from "@i18n/useTranslation";
 
 import { BrandMark } from "./_private/BrandMark";
+import { ContextMenu } from "./_private/ContextMenu";
 import { TopBarOverflow } from "./_private/TopBarOverflow";
+import { useContextMenu } from "./_private/useContextMenu";
 import { useEnterAsTab } from "./_private/useEnterAsTab";
 import { useTopBarFit } from "./_private/useTopBarFit";
 import styles from "./_styles/AppShell.module.css";
@@ -139,6 +141,10 @@ export const AppShell = ({
 }: AppShellProps) => {
     useEnterAsTab();
     const { t } = useTranslation();
+    // Mounted once, app-wide, same as CustomCursor — see useContextMenu.ts
+    // (task: "remove rightclick in destop view, i can have copy cut paste
+    // no need others").
+    const { menu, close } = useContextMenu();
 
     return (
         <div className={styles.app}>
@@ -167,6 +173,7 @@ export const AppShell = ({
                 {header && <div className={styles.headerSticky}>{header}</div>}
                 <div className={styles.screen}>{children}</div>
             </div>
+            {menu && <ContextMenu menu={menu} onClose={close} />}
         </div>
     );
 };

@@ -29,7 +29,7 @@ const buildPaneOptions = (t: (key: string) => string): SegmentedOption<PaneKey>[
 
 export interface SettingsScreenProps {
     /** `DataPort.resetDocSeries("Ticket", "default")` — lives at App level, same as everywhere else Settings needs a DataPort call it doesn't otherwise make. Resolves with the new `Epoch` so TicketAndDateTimeCard can persist it into `Numbering.CurrentEpoch`. */
-    onResetTicketSeries: () => Promise<{ Epoch: number }>;
+    onResetTicketSeries: (startSeq: number) => Promise<{ Epoch: number }>;
     /** Persists a language pack (`config`, `ConfigKind: "LanguagePack"`) and makes it live — owned at App level, same reason as `onResetTicketSeries`: the loaded pack list lives above `I18nProvider`, which is above this screen. */
     onAddLanguagePack: (pack: LanguagePack) => Promise<void>;
 }

@@ -70,16 +70,21 @@ export const createDocMethods = (state: MemoryState): DocMethods => ({
                 d.ProfileId === doc.ProfileId &&
                 d.SeriesEpoch === doc.SeriesEpoch,
         );
-        const nextSeq = Math.max(0, ...inGroup.map((d) => d.DocSeq ?? 0)) + 1;
+        const assignedSeqs = inGroup.map((d) => d.DocSeq).filter((seq): seq is number => seq !== null);
+        const nextSeq =
+            assignedSeqs.length === 0
+                ? (state.seriesStart.get(seriesKey(doc.DocKind, doc.ProfileId)) ?? 1)
+                : Math.max(...assignedSeqs) + 1;
         const updated: DocRow = { ...doc, DocSeq: nextSeq, UpdatedAt: nowIso() };
         state.docs.set(doc.DocId, updated);
         return Promise.resolve(updated);
     },
 
-    resetDocSeries: (docKind: DocKind, profileId: string) => {
+    resetDocSeries: (docKind: DocKind, profileId: string, startSeq?: number) => {
         const key = seriesKey(docKind, profileId);
         const nextEpoch = (state.seriesEpoch.get(key) ?? 0) + 1;
         state.seriesEpoch.set(key, nextEpoch);
+        state.seriesStart.set(key, startSeq ?? 1);
         return Promise.resolve({ Epoch: nextEpoch });
     },
 });

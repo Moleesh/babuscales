@@ -42,6 +42,7 @@ export const LicenceActivationFields = ({
                 placeholder="Paste the code Babulens sent back"
                 value={codeInput}
                 disabled={!unlocked}
+                autoComplete="off"
                 onChange={(event) => setCodeInput(event.target.value)}
             />
         </Field>

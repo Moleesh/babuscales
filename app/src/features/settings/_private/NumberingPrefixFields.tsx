@@ -26,6 +26,7 @@ export const NumberingPrefixFields = ({ numbering, unlocked, onChange }: Numberi
                 id="numPrefix"
                 value={numbering.Prefix}
                 disabled={!unlocked}
+                autoComplete="off"
                 onChange={(event) => onChange({ ...numbering, Prefix: event.target.value })}
             />
         </Field>

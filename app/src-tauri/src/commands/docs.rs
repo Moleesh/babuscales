@@ -46,7 +46,8 @@ pub fn reset_doc_series(
     state: State<'_, AppState>,
     doc_kind: String,
     profile_id: String,
+    start_seq: Option<i64>,
 ) -> Result<SeriesEpoch, AppError> {
     let conn = lock(&state)?;
-    store::reset_doc_series(&conn, &doc_kind, &profile_id)
+    store::reset_doc_series(&conn, &doc_kind, &profile_id, start_seq.unwrap_or(1))
 }

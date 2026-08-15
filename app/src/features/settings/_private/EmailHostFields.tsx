@@ -24,6 +24,7 @@ export const EmailHostFields = ({ settings, smtp, unlocked, onSave }: EmailHostF
                     placeholder="smtp.example.com"
                     value={smtp.Host}
                     disabled={!unlocked}
+                    autoComplete="off"
                     onChange={(event) => onSave({ ...settings, Smtp: { ...smtp, Host: event.target.value } })}
                 />
             </Field>
@@ -49,6 +50,7 @@ export const EmailHostFields = ({ settings, smtp, unlocked, onSave }: EmailHostF
                 placeholder="tickets@example.com"
                 value={smtp.Username}
                 disabled={!unlocked}
+                autoComplete="off"
                 onChange={(event) => onSave({ ...settings, Smtp: { ...smtp, Username: event.target.value } })}
             />
         </Field>

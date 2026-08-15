@@ -1,5 +1,6 @@
 import { Card } from "@components/Card";
 import { Field, FieldGrid } from "@components/Field";
+import { Select } from "@components/Select";
 import type { Localized } from "@i18n/types";
 import { useTranslation } from "@i18n/useTranslation";
 
@@ -34,18 +35,16 @@ export const PrinterFixturesCard = ({ printers, unlocked, onChange }: PrinterFix
             <FieldGrid columns={3}>
                 {PRINTER_ROWS.map(([key, kind, label]) => (
                     <Field key={key} id={`prn-${key}`} label={label}>
-                        <select
+                        <Select
                             id={`prn-${key}`}
                             value={printers[key]}
+                            options={PRINTER_FIXTURES.filter((p) => p.kind === kind).map((p) => ({
+                                value: p.name,
+                                label: p.name,
+                            }))}
                             disabled={!unlocked}
-                            onChange={(event) => onChange(key, event.target.value)}
-                        >
-                            {PRINTER_FIXTURES.filter((p) => p.kind === kind).map((p) => (
-                                <option key={p.name} value={p.name}>
-                                    {p.name}
-                                </option>
-                            ))}
-                        </select>
+                            onChange={(value) => onChange(key, value)}
+                        />
                     </Field>
                 ))}
             </FieldGrid>

@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { WEIGHT_UNITS } from "@constants/numberFormat";
+import { DATE_FORMATS, WEIGHT_UNITS } from "@constants/numberFormat";
 
 // One row, one ConfigId, `ConfigKind: "Settings"` (already in `CONFIG_KINDS`
 // — src/db/types.ts). Everything on this screen is a row in the database,
@@ -14,9 +14,6 @@ export const SETTINGS_CONFIG_ID = "settings";
 // has real hardware, so this test aid defaults off but stays manually
 // enable-able (serialIndicator.ts now implements `loadLorry` either way).
 const IS_TAURI_BUILD = import.meta.env.VITE_DATA_ADAPTER === "tauri";
-
-export const RESET_EVERY_OPTIONS = ["year", "cal", "month", "day"] as const;
-export type ResetEvery = (typeof RESET_EVERY_OPTIONS)[number];
 
 // Mock's own comment (demo/BabuScales-demo.html, just above RULE_DEFS):
 // "Only three rules survive. Required-ness moved into the schema JSON;
@@ -70,9 +67,6 @@ export type StabilityGate = z.infer<typeof stabilitySchema>;
 const numberingSchema = z.object({
     Prefix: z.string().max(12),
     Width: z.number().int().min(3).max(9),
-    AutoReset: z.boolean(),
-    ResetEvery: z.enum(RESET_EVERY_OPTIONS),
-    ResetOn: z.string(),
     // Which `SeriesEpoch` (db/types.ts's DocRow) Reports treats as "current"
     // — bumped to match `resetDocSeries`'s returned `Epoch` whenever "Reset
     // the counter now" runs (App.tsx's resetTicketSeries,
@@ -88,7 +82,7 @@ const numberingSchema = z.object({
 export type TicketNumbering = z.infer<typeof numberingSchema>;
 
 const formatsSchema = z.object({
-    DateFmt: z.string(),
+    DateFmt: z.enum(DATE_FORMATS),
     TimeFmt: z.enum(["24", "12"]),
     AmountDp: z.union([z.literal(0), z.literal(2)]),
     /** Dashboard/report weight display — Indian sites read kg, not tonnes
@@ -375,9 +369,6 @@ export const DEFAULT_TEXT_SCALE: TextScale = 1;
 export const DEFAULT_NUMBERING: TicketNumbering = {
     Prefix: "TKT-",
     Width: 4,
-    AutoReset: false,
-    ResetEvery: "year",
-    ResetOn: "01 Apr",
     CurrentEpoch: 1,
 };
 

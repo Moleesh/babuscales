@@ -71,6 +71,29 @@
 .calc-pending .calc-value {
     color: var(--faint);
 }
+/* Charge's own box (CalcCard.tsx) — an editable input standing in for what
+   used to be a read-only `.calc-value` (task: "no need for charge
+   calculation also" — plain editable field, no auto-calc). Same type scale
+   as `.calc-value` so swapping one for the other doesn't shift the grid. */
+.calc-charge-input {
+    display: block;
+    width: 100%;
+    margin-top: 3px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: inherit;
+    font-family: var(--mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 1.25rem;
+    letter-spacing: 0.02em;
+}
+.calc-charge-input:focus {
+    outline: none;
+}
+.calc-charge-input::placeholder {
+    color: var(--faint);
+}
 
 /* Settings → Weighing → Rules.ManualEntry — the editable stand-in for a
    not-yet-captured Tare/Gross `.calc-box` (ManualCalcBox.tsx). */
@@ -84,6 +107,18 @@
     flex: 1;
     font-family: var(--mono);
     font-variant-numeric: tabular-nums;
+}
+/* Not wrapped in Field (this box swaps in for a read-only CalcBox, not a
+   FieldGrid row), so it's otherwise fully exposed to base.css's global
+   outset `:focus-visible` ring — same fix, same inset-ring-plus-tint
+   treatment as Field.module.css's own inputs and Select's trigger (task:
+   "can we use the same thing we use in other places, with a little
+   differnt bg"). */
+.manual-entry-input:focus-visible,
+.calc-charge-input:focus-visible {
+    outline: 2px solid var(--led);
+    outline-offset: -2px;
+    background: var(--led-ghost);
 }
 
 /* Ported from the mock's ".actions". */

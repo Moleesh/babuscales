@@ -23,6 +23,7 @@ export const WebhookFields = ({ settings, unlocked, onSave }: WebhookFieldsProps
                     placeholder="https://example.com/hooks/babuscales"
                     value={webhook.Endpoint}
                     disabled={!unlocked}
+                    autoComplete="off"
                     onChange={(event) =>
                         onSave({ ...settings, Webhook: { ...webhook, Endpoint: event.target.value } })
                     }
@@ -35,6 +36,7 @@ export const WebhookFields = ({ settings, unlocked, onSave }: WebhookFieldsProps
                     placeholder="Leave blank to send unsigned"
                     value={webhook.Secret}
                     disabled={!unlocked}
+                    autoComplete="off"
                     onChange={(event) =>
                         onSave({ ...settings, Webhook: { ...webhook, Secret: event.target.value } })
                     }

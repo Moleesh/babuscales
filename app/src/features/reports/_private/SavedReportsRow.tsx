@@ -50,6 +50,7 @@ export const SavedReportsRow = ({
                 onChange={(event) => onNewNameChange(event.target.value)}
                 placeholder={t("reports.savedReportsPlaceholder")}
                 aria-label={t("reports.savedReportsNewAriaLabel")}
+                autoComplete="off"
             />
             <button
                 type="button"

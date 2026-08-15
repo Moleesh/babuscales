@@ -87,12 +87,12 @@ describe("deriveWeights", () => {
         expect(result).toEqual({ tareKg: 500, grossKg: 2700, netKg: 1700 });
     });
 
-    it("uses Math.abs so a gross weighed lighter than tare still contributes a positive net", () => {
+    it("clamps to 0 rather than going negative or swapping when gross weighs lighter than tare", () => {
         const result = deriveWeights([
             capture({ Type: "Tare", WeightKg: 1500 }),
             capture({ Type: "Gross", WeightKg: 500, CaptureId: "g1" }),
         ]);
-        expect(result.netKg).toBe(1000);
+        expect(result.netKg).toBe(0);
     });
 });
 

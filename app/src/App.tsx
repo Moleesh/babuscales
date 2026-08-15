@@ -7,6 +7,7 @@ import { ContextualHelp } from "@components/ContextualHelp";
 import { CustomCursor } from "@components/CustomCursor";
 import { Tooltip } from "@components/Tooltip";
 import { WeightDisplay } from "@components/WeightDisplay";
+import type { DateFmt, WeightUnit } from "@constants/numberFormat";
 import { createDataPort } from "@db/createDataPort";
 import { DataPortProvider } from "@db/DataPortProvider";
 import { loadTicketSchema, saveTicketSchema } from "@db/schema";
@@ -34,7 +35,7 @@ import type { VerificationServerSource } from "@engines/verification";
 import { createVerificationServerSource } from "@engines/verification/createVerificationServerSource";
 import { createWindowPinSource } from "@engines/windowPin/createWindowPinSource";
 import type { WindowPinSource } from "@engines/windowPin/types";
-import { CamerasScreen } from "@features/cameras";
+import { CAMERA_FEATURE_ENABLED, CamerasScreen } from "@features/cameras";
 import { DashboardScreen } from "@features/dashboard";
 import { LicenseProvider, renderLicenseBanner, useLicense } from "@features/licensing";
 import { MastersScreen } from "@features/masters";
@@ -62,7 +63,9 @@ const TAB_KEYS = ["dash", "weigh", "cameras", "reports", "masters", "settings"] 
 // moved to the secondary top-bar controls (TopBarActions below), reached by
 // its own icon button next to Language/Operator/Help, same "not a
 // screen-switching tab" treatment as those already had.
-const PRIMARY_TAB_KEYS = TAB_KEYS.filter((key) => key !== "settings");
+const PRIMARY_TAB_KEYS = TAB_KEYS.filter(
+    (key) => key !== "settings" && (key !== "cameras" || CAMERA_FEATURE_ENABLED),
+);
 
 // Dashboard/Weighing/Cameras all get the same bigger indicator readout — the
 // other tabs (Reports/Masters/Settings) keep the compact one (PLAN §21).
@@ -206,7 +209,7 @@ interface TabContentProps {
     onOpenTicket: (doc: DocRow) => void;
     onNavigateToReports: () => void;
     onNavigateToCameras: () => void;
-    onResetTicketSeries: () => Promise<{ Epoch: number }>;
+    onResetTicketSeries: (startSeq: number) => Promise<{ Epoch: number }>;
     onAddLanguagePack: (pack: LanguagePack) => Promise<void>;
     /** `useLicense().isGated` — the one place licensing actually changes what the operator can do (task #38); see WeighingScreen's own `licenseGated` prop comment. */
     licenseGated: boolean;
@@ -251,6 +254,18 @@ const TabContent = ({
                 />
             );
         case "cameras":
+            // Flag off: fall through to Weighing rather than rendering a
+            // screen the nav no longer links to (belt-and-braces against a
+            // stale `activeTab` from a prior session/deep link).
+            if (!CAMERA_FEATURE_ENABLED) {
+                return (
+                    <WeighingScreen
+                        ticket={ticket}
+                        licenseGated={licenseGated}
+                        onNavigateToCameras={onNavigateToCameras}
+                    />
+                );
+            }
             return <CamerasScreen ticket={ticket} />;
     }
 };
@@ -266,12 +281,16 @@ const ShellWeightHeader = ({
     t,
     lang,
     timeFmt,
+    dateFmt,
+    weightUnit,
 }: {
     reading: ReturnType<typeof useIndicatorReading>;
     compact: boolean;
     t: ReturnType<typeof useTranslation>["t"];
     lang: ReturnType<typeof useTranslation>["lang"];
     timeFmt: "24" | "12";
+    dateFmt: DateFmt;
+    weightUnit: WeightUnit;
 }) => (
     <WeightDisplay
         weightKg={reading.WeightKg}
@@ -281,11 +300,13 @@ const ShellWeightHeader = ({
         mode={compact ? "compact" : "full"}
         lang={lang}
         timeFmt={timeFmt}
+        dateFmt={dateFmt}
+        weightUnit={weightUnit}
         labels={{
             indicator: t("ind"),
             stable: t("stable"),
             motion: t("motion"),
-            unit: t("kg"),
+            unit: weightUnit === "t" ? "t" : t("kg"),
         }}
     />
 );
@@ -318,8 +339,8 @@ const useShellTicketActions = (
         setActiveTab("weigh");
     };
 
-    const resetTicketSeries = async (): Promise<{ Epoch: number }> => {
-        return await db.resetDocSeries("Ticket", "default");
+    const resetTicketSeries = async (startSeq: number): Promise<{ Epoch: number }> => {
+        return await db.resetDocSeries("Ticket", "default", startSeq);
     };
     return { openTicket, resetTicketSeries };
 };
@@ -447,6 +468,8 @@ const Shell = ({ onAddLanguagePack, windowPin }: ShellProps) => {
                     t={t}
                     lang={lang}
                     timeFmt={settings.Formats.TimeFmt}
+                    dateFmt={settings.Formats.DateFmt}
+                    weightUnit={settings.Formats.WeightUnit}
                 />
             }
             banner={renderLicenseBanner(license.state, license.isGated)}
@@ -456,7 +479,9 @@ const Shell = ({ onAddLanguagePack, windowPin }: ShellProps) => {
                 ticket={ticket}
                 onOpenTicket={openTicket}
                 onNavigateToReports={onNavigateToReports}
-                onNavigateToCameras={() => setActiveTab("cameras")}
+                onNavigateToCameras={() => {
+                    if (CAMERA_FEATURE_ENABLED) setActiveTab("cameras");
+                }}
                 onResetTicketSeries={resetTicketSeries}
                 onAddLanguagePack={onAddLanguagePack}
                 licenseGated={license.isGated}

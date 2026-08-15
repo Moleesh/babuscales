@@ -21,7 +21,11 @@ pub struct ColumnPatch {
 // Example, for when one is actually needed:
 //   ColumnPatch { table: "doc", column: "profile_id",
 //                 add_column_ddl: "ALTER TABLE doc ADD COLUMN profile_id TEXT NOT NULL DEFAULT 'default'" }
-pub const PATCHES: &[ColumnPatch] = &[];
+pub const PATCHES: &[ColumnPatch] = &[ColumnPatch {
+    table: "series_counter",
+    column: "start_seq",
+    add_column_ddl: "ALTER TABLE series_counter ADD COLUMN start_seq INTEGER NOT NULL DEFAULT 1",
+}];
 
 // `table` is never user input — it only ever comes from the PATCHES
 // constant above, so interpolating it into PRAGMA table_info is safe.

@@ -1,6 +1,12 @@
-/* Ported from demo/BabuScales-demo.html's ".tw"/table rules. */
+/* Ported from demo/BabuScales-demo.html's ".tw"/table rules. Bounded height
+   + its own vertical scroll (not just horizontal) is what makes DataTable.tsx's
+   windowed rendering meaningful — without a real scroll container here,
+   `wrapper.clientHeight` would equal the full (unbounded) content height and
+   every row would count as "visible" anyway. */
 .wrapper {
     overflow-x: auto;
+    overflow-y: auto;
+    max-height: 65vh;
 }
 
 .table {

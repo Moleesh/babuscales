@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
-import { formatWeightKg } from "@constants/numberFormat";
+import { formatWeightIn } from "@constants/numberFormat";
 
 import { cssClass } from "../../../testUtils";
 import styles from "../_styles/WeightDisplay.module.css";
@@ -13,7 +13,28 @@ describe("WeightDisplay", () => {
         // report: it can read as a warning to operators) — the fill bar
         // (still driven by capacityKg) is the only remaining capacity cue.
         render(<WeightDisplay weightKg={1250} capacityKg={50000} stable motion={false} />);
-        expect(screen.getByText(formatWeightKg(1250))).toBeInTheDocument();
+        // formatWeightIn appends " kg" itself; the digits span strips that
+        // suffix since the unit is shown separately via `labels.unit`.
+        expect(screen.getByText(formatWeightIn(1250, "kg").replace(/\s\S+$/, ""))).toBeInTheDocument();
+    });
+
+    it("relabels to the given weightUnit without changing the digits, still showing the unit only once", () => {
+        // labels.unit is caller-supplied (App.tsx derives it from the same
+        // Formats.WeightUnit) — passed here so digits and label agree, same
+        // as the real call site. formatWeightIn is a text-only unit swap
+        // now (no kg→t math), so the digits stay "1,250" either way.
+        render(
+            <WeightDisplay
+                weightKg={1250}
+                capacityKg={50000}
+                stable
+                motion={false}
+                weightUnit="t"
+                labels={{ indicator: "Indicator", stable: "Stable", motion: "Motion", unit: "t" }}
+            />,
+        );
+        expect(screen.getByText("1,250")).toBeInTheDocument();
+        expect(screen.getAllByText("t")).toHaveLength(1);
     });
 
     it("lights the stable lamp only when stable, and the motion lamp only when in motion", () => {

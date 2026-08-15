@@ -39,6 +39,7 @@ export const IndicatorStatusFields = ({
                 placeholder="Leave blank to auto-extract the number from each line"
                 value={conn.IndicatorPattern}
                 disabled={!unlocked}
+                autoComplete="off"
                 onChange={(event) =>
                     onSave({ ...settings, Connections: { ...conn, IndicatorPattern: event.target.value } })
                 }

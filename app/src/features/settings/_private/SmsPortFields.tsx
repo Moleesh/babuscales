@@ -1,4 +1,5 @@
 import { Field, FieldGrid } from "@components/Field";
+import { Select } from "@components/Select";
 import { useTranslation } from "@i18n/useTranslation";
 
 import { BAUD_RATE_OPTIONS } from "../settingsSchema";
@@ -32,37 +33,24 @@ export const SmsPortFields = ({
     <>
         <FieldGrid columns={2}>
             <Field id="gsmPort" label={t("settings.sms.serialPort")}>
-                <select
+                <Select
                     id="gsmPort"
                     value={conn.GsmPort}
+                    options={[{ value: "", label: "Not connected" }, ...ports.map((port) => ({ value: port, label: port }))]}
                     disabled={!unlocked}
-                    onChange={(event) =>
-                        onSave({ ...settings, Connections: { ...conn, GsmPort: event.target.value } })
-                    }
-                >
-                    <option value="">Not connected</option>
-                    {ports.map((port) => (
-                        <option key={port} value={port}>
-                            {port}
-                        </option>
-                    ))}
-                </select>
+                    onChange={(value) => onSave({ ...settings, Connections: { ...conn, GsmPort: value } })}
+                />
             </Field>
             <Field id="gsmBaud" label={t("settings.baudRate")}>
-                <select
+                <Select
                     id="gsmBaud"
-                    value={conn.GsmBaud}
+                    value={String(conn.GsmBaud)}
+                    options={BAUD_RATE_OPTIONS.map((baud) => ({ value: String(baud), label: String(baud) }))}
                     disabled={!unlocked}
-                    onChange={(event) =>
-                        onSave({ ...settings, Connections: { ...conn, GsmBaud: Number(event.target.value) } })
+                    onChange={(value) =>
+                        onSave({ ...settings, Connections: { ...conn, GsmBaud: Number(value) } })
                     }
-                >
-                    {BAUD_RATE_OPTIONS.map((baud) => (
-                        <option key={baud} value={baud}>
-                            {baud}
-                        </option>
-                    ))}
-                </select>
+                />
             </Field>
         </FieldGrid>
         <div className={styles.statusRow}>

@@ -42,6 +42,7 @@ export const OperatorChip = () => {
                 data-enter-skip
                 value={draft}
                 autoFocus
+                autoComplete="off"
                 onChange={(event) => setDraft(event.target.value)}
                 onBlur={commit}
                 onKeyDown={(event) => {

@@ -50,6 +50,7 @@ export const MastersListCard = ({
                 onChange={(event) => onQueryChange(event.target.value)}
                 placeholder={searchPlaceholder}
                 aria-label={searchPlaceholder}
+                autoComplete="off"
             />
             <DataTable
                 columns={columns}

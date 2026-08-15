@@ -6,9 +6,22 @@
     position: relative;
 }
 
+/* Flattens the input's bottom corners while the popover is open, same
+   move as Select's own `.triggerOpen` (Select.module.css) — without this
+   the input stayed a fully-rounded closed pill floating a few px above a
+   second, separately-bordered rounded box, which read as two disconnected
+   controls stacked on top of each other rather than one open dropdown
+   (task: "i can still see the outer border"). The input is already
+   `border-color: var(--led)` here via Field.module.css's `:focus` rule
+   (open only happens on focus), so this just removes the seam. */
+.wrapper :global(input).inputOpen {
+    border-radius: 8px 8px 0 0;
+    border-bottom-color: transparent;
+}
+
 .pop {
     position: absolute;
-    top: calc(100% + 4px);
+    top: 100%;
     left: 0;
     z-index: 80;
     min-width: 230px;
@@ -16,9 +29,13 @@
     max-height: min(320px, 52vh);
     overflow: auto;
     background: var(--panel);
-    border: 1px solid var(--led-dim);
-    border-radius: 10px;
-    box-shadow: 0 18px 44px rgba(0, 0, 0, 0.45);
+    border: 1px solid var(--led);
+    border-top: none;
+    border-radius: 0 0 10px 10px;
+    /* Flat, bordered flyout — no drop shadow (task: "simple fluent design
+       no elevation"), same treatment as Select's own `.list`
+       (Select.module.css) so the two dropdowns read as one design, flush
+       under the input with no gap (was `top: calc(100% + 4px)`). */
     padding: 5px;
 }
 
@@ -47,6 +64,30 @@
 }
 .option:hover,
 .option.highlighted {
+    background: var(--panel-2);
+}
+/* Flat fluent look — base.css's global button-hover rule gives every
+   `<button>` a translateY lift + glow shadow on hover/active; on a list of
+   option rows that reads as each row hopping under the pointer ("the text
+   should not dance when i hover"). Overridden back to flat here, matching
+   Select's own `.option` (Select.module.css). */
+/* Specificity fix (matches Select.module.css's own `.option:hover:not(:disabled)`):
+   plain `.option:hover` (0,2,0) lost to base.css's global
+   `button:not(:disabled):hover` (0,2,1) on every real mouse hover — this is
+   the actual "flickering"/"dancing" cause, not the cursor-follower's JS. */
+.option:hover:not(:disabled),
+.option:active:not(:disabled) {
+    transform: none;
+    box-shadow: none;
+}
+/* Same inset-ring override as Select's own `.option` (Select.module.css) —
+   base.css's global `:focus-visible` is an outset ring that would balloon
+   into the next row here too. Options in this list are `tabIndex={-1}`
+   (mouse-only, by design — see the comment above), so this mostly guards
+   against the same visual if that ever changes; contained either way. */
+.option:focus-visible {
+    outline: 2px solid var(--led);
+    outline-offset: -2px;
     background: var(--panel-2);
 }
 .option-sub {

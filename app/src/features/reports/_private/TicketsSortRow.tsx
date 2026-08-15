@@ -1,3 +1,4 @@
+import { Select } from "@components/Select";
 import { useTranslation } from "@i18n/useTranslation";
 
 import styles from "../_styles/ReportsScreen.module.css";
@@ -29,17 +30,7 @@ export const TicketsSortRow = ({
             <label className={styles.sortLabel} htmlFor="rSort">
                 {t("reports.sortByLabel")}
             </label>
-            <select
-                id="rSort"
-                value={sortKey}
-                onChange={(event) => onSortKeyChange(event.target.value as TicketSortKey)}
-            >
-                {sortOptions(t).map((option) => (
-                    <option key={option.value} value={option.value}>
-                        {option.label}
-                    </option>
-                ))}
-            </select>
+            <Select id="rSort" value={sortKey} options={sortOptions(t)} onChange={onSortKeyChange} />
             <button
                 type="button"
                 className={styles.sortDirBtn}

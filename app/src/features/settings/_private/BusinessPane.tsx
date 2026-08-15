@@ -30,6 +30,7 @@ export const BusinessPane = () => {
                             disabled={!unlocked}
                             defaultValue={settings.Business.Name}
                             key={settings.Business.Name}
+                            autoComplete="off"
                             onBlur={(event) => setField("Name", event.target.value)}
                             onKeyDown={(event) => {
                                 if (event.key === "Enter") event.currentTarget.blur();
@@ -42,6 +43,7 @@ export const BusinessPane = () => {
                             disabled={!unlocked}
                             defaultValue={settings.Business.Address}
                             key={settings.Business.Address}
+                            autoComplete="off"
                             onBlur={(event) => setField("Address", event.target.value)}
                             onKeyDown={(event) => {
                                 if (event.key === "Enter") event.currentTarget.blur();
@@ -54,6 +56,7 @@ export const BusinessPane = () => {
                             disabled={!unlocked}
                             defaultValue={settings.Business.Phone}
                             key={settings.Business.Phone}
+                            autoComplete="off"
                             onBlur={(event) => setField("Phone", event.target.value)}
                             onKeyDown={(event) => {
                                 if (event.key === "Enter") event.currentTarget.blur();

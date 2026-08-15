@@ -1,4 +1,5 @@
-import { formatWeightKg } from "@constants/numberFormat";
+import { formatWeightIn } from "@constants/numberFormat";
+import type { DateFmt, WeightUnit } from "@constants/numberFormat";
 
 import { useClock } from "./_private/useClock";
 import styles from "./_styles/WeightDisplay.module.css";
@@ -27,6 +28,16 @@ export interface WeightDisplayProps {
      * same reason `lang` is, defaults to 24-hour so a caller without settings in reach
      * keeps the pre-Settings-wiring clock unchanged. */
     timeFmt?: "24" | "12";
+    /** Settings' `Formats.DateFmt` — a plain prop (not useSettings()) for the same reason
+     * `timeFmt` is. Drives the header's "day chip", which used to be a fixed
+     * weekday+short-date shape; unset keeps that pre-Settings-wiring look. */
+    dateFmt?: DateFmt;
+    /** Settings' `Formats.WeightUnit` — a plain prop (not useSettings()) for the same
+     * reason `timeFmt` is. The live readout is what Settings' own "Weight display
+     * unit" label refers to; `formatWeightIn` only swaps the unit *text* here (no
+     * kg→t math — the indicator only ever reports kg) — defaults to "kg" so a
+     * caller without settings in reach keeps the pre-Settings-wiring digits unchanged. */
+    weightUnit?: WeightUnit;
 }
 
 const DEFAULT_LABELS: WeightDisplayLabels = {
@@ -51,8 +62,10 @@ export const WeightDisplay = ({
     ghostPattern = "88,888",
     lang = "en",
     timeFmt = "24",
+    dateFmt,
+    weightUnit = "kg",
 }: WeightDisplayProps) => {
-    const { time, day } = useClock(lang, timeFmt);
+    const { time, day } = useClock(lang, timeFmt, dateFmt);
     const fillPct = Math.min(100, Math.round((weightKg / capacityKg) * 100));
 
     return (
@@ -79,11 +92,15 @@ export const WeightDisplay = ({
                     <div className={styles.ghost} aria-hidden="true">
                         <span>{ghostPattern}</span>
                     </div>
-                    {/* Deliberately fixed-kg, not Formats.WeightUnit — this is the live
-                        indicator readout itself, and the indicator hardware always reports
-                        kg regardless of the display-unit setting (numberFormat.ts's own
-                        comment on formatWeightIn). */}
-                    <span className={`${styles.digits} num`}>{formatWeightKg(weightKg)}</span>
+                    {/* Settings' "Weight display unit" — the indicator hardware always
+                        reports kg (weightKg stays kg everywhere upstream); formatWeightIn
+                        only swaps the unit text, same as every other display figure
+                        (CalcCard, Dashboard, Reports). It appends " kg"/" t" itself —
+                        stripped here since `labels.unit` below is this component's own
+                        unit label. */}
+                    <span className={`${styles.digits} num`}>
+                        {formatWeightIn(weightKg, weightUnit).replace(/\s\S+$/, "")}
+                    </span>
                 </div>
                 <span className={styles.unit}>{labels.unit}</span>
             </div>

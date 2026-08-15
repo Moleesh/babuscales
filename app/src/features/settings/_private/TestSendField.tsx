@@ -39,6 +39,7 @@ export const TestSendField = ({
                 placeholder={placeholder}
                 value={value}
                 disabled={!unlocked}
+                autoComplete="off"
                 onChange={(event) => setValue(event.target.value)}
             />
         </Field>

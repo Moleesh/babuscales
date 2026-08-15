@@ -1,13 +1,12 @@
 import { deriveWeights, isOpenTicket, parseTicketBody } from "@db/ticketBody";
 import type { DocRow } from "@db/types";
-import { computeCharge } from "@engines/billing";
 
 // PLAN §13.1 — "there is no Tickets tab... a ticket list is a report that
 // has not been grouped yet." This is the one place `doc` rows become the
 // flat, sortable shape both the Tickets view and the Summary view read
-// from. `charge` is the flat per-ticket amount (engines/billing) — a real
-// per-vehicle-type/material rate table is still a tracked gap
-// (app/README.md), so this is a real number, just not yet a configurable one.
+// from. `charge` is a plain operator-entered ticket field (task: "no need
+// for charge calculation also" — no auto-calc), so it's just read straight
+// off the body like challanNo, absent (null) until someone types one in.
 
 export interface TicketRow {
     doc: DocRow;
@@ -50,7 +49,7 @@ export const buildTicketRows = (docs: DocRow[]): TicketRow[] =>
                 tareKg: weights.tareKg,
                 grossKg: weights.grossKg,
                 netKg: weights.netKg,
-                charge: computeCharge(weights.netKg !== null),
+                charge: body.Charge ?? null,
                 isCancelled: doc.IsCancelled,
                 isOpen: isOpenTicket(doc.IsCancelled, body.Captures),
                 at: last?.At ?? doc.UpdatedAt,

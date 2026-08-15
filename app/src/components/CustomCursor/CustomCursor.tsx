@@ -11,11 +11,20 @@ import styles from "./_styles/CustomCursor.module.css";
 // pointer (touch), matching base.css's own reduced-motion posture.
 export const CustomCursor = () => {
     const enabled = useCursorEnabled();
-    const { dotRef, hoverInteractive, hoverText, pressed } = useCursorTracking(enabled);
+    const { dotRef, hoverInteractive, hoverCompact, hoverText, pressed } = useCursorTracking(enabled);
 
     if (!enabled) return null;
 
-    const stateClass = pressed ? styles.pressed : hoverInteractive ? styles.hover : "";
+    // Compact wins over the regular hover growth — a dropdown option is
+    // still "interactive" (hoverInteractive is also true), it just wants
+    // the smaller ring instead of the default 38px one.
+    const stateClass = pressed
+        ? styles.pressed
+        : hoverCompact
+          ? styles.hoverCompact
+          : hoverInteractive
+            ? styles.hover
+            : "";
     // Over an edit field the native caret/I-beam is deliberately left on
     // (CustomCursor.module.css's own text-cursor carve-out) — without this
     // the follower's ring+dot kept rendering on top of it, i.e. two visible

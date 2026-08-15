@@ -42,12 +42,22 @@ export const Select = <T extends string>({ id, value, options, disabled, onChang
     const ref = useCloseOnOutsideClick(open, () => setOpen(false));
     const selected = options.find((option) => option.value === value);
 
+    // Disabling the trigger (e.g. Settings' admin auto-lock firing mid-open —
+    // task: "I open the dropdown and in the meantime the admin password
+    // expires, the dropdown is not closed") only stops new clicks; it
+    // doesn't touch `open`, so an already-open list stayed on screen,
+    // floating over a now-disabled field. Force it shut the moment
+    // `disabled` flips true instead of waiting for an outside click.
+    useLayoutEffect(() => {
+        if (disabled) setOpen(false);
+    }, [disabled]);
+
     return (
         <div className={styles.wrap} ref={ref}>
             <button
                 id={id}
                 type="button"
-                className={styles.trigger}
+                className={`${styles.trigger} ${open ? styles.triggerOpen : ""}`}
                 disabled={disabled}
                 aria-haspopup="listbox"
                 aria-expanded={open}
@@ -66,6 +76,7 @@ export const Select = <T extends string>({ id, value, options, disabled, onChang
                             type="button"
                             role="option"
                             aria-selected={option.value === value}
+                            data-cursor="compact"
                             className={`${styles.option} ${option.value === value ? styles.active : ""}`}
                             onClick={() => {
                                 onChange(option.value);

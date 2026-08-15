@@ -1,0 +1,227 @@
+/* Same shape as Select.module.css — a flush trigger + flyout pair, flat
+   fluent look, no elevation. Kept visually and interaction-wise consistent
+   with Select/SearchableDropdown on purpose (task: "visually and
+   interaction-wise consistent with the just-fixed Select/SearchableDropdown")
+   rather than inventing a third look for date fields. */
+.wrap {
+    position: relative;
+    min-width: 0;
+}
+.trigger {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 8px 10px;
+    color: var(--text);
+    font: inherit;
+    font-size: 0.8125rem;
+    width: 100%;
+    min-width: 0;
+    text-align: left;
+}
+.trigger:focus-visible {
+    /* Inset, not base.css's outset default — same reasoning as Select's
+       own `.trigger:focus-visible` (Select.module.css): the trigger stays
+       focused while the popover is open, so an outset ring would bleed
+       into the calendar sitting flush underneath it. */
+    outline: 2px solid var(--led);
+    outline-offset: -2px;
+    border-color: var(--led);
+}
+.trigger:disabled {
+    opacity: 0.5;
+}
+/* Flat fluent look — base.css's global button-hover rule gives every
+   `<button>` a translateY lift + glow shadow on hover/active; overridden
+   back to flat here, same as Select's own `.trigger` (Select.module.css).
+   `:not(:disabled)` matches base.css's own `button:not(:disabled):hover`
+   specificity (0,2,1) — plain `.trigger:hover` is only (0,2,0), lower than
+   the global rule, so it silently lost on every real hover without this. */
+.trigger:hover:not(:disabled),
+.trigger:active:not(:disabled) {
+    transform: none;
+    box-shadow: none;
+}
+.triggerOpen {
+    border-radius: 8px 8px 0 0;
+    border-color: var(--led);
+    border-bottom-color: transparent;
+}
+.label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+/* Placeholder state (no date picked yet) reads as the format pattern in
+   the field's own dim/placeholder colour, e.g. "dd-mm-yyyy" — same idea as
+   a text input's native `::placeholder`. */
+.placeholder .label {
+    color: var(--dim);
+}
+.icon {
+    flex: none;
+    width: 14px;
+    height: 14px;
+    color: var(--dim);
+}
+
+.pop {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 30;
+    width: max-content;
+    min-width: 100%;
+    padding: 8px;
+    background: var(--panel);
+    border: 1px solid var(--led);
+    border-top: none;
+    border-radius: 0 0 10px 10px;
+    /* Flat, bordered flyout — no drop shadow, same "no elevation" posture
+       as Select's `.list` / SearchableDropdown's `.pop`. */
+}
+
+.nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    padding: 2px 2px 8px;
+}
+.navBtn {
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 6px;
+    border: none;
+    background: none;
+    color: var(--text);
+    font: inherit;
+    font-size: 0.9375rem;
+}
+.navBtn:hover {
+    background: var(--panel-2);
+}
+/* Specificity fix, same reasoning as `.trigger:hover:not(:disabled)` above. */
+.navBtn:hover:not(:disabled),
+.navBtn:active:not(:disabled) {
+    transform: none;
+    box-shadow: none;
+}
+.navBtn:focus-visible {
+    outline: 2px solid var(--led);
+    outline-offset: -2px;
+    background: var(--panel-2);
+}
+.navLabel {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text);
+    white-space: nowrap;
+}
+
+.weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    padding: 0 2px 2px;
+}
+.weekdays span {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 22px;
+    font-size: 0.625rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--dim);
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 1px;
+}
+.blank {
+    display: block;
+}
+.day {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    aspect-ratio: 1;
+    min-width: 30px;
+    border-radius: 6px;
+    border: none;
+    background: none;
+    color: var(--text);
+    font: inherit;
+    font-size: 0.75rem;
+}
+.day:hover {
+    background: var(--panel-2);
+}
+/* Specificity fix, same reasoning as `.trigger:hover:not(:disabled)` above. */
+.day:hover:not(:disabled),
+.day:active:not(:disabled) {
+    transform: none;
+    box-shadow: none;
+}
+.day:focus-visible {
+    outline: 2px solid var(--led);
+    outline-offset: -2px;
+    background: var(--panel-2);
+}
+/* Today: outlined, not filled — filled is reserved for the actual picked
+   value (`.active`) below, so the two states never look the same at a
+   glance the way they would if both used a solid background. */
+.day.today {
+    border: 1px solid var(--led-dim);
+}
+.day.active {
+    background: var(--led-ghost);
+    color: var(--led);
+    font-weight: 600;
+}
+
+.actions {
+    display: flex;
+    justify-content: space-between;
+    gap: 6px;
+    margin-top: 6px;
+    padding-top: 6px;
+    border-top: 1px solid var(--line);
+}
+.actionBtn {
+    flex: 1;
+    padding: 6px 8px;
+    border-radius: 6px;
+    border: 1px solid var(--line);
+    background: none;
+    color: var(--dim);
+    font: inherit;
+    font-size: 0.6875rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+.actionBtn:hover {
+    background: var(--panel-2);
+    color: var(--text);
+}
+/* Specificity fix, same reasoning as `.trigger:hover:not(:disabled)` above. */
+.actionBtn:hover:not(:disabled),
+.actionBtn:active:not(:disabled) {
+    transform: none;
+    box-shadow: none;
+}
+.actionBtn:focus-visible {
+    outline: 2px solid var(--led);
+    outline-offset: -2px;
+}

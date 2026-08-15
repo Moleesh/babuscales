@@ -49,6 +49,7 @@ export const TicketsView = ({
                 onChange={(event) => onQueryChange(event.target.value)}
                 placeholder={t("reports.searchPlaceholder")}
                 aria-label={t("reports.searchAriaLabel")}
+                autoComplete="off"
             />
             <SegmentedControl
                 options={filterOptions(t)}

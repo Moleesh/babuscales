@@ -29,6 +29,20 @@
     border-color: var(--led);
     outline: none;
 }
+/* Same inset-ring treatment as Select's own trigger (Select.module.css) —
+   base.css's global `:focus-visible` is an outset 2px+2px-offset ring,
+   which on a plain text input reads as a thick halo sitting half outside
+   the box (task: "can we use the same thing we use in other places, with a
+   little differnt bg"). Contained inside the border here instead, with a
+   faint led tint so a focused field is still visually distinct from a
+   merely-hovered one. */
+.f :global(input:focus-visible),
+.f :global(select:focus-visible),
+.f :global(textarea:focus-visible) {
+    outline: 2px solid var(--led);
+    outline-offset: -2px;
+    background: var(--led-ghost);
+}
 .f :global(input:disabled),
 .f :global(select:disabled) {
     opacity: 0.5;

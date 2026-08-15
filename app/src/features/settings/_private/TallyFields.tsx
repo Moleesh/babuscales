@@ -21,6 +21,7 @@ export const TallyFields = ({ settings, unlocked, onSave }: TallyFieldsProps) =>
             placeholder="C:\BabuScales\TallyExport"
             value={settings.Tally.Folder}
             disabled={!unlocked}
+            autoComplete="off"
             onChange={(event) => onSave({ ...settings, Tally: { Folder: event.target.value } })}
         />
     </Field>

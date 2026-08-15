@@ -51,6 +51,7 @@ export const ReportsScreenCard = ({ s, onSeedDemoTickets, loading }: ReportsScre
                 onDateToChange={s.setDateTo}
                 includeBacked={s.includeBacked}
                 onIncludeBackedChange={s.setIncludeBacked}
+                dateFmt={s.dateFmt}
                 groupBy={s.groupBy}
                 onGroupByChange={s.setGroupBy}
                 ticketColumns={s.ticketColumns}
