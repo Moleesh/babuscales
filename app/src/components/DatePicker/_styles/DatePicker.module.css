@@ -5,7 +5,13 @@
    rather than inventing a third look for date fields. */
 .wrap {
     position: relative;
-    min-width: 0;
+    /* Fixed, not min-width: 0 (which let the shrink-to-fit flex item resize
+       whenever the trigger's text changed — the "dd/mm/yy" placeholder and
+       a picked date like "15/08/26" aren't the same width, so the field
+       visibly narrowed the moment a date was chosen). Wide enough for the
+       longest realistic formatted date plus the calendar icon. */
+    width: 132px;
+    min-width: 132px;
 }
 .trigger {
     display: flex;
