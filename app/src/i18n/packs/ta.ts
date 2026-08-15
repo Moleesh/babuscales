@@ -40,6 +40,7 @@ export const TA_PACK: LanguagePack = {
         recalled: "மீட்டெடுக்கப்பட்டது",
 
         "weigh.open": "திற",
+        "weigh.loadingTickets": "டிக்கெட்டுகள் ஏற்றுகிறது…",
         "weigh.recallTitle": "இந்த வாகனத்திற்கு ஏற்கெனவே டிக்கெட் வரலாறு உள்ளது",
         "weigh.recall.resume": "தொடரவும்",
         "weigh.recall.fillFrom": "இதிலிருந்து நிரப்பு",
@@ -227,8 +228,8 @@ export const TA_PACK: LanguagePack = {
         "settings.amountFields.twoDecimals": "2 தசம இடம் — ₹ 250.00",
         "settings.amountFields.wholeRupees": "முழு ரூபாய் — ₹ 250",
         "settings.amountFields.weightUnit": "எடை காட்சி அலகு",
-        "settings.amountFields.weightUnitKg": "கிலோகிராம் — 1,250 kg",
-        "settings.amountFields.weightUnitT": "டன் — 1.3 t",
+        "settings.amountFields.weightUnitKg": "கிலோகிராம்",
+        "settings.amountFields.weightUnitT": "டன்",
         "settings.amountFields.newPasswordPlaceholder": "புதிய கடவுச்சொல்",
         "settings.amountFields.rounding": "தொகை வட்டமிடல்",
         "settings.adminPassword": "நிர்வாகி கடவுச்சொல்",
@@ -300,13 +301,6 @@ export const TA_PACK: LanguagePack = {
         "settings.weighingRules.showSendLorry.note":
             "உண்மையான தராசு அளவீட்டிற்குப் பதிலாக ஒரு எடையை நேரடியாகக் காட்டிக்கு அனுப்பும் சோதனை/டெமோ குறுக்குவழி — உருவகப்படுத்தப்பட்ட காட்டியில் மட்டுமே தோன்றும். அணைக்கப்பட்டால் அங்கும் மறைந்துவிடும்.",
 
-        "settings.numbering.autoResetAutomatically": "தானாகவும் மீட்டமை",
-        "settings.numbering.every": "ஒவ்வொரு",
-        "settings.numbering.startingAt": "தொடங்குவது",
-        "settings.numbering.resetEvery.year": "நிதி ஆண்டு",
-        "settings.numbering.resetEvery.cal": "நாட்காட்டி ஆண்டு",
-        "settings.numbering.resetEvery.month": "மாதம்",
-        "settings.numbering.resetEvery.day": "நாள்",
         "settings.numbering.prefix": "முன்னொட்டு",
         "settings.numbering.digits": "இலக்கங்கள்",
         "settings.numbering.resetNow": "எண்ணிக்கையை இப்போது மீட்டமை",
@@ -315,6 +309,7 @@ export const TA_PACK: LanguagePack = {
         "settings.numbering.resetResetting": "மீட்டமைக்கிறது…",
         "settings.numbering.resetYes": "ஆம், மீட்டமை",
         "settings.numbering.resetCancel": "ரத்துசெய்",
+        "settings.numbering.resetStartAt": "இதிலிருந்து எண்ணிடத் தொடங்கு",
 
         "reports.title": "அறிக்கைகள்",
         "reports.loading": "டிக்கெட்டுகள் ஏற்றுகிறது…",
@@ -335,6 +330,17 @@ export const TA_PACK: LanguagePack = {
         "reports.dateFromAriaLabel": "தொடக்க தேதி",
         "reports.dateToAriaLabel": "முடிவு தேதி",
         "reports.includeBacked": "கடைசி மீட்டமைப்பிற்கு முந்தைய டிக்கெட்டுகளையும் சேர்",
+
+        "datePicker.openLabel": "தேதியைத் தேர்ந்தெடு",
+        "datePicker.prevMonth": "முந்தைய மாதம்",
+        "datePicker.nextMonth": "அடுத்த மாதம்",
+        "datePicker.today": "இன்று",
+        "datePicker.clear": "அழி",
+
+        "contextMenu.label": "திருத்த விருப்பங்கள்",
+        "contextMenu.cut": "வெட்டு",
+        "contextMenu.copy": "நகலெடு",
+        "contextMenu.paste": "ஒட்டு",
         "reports.searchPlaceholder": "வாகனம், தரப்பு, டிக்கெட் எண், சலான்…",
         "reports.searchAriaLabel": "டிக்கெட்டுகளைத் தேடு",
         "reports.summaryEmpty": "இந்தக் குழுவில் இன்னும் முடிக்கப்பட்ட டிக்கெட்டுகள் இல்லை",
@@ -416,6 +422,9 @@ export const TA_PACK: LanguagePack = {
         "settings.indicator.title": "எடை காட்டி",
         "settings.indicator.customPattern": "தனிப்பயன் மாதிரி (மேம்பட்டது)",
         "settings.indicator.serialPort": "சீரியல் போர்ட்",
+        "settings.indicator.listen": "கேட்க தொடங்கு",
+        "settings.indicator.stopListening": "நிறுத்து",
+        "settings.indicator.monitorEmpty": "இன்னும் தரவு இல்லை — Listen ஐ அழுத்தி, காட்டியில் இருந்து ஒரு எடையை அனுப்பவும்.",
 
         "settings.integrationConfig.title": "வெப்ஹூக் · கணக்கியல் ஏற்றுமதி · காட்சிப் பலகை",
         "settings.integrationConfig.hint":

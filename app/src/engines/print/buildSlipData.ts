@@ -20,7 +20,7 @@ export interface SlipInput {
     operator: string;
     /** The ticket's `PrintCount` *before* this print — 0 means this is the first (ORIGINAL). */
     printCount: number;
-    /** `engines/billing`'s `computeCharge` — `null` until both weights are in. */
+    /** Operator-entered ticket field — no auto-calc; `null` until typed in. */
     charge: number | null;
     /** Settings' `Formats.AmountDp`. */
     amountDp: 0 | 2;

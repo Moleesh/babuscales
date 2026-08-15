@@ -95,16 +95,13 @@ export const formatWeightKg = (kg: number): string => Math.round(kg).toLocaleStr
 export const WEIGHT_UNITS = ["kg", "t"] as const;
 export type WeightUnit = (typeof WEIGHT_UNITS)[number];
 
-const KG_PER_UNIT: Record<WeightUnit, number> = { kg: 1, t: 1000 };
-
-/** kg → the given display unit, rounded to `dp` decimals (0 for kg — no
- * fractional kg on a screen meant to be read at a glance; 1 for tonnes,
- * matching the mock's own `toFixed(1)`). */
-export const formatWeightIn = (kg: number, unit: WeightUnit): string => {
-    const value = kg / KG_PER_UNIT[unit];
-    const dp = unit === "kg" ? 0 : 1;
-    return `${value.toLocaleString(INDIAN_LOCALE, { minimumFractionDigits: dp, maximumFractionDigits: dp })} ${unit}`;
-};
+/** By request, this is a pure unit-*label* swap, not a kg→tonnes
+ * conversion — the indicator only ever reports kg, and every consumer
+ * (Dashboard, Reports, print slips, Masters, Weighing) should keep showing
+ * that raw number unchanged, just suffixed "kg" or "t" per Settings'
+ * Weight display unit. No division, no extra decimal places for tonnes. */
+export const formatWeightIn = (kg: number, unit: WeightUnit): string =>
+    `${Math.round(kg).toLocaleString(INDIAN_LOCALE)} ${unit}`;
 
 // Ported from the mock's `money()` — `decimalPlaces` is Settings' System
 // pane "Amount rounding" (`Formats.AmountDp`), not a fixed 2, so a site

@@ -23,10 +23,47 @@
 }
 .trigger:focus-visible {
     border-color: var(--led);
-    outline: none;
+    /* base.css's global `:focus-visible` outline is outset (2px + 2px
+       offset) — the trigger stays focused while the list is open (buttons
+       don't blur on hover), so that outline bled 4px below the trigger and
+       cut a visible shadow band across the list's first row, right where
+       the two sat only 4px apart. Overridden inset here instead of `none`
+       so keyboard-focus is still visible, just contained to the button. */
+    outline: 2px solid var(--led);
+    outline-offset: -2px;
 }
 .trigger:disabled {
     opacity: 0.5;
+}
+/* Flat fluent look — no lift/shadow "elevation" (task: "simple fluent
+   design no elevation"). base.css's global button-hover rule gives every
+   `<button>` a translateY lift + glow shadow on hover/active; that reads as
+   the trigger (and, via `.option` below, every row in the open list)
+   physically hopping under the pointer — "the text should not dance when i
+   hover". Overridden back to flat here, same as SearchableDropdown's own
+   `.option` (SearchableDropdown.module.css) so the two dropdowns match. */
+/* `:not(:disabled)` isn't functionally needed (this button's own :disabled
+   rule already sets opacity above) — it's here purely to match base.css's
+   own `button:not(:disabled):hover` specificity (0,2,1). Plain `.trigger:hover`
+   was only (0,2,0) — LOWER than the global rule despite being more specific-
+   *looking* — so the global lift/shadow was winning on every real mouse
+   hover the whole time; this is the actual "flickering"/"dancing" root
+   cause, not the cursor-follower's hover-state JS (that was a real but
+   separate bug, already fixed in useCursorTracking.ts). */
+.trigger:hover:not(:disabled),
+.trigger:active:not(:disabled) {
+    transform: none;
+    box-shadow: none;
+}
+/* While the list is open, flatten the trigger's bottom corners and drop
+   the list right underneath it (no 4px gap) so the two read as one
+   continuous control instead of a separate box floating below with a
+   visible step/shadow between them (task: "there is a elevation happening
+   here its looking bad"). */
+.triggerOpen {
+    border-radius: 8px 8px 0 0;
+    border-color: var(--led);
+    border-bottom-color: transparent;
 }
 .label {
     overflow: hidden;
@@ -41,18 +78,29 @@
 
 .list {
     position: absolute;
-    top: calc(100% + 4px);
+    top: 100%;
     left: 0;
     right: 0;
     z-index: 30;
     display: flex;
     flex-direction: column;
-    gap: 1px;
+    /* No inter-row gap: rows sitting flush against each other means the
+       pointer's hit target is continuous down the whole list — a real gap
+       here was a 1px-wide non-interactive strip the custom cursor's
+       mousemove sampling could land on, which was part of the reported
+       hover flicker (see useCursorTracking.ts's rAF-coalescing fix for the
+       full story). Rows are still visually distinct via `.option:hover`'s
+       background, so nothing is lost by removing the seam. */
+    gap: 0;
     padding: 4px;
     background: var(--panel);
-    border: 1px solid var(--line);
-    border-radius: 10px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+    border: 1px solid var(--led);
+    border-top: none;
+    border-radius: 0 0 10px 10px;
+    /* Flat, bordered flyout — no drop shadow (task: "simple fluent design
+       no elevation"). The `--led` border it inherits from `.triggerOpen`'s
+       matching bottom edge is what separates it from the page, not a
+       shadow. */
     max-height: 240px;
     overflow-y: auto;
 }
@@ -71,7 +119,26 @@
 .option:hover {
     background: var(--panel-2);
 }
+/* Same specificity fix as `.trigger:hover:not(:disabled)` above — plain
+   `.option:hover` (0,2,0) lost to base.css's global
+   `button:not(:disabled):hover` (0,2,1) on every real hover. */
+.option:hover:not(:disabled),
+.option:active:not(:disabled) {
+    transform: none;
+    box-shadow: none;
+}
 .option.active {
     background: var(--led-ghost);
     color: var(--led);
+}
+/* Same inset-ring override as Field's inputs / Select's own trigger — the
+   global `:focus-visible` (base.css) is an outset 2px+2px-offset ring, and
+   these rows sit only `.list`'s 1px `gap` apart, so a clicked option's ring
+   ballooned outward into the row underneath it (looked like blurred/
+   "dangling" text sitting under a stray orange box). Contained inside the
+   row instead. */
+.option:focus-visible {
+    outline: 2px solid var(--led);
+    outline-offset: -2px;
+    background: var(--led-ghost);
 }

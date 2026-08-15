@@ -169,7 +169,8 @@ pub fn allocate_doc_seq(conn: &mut Connection, doc_id: &str) -> Result<DocRow, A
     }
 
     let next_seq: i64 = tx.query_row(
-        "SELECT COALESCE(MAX(doc_seq), 0) + 1 FROM doc WHERE doc_kind = ?1 AND profile_id = ?2 AND series_epoch = ?3",
+        "SELECT COALESCE(MAX(doc_seq), (SELECT start_seq FROM series_counter WHERE doc_kind = ?1 AND profile_id = ?2) - 1, 0) + 1
+         FROM doc WHERE doc_kind = ?1 AND profile_id = ?2 AND series_epoch = ?3",
         params![doc.doc_kind, doc.profile_id, doc.series_epoch],
         |row| row.get(0),
     )?;
@@ -204,16 +205,19 @@ fn current_series_epoch(
 
 /// Bumps the numbering epoch so the next allocation — and the next brand
 /// new doc's starting epoch, via `current_series_epoch` above — restarts
-/// from the bumped value.
+/// from the bumped value. `start_seq` is the operator-chosen first number
+/// for the new epoch (defaults to 1 at the call site); `allocate_doc_seq`
+/// uses it as the floor once the new epoch has no docs of its own yet.
 pub fn reset_doc_series(
     conn: &Connection,
     doc_kind: &str,
     profile_id: &str,
+    start_seq: i64,
 ) -> Result<SeriesEpoch, AppError> {
     conn.execute(
-        "INSERT INTO series_counter (doc_kind, profile_id, epoch) VALUES (?1, ?2, 1)
-         ON CONFLICT(doc_kind, profile_id) DO UPDATE SET epoch = epoch + 1",
-        params![doc_kind, profile_id],
+        "INSERT INTO series_counter (doc_kind, profile_id, epoch, start_seq) VALUES (?1, ?2, 1, ?3)
+         ON CONFLICT(doc_kind, profile_id) DO UPDATE SET epoch = epoch + 1, start_seq = excluded.start_seq",
+        params![doc_kind, profile_id, start_seq],
     )?;
     let epoch = current_series_epoch(conn, doc_kind, profile_id)?;
     Ok(SeriesEpoch { epoch })

@@ -40,6 +40,8 @@ export interface TicketBody extends JsonRecord {
     Material?: string;
     Transporter?: string;
     ChallanNo?: string;
+    /** Operator-entered amount, same as any other manual ticket field — there is no auto-calc behind it (task: "no need for charge calculation also" — plain editable field, no formula). Undefined until the operator types one in. */
+    Charge?: number;
     Captures: Capture[];
     /** PLAN §7.4 — "printing is not a status either... a ticket carries a print count." */
     PrintCount?: number;
@@ -54,6 +56,7 @@ const ticketBodyShape = z.object({
     Material: z.string().optional(),
     Transporter: z.string().optional(),
     ChallanNo: z.string().optional(),
+    Charge: z.number().optional(),
     Captures: z.array(captureSchema),
     PrintCount: z.number().int().nonnegative().optional(),
     CustomFields: z.record(z.string(), z.union([z.string(), z.number(), z.boolean(), z.null()])).optional(),
@@ -87,8 +90,10 @@ export const grossCaptures = (captures: Capture[]): Capture[] =>
     captures.filter((c) => c.Type === "Gross");
 
 // PLAN §7.4 — "a ticket's status is the pair of weights and the net they
-// produce." `grossKg` is the Gross capture's own weight; `netKg` is that
-// Gross's net against the single Tare (`grossKg - tareKg`, via `Math.abs`).
+// produce." `grossKg` is the Gross capture's own weight; `netKg` is always
+// `grossKg - tareKg` — never swapped, never absolute-valued. A lorry that
+// somehow weighs in lower on Gross than Tare has no valid net tonnage, so
+// that clamps to 0 rather than reporting a (wrong) positive number.
 export const deriveWeights = (captures: Capture[]): DerivedWeights => {
     const tare = findCapture(captures, "Tare");
     const grosses = grossCaptures(captures);
@@ -97,7 +102,7 @@ export const deriveWeights = (captures: Capture[]): DerivedWeights => {
         grossKg: grosses.length ? grosses.reduce((sum, c) => sum + c.WeightKg, 0) : null,
         netKg:
             tare && grosses.length
-                ? grosses.reduce((sum, c) => sum + Math.abs(c.WeightKg - tare.WeightKg), 0)
+                ? grosses.reduce((sum, c) => sum + Math.max(0, c.WeightKg - tare.WeightKg), 0)
                 : null,
     };
 };

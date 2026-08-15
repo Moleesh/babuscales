@@ -13,6 +13,15 @@ export interface TooltipProps {
      * "top" — the common case (a chart bar, a KPI card) has more room
      * above than below its own trigger. */
     side?: "top" | "bottom";
+    /** Horizontal anchor. Defaults to "center" (bubble centered on the
+     * trigger) — wrong for a trigger sitting flush against the window's
+     * right edge (the top bar's Minimize/Close buttons): a centered
+     * `max-width: 220px` bubble there extends past the viewport and renders
+     * clipped/invisible by `.app`'s `overflow: hidden`, which read as "the
+     * tooltip is missing" even though it was mounting correctly the whole
+     * time. "end" instead hangs the bubble off the trigger's right edge, so
+     * it opens leftward into the window instead of off the edge. */
+    align?: "center" | "end";
     /** Extra class for the wrapper span. */
     className?: string;
     /** Inline layout overrides for the wrapper span — e.g. Dashboard's flex
@@ -38,7 +47,7 @@ export interface TooltipProps {
 // rather than a portal (every current caller is inside a scroll container
 // short enough that clipping isn't a concern — revisit with a portal if a
 // future caller needs one near a viewport edge).
-export const Tooltip = ({ label, side = "top", className, style, children }: TooltipProps) => {
+export const Tooltip = ({ label, side = "top", align = "center", className, style, children }: TooltipProps) => {
     const [open, setOpen] = useState(false);
     const id = useId();
 
@@ -54,7 +63,11 @@ export const Tooltip = ({ label, side = "top", className, style, children }: Too
         >
             {children}
             {open && (
-                <span role="tooltip" id={id} className={`${styles.bubble} ${styles[side]}`}>
+                <span
+                    role="tooltip"
+                    id={id}
+                    className={`${styles.bubble} ${styles[side]} ${align === "end" ? styles.alignEnd : ""}`}
+                >
                     {label}
                 </span>
             )}

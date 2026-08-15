@@ -29,6 +29,17 @@ CREATE UNIQUE INDEX IF NOT EXISTS ux_doc_seq
   ON doc (doc_kind, profile_id, series_epoch, doc_seq)
   WHERE doc_seq IS NOT NULL;
 
+-- `list_docs` (store/docs.rs) always filters on doc_kind and always sorts
+-- by created_at DESC (Weighing's open-ticket strip and Reports both load
+-- every Ticket doc this way) — without this, that's a full table scan
+-- followed by a sort on every load, which gets slower linearly as ticket
+-- history grows (PLAN §21 "might affect other tabs when the data grows
+-- more"). The column order matches the query: doc_kind narrows first,
+-- created_at DESC lets SQLite walk the index in the query's own sort order
+-- instead of materialising and sorting the filtered rows separately.
+CREATE INDEX IF NOT EXISTS ix_doc_kind_created_at
+  ON doc (doc_kind, created_at DESC);
+
 -- The *current* numbering epoch per (doc_kind, profile_id) — bumped by a
 -- manual numbering reset ("reset ticket no", PLAN §6.1/§4.10). Not
 -- derivable from `doc` alone: right after a reset the new epoch has zero
@@ -39,6 +50,7 @@ CREATE TABLE IF NOT EXISTS series_counter (
   doc_kind   TEXT NOT NULL,
   profile_id TEXT NOT NULL,
   epoch      INTEGER NOT NULL DEFAULT 0,
+  start_seq  INTEGER NOT NULL DEFAULT 1,      -- operator-chosen first number for this epoch
   PRIMARY KEY (doc_kind, profile_id)
 );
 

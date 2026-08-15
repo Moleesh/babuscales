@@ -104,8 +104,62 @@ pub fn run() -> tauri::Result<()> {
             // artifact to draw.
             if let Some(window) = app.get_webview_window("main") {
                 if let Ok(Some(monitor)) = window.primary_monitor() {
-                    let _ = window.set_size(*monitor.size());
-                    let _ = window.set_position(*monitor.position());
+                    let target_pos = *monitor.position();
+                    let target_size = *monitor.size();
+                    let _ = window.set_size(target_size);
+                    let _ = window.set_position(target_pos);
+
+                    // Windows/DWM reserves an invisible resize-border/shadow
+                    // margin around every top-level window — even a
+                    // `resizable: false`, `decorations: false` one — which
+                    // is the exact same class of artifact the comment above
+                    // already fought once (the "white bottom bar" bug when
+                    // this used `maximized: true`). Pinning to the monitor's
+                    // exact bounds instead of asking Windows to maximize
+                    // dodges that specific bug, but at (0,0) the border has
+                    // nowhere to poke *outward* into, so it eats *inward*
+                    // from the visible client area instead — the "white
+                    // space on left and top" reported here. Rather than
+                    // hardcoding a border width (wrong at every DPI scale
+                    // but one), read back what the OS actually placed the
+                    // window at and grow/shift by the measured discrepancy
+                    // — this is self-correcting across monitors/scale
+                    // factors instead of a guessed constant.
+                    if let (Ok(_actual_pos), Ok(actual_outer), Ok(actual_inner)) =
+                        (window.outer_position(), window.outer_size(), window.inner_size())
+                    {
+                        // `outer_size` (window rect incl. the invisible
+                        // border) already equals what we asked for — the
+                        // border isn't extra pixels tacked onto the outside,
+                        // it's carved out of the *inside*, so `inner_size`
+                        // (the actual visible/content rect) comes back
+                        // smaller than `outer_size` on every edge. The
+                        // previous version of this fix only grew the window
+                        // *size* by that shortfall, which pads the extra
+                        // pixels onto the bottom-right — the top-left inward
+                        // gap this was meant to fix was never touched.
+                        // Correct fix: the border eats roughly evenly from
+                        // all four sides, so shift the window's position
+                        // up-left by half the shortfall (pushing the
+                        // invisible left/top border off the visible monitor
+                        // area) *and* grow the size by the full shortfall
+                        // (covering both the half we just shifted past and
+                        // the matching half still owed on the right/bottom).
+                        let border_x = actual_outer.width.saturating_sub(actual_inner.width);
+                        let border_y = actual_outer.height.saturating_sub(actual_inner.height);
+                        if border_x != 0 || border_y != 0 {
+                            let half_x = (border_x / 2) as i32;
+                            let half_y = (border_y / 2) as i32;
+                            let _ = window.set_position(tauri::PhysicalPosition::new(
+                                target_pos.x - half_x,
+                                target_pos.y - half_y,
+                            ));
+                            let _ = window.set_size(tauri::PhysicalSize::new(
+                                target_size.width + border_x,
+                                target_size.height + border_y,
+                            ));
+                        }
+                    }
                 }
             }
 

@@ -178,7 +178,7 @@ export const useReportsScreenController = ({
 
     useReportsIntentEffect(reportsIntent, setView, setFilter);
 
-    return { ...filters, savedReportActions, showWaiting, ...screenData };
+    return { ...filters, savedReportActions, showWaiting, dateFmt, ...screenData };
 };
 
 export type UseReportsScreenController = ReturnType<typeof useReportsScreenController>;

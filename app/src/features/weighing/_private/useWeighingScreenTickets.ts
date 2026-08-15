@@ -24,6 +24,8 @@ export interface WeighingCaches {
 export interface UseWeighingScreenTickets {
     caches: WeighingCaches;
     allTicketDocs: DocRow[];
+    /** True until the first ticket-docs load resolves — see `useTicketDocs`'s own `loading` doc comment. */
+    ticketsLoading: boolean;
     openTickets: OpenTicketSummary[];
     bumpRefresh: () => void;
     handleResume: (summary: OpenTicketSummary) => void;
@@ -35,7 +37,7 @@ export interface UseWeighingScreenTickets {
 // list (open-ticket strip, resume, and the save→refresh loop), unchanged
 // from the inline versions they replace.
 export const useWeighingScreenTickets = (ticket: UseWeighingTicket): UseWeighingScreenTickets => {
-    const { allTicketDocs, bumpRefresh } = useTicketDocs();
+    const { allTicketDocs, loading: ticketsLoading, bumpRefresh } = useTicketDocs();
 
     const caches: WeighingCaches = {
         vehicle: useMasterCache("Vehicle"),
@@ -64,5 +66,5 @@ export const useWeighingScreenTickets = (ticket: UseWeighingTicket): UseWeighing
         bumpRefresh();
     };
 
-    return { caches, allTicketDocs, openTickets, bumpRefresh, handleResume, handleSave };
+    return { caches, allTicketDocs, ticketsLoading, openTickets, bumpRefresh, handleResume, handleSave };
 };

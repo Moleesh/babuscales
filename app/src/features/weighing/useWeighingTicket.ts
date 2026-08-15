@@ -20,6 +20,8 @@ export interface TicketFormFields {
     material: string;
     transporter: string;
     challanNo: string;
+    /** Plain editable ticket field, same as challanNo — no auto-calc behind it (task: "no need for charge calculation also"). Kept as a string like every other form field; parsed to `TicketBody.Charge` on save. */
+    charge: string;
 }
 
 export type RecalledField = "party" | "material" | "transporter";
@@ -33,6 +35,7 @@ const emptyFields = (): TicketFormFields => ({
     material: "",
     transporter: "",
     challanNo: "",
+    charge: "",
 });
 
 export interface UseWeighingTicket {
@@ -98,6 +101,7 @@ const fieldsFromBody = (body: TicketBody): TicketFormFields => ({
     material: body.Material ?? "",
     transporter: body.Transporter ?? "",
     challanNo: body.ChallanNo ?? "",
+    charge: body.Charge !== undefined ? String(body.Charge) : "",
 });
 
 const buildTicketBody = (
@@ -112,6 +116,10 @@ const buildTicketBody = (
     Material: fields.material.trim() || undefined,
     Transporter: fields.transporter.trim() || undefined,
     ChallanNo: fields.challanNo.trim() || undefined,
+    // Empty or non-numeric input saves as "no charge entered" rather than 0
+    // — an operator who hasn't typed one yet shouldn't have their ticket
+    // silently priced at zero.
+    Charge: fields.charge.trim() && !Number.isNaN(Number(fields.charge)) ? Number(fields.charge) : undefined,
     Captures: captures,
     PrintCount: printCount,
     // Omit the key entirely when there are no custom fields, so a ticket
@@ -319,7 +327,6 @@ interface TicketPersistenceDeps {
     sameTicketNo: boolean;
     db: ReturnType<typeof useDataPort>;
     dispatch: Dispatch<TicketAction>;
-    resetToNew: () => void;
     indicator: ReturnType<typeof useIndicator>;
 }
 
@@ -333,7 +340,6 @@ const useTicketPersistenceActions = ({
     sameTicketNo,
     db,
     dispatch,
-    resetToNew,
     indicator,
 }: TicketPersistenceDeps) => {
     const save = useCallback(async () => {
@@ -365,15 +371,21 @@ const useTicketPersistenceActions = ({
             dispatch({ type: "Saved", docId: row.DocId, docSeq: seq });
             if (captures.length >= 2) {
                 // Bug fix: locking used to skip the indicator entirely, unlike
-                // the resetToNew() branch below — "New ticket" can reach this
-                // branch (see startNew's save() call) while a "Send to lorry"
-                // animation for the last capture is still mid-flight, and
-                // that ticker was never told to stop.
+                // the reset the single-capture branch below used to always
+                // take — "New ticket" can reach this branch (see startNew's
+                // save() call) while a "Send to lorry" animation for the
+                // last capture is still mid-flight, and that ticker was
+                // never told to stop.
                 dispatch({ type: "Lock" });
                 indicator.reset?.();
-            } else {
-                resetToNew();
             }
+            // Bug fix: a single-weight save used to always resetToNew()
+            // here — parking the doc in the DB but wiping it off screen
+            // immediately, so there was no way to print the receipt for
+            // that first weight ("print only happens when we have both
+            // Tare and Gross"). Now it just stays on screen — still saved,
+            // still editable for the second capture — and only actually
+            // resets on an explicit "New ticket" click (startNew below).
         } finally {
             dispatch({ type: "SetSaving", saving: false });
         }
@@ -387,12 +399,16 @@ const useTicketPersistenceActions = ({
         isLocked,
         printCount,
         sameTicketNo,
-        resetToNew,
         dispatch,
     ]);
 
+    // A single-weight save leaves the ticket unlocked (still editable for
+    // the second capture) but already persisted — `docId` alone is the
+    // right gate here, same as the Print button's own disabled condition in
+    // ActionsCard, so an operator can print/reprint that first weight's
+    // receipt without waiting for the ticket to be complete.
     const print = useCallback(async () => {
-        if (!isLocked || !docId) return;
+        if (!docId) return;
         dispatch({ type: "SetSaving", saving: true });
         try {
             const nextCount = printCount + 1;
@@ -408,14 +424,14 @@ const useTicketPersistenceActions = ({
         } finally {
             dispatch({ type: "SetSaving", saving: false });
         }
-    }, [captures, customFields, db, docId, fields, isLocked, printCount, dispatch]);
+    }, [captures, customFields, db, docId, fields, printCount, dispatch]);
 
     return { save, print };
 };
 
 interface TicketLifecycleDeps {
     captures: Capture[];
-    isLocked: boolean;
+    docId: string | null;
     resetToNew: () => void;
     save: () => Promise<void>;
     dispatch: Dispatch<TicketAction>;
@@ -427,22 +443,28 @@ interface TicketLifecycleDeps {
 // swapping in a different saved one entirely.
 const useTicketLifecycleActions = ({
     captures,
-    isLocked,
+    docId,
     resetToNew,
     save,
     dispatch,
     indicator,
 }: TicketLifecycleDeps) => {
-    // PLAN mock parity: the first "New ticket" click while work is unsaved
-    // saves (and, with both weights in, locks) it rather than discarding it;
-    // a second click then actually starts fresh.
+    // PLAN mock parity: the first "New ticket" click on genuinely unsaved
+    // work (never hit Save even once) saves it rather than discarding it; a
+    // second click then actually starts fresh — by then `docId` is set, so
+    // it falls straight into the reset branch below.
+    // `docId` rather than `isLocked` (task: "print is only happening when we
+    // have both tare and gross ... reprint is totally disabled") — a
+    // single-weight save now stays on screen instead of resetting itself
+    // (see save()'s own comment), so once it's already saved once, "New
+    // ticket" should reset immediately rather than re-saving in a loop.
     const startNew = useCallback(() => {
-        if (captures.length > 0 && !isLocked) {
+        if (captures.length > 0 && docId === null) {
             void save();
         } else {
             resetToNew();
         }
-    }, [captures.length, isLocked, resetToNew, save]);
+    }, [captures.length, docId, resetToNew, save]);
 
     const resume = useCallback(
         (doc: DocRow) => {
@@ -564,12 +586,11 @@ export const useWeighingTicket = (
         sameTicketNo,
         db,
         dispatch,
-        resetToNew,
         indicator,
     });
     const lifecycleActions = useTicketLifecycleActions({
         captures: state.captures,
-        isLocked: state.isLocked,
+        docId: state.docId,
         resetToNew,
         save: persistenceActions.save,
         dispatch,

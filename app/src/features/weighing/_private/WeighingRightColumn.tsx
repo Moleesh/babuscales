@@ -1,7 +1,7 @@
 import { Card } from "@components/Card";
 import type { CaptureType } from "@db/ticketBody";
 import type { IndicatorReading } from "@engines/indicator";
-import { computeCameraBurnIn, CAMERA_SLOTS, CameraGrid } from "@features/cameras";
+import { CAMERA_FEATURE_ENABLED, computeCameraBurnIn, CAMERA_SLOTS, CameraGrid } from "@features/cameras";
 import { useTranslation } from "@i18n/useTranslation";
 
 import type { UseWeighingTicket } from "../useWeighingTicket";
@@ -57,20 +57,22 @@ export const WeighingRightColumn = ({
                 onOpenPrintModal={onOpenPrintModal}
             />
 
-            <Card
-                title={<span className="lbl">{t("weigh.cameras")}</span>}
-                headerRight={
-                    <span className="chip">
-                        {configuredCameraCount} {t("weigh.of")} {CAMERA_SLOTS.length}{" "}
-                        {t("weigh.configured")}
-                    </span>
-                }
-            >
-                <CameraGrid vehicleNo={ticket.fields.vehicleNo} burnIn={cameraBurnIn} variant="sidebar" />
-                <button type="button" className="chip act" onClick={onNavigateToCameras}>
-                    {t("weigh.goToCameras")}
-                </button>
-            </Card>
+            {CAMERA_FEATURE_ENABLED && (
+                <Card
+                    title={<span className="lbl">{t("weigh.cameras")}</span>}
+                    headerRight={
+                        <span className="chip">
+                            {configuredCameraCount} {t("weigh.of")} {CAMERA_SLOTS.length}{" "}
+                            {t("weigh.configured")}
+                        </span>
+                    }
+                >
+                    <CameraGrid vehicleNo={ticket.fields.vehicleNo} burnIn={cameraBurnIn} variant="sidebar" />
+                    <button type="button" className="chip act" onClick={onNavigateToCameras}>
+                        {t("weigh.goToCameras")}
+                    </button>
+                </Card>
+            )}
         </>
     );
 };

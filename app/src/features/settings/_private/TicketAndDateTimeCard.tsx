@@ -4,7 +4,6 @@ import { useTranslation } from "@i18n/useTranslation";
 import type { SettingsBody, TicketNumbering } from "../settingsSchema";
 import styles from "./_styles/SystemPane.module.css";
 import { DateTimeFormatFields } from "./DateTimeFormatFields";
-import { NumberingAutoResetFields } from "./NumberingAutoResetFields";
 import { NumberingPrefixFields } from "./NumberingPrefixFields";
 import { NumberingResetRow } from "./NumberingResetRow";
 
@@ -12,8 +11,8 @@ export interface TicketAndDateTimeCardProps {
     settings: SettingsBody;
     unlocked: boolean;
     onSave: (next: SettingsBody) => void;
-    /** Resolves with the new `Epoch` — wrapped below (`handleResetTicketSeries`) into the `() => Promise<void>` NumberingResetRow/useTicketNumberReset actually need, persisting the epoch into `Numbering.CurrentEpoch` along the way. */
-    onResetTicketSeries: () => Promise<{ Epoch: number }>;
+    /** Resolves with the new `Epoch` — wrapped below (`handleResetTicketSeries`) into the `(startSeq: number) => Promise<void>` NumberingResetRow/useTicketNumberReset actually need, persisting the epoch into `Numbering.CurrentEpoch` along the way. */
+    onResetTicketSeries: (startSeq: number) => Promise<{ Epoch: number }>;
 }
 
 // Merged by request — ticket numbering and date & time were two separate
@@ -38,8 +37,8 @@ export const TicketAndDateTimeCard = ({
     // (confirm/cancel/resetting UI state, nothing epoch-shaped), so this
     // wraps the real reset and stores its returned `Epoch` before handing
     // back that plain shape.
-    const handleResetTicketSeries = async (): Promise<void> => {
-        const { Epoch } = await onResetTicketSeries();
+    const handleResetTicketSeries = async (startSeq: number): Promise<void> => {
+        const { Epoch } = await onResetTicketSeries(startSeq);
         onSave({ ...settings, Numbering: { ...numbering, CurrentEpoch: Epoch } });
     };
 
@@ -51,7 +50,6 @@ export const TicketAndDateTimeCard = ({
             <div className={styles.body}>
                 <NumberingPrefixFields numbering={numbering} unlocked={unlocked} onChange={setNumbering} />
                 <NumberingResetRow unlocked={unlocked} onResetTicketSeries={handleResetTicketSeries} />
-                <NumberingAutoResetFields numbering={numbering} unlocked={unlocked} onChange={setNumbering} />
             </div>
             <div className={styles.divider} />
             <div className={styles.body}>

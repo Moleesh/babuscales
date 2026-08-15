@@ -45,6 +45,12 @@ const actionsHint = ({ ticket, reading, armed, gated, t }: ActionsHintArgs): str
     // Save before the next one — distinct from `isComplete` (both weights
     // in) and from the ordinary "nothing on the deck yet" hints below.
     if (!ticket.kind && ticket.captures.length > 0) return t("weigh.awaitingSave");
+    // A single-weight save that's stayed on screen (task: "print is only
+    // happening when we have both tare and gross") — already in the DB and
+    // printable, just not `isLocked` yet since the second weight hasn't
+    // landed. Checked after the awaitingSave branch above so a capture that
+    // hasn't been saved even once yet still gets that hint instead.
+    if (ticket.docId !== null && !ticket.isComplete) return t("weigh.savedReadyToPrint");
     if (reading.WeightKg === 0 && reading.Stable) return t("weigh.deckEmpty");
     return armed ? t("weigh.stableCaptureNow") : t("weigh.weightInMotion");
 };
@@ -77,7 +83,11 @@ const SaveAndPrintRow = ({
             >
                 {ticket.isComplete ? t("weigh.save") : t("weigh.saveAndPark")}
             </Button>
-            <Button disabled={!ticket.isLocked || ticket.printCount > 0} onClick={onOpenPrintModal}>
+            {/* `docId` rather than `isLocked` (task: "print is only happening
+                when we have both tare and gross, we need it for both") — a
+                single-weight save stays on screen already persisted, and
+                should be printable just like a complete/locked one. */}
+            <Button disabled={!ticket.docId || ticket.printCount > 0} onClick={onOpenPrintModal}>
                 {t("weigh.print")}
             </Button>
         </div>

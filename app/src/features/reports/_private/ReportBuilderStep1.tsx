@@ -1,5 +1,6 @@
 import { Field, FieldGrid } from "@components/Field";
 import { SegmentedControl } from "@components/SegmentedControl";
+import { Select } from "@components/Select";
 import { useTranslation } from "@i18n/useTranslation";
 
 import styles from "./_styles/ReportBuilderModal.module.css";
@@ -48,17 +49,7 @@ export const ReportBuilderStep1 = ({
                 </Field>
                 {view === "summary" ? (
                     <Field id="rbGroup" label={t("reports.groupByLabel")}>
-                        <select
-                            id="rbGroup"
-                            value={groupBy}
-                            onChange={(event) => onGroupByChange(event.target.value as GroupKey)}
-                        >
-                            {groupOptions(t).map((option) => (
-                                <option key={option.value} value={option.value}>
-                                    {option.label}
-                                </option>
-                            ))}
-                        </select>
+                        <Select id="rbGroup" value={groupBy} options={groupOptions(t)} onChange={onGroupByChange} />
                     </Field>
                 ) : null}
             </FieldGrid>

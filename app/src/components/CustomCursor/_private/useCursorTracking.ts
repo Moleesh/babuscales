@@ -26,11 +26,19 @@ const TEXT_SELECTOR = [
     '[contenteditable="true"]',
 ].join(",");
 
+// Small clickable rows (Select's own options, SearchableDropdown's option
+// buttons) opt into a smaller hover ring than the default 38px — that size
+// was tuned for regular buttons/chips and dwarfed a compact list row (task:
+// "when hovering the dropdown can we make it smaller?"). Any element that
+// wants this just carries `data-cursor="compact"`.
+const COMPACT_SELECTOR = '[data-cursor="compact"]';
+
 const ACTIVE_CLASS = "custom-cursor-active";
 
 export interface CursorTracking {
     dotRef: React.RefObject<HTMLDivElement | null>;
     hoverInteractive: boolean;
+    hoverCompact: boolean;
     hoverText: boolean;
     pressed: boolean;
 }
@@ -44,6 +52,7 @@ export const useCursorTracking = (enabled: boolean): CursorTracking => {
     const position = useRef({ x: -100, y: -100 });
     const frame = useRef<number | null>(null);
     const [hoverInteractive, setHoverInteractive] = useState(false);
+    const [hoverCompact, setHoverCompact] = useState(false);
     const [hoverText, setHoverText] = useState(false);
     const [pressed, setPressed] = useState(false);
 
@@ -56,6 +65,29 @@ export const useCursorTracking = (enabled: boolean): CursorTracking => {
         if (!enabled) return undefined;
         document.body.classList.add(ACTIVE_CLASS);
 
+        // Root cause of the reported "flickering when hovering on the
+        // items" (Select's open list, SearchableDropdown's popover, the
+        // Date Format list): hover state used to be derived from raw
+        // `mousemove` samples — even coalesced to once per rAF frame, that
+        // is still *polling* an event that fires far faster than the
+        // pointer's real target changes, so any single mis-hit sample
+        // (landing on a border pixel, a sub-pixel rounding seam between two
+        // flush rows, etc.) could still win a frame and flip state. The
+        // actual fix: don't derive hover from mousemove at all. `mouseover`/
+        // `mouseout` are dispatched by the browser exactly once per genuine
+        // DOM enter/exit of a subtree — they can't fire on a between-frame
+        // sampling race because there's no sampling, just real enter/exit
+        // events. Position still comes from mousemove (that part was never
+        // the bug — a follower dot lagging isn't "flicker"), coalesced to
+        // once per rAF frame as before to keep transform writes cheap.
+        const resolveHover = (target: EventTarget | null) => {
+            const interactive = target instanceof Element ? target.closest(INTERACTIVE_SELECTOR) !== null : false;
+            setHoverInteractive((previous) => (previous === interactive ? previous : interactive));
+            const compact = target instanceof Element ? target.closest(COMPACT_SELECTOR) !== null : false;
+            setHoverCompact((previous) => (previous === compact ? previous : compact));
+            const text = target instanceof Element ? target.closest(TEXT_SELECTOR) !== null : false;
+            setHoverText((previous) => (previous === text ? previous : text));
+        };
         const applyFrame = () => {
             const node = dotRef.current;
             if (node) {
@@ -63,34 +95,69 @@ export const useCursorTracking = (enabled: boolean): CursorTracking => {
             }
             frame.current = null;
         };
-        const onMove = (event: MouseEvent) => {
+        const onMove = (event: MouseEvent | PointerEvent) => {
             position.current = { x: event.clientX, y: event.clientY };
             if (frame.current === null) frame.current = requestAnimationFrame(applyFrame);
-            const target = event.target;
-            const interactive = target instanceof Element ? target.closest(INTERACTIVE_SELECTOR) !== null : false;
-            setHoverInteractive((previous) => (previous === interactive ? previous : interactive));
-            const text = target instanceof Element ? target.closest(TEXT_SELECTOR) !== null : false;
-            setHoverText((previous) => (previous === text ? previous : text));
+        };
+        // `mouseover`/`mouseout` bubble, so one pair of window-level
+        // listeners covers every row without wiring per-element handlers.
+        // `relatedTarget` (where the pointer came from/went to) is read on
+        // `mouseout` purely to skip the redundant resolve when the move was
+        // entirely within the same matched subtree (e.g. from a row's text
+        // span to its own padding) — `closest()` on the entered target would
+        // already produce the same answer, this just avoids the extra call.
+        const onOver = (event: MouseEvent) => resolveHover(event.target);
+        const onOut = (event: MouseEvent) => {
+            if (event.relatedTarget === null) resolveHover(null);
         };
         const onDown = () => setPressed(true);
         const onUp = () => setPressed(false);
         const onLeave = () => {
             position.current = { x: -100, y: -100 };
+            resolveHover(null);
+        };
+        // Scrolling any panel underneath a stationary pointer moves content,
+        // not the mouse — Chromium never dispatches mouseover/mouseout for
+        // that, so `resolveHover` above never re-runs and the ring keeps
+        // showing whatever was under the cursor *before* the scroll (task:
+        // ring left floating over a card's header after the Set button that
+        // was actually hovered scrolled out from under it). `elementFromPoint`
+        // at the last-known screen position re-resolves what's really there
+        // now. Capture + any scrollable ancestor, not just window, since
+        // `.main`'s own scroll (AppShell) is what triggers this most.
+        const onScroll = () => {
+            resolveHover(document.elementFromPoint(position.current.x, position.current.y));
         };
 
         window.addEventListener("mousemove", onMove, { passive: true });
+        // ScrollArea's thumb (useCustomScrollbar.ts) drags via
+        // `setPointerCapture` — while a pointer is captured, some engines
+        // stop delivering the compatibility `mousemove` event outside the
+        // captured element even though it still bubbles in theory (reported:
+        // the dot froze in place for the whole scrollbar-thumb drag).
+        // `pointermove` is what the capture actually redirects, so it always
+        // fires; listening for both here is belt-and-suspenders — normal
+        // mouse movement fires either one harmlessly twice.
+        window.addEventListener("pointermove", onMove, { passive: true });
+        window.addEventListener("mouseover", onOver, { passive: true });
+        window.addEventListener("mouseout", onOut, { passive: true });
         window.addEventListener("mousedown", onDown);
         window.addEventListener("mouseup", onUp);
         window.addEventListener("mouseleave", onLeave);
+        window.addEventListener("scroll", onScroll, { passive: true, capture: true });
         return () => {
             document.body.classList.remove(ACTIVE_CLASS);
             window.removeEventListener("mousemove", onMove);
+            window.removeEventListener("pointermove", onMove);
+            window.removeEventListener("mouseover", onOver);
+            window.removeEventListener("mouseout", onOut);
             window.removeEventListener("mousedown", onDown);
             window.removeEventListener("mouseup", onUp);
             window.removeEventListener("mouseleave", onLeave);
+            window.removeEventListener("scroll", onScroll, true);
             if (frame.current !== null) cancelAnimationFrame(frame.current);
         };
     }, [enabled]);
 
-    return { dotRef, hoverInteractive, hoverText, pressed };
+    return { dotRef, hoverInteractive, hoverCompact, hoverText, pressed };
 };

@@ -1,0 +1,45 @@
+/* Same visual language as base.css's native-scrollbar styling (10px wide,
+   `--line` thumb, transparent track) — only the mechanism changed, not the
+   look, so swapping a container over to this is invisible except for the
+   cursor fix it exists to deliver. */
+.area {
+    position: relative;
+    min-height: 0;
+}
+
+.content {
+    /* Hides the native scrollbar this otherwise-identical `overflow: auto`
+       container would draw — `.track`/`.thumb` below replace it visually,
+       `scrollTop`/`scrollHeight`/native `scroll` events are all untouched. */
+    scrollbar-width: none;
+}
+.content::-webkit-scrollbar {
+    display: none;
+}
+
+.track {
+    position: absolute;
+    top: 0;
+    right: 2px;
+    bottom: 0;
+    width: 10px;
+    pointer-events: none;
+}
+
+.thumb {
+    position: absolute;
+    right: 0;
+    width: 10px;
+    background: var(--line);
+    border-radius: 999px;
+    pointer-events: auto;
+    /* Wider hit target than the visible bar (same trick base.css's native
+       thumb used via its transparent border) — a thin 10px strip is a hard
+       drag target otherwise. */
+    background-clip: padding-box;
+    border: 2px solid transparent;
+    cursor: pointer;
+}
+.thumb:hover {
+    background: var(--dim);
+}

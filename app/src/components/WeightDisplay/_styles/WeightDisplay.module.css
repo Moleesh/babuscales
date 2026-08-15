@@ -155,6 +155,12 @@
     flex-direction: column;
     gap: 5px;
     align-items: flex-end;
+    /* Clock/day sat flush against the header's own right edge (reported:
+       cramped against the window edge next to the date). `.head`'s own
+       16px padding is eaten by the 220px fixed column's own content
+       width, so add a bit more room on this column specifically rather
+       than widening the shared padding for every column. */
+    padding-right: 6px;
 }
 
 /* Below this width the 200px/220px fixed side columns (sized for a

@@ -44,3 +44,15 @@
     font-variant-numeric: tabular-nums;
     color: var(--dim);
 }
+
+/* First-load state (task: Weighing/Reports freeze fix) — shown only until
+   `useTicketDocs`'s initial fetch resolves, so the strip reads as "still
+   loading" instead of silently absent for however long that round-trip
+   takes as ticket history grows. */
+.loading {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--dim);
+    font-size: 0.75rem;
+}

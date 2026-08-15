@@ -24,7 +24,7 @@ import { WeighingRulesCard } from "./WeighingRulesCard";
 // has no real port to configure.
 export interface WeighingPaneProps {
     /** `DataPort.resetDocSeries("Ticket", "default")` — lives at App level, wired through here for TicketNumberingCard's Reset (ticket numbering moved here from SystemPane by request). Resolves with the new `Epoch`; TicketAndDateTimeCard persists it into `Numbering.CurrentEpoch`. */
-    onResetTicketSeries: () => Promise<{ Epoch: number }>;
+    onResetTicketSeries: (startSeq: number) => Promise<{ Epoch: number }>;
 }
 
 export const WeighingPane = ({ onResetTicketSeries }: WeighingPaneProps) => {

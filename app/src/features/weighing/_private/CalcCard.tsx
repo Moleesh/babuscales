@@ -1,6 +1,6 @@
 import { Card } from "@components/Card";
 import { StatusPill } from "@components/StatusPill";
-import { formatDateTimeInFmt, formatMoney, formatWeightIn } from "@constants/numberFormat";
+import { formatDateTimeInFmt, formatWeightIn } from "@constants/numberFormat";
 import type { WeightUnit } from "@constants/numberFormat";
 import type { Capture, CaptureType } from "@db/ticketBody";
 import type { DerivedWeights } from "@db/ticketBody";
@@ -39,6 +39,34 @@ const CalcBox = ({ label, value, lead, pending, stamp }: CalcBoxProps) => (
     </div>
 );
 
+interface ChargeBoxProps {
+    label: string;
+    value: string;
+    onChange: (value: string) => void;
+    readOnly: boolean;
+}
+
+// Charge used to be a read-only CalcBox showing an auto-derived amount; now
+// it's a plain editable field, same as Challan No (task: "no need for
+// charge calculation also" — editable field, no auto-calc). Kept inside the
+// same four-box grid rather than moved to TicketFieldsCard since it's still
+// conceptually part of "Captured & calculated," just no longer computed.
+const ChargeBox = ({ label, value, onChange, readOnly }: ChargeBoxProps) => (
+    <div className={styles.calcBox}>
+        <span className="lbl">{label}</span>
+        <input
+            className={styles.calcChargeInput}
+            inputMode="decimal"
+            value={value}
+            onChange={(event) => onChange(event.target.value)}
+            readOnly={readOnly}
+            placeholder="—"
+            autoComplete="off"
+        />
+        <div className={styles.calcStamp}>&nbsp;</div>
+    </div>
+);
+
 interface TareGrossBoxesProps {
     weights: DerivedWeights;
     captures: Capture[];
@@ -66,19 +94,17 @@ const TareGrossBoxes = ({
     timeFmt,
 }: TareGrossBoxesProps) => {
     const { t, lang } = useTranslation();
+    // Gross first, Tare second — a loaded lorry weighing in before it's
+    // unloaded is the common case (task: "can we put gross first here"),
+    // same order the mock's four-box grid now reads left to right.
     return (
         <>
-            {manualTare ? (
-                <ManualCalcBox label={t("tare")} onSubmit={(weightKg) => onManualCapture(weightKg, "Tare")} />
-            ) : (
-                <CalcBox
-                    label={t("tare")}
-                    value={weights.tareKg !== null ? formatWeightIn(weights.tareKg, weightUnit) : "—"}
-                    stamp={formatStamp(captures.find((c) => c.Type === "Tare")?.At, lang, dateFmt, timeFmt)}
-                />
-            )}
             {manualGross ? (
-                <ManualCalcBox label={t("gross")} onSubmit={(weightKg) => onManualCapture(weightKg, "Gross")} />
+                <ManualCalcBox
+                    label={t("gross")}
+                    onSubmit={(weightKg) => onManualCapture(weightKg, "Gross")}
+                    weightUnit={weightUnit}
+                />
             ) : (
                 <CalcBox
                     label={t("gross")}
@@ -91,6 +117,19 @@ const TareGrossBoxes = ({
                     }
                 />
             )}
+            {manualTare ? (
+                <ManualCalcBox
+                    label={t("tare")}
+                    onSubmit={(weightKg) => onManualCapture(weightKg, "Tare")}
+                    weightUnit={weightUnit}
+                />
+            ) : (
+                <CalcBox
+                    label={t("tare")}
+                    value={weights.tareKg !== null ? formatWeightIn(weights.tareKg, weightUnit) : "—"}
+                    stamp={formatStamp(captures.find((c) => c.Type === "Tare")?.At, lang, dateFmt, timeFmt)}
+                />
+            )}
         </>
     );
 };
@@ -98,7 +137,9 @@ const TareGrossBoxes = ({
 export interface CalcCardProps {
     weights: DerivedWeights;
     captures: Capture[];
-    charge: number | null;
+    /** Operator-entered, same field as challanNo — no auto-calc (task: "no need for charge calculation also"). */
+    chargeValue: string;
+    onChargeChange: (value: string) => void;
     materialRate: number | null;
     value: number | null;
     amountDp: 0 | 2;
@@ -126,7 +167,8 @@ export interface CalcCardProps {
 export const CalcCard = ({
     weights,
     captures,
-    charge,
+    chargeValue,
+    onChargeChange,
     materialRate,
     value,
     amountDp,
@@ -168,17 +210,17 @@ export const CalcCard = ({
                     value={weights.netKg !== null ? formatWeightIn(weights.netKg, weightUnit) : "—"}
                     lead={weights.netKg !== null}
                 />
-                <CalcBox
+                <ChargeBox
                     label={t("charge")}
-                    value={charge === null ? "—" : formatMoney(charge, amountDp)}
-                    pending={charge === null}
+                    value={chargeValue}
+                    onChange={onChargeChange}
+                    readOnly={isLocked}
                 />
             </div>
             <CalcFormula
                 tareKg={weights.tareKg}
                 grossKg={weights.grossKg}
                 netKg={weights.netKg}
-                charge={charge}
                 materialRate={materialRate}
                 value={value}
                 amountDp={amountDp}

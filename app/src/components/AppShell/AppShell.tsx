@@ -1,11 +1,14 @@
 import { useRef } from "react";
 import type { ReactNode } from "react";
 
+import { ScrollArea } from "@components/ScrollArea";
 import { Tooltip } from "@components/Tooltip";
 import { useTranslation } from "@i18n/useTranslation";
 
 import { BrandMark } from "./_private/BrandMark";
+import { ContextMenu } from "./_private/ContextMenu";
 import { TopBarOverflow } from "./_private/TopBarOverflow";
+import { useContextMenu } from "./_private/useContextMenu";
 import { useEnterAsTab } from "./_private/useEnterAsTab";
 import { useTopBarFit } from "./_private/useTopBarFit";
 import styles from "./_styles/AppShell.module.css";
@@ -139,6 +142,11 @@ export const AppShell = ({
 }: AppShellProps) => {
     useEnterAsTab();
     const { t } = useTranslation();
+    const mainRef = useRef<HTMLDivElement>(null);
+    // Mounted once, app-wide, same as CustomCursor — see useContextMenu.ts
+    // (task: "remove rightclick in destop view, i can have copy cut paste
+    // no need others").
+    const { menu, close } = useContextMenu();
 
     return (
         <div className={styles.app}>
@@ -153,7 +161,20 @@ export const AppShell = ({
                 sectionsLabel={t("components.appShell.sections")}
             />
 
-            <div className={styles.main} data-enter-scope>
+            {/* `.main` passed as both `className` (outer) and `contentClassName`
+                (inner, scrollable) — its `flex: 1; min-height: 0` sizing has
+                to reach the outer element ScrollArea now interposes between
+                `.app`'s flex column and the scrollable div itself, same as
+                its `overflow: auto`/sticky-header layout has to reach the
+                inner one. Harmless to apply both places: the outer only
+                ever has the inner content div (plus the thumb, positioned
+                absolute) as a child. */}
+            <ScrollArea
+                contentRef={mainRef}
+                className={styles.main}
+                contentClassName={styles.main}
+                dataAttrs={{ "data-enter-scope": "" }}
+            >
                 {/* Task: "while scrolling any tab the top weight should not
                     move, it's fixed, except for mobile view" — `.main` is
                     the screen's own scroll container, so the header
@@ -166,7 +187,8 @@ export const AppShell = ({
                     ~880px mobile breakpoint the tab bar itself uses. */}
                 {header && <div className={styles.headerSticky}>{header}</div>}
                 <div className={styles.screen}>{children}</div>
-            </div>
+            </ScrollArea>
+            {menu && <ContextMenu menu={menu} onClose={close} />}
         </div>
     );
 };

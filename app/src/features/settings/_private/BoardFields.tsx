@@ -23,6 +23,7 @@ export const BoardFields = ({ settings, unlocked, onSave }: BoardFieldsProps) =>
                     placeholder="192.168.1.50"
                     value={board.Host}
                     disabled={!unlocked}
+                    autoComplete="off"
                     onChange={(event) => onSave({ ...settings, Board: { ...board, Host: event.target.value } })}
                 />
             </Field>

@@ -1,10 +1,11 @@
 import { getMaterialRate } from "@db/materialBody";
 import type { UseMasterCache } from "@db/useMasterCache";
-import { computeCharge, computeValue } from "@engines/billing";
+import { computeValue } from "@engines/billing";
 
 import type { UseWeighingTicket } from "../useWeighingTicket";
 
 export interface TicketBilling {
+    /** Whatever the operator has typed into the Charge field, parsed to a number — no auto-calc (task: "no need for charge calculation also"). Same "empty or non-numeric means not entered yet" rule `buildTicketBody` uses when saving it. */
     charge: number | null;
     materialRate: number | null;
     value: number | null;
@@ -17,7 +18,8 @@ export const computeTicketBilling = (
     ticket: UseWeighingTicket,
     materialCache: UseMasterCache,
 ): TicketBilling => {
-    const charge = computeCharge(ticket.weights.netKg !== null);
+    const rawCharge = ticket.fields.charge.trim();
+    const charge = rawCharge && !Number.isNaN(Number(rawCharge)) ? Number(rawCharge) : null;
     const materialRate = getMaterialRate(
         materialCache.rows.find((row) => row.Name === ticket.fields.material)?.Body ?? {},
     );

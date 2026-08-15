@@ -5,7 +5,7 @@ import { useTicketNumberReset } from "./useTicketNumberReset";
 
 export interface NumberingResetRowProps {
     unlocked: boolean;
-    onResetTicketSeries: () => Promise<void>;
+    onResetTicketSeries: (startSeq: number) => Promise<void>;
 }
 
 // Split out of TicketNumberingCard (over the line budget — docs/CodingStandards.md)
@@ -16,7 +16,7 @@ export interface NumberingResetRowProps {
 // filterRowsBySeries, ReportsDateRangeRow's "include backed" toggle).
 export const NumberingResetRow = ({ unlocked, onResetTicketSeries }: NumberingResetRowProps) => {
     const { t } = useTranslation();
-    const { confirmingReset, resetting, confirm, cancel, handleReset } =
+    const { confirmingReset, resetting, startSeq, setStartSeq, confirm, cancel, handleReset } =
         useTicketNumberReset(onResetTicketSeries);
 
     return (
@@ -24,6 +24,17 @@ export const NumberingResetRow = ({ unlocked, onResetTicketSeries }: NumberingRe
             {confirmingReset ? (
                 <>
                     <span>{t("settings.numbering.resetConfirm")}</span>
+                    <label className={styles.startSeqLabel}>
+                        <span>{t("settings.numbering.resetStartAt")}</span>
+                        <input
+                            type="number"
+                            min="1"
+                            className={styles.startSeqInput}
+                            value={startSeq}
+                            disabled={resetting}
+                            onChange={(event) => setStartSeq(Number(event.target.value) || 1)}
+                        />
+                    </label>
                     <button
                         type="button"
                         className={`${styles.mini} ${styles.danger}`}

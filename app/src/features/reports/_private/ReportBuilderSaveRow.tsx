@@ -29,6 +29,7 @@ export const ReportBuilderSaveRow = ({
                 onChange={(event) => onNewReportNameChange(event.target.value)}
                 placeholder={t("reports.savedReportsPlaceholder")}
                 aria-label={t("reports.savedReportsNewAriaLabel")}
+                autoComplete="off"
             />
             <Button disabled={!newReportName.trim()} onClick={onSaveReport}>
                 {t("reports.savedReportsSave")}

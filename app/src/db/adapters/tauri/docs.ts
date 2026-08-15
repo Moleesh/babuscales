@@ -19,6 +19,6 @@ export const createDocMethods = (): DocMethods => ({
 
     allocateDocSeq: (docId) => invoke<DocRow>("allocate_doc_seq", { docId }),
 
-    resetDocSeries: (docKind: DocKind, profileId: string) =>
-        invoke<{ Epoch: number }>("reset_doc_series", { docKind, profileId }),
+    resetDocSeries: (docKind: DocKind, profileId: string, startSeq?: number) =>
+        invoke<{ Epoch: number }>("reset_doc_series", { docKind, profileId, startSeq }),
 });

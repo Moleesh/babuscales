@@ -43,25 +43,28 @@ export const TicketsView = ({
     const { t } = useTranslation();
     return (
         <>
-            <input
-                className={styles.search}
-                value={query}
-                onChange={(event) => onQueryChange(event.target.value)}
-                placeholder={t("reports.searchPlaceholder")}
-                aria-label={t("reports.searchAriaLabel")}
-            />
-            <SegmentedControl
-                options={filterOptions(t)}
-                value={filter}
-                onChange={onFilterChange}
-                ariaLabel={t("reports.filterAriaLabel")}
-            />
-            <TicketsSortRow
-                sortKey={sortKey}
-                onSortKeyChange={onSortKeyChange}
-                sortDir={sortDir}
-                onSortDirChange={onSortDirChange}
-            />
+            <div className={styles.filterRow}>
+                <input
+                    className={styles.search}
+                    value={query}
+                    onChange={(event) => onQueryChange(event.target.value)}
+                    placeholder={t("reports.searchPlaceholder")}
+                    aria-label={t("reports.searchAriaLabel")}
+                    autoComplete="off"
+                />
+                <SegmentedControl
+                    options={filterOptions(t)}
+                    value={filter}
+                    onChange={onFilterChange}
+                    ariaLabel={t("reports.filterAriaLabel")}
+                />
+                <TicketsSortRow
+                    sortKey={sortKey}
+                    onSortKeyChange={onSortKeyChange}
+                    sortDir={sortDir}
+                    onSortDirChange={onSortDirChange}
+                />
+            </div>
             <DataTable
                 columns={columns}
                 rows={rows}

@@ -21,9 +21,21 @@
     flex-wrap: wrap;
 }
 
+/* Task: "restructure this a bit better, mostly if we can move them to a
+   single line" — search, the filter segmented control, and the sort
+   controls used to each get their own full-width row; now they share one
+   flex row that wraps only on narrow widths. */
+.filter-row {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    flex-wrap: wrap;
+}
+
 /* Ported from demo/BabuScales-demo.html's ".search" (same pattern as MastersScreen's own copy). */
 .search {
-    width: 100%;
+    flex: 1 1 220px;
+    min-width: 160px;
     padding: 9px 11px;
     border-radius: 9px;
     border: 1px solid var(--line);
@@ -44,19 +56,9 @@
     flex-wrap: wrap;
 }
 
-.date-input {
-    padding: 9px 11px;
-    border-radius: 9px;
-    border: 1px solid var(--line);
-    background: var(--panel-2);
-    color: var(--text);
-    font: inherit;
-    font-size: 0.8125rem;
-}
-.date-input:focus {
-    border-color: var(--led);
-    outline: none;
-}
+/* `.date-input` (the old `<input type="date">` styling) removed — the
+   fields in this row are `DatePicker` now (components/DatePicker), which
+   carries its own trigger styling. */
 
 .ck {
     display: flex;

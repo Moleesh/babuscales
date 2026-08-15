@@ -34,6 +34,18 @@ pub struct IndicatorErrorPayload {
     pub message: String,
 }
 
+/// One raw line off the wire, verbatim — emitted alongside `RawReading`
+/// (below) regardless of whether `parse_weight` could make sense of it.
+/// Exists purely for Settings' "Listen" test panel: the operator is
+/// figuring out *what* pattern to type into the custom-pattern field, so
+/// they need to see the unparsed bytes, not just the readings that already
+/// parsed successfully.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "PascalCase")]
+pub struct RawLinePayload {
+    pub line: String,
+}
+
 /// Extracts a signed decimal weight from one line of raw indicator output.
 /// `pattern`, if given, is a regex with a capture group around the number —
 /// PLAN §17's "custom-pattern fallback so any indicator works without a
@@ -145,7 +157,14 @@ pub(crate) fn open(
                     break;
                 }
                 Ok(_) => {
-                    if let Some(weight_kg) = parse_weight(line.trim_end(), compiled.as_ref()) {
+                    let trimmed = line.trim_end();
+                    let _ = thread_app.emit(
+                        "indicator-raw-line",
+                        RawLinePayload {
+                            line: trimmed.to_string(),
+                        },
+                    );
+                    if let Some(weight_kg) = parse_weight(trimmed, compiled.as_ref()) {
                         let _ = thread_app.emit("indicator-reading", RawReading { weight_kg });
                     }
                     // A line that doesn't parse is dropped silently —
