@@ -95,7 +95,7 @@ export const useCursorTracking = (enabled: boolean): CursorTracking => {
             }
             frame.current = null;
         };
-        const onMove = (event: MouseEvent) => {
+        const onMove = (event: MouseEvent | PointerEvent) => {
             position.current = { x: event.clientX, y: event.clientY };
             if (frame.current === null) frame.current = requestAnimationFrame(applyFrame);
         };
@@ -130,6 +130,15 @@ export const useCursorTracking = (enabled: boolean): CursorTracking => {
         };
 
         window.addEventListener("mousemove", onMove, { passive: true });
+        // ScrollArea's thumb (useCustomScrollbar.ts) drags via
+        // `setPointerCapture` — while a pointer is captured, some engines
+        // stop delivering the compatibility `mousemove` event outside the
+        // captured element even though it still bubbles in theory (reported:
+        // the dot froze in place for the whole scrollbar-thumb drag).
+        // `pointermove` is what the capture actually redirects, so it always
+        // fires; listening for both here is belt-and-suspenders — normal
+        // mouse movement fires either one harmlessly twice.
+        window.addEventListener("pointermove", onMove, { passive: true });
         window.addEventListener("mouseover", onOver, { passive: true });
         window.addEventListener("mouseout", onOut, { passive: true });
         window.addEventListener("mousedown", onDown);
@@ -139,6 +148,7 @@ export const useCursorTracking = (enabled: boolean): CursorTracking => {
         return () => {
             document.body.classList.remove(ACTIVE_CLASS);
             window.removeEventListener("mousemove", onMove);
+            window.removeEventListener("pointermove", onMove);
             window.removeEventListener("mouseover", onOver);
             window.removeEventListener("mouseout", onOut);
             window.removeEventListener("mousedown", onDown);

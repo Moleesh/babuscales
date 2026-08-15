@@ -64,12 +64,6 @@ export const IndicatorStatusFields = ({
                 <span className={styles.hint}>No port selected.</span>
             )}
         </div>
-        <p className={styles.hint}>
-            The pattern is a regex with one capture group around the weight — for
-            indicators the built-in numeric extraction can&apos;t parse cleanly (a
-            checksum byte or station ID mixed into the same line). Most installations
-            leave this blank.
-        </p>
     </>
     );
 };

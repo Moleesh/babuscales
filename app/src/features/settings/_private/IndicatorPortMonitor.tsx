@@ -45,7 +45,6 @@ export const IndicatorPortMonitor = ({ conn, unlocked }: IndicatorPortMonitorPro
                     lines.map((line, index) => <div key={index}>{line}</div>)
                 )}
             </div>
-            <p className={styles.hint}>{t("settings.indicator.monitorHint")}</p>
         </div>
     );
 };

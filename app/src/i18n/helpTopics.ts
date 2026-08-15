@@ -268,6 +268,20 @@ export const DEFAULT_HELP_TOPICS: Record<string, HelpTopic> = {
                     "இவையும் JSON வரிசைகள்தான். ஆங்கிலம் தான் இயல்புநிலை; ஒரு தொகுப்பு அது மேலெழுதுவதை மட்டுமே கொண்டிருக்கும்.",
                 ],
             ),
+            point(
+                ["Custom pattern", "தனிப்பயன் மாதிரி"],
+                [
+                    "a regex with one capture group around the weight, for indicators the built-in numeric extraction can't parse cleanly (a checksum byte or station ID mixed into the same line). Most installations leave this blank.",
+                    "எடையைச் சுற்றி ஒரு capture group கொண்ட regex, உள்ளமைந்த எண் பிரித்தெடுப்பு சுத்தமாக பகுக்க முடியாத காட்டிகளுக்கு (அதே வரியில் கலந்த checksum byte அல்லது station ID). பெரும்பாலான நிறுவல்கள் இதை காலியாக விடும்.",
+                ],
+            ),
+            point(
+                ["Listen", "கேட்க தொடங்கு"],
+                [
+                    "opens the selected port and shows each raw line exactly as it arrives, ignoring the pattern above — use it to work out an unfamiliar indicator's framing (start/end characters, line ending, byte order) before writing a custom pattern.",
+                    "தேர்ந்தெடுக்கப்பட்ட போர்ட்டைத் திறந்து, மேலே உள்ள மாதிரியைப் பொருட்படுத்தாமல் ஒவ்வொரு மூல வரியையும் வந்தவுடன் காட்டும் — தனிப்பயன் மாதிரியை எழுதும் முன் காட்டியின் framing-ஐ கண்டறிய இதைப் பயன்படுத்தவும்.",
+                ],
+            ),
         ],
         Tip: loc(
             "No setting is a file. A config file is the one thing that never gets backed up and never reaches the second terminal.",

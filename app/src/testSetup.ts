@@ -24,5 +24,4 @@ class ResizeObserverStub {
     unobserve() {}
     disconnect() {}
 }
-// eslint-disable-next-line @typescript-eslint/no-explicit-any -- jsdom's global type has no ResizeObserver to assign against
-(globalThis as any).ResizeObserver ??= ResizeObserverStub;
+(globalThis as unknown as { ResizeObserver: typeof ResizeObserverStub }).ResizeObserver ??= ResizeObserverStub;
