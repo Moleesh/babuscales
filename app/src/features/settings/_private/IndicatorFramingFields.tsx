@@ -2,7 +2,7 @@ import { Field, FieldGrid } from "@components/Field";
 import { Select } from "@components/Select";
 import { useTranslation } from "@i18n/useTranslation";
 
-import { DATA_BITS_OPTIONS, PARITY_OPTIONS, STOP_BITS_OPTIONS } from "../settingsSchema";
+import { DATA_BITS_OPTIONS, DEFAULT_CONNECTIONS, PARITY_OPTIONS, STOP_BITS_OPTIONS } from "../settingsSchema";
 import type { ConnectionsConfig, SettingsBody } from "../settingsSchema";
 import { IndicatorLineFields } from "./IndicatorLineFields";
 
@@ -25,6 +25,13 @@ export interface IndicatorFramingFieldsProps {
 // into IndicatorLineFields — this file was over budget on its own.
 export const IndicatorFramingFields = ({ settings, conn, unlocked, onSave }: IndicatorFramingFieldsProps) => {
     const { t } = useTranslation();
+    // "add default values to these dropdown" — tags whichever option
+    // matches DEFAULT_CONNECTIONS so the operator can see at a glance which
+    // value to fall back to without leaving the screen.
+    const withDefault = (label: string, isDefault: boolean) =>
+        isDefault ? label + t("settings.indicator.defaultSuffix") : label;
+    const save = (patch: Partial<ConnectionsConfig>) =>
+        onSave({ ...settings, Connections: { ...conn, ...patch } });
     return (
         <>
             <FieldGrid columns={2}>
@@ -32,14 +39,12 @@ export const IndicatorFramingFields = ({ settings, conn, unlocked, onSave }: Ind
                     <Select
                         id="connDataBits"
                         value={String(conn.IndicatorDataBits)}
-                        options={DATA_BITS_OPTIONS.map((bits) => ({ value: String(bits), label: String(bits) }))}
+                        options={DATA_BITS_OPTIONS.map((bits) => ({
+                            value: String(bits),
+                            label: withDefault(String(bits), bits === DEFAULT_CONNECTIONS.IndicatorDataBits),
+                        }))}
                         disabled={!unlocked}
-                        onChange={(value) =>
-                            onSave({
-                                ...settings,
-                                Connections: { ...conn, IndicatorDataBits: Number(value) as 5 | 6 | 7 | 8 },
-                            })
-                        }
+                        onChange={(value) => save({ IndicatorDataBits: Number(value) as 5 | 6 | 7 | 8 })}
                     />
                 </Field>
                 <Field id="connParity" label={t("settings.indicator.parity")}>
@@ -48,29 +53,25 @@ export const IndicatorFramingFields = ({ settings, conn, unlocked, onSave }: Ind
                         value={conn.IndicatorParity}
                         options={PARITY_OPTIONS.map((parity) => ({
                             value: parity,
-                            label: t(`settings.indicator.parity.${parity}`),
+                            label: withDefault(
+                                t(`settings.indicator.parity.${parity}`),
+                                parity === DEFAULT_CONNECTIONS.IndicatorParity,
+                            ),
                         }))}
                         disabled={!unlocked}
-                        onChange={(value) =>
-                            onSave({
-                                ...settings,
-                                Connections: { ...conn, IndicatorParity: value },
-                            })
-                        }
+                        onChange={(value) => save({ IndicatorParity: value })}
                     />
                 </Field>
                 <Field id="connStopBits" label={t("settings.indicator.stopBits")}>
                     <Select
                         id="connStopBits"
                         value={String(conn.IndicatorStopBits)}
-                        options={STOP_BITS_OPTIONS.map((bits) => ({ value: String(bits), label: String(bits) }))}
+                        options={STOP_BITS_OPTIONS.map((bits) => ({
+                            value: String(bits),
+                            label: withDefault(String(bits), bits === DEFAULT_CONNECTIONS.IndicatorStopBits),
+                        }))}
                         disabled={!unlocked}
-                        onChange={(value) =>
-                            onSave({
-                                ...settings,
-                                Connections: { ...conn, IndicatorStopBits: Number(value) as 1 | 2 },
-                            })
-                        }
+                        onChange={(value) => save({ IndicatorStopBits: Number(value) as 1 | 2 })}
                     />
                 </Field>
             </FieldGrid>

@@ -276,10 +276,17 @@ export const DEFAULT_HELP_TOPICS: Record<string, HelpTopic> = {
                 ],
             ),
             point(
+                ["Start char / End char", "தொடக்க / முடிவு எழுத்து"],
+                [
+                    "trims each line to between two characters before reading the number — a lighter-weight alternative to Custom pattern below for the common case of a weight wrapped in fixed markers (e.g. an indicator sending \"STX012340ETX\"). Whatever is left after trimming is always cleaned down to digits/sign/decimal point before parsing, so stray letters don't need to be excluded by hand. Ignored once Custom pattern is set.",
+                    "எண்ணைப் படிக்கும் முன் ஒவ்வொரு வரியையும் இரண்டு எழுத்துகளுக்கு இடையே குறுக்கும் — நிலையான குறிகளுக்குள் அடங்கிய எடைக்கு (எ.கா. \"STX012340ETX\" அனுப்பும் காட்டி) கீழே உள்ள தனிப்பயன் மாதிரியை விட எளிய மாற்று. குறுக்கியபின் மீதமுள்ளவை எப்போதும் இலக்கம்/குறி/புள்ளி என சுத்தம் செய்யப்படும், தேவையற்ற எழுத்துகளை கைமுறையாக விலக்க வேண்டியதில்லை. தனிப்பயன் மாதிரி அமைந்தால் புறக்கணிக்கப்படும்.",
+                ],
+            ),
+            point(
                 ["Custom pattern", "தனிப்பயன் மாதிரி"],
                 [
-                    "a regex with one capture group around the weight, for indicators the built-in numeric extraction can't parse cleanly (a checksum byte or station ID mixed into the same line). Most installations leave this blank.",
-                    "எடையைச் சுற்றி ஒரு capture group கொண்ட regex, உள்ளமைந்த எண் பிரித்தெடுப்பு சுத்தமாக பகுக்க முடியாத காட்டிகளுக்கு (அதே வரியில் கலந்த checksum byte அல்லது station ID). பெரும்பாலான நிறுவல்கள் இதை காலியாக விடும்.",
+                    "a regex with one capture group around the weight, for indicators the built-in numeric extraction can't parse cleanly (a checksum byte or station ID mixed into the same line). Takes priority over Start/End char above. Most installations leave this blank.",
+                    "எடையைச் சுற்றி ஒரு capture group கொண்ட regex, உள்ளமைந்த எண் பிரித்தெடுப்பு சுத்தமாக பகுக்க முடியாத காட்டிகளுக்கு (அதே வரியில் கலந்த checksum byte அல்லது station ID). மேலே உள்ள தொடக்க/முடிவு எழுத்துக்கு முன்னுரிமை பெறும். பெரும்பாலான நிறுவல்கள் இதை காலியாக விடும்.",
                 ],
             ),
             point(

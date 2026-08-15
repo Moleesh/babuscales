@@ -66,15 +66,20 @@ export const useIndicatorPortMonitor = (conn: ConnectionsConfig) => {
                 // Data bits/parity/stop bits/line ending come from the
                 // fields above it (Listen is how the operator confirms
                 // those are actually right — garbled text here means try a
-                // different value). ReverseDigits doesn't matter: it only
-                // affects the parsed `indicator-reading` event, and Listen
-                // only ever looks at the raw `indicator-raw-line` one.
+                // different value). ReverseDigits/StartChar/EndChar don't
+                // matter for what's shown: they only affect the parsed
+                // `indicator-reading` event's extraction, and Listen only
+                // ever displays the raw `indicator-raw-line` one verbatim
+                // — passed through anyway so `open_indicator_port` sees a
+                // consistent framing object, not a half-filled one.
                 framing: {
                     DataBits: conn.IndicatorDataBits,
                     Parity: conn.IndicatorParity,
                     StopBits: conn.IndicatorStopBits,
                     LineEnding: conn.IndicatorLineEnding,
                     ReverseDigits: false,
+                    StartChar: conn.IndicatorStartChar,
+                    EndChar: conn.IndicatorEndChar,
                 },
             });
             setListening(true);

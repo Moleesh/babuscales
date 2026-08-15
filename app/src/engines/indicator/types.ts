@@ -59,6 +59,12 @@ export interface IndicatorFramingConfig {
     stopBits: 1 | 2;
     lineEnding: IndicatorLineEnding;
     reverseDigits: boolean;
+    /** Simpler alternative to a Custom pattern regex — trims each line to
+     * between these two single characters before extracting digits.
+     * Empty = not bounded on that side. Ignored when a Custom pattern is
+     * set. Mirrors `IndicatorFraming.start_char`/`end_char` (Rust). */
+    startChar: string;
+    endChar: string;
 }
 
 export interface IndicatorConnectionConfig {

@@ -297,6 +297,12 @@ const connectionsSchema = z.object({
     IndicatorLineEnding: z.enum(["lf", "cr", "crlf"]),
     /** Some indicators send a weight's digits least-significant-first. */
     IndicatorReverseDigits: z.boolean(),
+    /** Simpler alternative to `IndicatorPattern` — bounds each line to
+     * between these two single characters before the built-in digit
+     * extraction runs, instead of writing a regex. Empty = not bounded on
+     * that side. Ignored once `IndicatorPattern` is set. */
+    IndicatorStartChar: z.string().max(1),
+    IndicatorEndChar: z.string().max(1),
     /** Task #43's GSM modem, on its own serial port — same "empty = not configured yet" shape as `IndicatorPort`, checked the same way before a send is attempted. */
     GsmPort: z.string(),
     GsmBaud: z.number().int().positive(),
@@ -414,6 +420,8 @@ export const DEFAULT_CONNECTIONS: ConnectionsConfig = {
     IndicatorStopBits: 1,
     IndicatorLineEnding: "lf",
     IndicatorReverseDigits: false,
+    IndicatorStartChar: "",
+    IndicatorEndChar: "",
     GsmPort: "",
     GsmBaud: 9600,
 };

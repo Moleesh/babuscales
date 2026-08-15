@@ -421,6 +421,10 @@ export const EN_STRINGS: Record<string, string> = {
     "settings.indicator.lineEnding.cr": "CR (\\r)",
     "settings.indicator.lineEnding.crlf": "CRLF (\\r\\n)",
     "settings.indicator.reverseDigits": "Reverse digits",
+    "settings.indicator.startChar": "Start char",
+    "settings.indicator.endChar": "End char",
+    "settings.indicator.startEndHint": "Simpler alternative to Custom pattern — trims each line to between these two characters before reading the number. Leave blank to use the whole line. Ignored once Custom pattern is set.",
+    "settings.indicator.defaultSuffix": " (default)",
 
     "settings.integrationConfig.title": "Webhook · Accounting export · Display board",
     "settings.integrationConfig.hint":

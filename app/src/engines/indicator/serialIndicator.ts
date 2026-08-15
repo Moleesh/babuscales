@@ -99,6 +99,8 @@ const connectSerial = async (
                 StopBits: config.framing.stopBits,
                 LineEnding: config.framing.lineEnding,
                 ReverseDigits: config.framing.reverseDigits,
+                StartChar: config.framing.startChar,
+                EndChar: config.framing.endChar,
             },
         });
     } catch (reason) {

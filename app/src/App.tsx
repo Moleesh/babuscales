@@ -590,6 +590,8 @@ const SerialConnectionSync = ({ indicator }: IndicatorSyncProps) => {
                 stopBits: conn.IndicatorStopBits,
                 lineEnding: conn.IndicatorLineEnding,
                 reverseDigits: conn.IndicatorReverseDigits,
+                startChar: conn.IndicatorStartChar,
+                endChar: conn.IndicatorEndChar,
             },
         });
     }, [
@@ -602,6 +604,8 @@ const SerialConnectionSync = ({ indicator }: IndicatorSyncProps) => {
         conn.IndicatorStopBits,
         conn.IndicatorLineEnding,
         conn.IndicatorReverseDigits,
+        conn.IndicatorStartChar,
+        conn.IndicatorEndChar,
     ]);
     return null;
 };

@@ -48,11 +48,21 @@ pub struct IndicatorFraming {
     /// (e.g. 1234 kg as "4321"). When set, `parse_weight` mirrors the
     /// numeric string (sign held in place) before parsing it.
     pub reverse_digits: bool,
+    /// Simpler alternative to `pattern` (Custom pattern (advanced), the
+    /// regex) for the common "the weight sits between two marker
+    /// characters" case — e.g. STX/ETX-wrapped output, or a line like
+    /// `W:012340kg` where `:`/`k` bound the number. Empty = no bound on
+    /// that side. Ignored entirely when `pattern` is set.
+    #[serde(default)]
+    pub start_char: String,
+    #[serde(default)]
+    pub end_char: String,
 }
 
 impl Default for IndicatorFraming {
     /// The crate's own previous hardcoded behaviour — 8-N-1, LF-terminated,
-    /// not reversed — so anything that doesn't care can just ask for this.
+    /// not reversed, no start/end markers — so anything that doesn't care
+    /// can just ask for this.
     fn default() -> Self {
         Self {
             data_bits: 8,
@@ -60,6 +70,8 @@ impl Default for IndicatorFraming {
             stop_bits: 1,
             line_ending: "lf".into(),
             reverse_digits: false,
+            start_char: String::new(),
+            end_char: String::new(),
         }
     }
 }
@@ -109,6 +121,29 @@ fn terminator_byte(line_ending: &str) -> u8 {
 /// (including the decimal point) or just the digit run; the Listen panel
 /// (Settings' IndicatorPortMonitor) is how the operator confirms which one
 /// their hardware actually needs before flipping this on.
+/// Trims `line` to the substring between the first `start_char` and the
+/// first `end_char` found after it — the plain-English "start char / end
+/// char" the operator asked for as a less-fiddly alternative to a regex.
+/// Either side left empty (the common case — most indicators need neither)
+/// is simply not applied on that side. Not found means "give up bounding
+/// on that side", not "no number" — the unbounded numeric-extraction
+/// fallback (right after this runs, in `parse_weight`) still gets a
+/// chance to find digits in whatever's left, same as today's plain lines.
+fn scope_between<'a>(line: &'a str, start_char: &str, end_char: &str) -> &'a str {
+    let mut scoped = line;
+    if let Some(start) = start_char.chars().next() {
+        if let Some(idx) = scoped.find(start) {
+            scoped = &scoped[idx + start.len_utf8()..];
+        }
+    }
+    if let Some(end) = end_char.chars().next() {
+        if let Some(idx) = scoped.find(end) {
+            scoped = &scoped[..idx];
+        }
+    }
+    scoped
+}
+
 fn reverse_numeric(s: &str) -> String {
     let (sign, rest) = match s.strip_prefix('-') {
         Some(rest) => ("-", rest),
@@ -150,28 +185,33 @@ pub struct RawLinePayload {
 /// Extracts a signed decimal weight from one line of raw indicator output.
 /// `pattern`, if given, is a regex with a capture group around the number —
 /// PLAN §17's "custom-pattern fallback so any indicator works without a
-/// code change". Without one, this falls back to stripping the line down
-/// to `[0-9+\-.]` and parsing what's left — handles the common case of a
-/// bare weight ("12470", "+012470.0 kg") but not brands that interleave
-/// the number with unrelated digits (a checksum byte, a station ID); those
-/// need the custom pattern. Pure and hardware-free — the one part of this
-/// module actually exercised in this environment, the same way the store's
-/// own logic was: a throwaway `cargo run --example`, deleted once it
-/// passed (app/README.md documents what that run covered).
-pub fn parse_weight(line: &str, pattern: Option<&Regex>, reverse_digits: bool) -> Option<f64> {
+/// code change", and takes priority over `framing.start_char`/`end_char`
+/// when both are set (the regex already says exactly what to keep).
+/// Without a pattern, `start_char`/`end_char` first narrow the line to the
+/// substring between those markers (see `scope_between`), then — with or
+/// without that narrowing — this always strips whatever's left down to
+/// `[0-9+\-.]` before parsing ("always clean the input for number, remove
+/// unwanted char"): handles the common case of a bare weight ("12470",
+/// "+012470.0 kg") even when start/end char narrowed to something like
+/// "012340kg". Pure and hardware-free — the one part of this module
+/// actually exercised in this environment, the same way the store's own
+/// logic was: a throwaway `cargo run --example`, deleted once it passed
+/// (app/README.md documents what that run covered).
+pub fn parse_weight(line: &str, pattern: Option<&Regex>, framing: &IndicatorFraming) -> Option<f64> {
     let numeric = if let Some(re) = pattern {
         let caught = re.captures(line)?;
         let group = caught.get(1).or_else(|| caught.get(0))?;
         group.as_str().trim().replace(',', "")
     } else {
-        line.chars()
+        scope_between(line, &framing.start_char, &framing.end_char)
+            .chars()
             .filter(|c| c.is_ascii_digit() || *c == '+' || *c == '-' || *c == '.')
             .collect()
     };
     if numeric.is_empty() {
         return None;
     }
-    let numeric = if reverse_digits { reverse_numeric(&numeric) } else { numeric };
+    let numeric = if framing.reverse_digits { reverse_numeric(&numeric) } else { numeric };
     numeric.parse::<f64>().ok()
 }
 
@@ -235,7 +275,6 @@ pub(crate) fn open(
     let parity = to_parity(&framing.parity)?;
     let stop_bits = to_stop_bits(framing.stop_bits)?;
     let terminator = terminator_byte(&framing.line_ending);
-    let reverse_digits = framing.reverse_digits;
 
     close(state);
 
@@ -282,7 +321,7 @@ pub(crate) fn open(
                             line: trimmed.to_string(),
                         },
                     );
-                    if let Some(weight_kg) = parse_weight(trimmed, compiled.as_ref(), reverse_digits) {
+                    if let Some(weight_kg) = parse_weight(trimmed, compiled.as_ref(), &framing) {
                         let _ = thread_app.emit("indicator-reading", RawReading { weight_kg });
                     }
                     // A line that doesn't parse is dropped silently —
