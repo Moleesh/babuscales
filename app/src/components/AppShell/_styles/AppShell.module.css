@@ -24,7 +24,13 @@
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 0 12px;
+    /* Right side wider than left (task: "add some margin to right it kind
+       of cutt off") — Close is the last, right-most control, sitting right
+       up against Windows' own invisible resize-border/DWM margin (lib.rs's
+       setup handler compensates for that border on the window's outer
+       edge, not inside the content itself), so the plain symmetric 12px
+       read as clipped there in a way it didn't on the left. */
+    padding: 0 20px 0 12px;
     height: 52px;
     flex: none;
     background: var(--panel);

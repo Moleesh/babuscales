@@ -151,12 +151,12 @@ const TopBarActions = ({
         {/* The window's native title bar is gone (`decorations: false`,
             tauri.conf.json) — Minimize/Close here are the only controls
             left for either. */}
-        <Tooltip label={minimizeTitle}>
+        <Tooltip label={minimizeTitle} align="end">
             <button className="iconbtn" onClick={onMinimize}>
                 ─
             </button>
         </Tooltip>
-        <Tooltip label={closeTitle}>
+        <Tooltip label={closeTitle} align="end">
             <button className="iconbtn" onClick={onClose}>
                 ✕
             </button>
