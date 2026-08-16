@@ -12,7 +12,6 @@ export const DEFAULT_TICKET_SCHEMA: Schema = {
             Kind: "Search",
             Master: "Vehicle",
             Label: { en: "Vehicle No", ta: "வாகன எண்" },
-            Indexed: true,
         },
         {
             FieldId: "Party",

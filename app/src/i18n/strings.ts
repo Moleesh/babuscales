@@ -396,7 +396,6 @@ export const EN_STRINGS: Record<string, string> = {
     "settings.fieldSchema.col.field": "Field",
     "settings.fieldSchema.col.kind": "Kind",
     "settings.fieldSchema.col.label": "Label",
-    "settings.fieldSchema.col.indexed": "Indexed",
     "settings.fieldSchema.hint":
         "Relabels, reorders, or indexes Weighing's existing fields. Custom FieldIds validate and save but don't appear on the form yet — schema-driven field rendering isn't built (app/README.md known gap).",
     "settings.fieldSchema.dropApplying": "Applying…",

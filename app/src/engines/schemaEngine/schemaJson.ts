@@ -23,7 +23,6 @@ const fieldBaseShape = {
     FieldId: z.string().min(1),
     Label: localizedSchema,
     Help: localizedSchema.optional(),
-    Indexed: z.boolean().optional(),
     VisibleWhen: z.string().optional(),
     RequiredWhen: z.string().optional(),
     ReadOnlyWhen: z.string().optional(),

@@ -411,7 +411,6 @@ export const TA_PACK: LanguagePack = {
         "settings.fieldSchema.col.field": "புலம்",
         "settings.fieldSchema.col.kind": "வகை",
         "settings.fieldSchema.col.label": "லேபிள்",
-        "settings.fieldSchema.col.indexed": "குறியிடப்பட்டது",
         "settings.fieldSchema.hint":
             "எடையிடல் திரையின் ஏற்கெனவே உள்ள புலங்களை மறுபெயரிடவும், வரிசைமாற்றவும் அல்லது குறியிடவும் செய்யும். தனிப்பயன் FieldId-கள் சேமிக்கப்படும், ஆனால் இன்னும் படிவத்தில் தோன்றாது — திட்டம்-அடிப்படையிலான புல வழங்கல் இன்னும் கட்டமைக்கப்படவில்லை (app/README.md இல் அறியப்பட்ட குறை).",
         "settings.fieldSchema.dropApplying": "பயன்படுத்தப்படுகிறது…",

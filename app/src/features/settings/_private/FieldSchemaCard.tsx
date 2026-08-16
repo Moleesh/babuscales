@@ -15,11 +15,6 @@ const fieldColumns = (lang: string, t: (key: string) => string): DataTableColumn
         header: t("settings.fieldSchema.col.label"),
         render: (field) => resolveLocalized(field.Label, lang),
     },
-    {
-        key: "indexed",
-        header: t("settings.fieldSchema.col.indexed"),
-        render: (field) => (field.Indexed ? "Yes" : ""),
-    },
 ];
 
 export interface FieldSchemaCardProps {

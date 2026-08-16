@@ -33,8 +33,6 @@ export interface FieldBase {
     FieldId: string;
     Label: Localized;
     Help?: Localized;
-    /** Backed by an expression index — PLAN §6.3. */
-    Indexed?: boolean;
     VisibleWhen?: string;
     RequiredWhen?: string;
     ReadOnlyWhen?: string;
