@@ -43,7 +43,7 @@ const MasterColumnInput = ({
             <Select
                 id={inputId}
                 value={value}
-                options={column.Options.map((option) => ({ value: option.Value, label: resolveLocalized(option.Label, lang) }))}
+                options={(column.Options ?? []).map((option) => ({ value: option.Value, label: resolveLocalized(option.Label, lang) }))}
                 onChange={onChange}
             />
         );
