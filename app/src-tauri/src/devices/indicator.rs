@@ -40,10 +40,14 @@ pub struct IndicatorFraming {
     /// "none" | "odd" | "even" — case-insensitive.
     pub parity: String,
     pub stop_bits: u8,
-    /// "lf" | "cr" | "crlf" — case-insensitive. Whichever is chosen, the
-    /// trailing `\r`/`\n` is stripped from every line before it reaches
-    /// `parse_weight`, so callers never see the terminator itself.
-    pub line_ending: String,
+    /// The line terminator, as its raw decimal byte value — 10 (the
+    /// default) is `\n`/LF, 13 is `\r`/CR. A plain number instead of an
+    /// LF/CR/CRLF picker: `read_until` (below) always reads up to this
+    /// byte, and both this byte and any leftover `\r`/`\n` are stripped
+    /// from the line before it reaches `parse_weight`, so a CRLF sender
+    /// still works unchanged with the default 10 — callers never see the
+    /// terminator itself either way.
+    pub line_ending: u8,
     /// Some indicators transmit a weight's digits least-significant-first
     /// (e.g. 1234 kg as "4321"). When set, `parse_weight` mirrors the
     /// numeric string (sign held in place) before parsing it.
@@ -68,7 +72,7 @@ impl Default for IndicatorFraming {
             data_bits: 8,
             parity: "none".into(),
             stop_bits: 1,
-            line_ending: "lf".into(),
+            line_ending: 10,
             reverse_digits: false,
             start_char: String::new(),
             end_char: String::new(),
@@ -100,17 +104,6 @@ fn to_stop_bits(n: u8) -> Result<StopBits, AppError> {
         1 => Ok(StopBits::One),
         2 => Ok(StopBits::Two),
         other => Err(AppError::Message(format!("unsupported stop bits: {other}"))),
-    }
-}
-
-/// The byte `read_until` (below) hunts for. CRLF-terminated lines still end
-/// in `\n`, so "crlf" and "lf" share the same terminator byte — the
-/// leftover `\r` is trimmed off the line afterwards, same as "lf" already
-/// tolerates a stray `\r` from a CRLF sender today.
-fn terminator_byte(line_ending: &str) -> u8 {
-    match line_ending.to_ascii_lowercase().as_str() {
-        "cr" => b'\r',
-        _ => b'\n',
     }
 }
 
@@ -274,7 +267,7 @@ pub(crate) fn open(
     let data_bits = to_data_bits(framing.data_bits)?;
     let parity = to_parity(&framing.parity)?;
     let stop_bits = to_stop_bits(framing.stop_bits)?;
-    let terminator = terminator_byte(&framing.line_ending);
+    let terminator = framing.line_ending;
 
     close(state);
 
@@ -314,7 +307,12 @@ pub(crate) fn open(
                     // bytes outright — neither should crash the reader
                     // thread, just produce a line that fails to parse.
                     let raw = String::from_utf8_lossy(&buf);
-                    let trimmed = raw.trim_end_matches(['\r', '\n']);
+                    // Trim '\r'/'\n' unconditionally (covers a CRLF sender
+                    // even though `terminator` is a single byte), plus
+                    // whatever custom byte was actually configured — it
+                    // won't already be one of the two above whenever it
+                    // isn't 10 or 13.
+                    let trimmed = raw.trim_end_matches(['\r', '\n', terminator as char]);
                     let _ = thread_app.emit(
                         "indicator-raw-line",
                         RawLinePayload {

@@ -271,8 +271,8 @@ export const DEFAULT_HELP_TOPICS: Record<string, HelpTopic> = {
             point(
                 ["Data bits / Parity / Stop bits / Line ending / Reverse digits", "Data bits / Parity / Stop bits / Line ending / Reverse digits"],
                 [
-                    "the indicator's serial framing. Defaults (8, None, 1, LF) match the most common indicators and most installations never touch them — only change one if Listen below shows garbled or misaligned text. Reverse digits flips a reading's digit order (sign stays put) for indicators that send the number backwards; it only affects parsed readings, not the raw text Listen shows.",
-                    "காட்டியின் serial framing. இயல்புநிலைகள் (8, None, 1, LF) பொதுவான காட்டிகளுக்குப் பொருந்தும், பெரும்பாலான நிறுவல்கள் இவற்றைத் தொடாது — கீழே உள்ள Listen சிதைந்த உரையைக் காட்டினால் மட்டும் மாற்றவும். Reverse digits எண்ணின் இலக்க வரிசையை தலைகீழாக்கும் (குறி மாறாது) — இது பாகுபடுத்தப்பட்ட அளவீடுகளை மட்டுமே பாதிக்கும், Listen காட்டும் மூல உரையை அல்ல.",
+                    "the indicator's serial framing. Defaults (8, None, 1, line ending 10 = LF) match the most common indicators and most installations never touch them — only change one if Listen below shows garbled or misaligned text. Line ending is the raw decimal ASCII byte value of the terminator (10 = LF, 13 = CR). Reverse digits flips a reading's digit order (sign stays put) for indicators that send the number backwards; it only affects parsed readings, not the raw text Listen shows.",
+                    "காட்டியின் serial framing. இயல்புநிலைகள் (8, None, 1, வரி முடிவு 10 = LF) பொதுவான காட்டிகளுக்குப் பொருந்தும், பெரும்பாலான நிறுவல்கள் இவற்றைத் தொடாது — கீழே உள்ள Listen சிதைந்த உரையைக் காட்டினால் மட்டும் மாற்றவும். வரி முடிவு என்பது முடிவுக்குறியின் தசம ASCII மதிப்பு (10 = LF, 13 = CR). Reverse digits எண்ணின் இலக்க வரிசையை தலைகீழாக்கும் (குறி மாறாது) — இது பாகுபடுத்தப்பட்ட அளவீடுகளை மட்டுமே பாதிக்கும், Listen காட்டும் மூல உரையை அல்ல.",
                 ],
             ),
             point(

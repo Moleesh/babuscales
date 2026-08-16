@@ -1,8 +1,6 @@
 import { Field, FieldGrid } from "@components/Field";
-import { Select } from "@components/Select";
 import { useTranslation } from "@i18n/useTranslation";
 
-import { DEFAULT_CONNECTIONS, LINE_ENDING_OPTIONS } from "../settingsSchema";
 import type { ConnectionsConfig, SettingsBody } from "../settingsSchema";
 import connStyles from "./_styles/ConnectionsPane.module.css";
 
@@ -48,19 +46,19 @@ export const IndicatorLineFields = ({ settings, conn, unlocked, onSave }: Indica
             <p className={connStyles.hint}>{t("settings.indicator.startEndHint")}</p>
             <FieldGrid columns={2}>
                 <Field id="connLineEnding" label={t("settings.indicator.lineEnding")}>
-                    <Select
+                    <input
                         id="connLineEnding"
-                        value={conn.IndicatorLineEnding}
-                        options={LINE_ENDING_OPTIONS.map((ending) => ({
-                            value: ending,
-                            label:
-                                t(`settings.indicator.lineEnding.${ending}`) +
-                                (ending === DEFAULT_CONNECTIONS.IndicatorLineEnding
-                                    ? t("settings.indicator.defaultSuffix")
-                                    : ""),
-                        }))}
+                        type="number"
+                        min={0}
+                        max={255}
+                        placeholder="10"
+                        value={conn.IndicatorLineEndingByte}
                         disabled={!unlocked}
-                        onChange={(value) => save({ IndicatorLineEnding: value })}
+                        autoComplete="off"
+                        onChange={(event) => {
+                            const parsed = Number.parseInt(event.target.value, 10);
+                            save({ IndicatorLineEndingByte: Number.isNaN(parsed) ? 0 : parsed });
+                        }}
                     />
                 </Field>
                 <label className={connStyles.ckInline}>
@@ -73,6 +71,7 @@ export const IndicatorLineFields = ({ settings, conn, unlocked, onSave }: Indica
                     <span>{t("settings.indicator.reverseDigits")}</span>
                 </label>
             </FieldGrid>
+            <p className={connStyles.hint}>{t("settings.indicator.lineEndingHint")}</p>
         </>
     );
 };

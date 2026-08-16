@@ -43,8 +43,6 @@ export interface StabilityOptions {
 
 /** "none" | "odd" | "even" — mirrors src-tauri/src/devices/indicator.rs's `IndicatorFraming.parity`. */
 export type IndicatorParity = "none" | "odd" | "even";
-/** "lf" | "cr" | "crlf" — mirrors the same struct's `line_ending`. */
-export type IndicatorLineEnding = "lf" | "cr" | "crlf";
 
 /** The wire framing Rust wasn't previously asked about at all (task: "for
  * capturing the indicator setting ... what all settings do we use") — data
@@ -57,7 +55,10 @@ export interface IndicatorFramingConfig {
     dataBits: 5 | 6 | 7 | 8;
     parity: IndicatorParity;
     stopBits: 1 | 2;
-    lineEnding: IndicatorLineEnding;
+    /** The line terminator as its raw decimal byte value (10 = LF, 13 =
+     * CR) — a plain number instead of an LF/CR/CRLF picker, mirroring
+     * `IndicatorFraming.line_ending`'s own `u8`. */
+    lineEndingByte: number;
     reverseDigits: boolean;
     /** Simpler alternative to a Custom pattern regex — trims each line to
      * between these two single characters before extracting digits.

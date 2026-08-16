@@ -99,7 +99,6 @@ export const BAUD_RATE_OPTIONS = [1200, 2400, 4800, 9600, 19200, 38400, 57600, 1
 export const DATA_BITS_OPTIONS = [5, 6, 7, 8] as const;
 export const STOP_BITS_OPTIONS = [1, 2] as const;
 export const PARITY_OPTIONS = ["none", "odd", "even"] as const;
-export const LINE_ENDING_OPTIONS = ["lf", "cr", "crlf"] as const;
 
 // demo/BabuScales-demo.html's PRINTERS fixture, verbatim. The browser print
 // dialog (window.print(), engines/print) always lets the operator pick the
@@ -294,7 +293,10 @@ const connectionsSchema = z.object({
     IndicatorDataBits: z.union([z.literal(5), z.literal(6), z.literal(7), z.literal(8)]),
     IndicatorParity: z.enum(["none", "odd", "even"]),
     IndicatorStopBits: z.union([z.literal(1), z.literal(2)]),
-    IndicatorLineEnding: z.enum(["lf", "cr", "crlf"]),
+    /** The line terminator's raw decimal byte value (10 = LF, 13 = CR) —
+     * a plain number field, not an LF/CR/CRLF picker. See
+     * src-tauri/src/devices/indicator.rs's `IndicatorFraming.line_ending`. */
+    IndicatorLineEndingByte: z.number().int().min(0).max(255),
     /** Some indicators send a weight's digits least-significant-first. */
     IndicatorReverseDigits: z.boolean(),
     /** Simpler alternative to `IndicatorPattern` — bounds each line to
@@ -418,7 +420,7 @@ export const DEFAULT_CONNECTIONS: ConnectionsConfig = {
     IndicatorDataBits: 8,
     IndicatorParity: "none",
     IndicatorStopBits: 1,
-    IndicatorLineEnding: "lf",
+    IndicatorLineEndingByte: 10,
     IndicatorReverseDigits: false,
     IndicatorStartChar: "",
     IndicatorEndChar: "",

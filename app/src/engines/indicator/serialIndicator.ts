@@ -97,7 +97,7 @@ const connectSerial = async (
                 DataBits: config.framing.dataBits,
                 Parity: config.framing.parity,
                 StopBits: config.framing.stopBits,
-                LineEnding: config.framing.lineEnding,
+                LineEnding: config.framing.lineEndingByte,
                 ReverseDigits: config.framing.reverseDigits,
                 StartChar: config.framing.startChar,
                 EndChar: config.framing.endChar,

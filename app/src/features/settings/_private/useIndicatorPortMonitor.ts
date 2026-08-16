@@ -76,7 +76,7 @@ export const useIndicatorPortMonitor = (conn: ConnectionsConfig) => {
                     DataBits: conn.IndicatorDataBits,
                     Parity: conn.IndicatorParity,
                     StopBits: conn.IndicatorStopBits,
-                    LineEnding: conn.IndicatorLineEnding,
+                    LineEnding: conn.IndicatorLineEndingByte,
                     ReverseDigits: false,
                     StartChar: conn.IndicatorStartChar,
                     EndChar: conn.IndicatorEndChar,
