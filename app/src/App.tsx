@@ -10,7 +10,7 @@ import { WeightDisplay } from "@components/WeightDisplay";
 import type { DateFmt, WeightUnit } from "@constants/numberFormat";
 import { createDataPort } from "@db/createDataPort";
 import { DataPortProvider } from "@db/DataPortProvider";
-import { loadTicketSchema, saveTicketSchema } from "@db/schema";
+import { listTicketSchemas, loadTicketSchema, saveTicketSchema, setActiveTicketSchemaId } from "@db/schema";
 import type { DocRow } from "@db/types";
 import { useDataPort } from "@db/useDataPort";
 import { createEmailSource } from "@engines/email/createEmailSource";
@@ -817,18 +817,31 @@ const useAppLanguagePacks = (db: ReturnType<typeof useDataPort>) => {
     return { packs: mergeLanguagePacks(BUILT_IN_PACKS, uploaded), addLanguagePack };
 };
 
+// Both loaded together on startup — split out of useAppTicketSchema purely
+// to stay under the per-function line budget (docs/CodingStandards.md).
+const loadAppTicketSchemaState = (
+    db: ReturnType<typeof useDataPort>,
+): Promise<{ active: Schema; list: Schema[] }> =>
+    Promise.all([loadTicketSchema(db), listTicketSchemas(db)]).then(([active, list]) => ({ active, list }));
+
 // Loaded from `config` (ConfigKind: "Schema") — same "caller loads, provider
 // just wires it up" split as useAppLanguagePacks above. A fresh install has
 // no row yet, so `loadTicketSchema` itself falls back to
 // `DEFAULT_TICKET_SCHEMA` (db/schema.ts) rather than seeding a row here; the
-// schema only gets persisted once a site actually saves its own.
+// schema only gets persisted once a site actually saves its own. Multiple
+// schemas can be saved side by side (task: "allow multiple uploads and have
+// a drop to list them") — `schemas` is every one of them, `ticketSchema` is
+// whichever is currently active.
 const useAppTicketSchema = (db: ReturnType<typeof useDataPort>) => {
     const [ticketSchema, setTicketSchemaState] = useState<Schema>(DEFAULT_TICKET_SCHEMA);
+    const [schemas, setSchemas] = useState<Schema[]>([DEFAULT_TICKET_SCHEMA]);
 
     useEffect(() => {
         let cancelled = false;
-        void loadTicketSchema(db).then((loaded) => {
-            if (!cancelled) setTicketSchemaState(loaded);
+        void loadAppTicketSchemaState(db).then(({ active, list }) => {
+            if (cancelled) return;
+            setTicketSchemaState(active);
+            setSchemas(list);
         });
         return () => {
             cancelled = true;
@@ -836,14 +849,24 @@ const useAppTicketSchema = (db: ReturnType<typeof useDataPort>) => {
     }, [db]);
 
     // Passed to SchemaProvider as `onSetTicketSchema` — reachable from
-    // anywhere in the tree via `useSchema()`, so unlike `addLanguagePack`
-    // this isn't threaded down as a prop.
+    // anywhere in the tree via `useSchema()`. Saving with a SchemaId that's
+    // already in `schemas` overwrites that entry in place (db/schema.ts);
+    // a field-visibility toggle re-saves the active schema this same way.
     const setTicketSchema = async (schema: Schema): Promise<void> => {
         await saveTicketSchema(db, schema);
         setTicketSchemaState(schema);
+        setSchemas((prev) => [...prev.filter((existing) => existing.SchemaId !== schema.SchemaId), schema]);
     };
 
-    return { ticketSchema, setTicketSchema };
+    // The dropdown's own handler — switches which already-saved schema is
+    // active without touching any saved row.
+    const setActiveSchemaId = async (schemaId: string): Promise<void> => {
+        const schema = schemas.find((existing) => existing.SchemaId === schemaId) ?? DEFAULT_TICKET_SCHEMA;
+        await setActiveTicketSchemaId(db, schemaId);
+        setTicketSchemaState(schema);
+    };
+
+    return { ticketSchema, schemas, setTicketSchema, setActiveSchemaId };
 };
 
 // index.html's #app-splash covers the gap before Settings (the last thing
@@ -879,7 +902,7 @@ export const App = () => {
     const [scheduler] = useState(() => createSchedulerSource());
     const [windowPin] = useState(() => createWindowPinSource());
     const { packs, addLanguagePack } = useAppLanguagePacks(db);
-    const { ticketSchema, setTicketSchema } = useAppTicketSchema(db);
+    const { ticketSchema, schemas, setTicketSchema, setActiveSchemaId } = useAppTicketSchema(db);
 
     return (
         <I18nProvider packs={packs}>
@@ -890,7 +913,12 @@ export const App = () => {
                         <IndicatorProvider source={indicator}>
                             <VerificationServerProvider source={verificationServer}>
                                 <TunnelProvider source={tunnel}>
-                                    <SchemaProvider ticketSchema={ticketSchema} onSetTicketSchema={setTicketSchema}>
+                                    <SchemaProvider
+                                        ticketSchema={ticketSchema}
+                                        schemas={schemas}
+                                        onSetTicketSchema={setTicketSchema}
+                                        onSetActiveSchemaId={setActiveSchemaId}
+                                    >
                                         <StabilityGateSync indicator={indicator} />
                                         <SerialConnectionSync indicator={indicator} />
                                         <VerificationServerSync source={verificationServer} />

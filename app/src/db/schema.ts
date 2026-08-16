@@ -3,24 +3,59 @@ import type { Schema } from "@engines/schemaEngine";
 
 import type { DataPort } from "./DataPort";
 
-// One row, keyed by DocKind rather than by SchemaId (loadLanguagePacks.ts's
-// `lang-${code}` is keyed per-pack because a site keeps many packs
-// installed at once; a site has exactly one *active* schema per DocKind,
-// so re-saving replaces it in place rather than accumulating history) —
-// task #50, PLAN §8. "Ticket" is the only DocKind with a schema today
-// (Invoice has no engine behind it yet), so this is deliberately narrow
-// rather than a generic `loadSchema(docKind)` nothing else would call.
-const TICKET_SCHEMA_CONFIG_ID = "schema-Ticket";
+// Every uploaded schema gets its own row, keyed off its own SchemaId (same
+// "code, not a file" shape as i18n/loadLanguagePacks.ts's
+// `languagePackConfigId`) — a re-upload with the same SchemaId overwrites
+// just that row instead of accumulating history, but a *different* SchemaId
+// is a new row, so a site can keep several schemas saved (e.g. one per
+// season/customer) and switch between them. Task: "allow multiple uploads
+// and have a drop to list them ... with same schema id we will override".
+export const ticketSchemaConfigId = (schemaId: string): string => `schema-Ticket-${schemaId}`;
 
-/** Falls back to `DEFAULT_TICKET_SCHEMA` if nothing was ever saved, or if the saved row fails validation (corrupt, or written by a future version this build doesn't understand) — the app still runs with its built-in fields rather than crashing startup. */
+// Which saved schema is the *active* one is tracked in a row of its own,
+// separate from the schemas themselves — switching the active schema is
+// then just repointing this row, no re-save of the schema body it points at.
+const ACTIVE_TICKET_SCHEMA_CONFIG_ID = "schema-Ticket-active";
+
+/** Every schema a site has ever uploaded, keyed by SchemaId, plus the built-in default (always present, even before any upload) — for a Settings dropdown to choose from. Rows that fail validation (corrupt, or written by a future version this build doesn't understand) are silently dropped. */
+export const listTicketSchemas = async (db: DataPort): Promise<Schema[]> => {
+    const rows = await db.listConfig({ ConfigKind: "Schema" });
+    const byId = new Map<string, Schema>([[DEFAULT_TICKET_SCHEMA.SchemaId, DEFAULT_TICKET_SCHEMA]]);
+    for (const row of rows) {
+        if (row.ConfigId === ACTIVE_TICKET_SCHEMA_CONFIG_ID) continue;
+        const parsed = ticketSchemaSchema.safeParse(row.Body);
+        if (parsed.success) byId.set(parsed.data.SchemaId, parsed.data);
+    }
+    return [...byId.values()];
+};
+
+/** Falls back to `DEFAULT_TICKET_SCHEMA` if nothing has ever been made active, or if the active pointer/row fails validation (corrupt, or the pointed-at schema was since deleted). */
 export const loadTicketSchema = async (db: DataPort): Promise<Schema> => {
-    const row = await db.getConfig(TICKET_SCHEMA_CONFIG_ID);
+    const pointer = await db.getConfig(ACTIVE_TICKET_SCHEMA_CONFIG_ID);
+    const activeId = typeof pointer?.Body.SchemaId === "string" ? pointer.Body.SchemaId : null;
+    if (!activeId || activeId === DEFAULT_TICKET_SCHEMA.SchemaId) return DEFAULT_TICKET_SCHEMA;
+    const row = await db.getConfig(ticketSchemaConfigId(activeId));
     if (!row) return DEFAULT_TICKET_SCHEMA;
     const parsed = ticketSchemaSchema.safeParse(row.Body);
     return parsed.success ? parsed.data : DEFAULT_TICKET_SCHEMA;
 };
 
-export const saveTicketSchema = (db: DataPort, schema: Schema): Promise<void> =>
+/** Saves (or overwrites, same SchemaId) an uploaded/edited schema and makes it the active one — the single call both a fresh upload and a field-visibility toggle (re-saving the active schema with one field patched) go through. */
+export const saveTicketSchema = async (db: DataPort, schema: Schema): Promise<void> => {
+    await db.saveConfig({
+        ConfigId: ticketSchemaConfigId(schema.SchemaId),
+        ConfigKind: "Schema",
+        Body: schema,
+    });
+    await setActiveTicketSchemaId(db, schema.SchemaId);
+};
+
+/** Switches the active schema to one already saved (or the built-in default) without re-uploading it — the dropdown's own handler. */
+export const setActiveTicketSchemaId = (db: DataPort, schemaId: string): Promise<void> =>
     db
-        .saveConfig({ ConfigId: TICKET_SCHEMA_CONFIG_ID, ConfigKind: "Schema", Body: schema })
+        .saveConfig({
+            ConfigId: ACTIVE_TICKET_SCHEMA_CONFIG_ID,
+            ConfigKind: "Schema",
+            Body: { SchemaId: schemaId },
+        })
         .then(() => undefined);

@@ -69,6 +69,37 @@
     cursor: not-allowed;
 }
 
+.active-schema-row {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    font-size: 0.6875rem;
+}
+
+.visibility-toggle {
+    padding: 2px 9px;
+    border-radius: 7px;
+    border: 1px solid var(--line);
+    background: var(--panel-2);
+    color: var(--text);
+    font: inherit;
+    font-size: 0.6875rem;
+    cursor: pointer;
+    white-space: nowrap;
+}
+.visibility-toggle:hover:not(:disabled) {
+    border-color: var(--led-dim);
+    color: var(--led);
+}
+.visibility-toggle:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+.visibility-off {
+    color: var(--dim);
+    border-style: dashed;
+}
+
 .applied {
     font-size: 0.6875rem;
     color: var(--stable);

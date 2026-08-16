@@ -400,12 +400,16 @@ export const EN_STRINGS: Record<string, string> = {
     "settings.fieldSchema.col.field": "Field",
     "settings.fieldSchema.col.kind": "Kind",
     "settings.fieldSchema.col.label": "Label",
+    "settings.fieldSchema.col.visible": "Visible",
     "settings.fieldSchema.hint":
-        "Relabels, reorders, or indexes Weighing's existing fields. Custom FieldIds validate and save but don't appear on the form yet — schema-driven field rendering isn't built (app/README.md known gap).",
+        "Relabels, reorders, indexes, or shows/hides Weighing's fields — both built-in and any custom FieldId you add.",
     "settings.fieldSchema.dropApplying": "Applying…",
     "settings.fieldSchema.dropPrompt": "Drop a field schema .json here, or click to choose",
     "settings.fieldSchema.resetToDefault": "Reset to default",
     "settings.fieldSchema.empty": "No fields in this schema",
+    "settings.fieldSchema.activeLabel": "Active schema",
+    "settings.fieldSchema.show": "Show",
+    "settings.fieldSchema.hide": "Hide",
 
     "settings.indicator.title": "Weight indicator",
     "settings.indicator.customPattern": "Custom pattern (advanced)",

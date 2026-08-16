@@ -7,7 +7,10 @@ import type { Schema } from "./types";
 export interface SchemaProviderProps {
     /** Already loaded from `config` (ConfigKind: "Schema") by `db/schema.ts`'s `loadTicketSchema` — App.tsx's job, same split as I18nProvider's `packs` prop. Falls back to `DEFAULT_TICKET_SCHEMA` until a site saves its own (task #50). */
     ticketSchema: Schema;
+    /** `db/schema.ts`'s `listTicketSchemas` result — every saved schema, for a Settings dropdown. */
+    schemas: Schema[];
     onSetTicketSchema: (schema: Schema) => Promise<void>;
+    onSetActiveSchemaId: (schemaId: string) => Promise<void>;
     children: ReactNode;
 }
 
@@ -17,10 +20,21 @@ export interface SchemaProviderProps {
 // call through `useDataPort`). This provider is just the wiring that lets
 // `useSchema()` reach it from anywhere in the tree without threading a
 // prop through every screen.
-export const SchemaProvider = ({ ticketSchema, onSetTicketSchema, children }: SchemaProviderProps) => {
+export const SchemaProvider = ({
+    ticketSchema,
+    schemas,
+    onSetTicketSchema,
+    onSetActiveSchemaId,
+    children,
+}: SchemaProviderProps) => {
     const value = useMemo(
-        () => ({ ticketSchema, setTicketSchema: onSetTicketSchema }),
-        [ticketSchema, onSetTicketSchema],
+        () => ({
+            ticketSchema,
+            schemas,
+            setTicketSchema: onSetTicketSchema,
+            setActiveSchemaId: onSetActiveSchemaId,
+        }),
+        [ticketSchema, schemas, onSetTicketSchema, onSetActiveSchemaId],
     );
     return <SchemaContext.Provider value={value}>{children}</SchemaContext.Provider>;
 };

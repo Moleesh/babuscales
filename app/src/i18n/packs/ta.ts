@@ -415,12 +415,16 @@ export const TA_PACK: LanguagePack = {
         "settings.fieldSchema.col.field": "புலம்",
         "settings.fieldSchema.col.kind": "வகை",
         "settings.fieldSchema.col.label": "லேபிள்",
+        "settings.fieldSchema.col.visible": "தெரியும்",
         "settings.fieldSchema.hint":
-            "எடையிடல் திரையின் ஏற்கெனவே உள்ள புலங்களை மறுபெயரிடவும், வரிசைமாற்றவும் அல்லது குறியிடவும் செய்யும். தனிப்பயன் FieldId-கள் சேமிக்கப்படும், ஆனால் இன்னும் படிவத்தில் தோன்றாது — திட்டம்-அடிப்படையிலான புல வழங்கல் இன்னும் கட்டமைக்கப்படவில்லை (app/README.md இல் அறியப்பட்ட குறை).",
+            "எடையிடல் திரையின் புலங்களை (இயல்புநிலை மற்றும் தனிப்பயன் இரண்டும்) மறுபெயரிடவும், வரிசைமாற்றவும், குறியிடவும் அல்லது காட்டவும்/மறைக்கவும் செய்யும்.",
         "settings.fieldSchema.dropApplying": "பயன்படுத்தப்படுகிறது…",
         "settings.fieldSchema.dropPrompt": "ஒரு புலத் திட்டம் .json கோப்பை இங்கே இழுத்து விடவும், அல்லது தேர்ந்தெடுக்க கிளிக் செய்யவும்",
         "settings.fieldSchema.resetToDefault": "இயல்புநிலைக்கு மீட்டமை",
         "settings.fieldSchema.empty": "இந்தத் திட்டத்தில் புலங்கள் இல்லை",
+        "settings.fieldSchema.activeLabel": "செயலில் உள்ள திட்டம்",
+        "settings.fieldSchema.show": "காட்டு",
+        "settings.fieldSchema.hide": "மறை",
 
         "settings.indicator.title": "எடை காட்டி",
         "settings.indicator.customPattern": "தனிப்பயன் மாதிரி (மேம்பட்டது)",

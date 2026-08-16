@@ -1,4 +1,5 @@
 import { useSchema } from "@engines/schemaEngine";
+import type { Schema } from "@engines/schemaEngine";
 import type { LanguagePack } from "@i18n/types";
 import { useTranslation } from "@i18n/useTranslation";
 
@@ -16,17 +17,14 @@ export interface FieldsLanguagePaneProps {
 // Fields & language pane (demo/BabuScales-demo.html's `data-pane="fields"`).
 //
 // Field schema (task #50, PLAN §8.3) — the schema itself is real and
-// persisted (`config` row, ConfigKind: "Schema", db/schema.ts) and its
-// Labels genuinely drive Weighing's five built-in fields live
-// (TicketFieldsCard.tsx reads it via `useSchema()`). What's still NOT
-// built — documented, not attempted — is schema-driven field *rendering*:
-// uploading a schema with a new custom FieldId doesn't add an input to
-// Weighing, and `Visible`/`Required`/`ReadOnly`/`Validate`
-// aren't evaluated against the ticket form. That's a separate,
-// much larger feature (app/README.md known gap). Uploading a schema that
-// only relabels/reorders/indexes the five existing FieldIds works today;
-// a schema introducing new ones is accepted (it validates) but its extra
-// fields are simply inert until that feature exists.
+// persisted (each upload its own `config` row, ConfigKind: "Schema", keyed
+// by SchemaId — db/schema.ts) and drives Weighing's field rendering live
+// (TicketFieldsCard.tsx/SchemaFieldRow.tsx read it via `useSchema()`),
+// including `Visible`/`Required`/`ReadOnly`/`Validate`. A site can save
+// several schemas side by side and pick which is active from the dropdown
+// below (task: "allow multiple uploads and have a drop to list them"); a
+// field's own show/hide toggle re-saves the active schema with just that
+// field's `Visible` flipped, in place of hand-editing and re-uploading.
 //
 // Language packs: i18n/schemas.ts's languagePackSchema, I18nProvider's own
 // doc comment ("loading is the caller's job") — `useTranslation().packs`
@@ -41,22 +39,35 @@ export interface FieldsLanguagePaneProps {
 // `drop` listeners nothing else in this codebase uses yet.
 export const FieldsLanguagePane = ({ onAddLanguagePack }: FieldsLanguagePaneProps) => {
     const { packs, lang } = useTranslation();
-    const { ticketSchema, setTicketSchema } = useSchema();
+    const { ticketSchema, schemas, setTicketSchema, setActiveSchemaId } = useSchema();
     const { unlocked } = useSettings();
     const { schemaMessage, schemaBusy, handleSchemaFile, resetSchema } =
         useFieldSchemaUpload(setTicketSchema);
     const { message, busy, handleFile } = useLanguagePackUpload(onAddLanguagePack);
 
+    const toggleFieldVisible = (fieldId: string): void => {
+        const updated: Schema = {
+            ...ticketSchema,
+            Fields: ticketSchema.Fields.map((field) =>
+                field.FieldId === fieldId ? { ...field, Visible: field.Visible === false } : field,
+            ),
+        };
+        void setTicketSchema(updated);
+    };
+
     return (
         <div className={styles.grid}>
             <FieldSchemaCard
                 ticketSchema={ticketSchema}
+                schemas={schemas}
                 lang={lang}
                 unlocked={unlocked}
                 schemaBusy={schemaBusy}
                 schemaMessage={schemaMessage}
                 onSchemaFile={(file) => void handleSchemaFile(file)}
                 onReset={() => void resetSchema()}
+                onSelectActiveSchema={(schemaId) => void setActiveSchemaId(schemaId)}
+                onToggleFieldVisible={toggleFieldVisible}
             />
             <LanguagePacksCard
                 packs={packs}
