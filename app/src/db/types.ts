@@ -1,11 +1,11 @@
-// The TypeScript view of the fixed schema in PLAN §6.1. Field names are
+// The TypeScript view of the fixed schema. Field names are
 // PascalCase (docs/CodingStandards.md — "PascalCase JSON keys, matching
 // VaultBill"); the SQL columns behind them stay snake_case. Mapping between
 // the two is the adapter's job, not the contract's.
 //
 // Deliberately thin: this mirrors table columns, not business shape. A
 // ticket's Captures array, formula fields and masters search all belong to
-// the field/formula/capture model in Phase 2 (PLAN §21) — DataPort only
+// the field/formula/capture model in a later phase — DataPort only
 // knows that `Body` is valid JSON, exactly like the `doc.body` column does.
 
 /** Any JSON-serialisable value. What `json_valid(body)` actually guarantees. */
@@ -33,9 +33,9 @@ export const CONFIG_KINDS = [
     "Format",
     "Preset",
     "LanguagePack",
-    /** Per-tab/per-field guidance shown by the help control — PLAN §11. Editable without a release, travels with backups. */
+    /** Per-tab/per-field guidance shown by the help control. Editable without a release, travels with backups. */
     "Help",
-    /** One row (`ConfigId: "license"`) holding `TrialStartedOn`/`ActivationCode` — PLAN §4.10, task #38. Evaluated against the embedded Ed25519 public key by `@engines/licensing`; never anything to migrate, same as every other config row. */
+    /** One row (`ConfigId: "license"`) holding `TrialStartedOn`/`ActivationCode`. Evaluated against the embedded Ed25519 public key by `@engines/licensing`; never anything to migrate, same as every other config row. */
     "License",
 ] as const;
 export type ConfigKind = (typeof CONFIG_KINDS)[number];

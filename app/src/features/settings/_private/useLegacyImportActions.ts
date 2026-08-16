@@ -33,7 +33,7 @@ export interface UseLegacyImportActions {
 
 // Downloads a restore-point backup before writing anything — an import that
 // goes wrong halfway through should never be a worse position than "restore
-// this file and try again" (PLAN §14). Plain function (no hooks) so it
+// this file and try again". Plain function (no hooks) so it
 // doesn't count against useLegacyImportActions's own line budget.
 const downloadPreImportBackup = async (db: DataPort): Promise<void> => {
     const bytes = await db.exportBackup();

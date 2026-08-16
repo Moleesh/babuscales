@@ -1,7 +1,7 @@
 import type { JsonRecord, MasterKind } from "@db/types";
 import type { Localized } from "@i18n/types";
 
-// The field type system — PLAN §8. A site's ticket/invoice fields are
+// The field type system. A site's ticket/invoice fields are
 // data, not code: this is the shape that data takes. `FieldBase` carries
 // everything every field kind shares; the union below adds what only one
 // kind needs.
@@ -41,7 +41,7 @@ export interface FieldBase {
     /** Defaults to editable when omitted. */
     ReadOnly?: boolean;
     Validate?: ValidationRule[];
-    /** Renders in the Weighing screen's "Captured & calculated" card (CalcCard.tsx) instead of as a generic Ticket field row — the field supplies only its Label there; the box's own value/behavior is unchanged (task: "the values not the button"). */
+    /** Renders in the Weighing screen's "Captured & calculated" card (CalcCard.tsx) instead of as a generic Ticket field row — the field supplies only its Label there; the box's own value/behavior is unchanged (the values, not the button). */
     Calculated?: boolean;
     /** Only meaningful when `Calculated` is true and this field mirrors one of CalcCard's two physical-capture boxes rather than a derived one (e.g. Net's Formula) — which capture type it stands for. */
     Captured?: "Gross" | "Tare";
@@ -143,10 +143,10 @@ export interface MasterSchema {
 // Extends `JsonRecord` (same reason `LanguagePack` does, i18n/types.ts) — a
 // schema is saved as a `config` row's `Body` verbatim (ConfigKind:
 // "Schema", db/schema.ts), and uploaded as a file the same way a language
-// pack is (task #50).
+// pack is.
 export interface Schema extends JsonRecord {
     SchemaId: string;
     Fields: Field[];
-    /** Which extra columns each MasterKind's records carry (task: "we will specify what all column we need for master"). Optional — a schema with no `Masters` block means every kind has just its built-in Name, same as before this existed. */
+    /** Which extra columns each MasterKind's records carry. Optional — a schema with no `Masters` block means every kind has just its built-in Name, same as before this existed. */
     Masters?: MasterSchema[];
 }

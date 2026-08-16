@@ -26,7 +26,7 @@ export interface TicketsViewProps {
 // Split out of ReportsScreen (over the line/complexity budget —
 // docs/CodingStandards.md) — the Tickets-view search + filter + sort + table,
 // unchanged from the inline version it replaces except for the added
-// TicketsSortRow (task: Reports rework, item 2 — sort-order control).
+// TicketsSortRow (sort-order control).
 export const TicketsView = ({
     query,
     onQueryChange,

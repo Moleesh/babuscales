@@ -14,7 +14,7 @@ export interface OpenTicketSummary {
     capturedAt: string;
 }
 
-/** PLAN §7.5 — the open-ticket strip: every ticket parked with exactly one weight. */
+/** The open-ticket strip: every ticket parked with exactly one weight. */
 export const listOpenTickets = (docs: DocRow[]): OpenTicketSummary[] =>
     docs
         .filter((doc) => !doc.IsCancelled)
@@ -32,7 +32,7 @@ export const listOpenTickets = (docs: DocRow[]): OpenTicketSummary[] =>
         })
         .sort((a, b) => b.doc.UpdatedAt.localeCompare(a.doc.UpdatedAt));
 
-/** PLAN §9.2 — "That vehicle has a ticket awaiting its second weight." */
+/** "That vehicle has a ticket awaiting its second weight." */
 export const findOpenTicketForVehicle = (
     docs: DocRow[],
     vehicleNo: string,
@@ -46,7 +46,7 @@ export interface PreviousTicketSummary {
     body: TicketBody;
 }
 
-/** PLAN §9.2 — "Fill from TKTxxxx — any previous ticket for that vehicle." Excludes the ticket currently open on screen. */
+/** "Fill from TKTxxxx — any previous ticket for that vehicle." Excludes the ticket currently open on screen. */
 export const findLatestTicketForVehicle = (
     docs: DocRow[],
     vehicleNo: string,

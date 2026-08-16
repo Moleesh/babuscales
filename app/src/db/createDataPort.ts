@@ -3,7 +3,7 @@ import { createTauriAdapter } from "./adapters/tauri";
 import type { DataPort } from "./DataPort";
 
 // `VITE_DATA_ADAPTER` is a build-time constant (Vite inlines it), which is
-// what lets the Pages workflow (PLAN §20.2) produce a build with no Tauri
+// what lets the Pages workflow produce a build with no Tauri
 // and no SQLite in it at all — the branch not taken is never bundled.
 //
 // That guarantee depends on this `if` testing `import.meta.env.…` directly,

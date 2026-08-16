@@ -63,7 +63,7 @@ export const createDocMethods = (state: MemoryState): DocMethods => ({
         if (doc.DocSeq !== null) return Promise.resolve(doc);
 
         // The allocation group is (DocKind, ProfileId, SeriesEpoch) — the same
-        // triple the `ux_doc_seq` unique index covers (PLAN §6.1).
+        // triple the `ux_doc_seq` unique index covers.
         const inGroup = Array.from(state.docs.values()).filter(
             (d) =>
                 d.DocKind === doc.DocKind &&

@@ -1,13 +1,13 @@
-// PLAN §4.10 "licence with trial and expiry · UID machine binding", §12's
-// "recovery procedure tied to the licence", §23 item 4. The actual crypto
+// Licence with trial and expiry, UID machine binding, and a
+// recovery procedure tied to the licence. The actual crypto
 // (wire format, Ed25519 verification) lives in Rust
 // (src-tauri/src/licensing/mod.rs, backed by the sibling `license-format`
 // crate) — desktop-only, same reason @engines/tunnel's connector is: there
 // is no machine identity or private key to bind to in a browser tab. This
-// module is a thin 1:1 wrapper over the two Tauri commands task #37 adds;
+// module is a thin 1:1 wrapper over the two Tauri commands the Rust side adds;
 // the config row that persists `TrialStartedOn`/`ActivationCode`, and the
-// app-wide read-only gate a lapsed trial should trigger, are task #38's
-// "activation UI + trial gating" — not built here.
+// app-wide read-only gate a lapsed trial should trigger, are the
+// activation UI + trial gating — not built here.
 
 export interface LicenseTrial {
     Kind: "Trial";

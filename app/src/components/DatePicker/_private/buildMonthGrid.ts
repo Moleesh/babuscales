@@ -11,8 +11,8 @@ export interface CalendarDay {
 }
 
 // Sunday-first — matches Chromium's own `<input type="date">` popup under
-// the en-IN locale, which is exactly what this component replaces (task:
-// "a drop-in replacement for every current consumer"). Keeping the same
+// the en-IN locale, which is exactly what this component replaces as a
+// drop-in replacement for every current consumer. Keeping the same
 // week start means nobody has to relearn the grid.
 export const WEEKDAY_LABELS = ["S", "M", "T", "W", "T", "F", "S"] as const;
 

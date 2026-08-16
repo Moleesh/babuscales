@@ -6,7 +6,7 @@ import type { CustomFieldValue, TicketFormFields } from "../useWeighingTicket";
 
 // A ticket's own field values, exposed as a `FormulaContext` — the shared
 // resolver every `Validate` gate and every `Formula`-kind field's own
-// display evaluate against (PLAN §8.1). Pure: no React, no hooks, so it's
+// display evaluate against. Pure: no React, no hooks, so it's
 // just as easy to unit-test as `evaluateGate` itself.
 export const buildTicketFormulaContext = (
     ticket: {

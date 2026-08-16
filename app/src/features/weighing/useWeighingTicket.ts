@@ -20,13 +20,13 @@ export interface TicketFormFields {
     material: string;
     transporter: string;
     challanNo: string;
-    /** Plain editable ticket field, same as challanNo — no auto-calc behind it (task: "no need for charge calculation also"). Kept as a string like every other form field; parsed to `TicketBody.Charge` on save. */
+    /** Plain editable ticket field, same as challanNo — no auto-calc behind it. Kept as a string like every other form field; parsed to `TicketBody.Charge` on save. */
     charge: string;
 }
 
 export type RecalledField = "party" | "material" | "transporter";
 
-/** A schema-driven custom field's value (PLAN §8) — keyed by `FieldId`, same value shape as `TicketBody.CustomFields`. */
+/** A schema-driven custom field's value — keyed by `FieldId`, same value shape as `TicketBody.CustomFields`. */
 export type CustomFieldValue = string | number | boolean | null;
 
 const emptyFields = (): TicketFormFields => ({
@@ -45,7 +45,7 @@ export interface UseWeighingTicket {
     setField: (key: keyof TicketFormFields, value: string) => void;
     recalledFields: Set<RecalledField>;
     applyRecalledFields: (values: Partial<Pick<TicketFormFields, RecalledField>>) => void;
-    /** Values for whatever custom Fields the active Schema adds beyond the 5 fixed ones above — keyed by FieldId (PLAN §8). */
+    /** Values for whatever custom Fields the active Schema adds beyond the 5 fixed ones above — keyed by FieldId. */
     customFields: Record<string, CustomFieldValue>;
     setCustomField: (fieldId: string, value: CustomFieldValue) => void;
     captures: Capture[];
@@ -54,7 +54,7 @@ export interface UseWeighingTicket {
     setKind: (kind: CaptureType) => void;
     /** Both weights are in — the ticket carries its final numbers, whether or not it has been saved yet. */
     isComplete: boolean;
-    /** PLAN §7.5 "inLedger" equivalent — fields lock and the deck is free for the next lorry. */
+    /** "inLedger" equivalent — fields lock and the deck is free for the next lorry. */
     isLocked: boolean;
     printCount: number;
     saving: boolean;
@@ -75,7 +75,7 @@ export interface UseWeighingTicket {
 // callback triggered it, which is what pushed this hook's own body well
 // over the line budget. Collapsing them into a pure, named reducer (a) cuts
 // the hook body to mostly one-line `dispatch(...)` calls and (b) gives
-// task #61 a plain function to unit-test without touching React at all.
+// this a plain function to unit-test without touching React at all.
 interface TicketState {
     docId: string | null;
     docSeq: number | null;
@@ -453,8 +453,7 @@ const useTicketLifecycleActions = ({
     // work (never hit Save even once) saves it rather than discarding it; a
     // second click then actually starts fresh — by then `docId` is set, so
     // it falls straight into the reset branch below.
-    // `docId` rather than `isLocked` (task: "print is only happening when we
-    // have both tare and gross ... reprint is totally disabled") — a
+    // `docId` rather than `isLocked` — a
     // single-weight save now stays on screen instead of resetting itself
     // (see save()'s own comment), so once it's already saved once, "New
     // ticket" should reset immediately rather than re-saving in a loop.

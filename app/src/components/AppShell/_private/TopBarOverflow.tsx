@@ -8,7 +8,7 @@ import styles from "../_styles/AppShell.module.css";
 
 export interface TopBarOverflowProps {
     /** The secondary controls (Settings/Language/Operator/Help) plus any
-        primary tabs AppShell itself has decided don't fit (task #62) —
+        primary tabs AppShell itself has decided don't fit —
         rendered inline when `collapsed` is false, behind the "..." menu
         when it's true. Opaque to this component either way. */
     children: ReactNode;
@@ -36,7 +36,7 @@ const useCloseOnOutsideClick = (open: boolean, onClose: () => void) => {
 
 // Collapses whatever it's given behind a "..." menu once the top bar
 // doesn't actually have room to show it inline (`collapsed`, from
-// AppShell's `useTopBarFit` — task #62). AppShell.tsx feeds it the
+// AppShell's `useTopBarFit`). AppShell.tsx feeds it the
 // secondary top-bar controls (App.tsx's `topRight`) and any primary tabs
 // that no longer fit; the always-visible pin toggle stays outside it
 // entirely.

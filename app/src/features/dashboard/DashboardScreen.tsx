@@ -107,13 +107,13 @@ const useDashboardData = (db: ReturnType<typeof useDataPort>, period: DashboardP
     return { loading, rows, kpis, buckets, materialSplit };
 };
 
-// PLAN §18 — "dashboard (throughput, tonnage, ... top ... materials,
-// peak hours...)". ANPR and anomaly detection are not built (app/README.md
-// known gaps) — this is the operational slice: the selected period's KPIs
-// (including Charge collected — engines/billing), that period's activity
-// shape, where the tonnage is coming from, and the most recent tickets.
-// PLAN §21 — "a drop down to specify if its per day, month, week, year,
-// all... change all the column based on that" — `period` drives every
+// The dashboard: throughput, tonnage, top materials, peak hours. ANPR and
+// anomaly detection are not built (app/README.md known gaps) — this is the
+// operational slice: the selected period's KPIs (including Charge collected
+// — engines/billing), that period's activity shape, where the tonnage is
+// coming from, and the most recent tickets.
+// A drop down to specify if its per day, month, week, year, all — changing
+// all the columns based on that — `period` drives every
 // derived figure below except Recent Tickets (already its own short,
 // always-latest list) and the "waiting" KPI (an all-time count by design —
 // see DashboardKpis' `waiting` doc note).

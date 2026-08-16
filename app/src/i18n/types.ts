@@ -1,11 +1,11 @@
 import type { JsonRecord } from "@db/types";
 
-// PLAN §8.3 — localisation lives in two places. This file is the shared
+// Localisation lives in two places. This file is the shared
 // half: the `Localized` shape a field's `Label`/`Help` carries inline, and
 // the `LanguagePack` shape uploaded as JSON and stored as a `config` row.
 // English is always present and is always the fallback — see resolveLocalized.
 
-/** A value with at least an English form. A field brings its own translations inline (PLAN §8.3). */
+/** A value with at least an English form. A field brings its own translations inline. */
 export interface Localized {
     en: string;
     [lang: string]: string;
@@ -16,7 +16,7 @@ export interface LanguagePack extends JsonRecord {
     Code: string;
     Name: string;
     Version: number;
-    /** Only what this pack overrides — a half-translated pack still runs (PLAN §8.3). */
+    /** Only what this pack overrides — a half-translated pack still runs. */
     Strings: Record<string, string>;
 }
 

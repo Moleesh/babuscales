@@ -1,4 +1,4 @@
-// The always-on-top pin toggle (top bar, task #62) — one method, same
+// The always-on-top pin toggle (top bar) — one method, same
 // "thin wrapper over the real adapter call" shape as every other
 // `@engines/*` source in this app.
 export interface WindowPinSource {

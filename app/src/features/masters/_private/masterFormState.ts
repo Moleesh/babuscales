@@ -7,7 +7,7 @@ export interface MasterFormState {
     weightKg: string;
     capturedAt: string;
     partyName: string;
-    /** One entry per schema-declared MasterColumn, keyed by FieldId — replaces what used to be a fixed notes/rate/email/phone shape (task: "specify what all column we need for master"). Unused for StoredTare, which keeps its own weightKg/capturedAt/partyName fields above. */
+    /** One entry per schema-declared MasterColumn, keyed by FieldId — replaces what used to be a fixed notes/rate/email/phone shape. Unused for StoredTare, which keeps its own weightKg/capturedAt/partyName fields above. */
     extra: Record<string, string>;
 }
 

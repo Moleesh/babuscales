@@ -9,8 +9,8 @@ import type {
     LegacyPartyEntry,
 } from "./legacyImportBundle";
 
-// Pure planning logic — no DataPort, no IO (matches every other engine,
-// PLAN §11's file tree). `LegacyImportCard.tsx` is the only caller: it
+// Pure planning logic — no DataPort, no IO (matches every other engine's
+// file tree). `LegacyImportCard.tsx` is the only caller: it
 // loads what already exists via `DataPort.listMasters`/`listDocs`, hands
 // this function that snapshot plus the parsed bundle, then applies the
 // returned drafts one `saveMaster`/`saveDoc` call at a time so the UI can

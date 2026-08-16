@@ -2,7 +2,7 @@ import type { Schema } from "./types";
 
 // The Weighing screen's default field set — a real `Schema` row, not
 // hardcoded markup, so a site can extend or override it without a release
-// (PLAN §8). Ships as the fallback until a site uploads its own. None of
+// Ships as the fallback until a site uploads its own. None of
 // these 9 built-in fields carry a `Label` — their display text already
 // lives in this app's own i18n strings (strings.ts/ta.ts), keyed by
 // FieldId (`ticketFieldIds.ts`'s `resolveFieldLabel`), so there is no
@@ -38,7 +38,7 @@ export const DEFAULT_TICKET_SCHEMA: Schema = {
         },
         // Gross/Tare/Net/Charge carry no real Kind-driven control — those 4
         // boxes are CalcCard.tsx's own hardware-shaped capture/edit UI
-        // (task: "the values not the button"). `Calculated: true` is what
+        // — the values, not the button. `Calculated: true` is what
         // routes a field here instead of the generic Ticket field loop
         // (TicketFieldsCard skips every Calculated field); `Captured`
         // marks the two that mirror a physical capture rather than a
@@ -69,7 +69,7 @@ export const DEFAULT_TICKET_SCHEMA: Schema = {
     ],
     // The same per-kind extras the Masters screen used to hardcode
     // (masterFormBody.ts/masterColumns.tsx before this Masters block
-    // existed) — Material's Rate (task: "netweight * cost per material",
+    // existed) — Material's Rate (netweight * cost per material,
     // already wired through billing/value.ts's `computeValue`), Party's
     // Email/Phone (read at print time for the e-mail/SMS outbox), and a
     // plain Notes column for every other kind. StoredTare is left out —

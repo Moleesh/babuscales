@@ -30,8 +30,8 @@ export interface ScrollAreaProps {
 }
 
 // Swaps the native OS/browser scrollbar for a plain draggable `<div>` thumb
-// (task: "i still see native cusor when i use mouse to scroll over a
-// table... click and drag drop" — dragging a *native* scrollbar thumb hands
+// — the native cursor would otherwise still show over a table's scrollbar
+// during click-and-drag, since dragging a *native* scrollbar thumb hands
 // pointer handling to the browser/OS, which shows its own cursor for the
 // whole gesture no matter what CSS says; only a real DOM element we drive
 // ourselves stays under the custom cursor's `body.custom-cursor-active *`

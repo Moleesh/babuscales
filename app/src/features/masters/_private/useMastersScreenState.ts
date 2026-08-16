@@ -11,7 +11,7 @@ import { useMasterListPage } from "./useMasterListPage";
 
 // Wires MastersScreen's two data sources — useMasterCache (record
 // selection/editing, unchanged) and useMasterListPage (the keyset-paginated
-// visible list, PLAN §21) — plus the form-action handlers, into one object
+// visible list) — plus the form-action handlers, into one object
 // so the screen component itself stays under the line budget
 // (docs/CodingStandards.md).
 export const useMastersScreenState = (activeKind: MasterKind, columns: MasterColumn[], query: string) => {
@@ -20,7 +20,7 @@ export const useMastersScreenState = (activeKind: MasterKind, columns: MasterCol
     const [selectedId, setSelectedId] = useState<string | null>(null);
     const [form, setForm] = useState(emptyForm());
     // `rows` (useMasterCache) holds the whole kind for any shop small enough
-    // that it fits in one cache page (PLAN §21, useMasterCache.ts) — the
+    // that it fits in one cache page (useMasterCache.ts) — the
     // common case, and `totalCount` below is exact for it. Past that page
     // size `rows` only grows as searches merge more in, so `totalCount`
     // becomes a lower bound rather than the true count; a real count query

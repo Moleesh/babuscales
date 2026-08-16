@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-// A language pack is uploaded as a file (PLAN §8.3) — untrusted the moment
+// A language pack is uploaded as a file — untrusted the moment
 // it leaves the filesystem picker, so it is parsed here once rather than
 // trusted by every reader.
 export const languagePackSchema = z.object({

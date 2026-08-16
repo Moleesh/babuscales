@@ -12,7 +12,7 @@ export interface I18nProviderProps {
     children: ReactNode;
 }
 
-// One extra language ships at a time (PLAN §8.3) — this provider doesn't
+// One extra language ships at a time — this provider doesn't
 // care how many `packs` it is handed, but the product currently offers one.
 export const I18nProvider = ({ packs, initialLang = "en", children }: I18nProviderProps) => {
     const [lang, setLang] = useState(initialLang);
@@ -22,7 +22,7 @@ export const I18nProvider = ({ packs, initialLang = "en", children }: I18nProvid
     );
 
     // A half-translated pack still runs — an untranslated key just falls
-    // through to English, never to a blank or an error (PLAN §8.3).
+    // through to English, never to a blank or an error.
     const t = useCallback(
         (key: string) => activePack?.Strings[key] ?? EN_STRINGS[key] ?? key,
         [activePack],

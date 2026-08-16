@@ -9,8 +9,8 @@ import { LegacyImportPlanPreview } from "./LegacyImportPlanPreview";
 import { LegacyImportResultSummary } from "./LegacyImportResultSummary";
 import { useLegacyImportActions } from "./useLegacyImportActions";
 
-// Task #47, PLAN §22 Phase 7 "legacy v1/v2 import" — a one-time tool for a
-// site moving off VaultBill (the older desktop products PLAN calls v1/v2)
+// A "legacy v1/v2 import" — a one-time tool for a
+// site moving off VaultBill (the older desktop products, v1/v2)
 // onto BabuScales. Reads a documented JSON bundle (legacyImportBundle.ts)
 // rather than VaultBill's own database file directly: that file's real
 // schema isn't available to this codebase to build a native reader against
@@ -22,7 +22,7 @@ import { useLegacyImportActions } from "./useLegacyImportActions";
 // import.
 //
 // Preview-before-commit and a restore point before writing anything
-// (PLAN §14's "portable bundle" language, reused here even though this
+// (the "portable bundle" language, reused here even though this
 // isn't that richer NDJSON format) — gated by `unlocked` for the commit
 // step only, same asymmetry as BackupRestoreCard's own save-vs-restore
 // split: previewing a file is read-only and safe at any time, committing

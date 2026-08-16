@@ -3,7 +3,7 @@ import type { SettingsBody } from "@features/settings";
 
 import type { UseWeighingTicket } from "../useWeighingTicket";
 
-// PLAN §18 — the printed slip's own QR points at this ticket's page on the
+// The printed slip's own QR points at this ticket's page on the
 // local verification server (@engines/verification), null until the ticket
 // has a DocId (a fresh, unsaved ticket has nothing to verify yet) or while
 // the server itself is off/unavailable.

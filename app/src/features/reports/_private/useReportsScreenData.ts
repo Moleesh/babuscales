@@ -87,7 +87,7 @@ export const useReportsScreenData = ({
     lang,
 }: UseReportsScreenDataArgs): UseReportsScreenData => {
     const rows = useMemo(() => buildTicketRows(docs), [docs]);
-    // PLAN §7.5 — the open-ticket strip is a global "what's waiting right
+    // The open-ticket strip is a global "what's waiting right
     // now" indicator, not scoped to whatever date range Reports happens to
     // have selected, so this reads the full unfiltered `rows`, not
     // `dateFilteredRows` below.

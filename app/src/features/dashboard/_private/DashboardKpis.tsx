@@ -8,7 +8,7 @@ import type { DashboardKpis as DashboardKpisData } from "../dashboardData";
 export interface DashboardKpisProps {
     kpis: DashboardKpisData;
     amountDp: 0 | 2;
-    /** Settings' Amount rounding pane — "in india we use kg instead of ton" (PLAN §21), defaults to kg. */
+    /** Settings' Amount rounding pane — "in india we use kg instead of ton" — defaults to kg. */
     weightUnit: WeightUnit;
     onNavigateToReports?: () => void;
 }

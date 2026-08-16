@@ -8,13 +8,13 @@ export { FIELD_LABEL_KEYS };
 // TicketFieldsCard.tsx (still the hardware-shaped master-search/plain-text
 // widgets, per "values not the button" — only their label/order/visibility
 // come from the schema) — anything else in the active Schema's Fields is a
-// custom field, rendered generically by SchemaFieldRow (PLAN §8). Its own
+// custom field, rendered generically by SchemaFieldRow. Its own
 // small file (rather than living inside TicketFieldsCard.tsx, a component
 // file) so importing it elsewhere — WeighingScreen's Save-blocking check —
 // doesn't trip react-refresh's "only export components" rule.
 export const FIXED_FIELD_IDS = ["VehicleNo", "Party", "Material", "Transporter", "ChallanNo"];
 
-/** A `Calculated` field (`Field.Calculated`, e.g. the default schema's Gross/Tare/Net/Charge) belongs in CalcCard's "Captured & calculated" card, not the generic Ticket field loop — capture/formula logic stays exactly as-is (task: "the values not the button"), the schema entry only supplies that box's *label*. No fixed FieldId list: any field an admin flags `Calculated: true` routes here, so a custom calculated field works the same way without a code change. */
+/** A `Calculated` field (`Field.Calculated`, e.g. the default schema's Gross/Tare/Net/Charge) belongs in CalcCard's "Captured & calculated" card, not the generic Ticket field loop — capture/formula logic stays exactly as-is, the schema entry only supplies that box's *label*. No fixed FieldId list: any field an admin flags `Calculated: true` routes here, so a custom calculated field works the same way without a code change. */
 export const isCalculatedField = (field: Field): boolean => field.Calculated === true;
 
 /** Looks up `fieldId`'s Label in the active Schema, falling back to `fallback` (usually a plain i18n string, e.g. `t(FIELD_LABEL_KEYS[fieldId])`) when the schema has no such field or that field carries no `Label` of its own — shared by TicketFieldsCard's fixed rows and CalcCard's capture boxes. */

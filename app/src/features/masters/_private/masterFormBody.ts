@@ -8,7 +8,7 @@ import type { MasterFormState } from "./masterFormState";
 // Non-StoredTare kinds now build it generically from `columns` (the active
 // kind's schema-declared Masters columns) instead of a fixed
 // notes/rate/email/phone shape — a new column just works without touching
-// this file (task: "specify what all column we need for master").
+// this file — lets you specify what all column a master needs.
 export const buildMasterBody = (
     activeKind: MasterKind,
     form: MasterFormState,

@@ -4,8 +4,8 @@ import type { IndicatorListener, IndicatorReading } from "../types";
 
 // Shared "settle physics" behind both indicator adapters' `loadLorry` —
 // originally simulatedIndicator.ts-only, now also driving serialIndicator.ts
-// (task: the "Show 'Send to lorry' button" setting must actually work on
-// the real/desktop build too, not just be hidden there). A damped bounce
+// so the "Show 'Send to lorry' button" setting actually works on
+// the real/desktop build too, not just be hidden there. A damped bounce
 // toward `target` rather than a snap, so the Stability gate has something
 // real to gate on either way.
 const TICK_MS = 70;

@@ -5,8 +5,8 @@ import { renderWithI18n } from "../../../../testUtils";
 import { ReportBuilderModal } from "../ReportBuilderModal";
 import type { ReportBuilderModalProps } from "../ReportBuilderModal";
 
-// Report-builder wizard (task: Reports rework — "guided wizard, not a flat
-// page"). Covers the shape that matters: one step's controls visible at a
+// Report-builder wizard — "guided wizard, not a flat
+// page". Covers the shape that matters: one step's controls visible at a
 // time, Back/Next moving between them, and every field's onChange wired to
 // the right prop regardless of which step it lives on.
 const baseProps = (): ReportBuilderModalProps => ({

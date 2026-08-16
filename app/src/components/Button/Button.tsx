@@ -26,7 +26,7 @@ const SIZE_CLASS: Record<ButtonSize, string | undefined> = {
 };
 
 // Every button in the app — capture, save, print, cancel — is this one
-// component (PLAN §10). Enter-as-Tab (PLAN §13) walks buttons the same way
+// component. Enter-as-Tab walks buttons the same way
 // it walks fields; nothing here opts out of that, it is plain <button>.
 export const Button = ({
     variant = "default",

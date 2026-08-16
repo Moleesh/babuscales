@@ -10,7 +10,7 @@ export interface CardProps {
     children: ReactNode;
 }
 
-// The one panel every screen is built from (PLAN §10) — a bordered
+// The one panel every screen is built from — a bordered
 // surface with an optional header strip and a padded body. Ported from the
 // mock's ".card"/".card>header"/".card>.body".
 export const Card = ({ title, headerRight, children }: CardProps) => (

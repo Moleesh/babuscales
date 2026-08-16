@@ -5,7 +5,7 @@ import { computeValue } from "@engines/billing";
 import type { UseWeighingTicket } from "../useWeighingTicket";
 
 export interface TicketBilling {
-    /** Whatever the operator has typed into the Charge field, parsed to a number — no auto-calc (task: "no need for charge calculation also"). Same "empty or non-numeric means not entered yet" rule `buildTicketBody` uses when saving it. */
+    /** Whatever the operator has typed into the Charge field, parsed to a number — no auto-calc. Same "empty or non-numeric means not entered yet" rule `buildTicketBody` uses when saving it. */
     charge: number | null;
     materialRate: number | null;
     value: number | null;

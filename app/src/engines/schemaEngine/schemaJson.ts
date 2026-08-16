@@ -4,7 +4,7 @@ import { MASTER_KINDS } from "@db/types";
 
 import type { Schema } from "./types";
 
-// Validates an uploaded schema .json (task #50, PLAN §8) the same way
+// Validates an uploaded schema .json the same way
 // legacyImportBundle.ts validates an import bundle — untrusted the moment
 // it leaves the filesystem picker, parsed once here rather than trusted by
 // every reader. Mirrors `types.ts`'s `Field` union field-for-field; keep

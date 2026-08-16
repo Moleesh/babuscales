@@ -20,7 +20,7 @@ export interface LicenseProviderProps {
 // Owns the `"license"` config row the same way SettingsProvider owns
 // `"settings"` — persistence through the existing generic
 // `getConfig`/`saveConfig` commands, no config-specific Tauri command of its
-// own (task #37's `commands/licensing.rs` is deliberately stateless — see
+// own (`commands/licensing.rs` is deliberately stateless — see
 // its own module doc). What's new here versus Settings: every write to
 // `ActivationCode` is validated against the real crypto (`source.evaluate`)
 // *before* it's persisted, so a mistyped paste is reported back rather than

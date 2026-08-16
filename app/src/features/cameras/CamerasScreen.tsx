@@ -15,7 +15,7 @@ export interface CamerasScreenProps {
 // `data-screen="cameras"`) — a fixed 4-slot fixture (cameraFixtures.ts),
 // no real video anywhere in the reference spec either. Real capture
 // (USB/IP/RTSP/ONVIF, overlay burn-in on an actual frame, retention, ANPR)
-// is PLAN §16 in full — a documented gap (app/README.md), not something
+// is a documented gap (app/README.md), not something
 // this screen or the mock it's ported from claims to do.
 export const CamerasScreen = ({ ticket }: CamerasScreenProps) => {
     const { t } = useTranslation();

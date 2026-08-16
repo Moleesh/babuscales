@@ -1,13 +1,13 @@
 import type { CaptureType } from "@db/ticketBody";
 
-// PLAN §4.8 — an indicator is one of N named serial devices. This is the
+// An indicator is one of N named serial devices. This is the
 // shape every source of weight readings shares: today a simulated deck
 // (simulatedIndicator.ts), later a real Tauri serial-port adapter — the
-// Weighing screen (Task 14) only ever talks to this interface.
+// Weighing screen only ever talks to this interface.
 
 export interface IndicatorReading {
     WeightKg: number;
-    /** PLAN §13 — the capture control stays disabled until this is true. */
+    /** The capture control stays disabled until this is true. */
     Stable: boolean;
 }
 
@@ -44,8 +44,7 @@ export interface StabilityOptions {
 /** "none" | "odd" | "even" — mirrors src-tauri/src/devices/indicator.rs's `IndicatorFraming.parity`. */
 export type IndicatorParity = "none" | "odd" | "even";
 
-/** The wire framing Rust wasn't previously asked about at all (task: "for
- * capturing the indicator setting ... what all settings do we use") — data
+/** The wire framing Rust wasn't previously asked about at all — data
  * bits/parity/stop bits were hardcoded to 8-N-1, the line terminator to
  * `\n`, and there was no way to handle a reversed-digit indicator. Kept as
  * its own object (not flattened into `IndicatorConnectionConfig`) so it

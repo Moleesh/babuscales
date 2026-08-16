@@ -12,7 +12,7 @@ export interface UseSavedReportActionsArgs {
     view: ReportView;
     groupBy: GroupKey;
     filter: TicketRowFilter;
-    /** Report-builder wizard MVP (task: Reports rework, item 4) — saved
+    /** Report-builder wizard MVP — saved
      * alongside View/GroupBy/Filter so a recalled report also restores its
      * date range and column selection. */
     dateFrom: string;
@@ -80,7 +80,7 @@ const useLoadedReportDefs = (db: DataPort): [ReportDefinition[], (defs: ReportDe
 };
 
 // Split out of ReportsScreen (over the line/complexity budget —
-// docs/CodingStandards.md) — task #54's saved-report-definitions
+// docs/CodingStandards.md) — the saved-report-definitions
 // save/recall/delete handlers, unchanged from the inline version it
 // replaces.
 export const useSavedReportActions = ({

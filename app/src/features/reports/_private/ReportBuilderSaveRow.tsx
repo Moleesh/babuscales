@@ -13,8 +13,8 @@ export interface ReportBuilderSaveRowProps {
 // docs/CodingStandards.md) — the "save current picks as a named report"
 // row, wired to the same useSavedReportActions the always-visible
 // SavedReportsRow uses. The modal's own Done/Finish button moved to
-// ReportBuilderNav once the builder became a step wizard (task: Reports
-// rework — "guided wizard, not a flat page").
+// ReportBuilderNav once the builder became a step wizard — "guided wizard,
+// not a flat page".
 export const ReportBuilderSaveRow = ({
     newReportName,
     onNewReportNameChange,

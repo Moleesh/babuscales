@@ -26,12 +26,12 @@ export interface AppShellProps {
     activeTab: string;
     onNavigate: (key: string) => void;
     /** Comm/operator/admin chips and the help button — feature-owned, not the shell's business.
-        Collapses behind TopBarOverflow's "..." menu once the row is too narrow (task #62). */
+        Collapses behind TopBarOverflow's "..." menu once the row is too narrow. */
     topRight?: ReactNode;
     /** The always-on-top pin toggle (App.tsx) — always visible in the top bar,
-        never collapsed into the overflow menu (task #62). */
+        never collapsed into the overflow menu. */
     pin?: ReactNode;
-    /** The weight indicator readout — sits above every screen, full-size on Weighing (PLAN §13). */
+    /** The weight indicator readout — sits above every screen, full-size on Weighing. */
     header?: ReactNode;
     /** A persistent, full-width strip above every screen (e.g. `@features/licensing`'s trial/expiry notice) — feature-owned content, same as `topRight`/`header`; the shell just reserves the slot. Absent (not rendered) when there's nothing to say. */
     banner?: ReactNode;
@@ -42,7 +42,7 @@ interface TabButtonProps {
     tab: AppShellTab;
     active: boolean;
     onNavigate: (key: string) => void;
-    /** Set for tabs rendered inside TopBarOverflow's menu (task #62) — swaps
+    /** Set for tabs rendered inside TopBarOverflow's menu — swaps
         the `role` and always shows the label, which the icon-only <=880px
         rule would otherwise hide. */
     inMenu?: boolean;
@@ -69,8 +69,8 @@ interface TopBarProps extends Pick<AppShellProps, "siteLabel" | "activeTab" | "o
 }
 
 // The brandbox + tabs + secondary-controls row itself, split out of
-// AppShell below purely to stay under the file's own line budget — task
-// #62's overflow split (which tabs render inline vs. inside
+// AppShell below purely to stay under the file's own line budget — the
+// overflow split (which tabs render inline vs. inside
 // TopBarOverflow's menu) is still decided by AppShell, not here.
 const TopBar = ({ siteLabel, tabs, activeTab, onNavigate, topRight, pin, sectionsLabel }: TopBarProps) => {
     const barRef = useRef<HTMLElement>(null);
@@ -120,12 +120,12 @@ const TopBar = ({ siteLabel, tabs, activeTab, onNavigate, topRight, pin, section
     );
 };
 
-// The five-tab frame every screen lives inside (PLAN §13.1 — dashboard,
+// The five-tab frame every screen lives inside — dashboard,
 // weighing, cameras, reports, masters; Settings moved to the secondary
-// controls, App.tsx's `topRight`). Enter-as-Tab is wired here once, for the
+// controls, App.tsx's `topRight`. Enter-as-Tab is wired here once, for the
 // whole app, rather than per-screen.
 //
-// Task #62: primary tabs must never visually clip. `TopBar` (above) uses
+// Primary tabs must never visually clip. `TopBar` (above) uses
 // `useVisibleTabCount` to decide how many of `tabs` fit the row at the
 // current width; whatever's left moves into the same TopBarOverflow menu
 // that already collapses the secondary controls, trailing tabs first.
@@ -143,9 +143,9 @@ export const AppShell = ({
     useEnterAsTab();
     const { t } = useTranslation();
     const mainRef = useRef<HTMLDivElement>(null);
-    // Mounted once, app-wide, same as CustomCursor — see useContextMenu.ts
-    // (task: "remove rightclick in destop view, i can have copy cut paste
-    // no need others").
+    // Mounted once, app-wide, same as CustomCursor — see useContextMenu.ts,
+    // which replaces the native right-click menu in desktop view so the
+    // app can offer its own copy/cut/paste instead.
     const { menu, close } = useContextMenu();
 
     return (

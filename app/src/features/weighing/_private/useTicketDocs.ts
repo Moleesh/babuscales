@@ -5,7 +5,7 @@ import { useDataPort } from "@db/useDataPort";
 
 export interface UseTicketDocs {
     allTicketDocs: DocRow[];
-    /** True until the first `listDocs` resolves — lets WeighingScreen show a spinner in the open-ticket strip instead of a silent, unresponsive-looking gap while this (currently unbounded — PLAN §21) fetch is in flight. Mirrors `useReportDocs`'s own `loading` flag. */
+    /** True until the first `listDocs` resolves — lets WeighingScreen show a spinner in the open-ticket strip instead of a silent, unresponsive-looking gap while this (currently unbounded) fetch is in flight. Mirrors `useReportDocs`'s own `loading` flag. */
     loading: boolean;
     bumpRefresh: () => void;
 }

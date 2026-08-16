@@ -17,7 +17,7 @@ export interface MastersListCardProps {
     rows: MasterRow[];
     loading: boolean;
     onRowClick: (row: MasterRow) => void;
-    /** Keyset-paginated "Load more" (PLAN §21) — undefined/false hides the button entirely. */
+    /** Keyset-paginated "Load more" — undefined/false hides the button entirely. */
     hasMore?: boolean;
     loadingMore?: boolean;
     onLoadMore?: () => void;

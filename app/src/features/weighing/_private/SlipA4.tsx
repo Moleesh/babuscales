@@ -67,8 +67,8 @@ const SlipLoadsTable = ({ loads }: { loads: SlipData["GrossLoads"] }) => (
 // so React escapes every field automatically instead of needing the mock's
 // own `esc()` calls. The mock's own "Verify: babuscales.app/v/…" footer line
 // was dropped for the longest part of this build (that URL didn't resolve to
-// anything real) — now that @engines/verification's local server exists
-// (task #33), it's back as a real, scannable QR pointing at this exact
+// anything real) — now that @engines/verification's local server exists,
+// it's back as a real, scannable QR pointing at this exact
 // ticket's page, and only when data.VerifyUrl is actually set: a ticket
 // printed before it's saved, or with the integration off, gets no footer
 // line at all rather than a dead link.

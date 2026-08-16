@@ -1,9 +1,9 @@
 import type { JsonRecord } from "./types";
 
-// PLAN §9.1 — "Stored Tares get their own view — vehicle, weight, captured
+// "Stored Tares get their own view — vehicle, weight, captured
 // date and time, age, party, and a staleness warning." Shared between the
-// Masters browser (the view itself) and Weighing (§9.2's recall offer).
-// The default expiry window is a placeholder; PLAN §9.2 calls for it to be
+// Masters browser (the view itself) and Weighing (the recall offer).
+// The default expiry window is a placeholder; it's meant to become
 // a configurable "strict tare" setting, which is Settings work — tracked
 // as a known gap (app/README.md) rather than hardcoded permanently.
 export const STORED_TARE_STALE_AFTER_DAYS = 30;

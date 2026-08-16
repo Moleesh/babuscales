@@ -26,7 +26,7 @@ export interface SlipData {
     Operator: string;
     /** "" for the first print, "DUPLICATE COPY N" after — mirrors the mock's `state.prints`/`p.copy`. */
     Copy: string;
-    /** The ticket's QR-verification page URL (@engines/verification, PLAN §18), or null when the feature is off / unavailable (Settings → Connections → Integrations → "QR verification page", or the GitHub Pages/memory-adapter build). Never fabricated — see SlipA4's own comment on why the mock's always-on placeholder line was dropped. */
+    /** The ticket's QR-verification page URL (@engines/verification), or null when the feature is off / unavailable (Settings → Connections → Integrations → "QR verification page", or the GitHub Pages/memory-adapter build). Never fabricated — see SlipA4's own comment on why the mock's always-on placeholder line was dropped. */
     VerifyUrl: string | null;
 }
 

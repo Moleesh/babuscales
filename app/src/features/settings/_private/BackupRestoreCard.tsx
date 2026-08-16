@@ -8,13 +8,14 @@ import { BackupActionsRow } from "./BackupActionsRow";
 import { RestoreConfirmRow } from "./RestoreConfirmRow";
 import { useBackupRestoreActions } from "./useBackupRestoreActions";
 
-// PLAN §14 "real data must never exist without a way out of the file it
-// lives in" — item 6 built DataPort.exportBackup/importBackup and the real
+// "Real data must never exist without a way out of the file it
+// lives in" — DataPort.exportBackup/importBackup and the real
 // work behind them (Rust: VACUUM INTO + integrity check + SHA-256
 // checksum, src-tauri/src/store/backup.rs; web demo: a full JSON snapshot,
-// src/db/adapters/memory/backup.ts) and verified the round trip, but never
-// wired either method to anything an admin could actually click — task #6
-// was "done" at the engine layer only. This card is that missing wire.
+// src/db/adapters/memory/backup.ts) were built and the round trip was
+// verified, but neither method was ever wired to anything an admin could
+// actually click — that was "done" at the engine layer only. This card is
+// that missing wire.
 //
 // Plain Blob download / `<input type="file">` upload, the same
 // browser-native mechanism FieldsLanguagePane's language-pack picker

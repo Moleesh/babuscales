@@ -19,9 +19,8 @@ export interface UseIntegrationsActions {
 // outbox-worker task — webhook/tally/board too (see IntegrationConfigCard):
 // only Cloud backup stays the mock's own "here's where this would be
 // configured" placeholder now (app/README.md known gap). WhatsApp
-// specifically will never join that list: PLAN §23 open item 5 flags it as
-// "the only per-message cost", and task #44 (app/README.md item 31)
-// recorded why there's no compliant free path to wire it to — Meta's Cloud
+// specifically will never join that list: it's "the only per-message cost",
+// and app/README.md item 31 recorded why there's no compliant free path to wire it to — Meta's Cloud
 // API is paid, and the unofficial alternative violates WhatsApp's own Terms
 // of Service.
 export const useIntegrationsActions = ({

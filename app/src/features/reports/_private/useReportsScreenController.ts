@@ -32,8 +32,7 @@ export interface UseReportsScreenControllerArgs {
     /** Dashboard's "waiting" KPI tile navigates here wanting the "waiting on
      * a second weight" filter already applied — without this, the tab
      * switch always landed on the default Tickets/All view regardless of
-     * which KPI sent the operator here (PLAN §21 bug report: "opens report
-     * but it's not on the right tab"). Bumped by a counter, not a boolean,
+     * which KPI sent the operator here. Bumped by a counter, not a boolean,
      * so clicking the same tile twice in a row re-applies the filter even
      * if the operator had since changed it by hand. */
     reportsIntent: { kind: "waiting"; nonce: number } | null;

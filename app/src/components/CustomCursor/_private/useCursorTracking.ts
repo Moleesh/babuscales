@@ -28,8 +28,7 @@ const TEXT_SELECTOR = [
 
 // Small clickable rows (Select's own options, SearchableDropdown's option
 // buttons) opt into a smaller hover ring than the default 38px — that size
-// was tuned for regular buttons/chips and dwarfed a compact list row (task:
-// "when hovering the dropdown can we make it smaller?"). Any element that
+// was tuned for regular buttons/chips and dwarfed a compact list row. Any element that
 // wants this just carries `data-cursor="compact"`.
 const COMPACT_SELECTOR = '[data-cursor="compact"]';
 
@@ -119,9 +118,9 @@ export const useCursorTracking = (enabled: boolean): CursorTracking => {
         // Scrolling any panel underneath a stationary pointer moves content,
         // not the mouse — Chromium never dispatches mouseover/mouseout for
         // that, so `resolveHover` above never re-runs and the ring keeps
-        // showing whatever was under the cursor *before* the scroll (task:
-        // ring left floating over a card's header after the Set button that
-        // was actually hovered scrolled out from under it). `elementFromPoint`
+        // showing whatever was under the cursor *before* the scroll — the
+        // ring was left floating over a card's header after the Set button
+        // that was actually hovered scrolled out from under it. `elementFromPoint`
         // at the last-known screen position re-resolves what's really there
         // now. Capture + any scrollable ancestor, not just window, since
         // `.main`'s own scroll (AppShell) is what triggers this most.

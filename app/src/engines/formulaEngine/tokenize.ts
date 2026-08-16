@@ -1,4 +1,4 @@
-// The lexer for the formula language (PLAN §8.1). Deliberately tiny: no
+// The lexer for the formula language. Deliberately tiny: no
 // eval, no IO — just numbers, identifiers, string literals, operators and
 // punctuation. A field's formula is untrusted-ish site configuration, not
 // code the app ships with, so this stays a closed grammar.

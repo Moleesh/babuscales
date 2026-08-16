@@ -1,10 +1,10 @@
 import { z } from "zod";
 
-// PLAN §22 Phase 7 — "legacy v1/v2 import": a one-time tool for a site
-// moving off VaultBill (the older desktop products this plan calls v1/v2,
-// PLAN §4/§6/§12 throughout) onto BabuScales. VaultBill's real v1/v2
-// database (an `update.sql`-patched, ad-hoc-column SQLite/Access file,
-// PLAN §6 line 222) isn't available to this codebase to read natively —
+// Legacy v1/v2 import: a one-time tool for a site
+// moving off VaultBill (the older desktop products referred to as v1/v2)
+// onto BabuScales. VaultBill's real v1/v2
+// database (an `update.sql`-patched, ad-hoc-column SQLite/Access file)
+// isn't available to this codebase to read natively —
 // there is no v1/v2 source tree here to introspect. What's honest to build
 // instead is this documented JSON interchange format: a site converts its
 // outgoing data into a bundle shaped like this (by hand for a small site,
@@ -13,8 +13,8 @@ import { z } from "zod";
 // same `DataPort.saveMaster`/`saveDoc` calls every other feature uses, with
 // nothing bypassed and nothing assumed about how the old data got here.
 //
-// Deliberately one JSON file, not nine CSVs (one per master kind, PLAN
-// §9.1, plus tickets) — `Masters` bulk import/export at real scale is
+// Deliberately one JSON file, not nine CSVs (one per master kind,
+// plus tickets) — `Masters` bulk import/export at real scale is
 // already its own tracked gap (MastersScreen.tsx's own comment); building
 // eight separate ad-hoc CSV importers here would both duplicate that future
 // work and be a worse experience than one file a migration script can emit

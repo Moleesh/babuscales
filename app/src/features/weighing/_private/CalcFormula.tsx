@@ -34,10 +34,8 @@ export const CalcFormula = ({
 }: CalcFormulaProps) => {
     if (netKg === null || tareKg === null || grossKg === null) return null;
     // `netKg` is always `grossKg - tareKg`, clamped to 0 — never swapped,
-    // never absolute-valued (task: "Net formula is always gross - tare, and
-    // if the calculation is less than 0 we show zero no need to swap"). So
-    // the displayed subtraction always reads Gross − Tare too, even for a
-    // ticket that nets to 0.
+    // never absolute-valued. So the displayed subtraction always reads
+    // Gross − Tare too, even for a ticket that nets to 0.
     // `formatWeightIn` already appends the unit itself, so the formula's
     // own literal " kg" suffixes are gone below.
     const netLine =

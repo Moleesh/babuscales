@@ -45,8 +45,7 @@ const actionsHint = ({ ticket, reading, armed, gated, t }: ActionsHintArgs): str
     // Save before the next one — distinct from `isComplete` (both weights
     // in) and from the ordinary "nothing on the deck yet" hints below.
     if (!ticket.kind && ticket.captures.length > 0) return t("weigh.awaitingSave");
-    // A single-weight save that's stayed on screen (task: "print is only
-    // happening when we have both tare and gross") — already in the DB and
+    // A single-weight save that's stayed on screen — already in the DB and
     // printable, just not `isLocked` yet since the second weight hasn't
     // landed. Checked after the awaitingSave branch above so a capture that
     // hasn't been saved even once yet still gets that hint instead.
@@ -83,10 +82,9 @@ const SaveAndPrintRow = ({
             >
                 {ticket.isComplete ? t("weigh.save") : t("weigh.saveAndPark")}
             </Button>
-            {/* `docId` rather than `isLocked` (task: "print is only happening
-                when we have both tare and gross, we need it for both") — a
-                single-weight save stays on screen already persisted, and
-                should be printable just like a complete/locked one. */}
+            {/* `docId` rather than `isLocked` — a single-weight save stays on
+                screen already persisted, and should be printable just like a
+                complete/locked one. */}
             <Button disabled={!ticket.docId || ticket.printCount > 0} onClick={onOpenPrintModal}>
                 {t("weigh.print")}
             </Button>
@@ -114,7 +112,7 @@ const ReprintRow = ({
 // in-progress captures instead of discarding them). Removed: with no
 // captures yet — the overwhelmingly common moment either gets clicked —
 // both just reset the empty form, so the two read as one button doing the
-// same thing twice (PLAN §21 bug report). "New ticket" is the one kept: its
+// same thing twice. "New ticket" is the one kept: its
 // park-in-progress-work behaviour is a strict superset of what "Clear" did.
 const SendLorryRow = ({ ticket, loadLorry }: Pick<ActionsCardProps, "ticket" | "loadLorry">) => {
     const { t } = useTranslation();
@@ -141,7 +139,7 @@ export interface ActionsCardProps {
     armed: boolean;
     /** `useLicense().isGated` — blocks Save (a new row hitting the DB) in addition to `armed` already blocking capture; see WeighingScreen's own `licenseGated` prop comment for why Print/Reprint of an already-saved ticket stays open. */
     gated: boolean;
-    /** A custom Field's Block-severity Validate rule is currently failing (PLAN §8) — blocks Save the same way `gated` does. Computed in WeighingScreen, threaded through WeighingRightColumn. */
+    /** A custom Field's Block-severity Validate rule is currently failing — blocks Save the same way `gated` does. Computed in WeighingScreen, threaded through WeighingRightColumn. */
     hasBlockingCustomFieldError: boolean;
     captureLabel: string;
     captureHint: string;

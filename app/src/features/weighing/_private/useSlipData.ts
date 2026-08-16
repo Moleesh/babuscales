@@ -37,7 +37,7 @@ export const useSlipData = ({ ticket, settings, charge, verifyUrl, lang }: UseSl
                 // loads did" — kept even now that GrossLoads (below) carries
                 // every load's own timestamp too.
                 grossAt: ticket.captures.filter((c) => c.Type === "Gross").at(-1)?.At ?? null,
-                // Task #46's itemised per-load breakdown (PLAN §21) — one
+                // The itemised per-load breakdown — one
                 // entry per Gross capture; every renderer collapses this
                 // back to the single GROSS line above when there's only one.
                 grossLoads: ticket.captures

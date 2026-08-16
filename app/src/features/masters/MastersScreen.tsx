@@ -13,7 +13,7 @@ import { useMastersScreenState } from "./_private/useMastersScreenState";
 import styles from "./_styles/MastersScreen.module.css";
 import { buildKindOptions } from "./masterKindMeta";
 
-// PLAN §9.1 — one screen for everything saved: Parties, Materials,
+// One screen for everything saved: Parties, Materials,
 // Vehicles, Vehicle Types, Transporters, Places, Operators, Stored Tares.
 // FTS5 search and row virtualisation are still not built (app/README.md
 // known gap); keyset pagination for the visible list is (useMasterListPage,
@@ -31,9 +31,9 @@ export const MastersScreen = () => {
     const { ticketSchema } = useSchema();
     const [activeKind, setActiveKind] = useState<MasterKind>("Party");
     const [query, setQuery] = useState("");
-    // Which extra columns this kind's records carry (task: "specify what
+    // Which extra columns this kind's records carry — "specify what
     // all column we need for master ... that's how the master have to be
-    // populated") — Schema.Masters, defaults to none for a kind the active
+    // populated" — Schema.Masters, defaults to none for a kind the active
     // schema doesn't declare (an upload that predates this feature, or a
     // custom kind nobody configured columns for yet).
     const masterColumns = useMemo(

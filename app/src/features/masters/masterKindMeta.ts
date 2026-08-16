@@ -12,8 +12,8 @@ export interface MasterKindMeta {
     AddNewLabel: Localized;
 }
 
-// PLAN §9.1 — "One screen for everything saved". Order matches the PLAN
-// prose order (Parties · Materials · Vehicles · Vehicle Types ·
+// "One screen for everything saved". Order matches the documented
+// order (Parties · Materials · Vehicles · Vehicle Types ·
 // Transporters · Places · Operators · Stored Tares).
 export const MASTER_KIND_ORDER: MasterKind[] = [...MASTER_KINDS];
 

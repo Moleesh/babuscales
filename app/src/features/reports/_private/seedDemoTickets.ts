@@ -11,8 +11,7 @@ import {
     DEMO_VEHICLES,
 } from "./demoTicketFixtures";
 
-// Dev-only demo-data seeder for the Reports screen (task: "add dummy data
-// for Reports"). Never called on app start — only from the explicit,
+// Dev-only demo-data seeder for the Reports screen. Never called on app start — only from the explicit,
 // dev-gated "Add sample tickets" control in ReportsHeaderActions. Writes
 // through the same `DataPort.saveDoc`/`allocateDocSeq` every real ticket
 // uses (useWeighingTicket.ts's own `save()`), so seeded tickets are

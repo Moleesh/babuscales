@@ -66,8 +66,8 @@ const MasterColumnInput = ({
 // docs/CodingStandards.md) — the Name field plus every schema-declared
 // Masters column (Schema.Masters, App.tsx's ticketSchema) for the active
 // kind, replacing what used to be a fixed notes/rate/email/phone shape
-// hardcoded per-kind here (task: "specify what all column we need for
-// master ... that's how the master have to be populated"). Stored Tare has
+// hardcoded per-kind here — lets you specify what all column a master needs,
+// that's how the master have to be populated. Stored Tare has
 // its own StoredTareFormFields instead — it isn't schema-driven.
 export const MasterFormFields = ({ columns, lang, form, onChange }: MasterFormFieldsProps) => {
     const { t } = useTranslation();

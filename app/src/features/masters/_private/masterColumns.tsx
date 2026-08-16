@@ -58,7 +58,7 @@ const renderColumnValue = (column: MasterColumn, raw: unknown): string => {
 
 // One DataTable column per schema-declared Masters column (Schema.Masters,
 // App.tsx's ticketSchema) — replaces the old fixed rate/email/phone/notes
-// branches (task: "specify what all column we need for master").
+// branches — lets you specify what all column a master needs.
 const dynamicColumns = (masterColumns: MasterColumn[], lang: string, t: Translate): DataTableColumn<MasterRow>[] =>
     masterColumns.map((column) => ({
         key: column.FieldId,

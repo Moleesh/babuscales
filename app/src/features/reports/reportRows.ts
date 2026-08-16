@@ -1,11 +1,11 @@
 import { deriveWeights, isOpenTicket, parseTicketBody } from "@db/ticketBody";
 import type { DocRow } from "@db/types";
 
-// PLAN §13.1 — "there is no Tickets tab... a ticket list is a report that
+// "There is no Tickets tab... a ticket list is a report that
 // has not been grouped yet." This is the one place `doc` rows become the
 // flat, sortable shape both the Tickets view and the Summary view read
-// from. `charge` is a plain operator-entered ticket field (task: "no need
-// for charge calculation also" — no auto-calc), so it's just read straight
+// from. `charge` is a plain operator-entered ticket field — no auto-calc,
+// no need for charge calculation — so it's just read straight
 // off the body like challanNo, absent (null) until someone types one in.
 
 export interface TicketRow {
@@ -24,7 +24,7 @@ export interface TicketRow {
     netKg: number | null;
     charge: number | null;
     isCancelled: boolean;
-    /** Parked with exactly one weight — PLAN §7.5. */
+    /** Parked with exactly one weight. */
     isOpen: boolean;
     /** Latest capture's timestamp, or the doc's own update time if it has none yet. */
     at: string;
@@ -176,8 +176,7 @@ export const sortTicketRows = (
     return sortDir === "asc" ? sorted : sorted.reverse();
 };
 
-/** Ticket-column keys the report-builder wizard (task: Reports rework,
- * item 4) can show/hide — mirrors reportColumns.tsx's `buildTicketColumns`
+/** Ticket-column keys the report-builder wizard can show/hide — mirrors reportColumns.tsx's `buildTicketColumns`
  * key list 1:1, minus "action" (Resume/Reprint isn't a data column, always
  * shown). */
 export const TICKET_COLUMN_KEYS = [

@@ -4,7 +4,7 @@ import type { ReactElement } from "react";
 
 import { I18nProvider } from "@i18n/I18nProvider";
 
-// Shared test helper (task #61) — most components read the active
+// Shared test helper — most components read the active
 // language through I18nContext (useTranslation), so plain render() throws
 // "useTranslation must be used within an I18nProvider". Wraps in an empty
 // pack list, which I18nProvider itself falls back to English for. Uses

@@ -10,8 +10,8 @@ export interface DatePickerProps {
     id?: string;
     /** "" (no date picked) or a plain "YYYY-MM-DD" — exactly what
      * `<input type="date">`'s own `.value` already produces/consumes, so
-     * swapping this in is a drop-in replacement for every current consumer
-     * (task: "do not change any downstream data shape"). */
+     * swapping this in is a drop-in replacement for every current consumer,
+     * without changing any downstream data shape. */
     value: string;
     onChange: (value: string) => void;
     disabled?: boolean;
@@ -65,8 +65,8 @@ const todayIso = (): string => {
 // A plain `<input type="date">`'s own popup is drawn by the OS/webview, not
 // this page — same problem Select.tsx already solved for `<select>`: none
 // of the app's CSS can theme it, and the custom cursor follower can't reach
-// it either (task: "hovering it shows the legacy native OS pointer instead
-// of the app's custom cursor"). This renders the whole calendar as ordinary
+// it either — hovering it would show the legacy native OS pointer instead
+// of the app's custom cursor. This renders the whole calendar as ordinary
 // DOM buttons instead, styled and cursor-tracked like the rest of the app.
 export const DatePicker = ({ id, value, onChange, disabled, dateFmt, ...rest }: DatePickerProps) => {
     const { t, lang } = useTranslation();

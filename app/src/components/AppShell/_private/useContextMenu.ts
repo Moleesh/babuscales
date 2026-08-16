@@ -15,9 +15,9 @@ export interface ContextMenuState {
     target: HTMLElement;
 }
 
-// Suppresses the native Chromium context menu app-wide (task: "remove
-// rightclick in destop view, i can have copy cut paste no need others") —
-// this is a desktop app, not a web page, so "View source"/"Inspect"/"Save
+// Suppresses the native Chromium context menu app-wide — desktop view
+// needs copy/cut/paste, not the rest — this is a desktop app, not a web
+// page, so "View source"/"Inspect"/"Save
 // as"/"Send tab to your devices" etc. are all dead weight that don't apply
 // and look like a browser leaking through. The one thing worth keeping is
 // Cut/Copy/Paste over actual text fields, which ContextMenu.tsx renders as

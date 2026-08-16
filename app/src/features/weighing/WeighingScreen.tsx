@@ -41,10 +41,10 @@ const computeHasBlockingCustomFieldError = (
 };
 
 export interface WeighingScreenProps {
-    /** Lifted to Shell (PLAN §13.1) so Reports can resume a ticket into the same deck across a tab switch. */
+    /** Lifted to Shell so Reports can resume a ticket into the same deck across a tab switch. */
     ticket: UseWeighingTicket;
     /**
-     * `useLicense().isGated` (task #38) — the one place licence state
+     * `useLicense().isGated` — the one place licence state
      * actually changes what the operator can do: a lapsed trial or invalid
      * code blocks new captures and Save, but never touches an
      * already-open ticket's fields, Reports, Dashboard or Masters — those
@@ -53,15 +53,15 @@ export interface WeighingScreenProps {
      * they're entitled to see, only out of adding more of it.
      */
     licenseGated: boolean;
-    /** Jumps out to the Cameras tab from the sidebar's "Go to Cameras" shortcut — App.tsx owns tab state, this screen doesn't (PLAN §21). */
+    /** Jumps out to the Cameras tab from the sidebar's "Go to Cameras" shortcut — App.tsx owns tab state, this screen doesn't. */
     onNavigateToCameras: () => void;
 }
 
-// PLAN §7 end to end: an ordered capture array (§7.1), a stability-gated
-// deck (§13), one status derived from the weights (§7.4), the open-ticket
-// strip so many lorries can be in flight at once (§7.5), a simplified
-// recall banner (§9.2), and the mock's own `camCard` sidebar (a decorative
-// preview tied to this same ticket state — @features/cameras). Real
+// End to end: an ordered capture array, a stability-gated deck, one status
+// derived from the weights, the open-ticket strip so many lorries can be in
+// flight at once, a simplified recall banner, and the mock's own `camCard`
+// sidebar (a decorative preview tied to this same ticket state —
+// @features/cameras). Real
 // print-template editing is a separate, not-yet-built feature
 // (app/README.md known gap) — this screen does not render it.
 export const WeighingScreen = ({ ticket, licenseGated, onNavigateToCameras }: WeighingScreenProps) => {
@@ -127,7 +127,7 @@ export const WeighingScreen = ({ ticket, licenseGated, onNavigateToCameras }: We
                     // Both adapters implement `indicator.loadLorry` now
                     // (serialIndicator.ts layers the same settle physics over
                     // its own readings) — `ShowSendLorry` (Settings →
-                    // Weighing Rules) is the only gate left, PLAN §21.
+                    // Weighing Rules) is the only gate left.
                     loadLorry: settings.Rules.ShowSendLorry ? indicator.loadLorry : undefined,
                     armed,
                     gated: licenseGated,

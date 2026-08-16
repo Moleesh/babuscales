@@ -6,7 +6,7 @@ import styles from "./_styles/ConnectionsPane.module.css";
 import { RemoteAccessTokenFields } from "./RemoteAccessTokenFields";
 import { useRemoteAccessConnection } from "./useRemoteAccessConnection";
 
-// PLAN §18's own separate "Remote access — Cloudflare Tunnel" spec — not
+// Its own separate "Remote access — Cloudflare Tunnel" spec — not
 // one of the mock's INTEGRATIONS fixtures (it isn't in demo/BabuScales-demo.html
 // at all), so it gets its own card rather than a ninth IntegrationRow.
 // `RemoteAccess.Enabled` is the one part of "on or off" that is ordinary

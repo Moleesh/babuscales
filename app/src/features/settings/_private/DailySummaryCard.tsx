@@ -10,7 +10,7 @@ import styles from "./_styles/SystemPane.module.css";
 import { DailySummaryScheduleFields } from "./DailySummaryScheduleFields";
 import { useDailySummarySend } from "./useDailySummarySend";
 
-// Task #45 — PLAN §18's "scheduled daily summary", the manual half:
+// The "scheduled daily summary", the manual half:
 // `DailySummarySync` (App.tsx) is the automatic half, checking once a
 // minute whether it's time to send; this card configures what it sends to
 // and when, plus a "Send now" button that runs the exact same

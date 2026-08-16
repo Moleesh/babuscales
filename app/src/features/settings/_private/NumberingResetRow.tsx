@@ -10,7 +10,7 @@ export interface NumberingResetRowProps {
 
 // Split out of TicketNumberingCard (over the line budget — docs/CodingStandards.md)
 // — the "Reset the counter now" confirm row. Confirm copy routed through
-// `t()` (task: fresh-series reset) — a stronger warning than the original
+// `t()` — a stronger warning than the original
 // one-liner, spelling out that this starts a brand-new series, old tickets
 // survive, and Reports hides them by default afterward (reportRows.ts's
 // filterRowsBySeries, ReportsDateRangeRow's "include backed" toggle).

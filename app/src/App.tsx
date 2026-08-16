@@ -59,7 +59,7 @@ import { useTranslation } from "@i18n/useTranslation";
 
 const TAB_KEYS = ["dash", "weigh", "cameras", "reports", "masters", "settings"] as const;
 
-// The 5 primary tabs AppShell shows in its nav row (task #62) — Settings
+// The 5 primary tabs AppShell shows in its nav row — Settings
 // moved to the secondary top-bar controls (TopBarActions below), reached by
 // its own icon button next to Language/Operator/Help, same "not a
 // screen-switching tab" treatment as those already had.
@@ -68,11 +68,11 @@ const PRIMARY_TAB_KEYS = TAB_KEYS.filter(
 );
 
 // Dashboard/Weighing/Cameras all get the same bigger indicator readout — the
-// other tabs (Reports/Masters/Settings) keep the compact one (PLAN §21).
+// other tabs (Reports/Masters/Settings) keep the compact one.
 const BIG_HEADER_TABS = new Set<(typeof TAB_KEYS)[number]>(["dash", "weigh", "cameras"]);
 
 // Was a hardcoded string in AppShell's `siteLabel` prop — now editable via
-// Settings' Business pane (PLAN §21); `·`-joins only the parts the operator
+// Settings' Business pane; `·`-joins only the parts the operator
 // actually filled in, so a blank Address/Phone doesn't leave dangling " · "s.
 const buildSiteLabel = (business: BusinessInfo): string =>
     [business.Name, business.Address, business.Phone].filter(Boolean).join(" · ");
@@ -95,8 +95,8 @@ interface TopBarActionsProps {
     helpTitle: string;
     settingsTitle: string;
     onOpenSettings: () => void;
-    /** Rendered as its own button directly before Close (task #62's "next to
-        Close", not off on its own at the far left of the row) — passed in as
+    /** Rendered as its own button directly before Close (next to
+        Close, not off on its own at the far left of the row) — passed in as
         a ready element rather than pinned/onToggle props since App.tsx's
         `PinToggle` already owns its own icon/label wiring. */
     pin: ReactNode;
@@ -144,9 +144,8 @@ const TopBarActions = ({
             </button>
         </Tooltip>
         {/* Set off from Help with its own margin rather than sitting flush
-            against it — the pin toggle and Close are a pair (task #62
-            follow-up), so the gap belongs before the pin, not between the
-            pin and Close. */}
+            against it — the pin toggle and Close are a pair, so the gap
+            belongs before the pin, not between the pin and Close. */}
         <span style={{ marginLeft: 10 }}>{pin}</span>
         {/* The window's native title bar is gone (`decorations: false`,
             tauri.conf.json) — Minimize/Close here are the only controls
@@ -164,8 +163,8 @@ const TopBarActions = ({
     </>
 );
 
-// Filled while pinned, outline-only while not (task #62's "outline/filled
-// state to indicate on/off") — a plain glyph can't do that, so a tiny inline
+// Filled while pinned, outline-only while not — an outline/filled state
+// to indicate on/off, which a plain glyph can't do, so a tiny inline
 // SVG the same size as `.iconbtn`'s own icons, same spirit as BrandMark.
 const PinIcon = ({ pinned }: { pinned: boolean }) => (
     <svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true">
@@ -185,7 +184,7 @@ interface PinToggleProps {
     labelOff: string;
 }
 
-// The always-on-top toggle (task #62) — always visible in the top bar
+// The always-on-top toggle — always visible in the top bar
 // (AppShell's `pin` slot, never collapsed into TopBarOverflow's menu),
 // defaults to on (`alwaysOnTop: true`, tauri.conf.json) and is pure
 // per-session React state: nothing here writes to Settings/DB, so a
@@ -211,9 +210,9 @@ interface TabContentProps {
     onNavigateToCameras: () => void;
     onResetTicketSeries: (startSeq: number) => Promise<{ Epoch: number }>;
     onAddLanguagePack: (pack: LanguagePack) => Promise<void>;
-    /** `useLicense().isGated` — the one place licensing actually changes what the operator can do (task #38); see WeighingScreen's own `licenseGated` prop comment. */
+    /** `useLicense().isGated` — the one place licensing actually changes what the operator can do; see WeighingScreen's own `licenseGated` prop comment. */
     licenseGated: boolean;
-    /** See ReportsScreen's own `reportsIntent` prop comment (PLAN §21 bug fix). */
+    /** See ReportsScreen's own `reportsIntent` prop comment. */
     reportsIntent: { kind: "waiting"; nonce: number } | null;
 }
 
@@ -271,8 +270,8 @@ const TabContent = ({
 };
 
 // The mock's own weight readout — full-size on Dashboard/Weighing/Cameras
-// (the three tabs where knowing the live reading actually matters —
-// PLAN §21), compact as a glance-only strip on Masters/Reports/Settings
+// (the three tabs where knowing the live reading actually matters),
+// compact as a glance-only strip on Masters/Reports/Settings
 // (AppShell's `header` slot). Pulled out of Shell so its own prop wiring
 // doesn't count against Shell's budget.
 const ShellWeightHeader = ({
@@ -314,7 +313,7 @@ const ShellWeightHeader = ({
 const buildNavTabs = (t: ReturnType<typeof useTranslation>["t"]): AppShellTab[] =>
     PRIMARY_TAB_KEYS.map((key) => ({ key, label: t(`nav.${key}`), icon: TAB_ICONS[key] }));
 
-// Per-session only (task #62) — a relaunch always comes back to
+// Per-session only — a relaunch always comes back to
 // `tauri.conf.json`'s own `alwaysOnTop: true`, same as the config itself,
 // since this is just React state with nothing behind it that persists.
 const usePinToggle = (windowPin: WindowPinSource) => {
@@ -346,7 +345,7 @@ const useShellTicketActions = (
 };
 
 // Dashboard's "waiting" KPI tile switching tabs without telling Reports
-// which filter the operator wanted (PLAN §21 bug report) — see
+// which filter the operator wanted — see
 // ReportsScreen's own `reportsIntent` prop comment. Split out for the same
 // line-budget reason as useShellTicketActions above.
 const useReportsNavigation = (setActiveTab: (tab: (typeof TAB_KEYS)[number]) => void) => {
@@ -398,10 +397,10 @@ const useShellTopBar = ({
 }: UseShellTopBarArgs) => {
     const { t } = useTranslation();
     const { pinned, onToggle } = usePinToggle(windowPin);
-    // Rendered inline as part of `topRight` now, directly before Close
-    // (task #62 follow-up: "pin next to close", not off on its own at the
-    // row's left edge — AppShell's separate always-visible `pin` slot is no
-    // longer used for this).
+    // Rendered inline as part of `topRight` now, directly before Close —
+    // pin next to close, not off on its own at the row's left edge —
+    // AppShell's separate always-visible `pin` slot is no longer used for
+    // this.
     const pin = (
         <PinToggle
             pinned={pinned}
@@ -526,8 +525,8 @@ const StabilityGateSync = ({ indicator }: IndicatorSyncProps) => {
     return null;
 };
 
-// Settings' Integrations → "QR verification page" toggle (PLAN §18/§23
-// item 6), same "Applied immediately" shape as StabilityGateSync/
+// Settings' Integrations → "QR verification page" toggle, same "Applied
+// immediately" shape as StabilityGateSync/
 // SerialConnectionSync above: flip it on and the LAN server starts
 // without a restart, flip it off and it stops. The noop source (browser
 // demo / memory adapter build) makes both calls harmless no-ops.
@@ -610,7 +609,7 @@ const SerialConnectionSync = ({ indicator }: IndicatorSyncProps) => {
     return null;
 };
 
-// Task #45 — PLAN §18's "scheduled daily summary". Same "Applied
+// The scheduled daily summary. Same "Applied
 // immediately" shape as the Sync components above, but on a timer instead
 // of a settings-change effect — a once-a-minute check, while the app
 // happens to be open, for "has today's scheduled time passed, and did
@@ -631,7 +630,7 @@ const SerialConnectionSync = ({ indicator }: IndicatorSyncProps) => {
 // it shortens "never" to "late." The real fix is `DailySummaryTaskSync`/
 // `HeadlessDailySummarySync` below, which register a genuine Windows Task
 // Scheduler wake (`@engines/scheduler`, `src-tauri/src/commands/scheduler.rs`)
-// — PLAN §21's "true OS-level scheduler" gap. This per-minute check stays
+// — a true OS-level scheduler, closing that gap. This per-minute check stays
 // as the belt to that OS-level suspenders': it still catches the case a
 // site never lets the OS task register at all (disabled, non-Windows dev
 // build) or the one time the machine happens to be already open and idle
@@ -696,7 +695,7 @@ const DailySummarySync = () => {
     return null;
 };
 
-// PLAN §21's "true OS-level scheduler" — registers (or removes) the Windows
+// The true OS-level scheduler — registers (or removes) the Windows
 // Task Scheduler entry that launches this app with `--daily-summary` at
 // `cfg.Time` every day, so the send happens even if the app is closed at
 // that moment (`@engines/scheduler`, `src-tauri/src/commands/scheduler.rs`).
@@ -829,9 +828,9 @@ const loadAppTicketSchemaState = (
 // no row yet, so `loadTicketSchema` itself falls back to
 // `DEFAULT_TICKET_SCHEMA` (db/schema.ts) rather than seeding a row here; the
 // schema only gets persisted once a site actually saves its own. Multiple
-// schemas can be saved side by side (task: "allow multiple uploads and have
-// a drop to list them") — `schemas` is every one of them, `ticketSchema` is
-// whichever is currently active.
+// schemas can be saved side by side, with a dropdown to list them —
+// `schemas` is every one of them, `ticketSchema` is whichever is currently
+// active.
 const useAppTicketSchema = (db: ReturnType<typeof useDataPort>) => {
     const [ticketSchema, setTicketSchemaState] = useState<Schema>(DEFAULT_TICKET_SCHEMA);
     const [schemas, setSchemas] = useState<Schema[]>([DEFAULT_TICKET_SCHEMA]);

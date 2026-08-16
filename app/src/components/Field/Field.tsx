@@ -20,7 +20,7 @@ export interface FieldProps {
      * route through `t()` in the first place.
      */
     label: string | Localized;
-    /** Present on search fields (PLAN §8.2) — shows the ⌕ glass with this as its tooltip. Same string-vs-Localized split as `label`. */
+    /** Present on search fields — shows the ⌕ glass with this as its tooltip. Same string-vs-Localized split as `label`. */
     searchTitle?: string | Localized;
     /** True when this value came back from a recalled ticket rather than fresh entry. */
     recalled?: boolean;

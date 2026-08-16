@@ -14,7 +14,7 @@ import type {
 type BackupMethods = Pick<DataPort, "exportBackup" | "importBackup">;
 
 // Real data must never exist without a way out of the file it lives in
-// (PLAN §14) — the memory adapter answers that with one JSON snapshot,
+// — the memory adapter answers that with one JSON snapshot,
 // bytes included, so "download a backup" works identically in the
 // database-less Pages demo as it will against SQLite.
 const BACKUP_VERSION = 1;

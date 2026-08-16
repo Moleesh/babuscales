@@ -42,9 +42,9 @@ const runPaste = async (target: HTMLInputElement | HTMLTextAreaElement) => {
     }
 };
 
-// A small themed replacement for the OS's own right-click menu (task:
-// "remove rightclick in destop view, i can have copy cut paste no need
-// others") — this is a desktop app, not a browser tab, so Chromium's
+// A small themed replacement for the OS's own right-click menu — desktop
+// view needs copy/cut/paste, not the rest — this is a desktop app, not a
+// browser tab, so Chromium's
 // Back/Refresh/Save-as/Inspect/"Send tab to your devices" menu was pure
 // leftover-browser chrome. Only rendered over actual text fields
 // (useContextMenu.ts's EDITABLE_SELECTOR); right-clicking anywhere else now

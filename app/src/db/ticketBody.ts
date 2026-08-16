@@ -2,7 +2,7 @@ import { z } from "zod";
 
 import type { JsonRecord } from "./types";
 
-// The Ticket body shape — PLAN §7.1: "A ticket does not have gross and
+// The Ticket body shape: "A ticket does not have gross and
 // tare columns — it has an ordered list of captures." This is the thin
 // typed layer DataPort deliberately doesn't own (it just stores JSON);
 // this is where a `Ticket`-kind doc's `Body` gets real structure.
@@ -40,12 +40,12 @@ export interface TicketBody extends JsonRecord {
     Material?: string;
     Transporter?: string;
     ChallanNo?: string;
-    /** Operator-entered amount, same as any other manual ticket field — there is no auto-calc behind it (task: "no need for charge calculation also" — plain editable field, no formula). Undefined until the operator types one in. */
+    /** Operator-entered amount, same as any other manual ticket field — there is no auto-calc behind it; plain editable field, no formula. Undefined until the operator types one in. */
     Charge?: number;
     Captures: Capture[];
-    /** PLAN §7.4 — "printing is not a status either... a ticket carries a print count." */
+    /** "Printing is not a status either... a ticket carries a print count." */
     PrintCount?: number;
-    /** Values for any Field in the active Schema whose FieldId isn't one of the 5 fixed ticket fields above — PLAN §8's schema-driven custom fields. Keyed by FieldId. Absent/undefined is exactly equivalent to "no custom fields on this ticket" — fully backward compatible with every ticket saved before this existed. */
+    /** Values for any Field in the active Schema whose FieldId isn't one of the 5 fixed ticket fields above — schema-driven custom fields. Keyed by FieldId. Absent/undefined is exactly equivalent to "no custom fields on this ticket" — fully backward compatible with every ticket saved before this existed. */
     CustomFields?: Record<string, string | number | boolean | null>;
 }
 
@@ -67,7 +67,7 @@ export const emptyTicketBody = (): TicketBody => ({ BodyVersion: 1, Captures: []
 /**
  * Validates and upcasts a raw `doc.Body` into a `TicketBody`. `BodyVersion`
  * exists precisely so this can grow a `switch` without ever breaking a
- * historical record (PLAN §6.1) — there is only one version so far, so
+ * historical record — there is only one version so far, so
  * this is currently a validating passthrough.
  */
 export const parseTicketBody = (body: JsonRecord): TicketBody =>
@@ -89,7 +89,7 @@ export interface DerivedWeights {
 export const grossCaptures = (captures: Capture[]): Capture[] =>
     captures.filter((c) => c.Type === "Gross");
 
-// PLAN §7.4 — "a ticket's status is the pair of weights and the net they
+// "A ticket's status is the pair of weights and the net they
 // produce." `grossKg` is the Gross capture's own weight; `netKg` is always
 // `grossKg - tareKg` — never swapped, never absolute-valued. A lorry that
 // somehow weighs in lower on Gross than Tare has no valid net tonnage, so
@@ -107,7 +107,7 @@ export const deriveWeights = (captures: Capture[]): DerivedWeights => {
     };
 };
 
-/** PLAN §7.5 — open means parked with exactly one weight, waiting for the second. */
+/** Open means parked with exactly one weight, waiting for the second. */
 export const isOpenTicket = (isCancelled: boolean, captures: Capture[]): boolean => {
     if (isCancelled) return false;
     const { tareKg, grossKg } = deriveWeights(captures);

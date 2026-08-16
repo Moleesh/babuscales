@@ -1,6 +1,6 @@
-// PLAN §18 — "Remote access — Cloudflare Tunnel, opt-in, off by default...
+// Remote access — Cloudflare Tunnel, opt-in, off by default.
 // Credentials go to the Windows Credential Manager, never to a config file,
-// never to the repository." The connector itself lives in Rust
+// never to the repository. The connector itself lives in Rust
 // (src-tauri/src/net/tunnel.rs) — desktop-only, same reason
 // @engines/verification's server is: there is no process to spawn
 // `cloudflared` from in a browser tab.

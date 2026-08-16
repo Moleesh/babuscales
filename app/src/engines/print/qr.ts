@@ -1,7 +1,7 @@
 import qrcode from "qrcode-generator";
 
-// PLAN §18 — "every ticket carries a QR resolving to a page showing the
-// authentic weighment". qrcode-generator (MIT, zero dependencies) encodes
+// Every ticket carries a QR resolving to a page showing the
+// authentic weighment. qrcode-generator (MIT, zero dependencies) encodes
 // synchronously, so this renders straight into SlipA4's JSX with no
 // useEffect/useState round trip — a self-contained `data:` URI, not a
 // <canvas> element or a network request, so the print pipeline stays

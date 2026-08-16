@@ -1,5 +1,5 @@
 // Formatting only — the number itself comes from `DataPort.allocateDocSeq`,
-// called once at first Save (PLAN §6.1 — "at close, never at draft").
+// called once at first Save — "at close, never at draft".
 
 export interface TicketNumberFormat {
     prefix: string;

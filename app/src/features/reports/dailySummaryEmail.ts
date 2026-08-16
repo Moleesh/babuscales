@@ -3,7 +3,7 @@ import type { DocRow } from "@db/types";
 
 import { buildTicketRows, summarizeTicketRows } from "./reportRows";
 
-// Task #45 — PLAN §18's "scheduled daily summary" bullet, ported as one
+// The "scheduled daily summary" bullet, ported as one
 // plain-text e-mail rather than a PDF/report attachment: no PDF export
 // engine exists yet (app/README.md known gap), and a message body is
 // something every mail client can already render, so there's nothing to

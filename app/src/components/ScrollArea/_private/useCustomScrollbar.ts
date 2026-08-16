@@ -12,9 +12,9 @@ interface Thumb {
 const NO_THUMB: Thumb = { top: 0, height: 0, visible: false };
 
 // The native OS/browser scrollbar can't be fully re-skinned in cursor terms
-// — dragging its thumb hands pointer handling to the browser/OS itself
-// (task: "i still see native cusor when i use mouse to scroll over a
-// table... click and drag drop"), so `cursor: none` on the page is ignored
+// — dragging its thumb hands pointer handling to the browser/OS itself,
+// which is why the native cursor still showed over a table's scrollbar
+// during click-and-drag, so `cursor: none` on the page is ignored
 // for the whole drag gesture regardless of what CSS targets the
 // `::-webkit-scrollbar-*` pseudo-elements (base.css's hover-only fix).
 // This renders a plain `<div>` thumb instead — a real DOM node the custom

@@ -15,7 +15,7 @@ export interface UseTicketDeliveryArgs {
     sms: SmsSource;
     settings: SettingsBody;
     partyCache: UseMasterCache;
-    /** PLAN §18's local verification server URL for this exact ticket, null until it has a DocId or the integration is off — see WeighingScreen's own `verifyUrl` comment. */
+    /** The local verification server URL for this exact ticket, null until it has a DocId or the integration is off — see WeighingScreen's own `verifyUrl` comment. */
     verifyUrl: string | null;
     /** Same charge WeighingScreen's own CalcCard already shows — computeTicketBilling's output, reused here rather than recomputed. */
     chargeInr: number | null;
@@ -115,8 +115,8 @@ interface WebhookDeps {
     db: Db;
 }
 
-// Outbox-worker task — the first of three brand-new channels no call site
-// enqueued before this task: unlike Email/Sms above, Webhook/Tally/Board
+// The first of three brand-new channels no call site
+// enqueued before now: unlike Email/Sms above, Webhook/Tally/Board
 // have no pre-existing "drain of one" to extend, so this one enqueues and
 // leaves the actual send to useOutboxWorker.ts (there is no per-channel
 // "try immediately" shortcut here — the worker's next tick, at most 30s
@@ -178,7 +178,7 @@ const enqueueTicketBoard = async ({ ticket, settings, db }: BoardDeps): Promise<
 };
 
 // Split out of WeighingScreen (over the line budget — docs/CodingStandards.md)
-// — everything task #33/#42/#43/the outbox-worker task add on top of a bare
+// — everything added on top of a bare
 // `ticket.print()`: enqueueing the QR verification job, attempting Email
 // and SMS in turn (each an outbox "drain of one", see sendTicketEmail/
 // sendTicketSms above), and enqueueing Webhook/Tally/Board for
@@ -198,11 +198,11 @@ export const useTicketDelivery = ({
 }: UseTicketDeliveryArgs) => {
     const db = useDataPort();
 
-    // PLAN §18 — "all integrations... through the durable outbox, so none
+    // "All integrations... through the durable outbox, so none
     // can delay or lose a ticket." The LAN verification page itself needs
-    // no queuing (task #33's server reads the doc straight from the DB on
+    // no queuing (the server reads the doc straight from the DB on
     // every hit) — this row exists for whatever eventually makes that page
-    // reachable *publicly* (task #36's Cloudflare Tunnel), so that work has
+    // reachable *publicly* (a Cloudflare Tunnel), so that work has
     // something durable to consume the moment it exists, rather than
     // needing its own detection of "which tickets were printed with a QR."
     // Only enqueued when a real VerifyUrl was actually printed — no job

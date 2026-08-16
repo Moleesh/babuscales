@@ -3,7 +3,7 @@ import { tokenize } from "./tokenize";
 
 // Recursive-descent parser over the token stream — precedence, low to
 // high: comparison, additive, multiplicative, unary, primary. No loops,
-// no assignment, no statements: a formula is one expression (PLAN §8.1).
+// no assignment, no statements: a formula is one expression.
 export type FormulaExpr =
     | { kind: "Number"; value: string }
     | { kind: "String"; value: string }

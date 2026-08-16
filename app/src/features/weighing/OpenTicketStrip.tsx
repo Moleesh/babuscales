@@ -16,9 +16,9 @@ export interface OpenTicketStripProps {
     weightUnit: WeightUnit;
 }
 
-// PLAN §7.5 — "many lorries in flight": every parked, one-weight ticket,
-// always visible so the operator can pick the lorry back up the moment it
-// returns to the deck, without hunting through Reports for it.
+// "Many lorries in flight": every parked, one-weight ticket, always visible
+// so the operator can pick the lorry back up the moment it returns to the
+// deck, without hunting through Reports for it.
 export const OpenTicketStrip = ({ tickets, loading, onResume, weightUnit }: OpenTicketStripProps) => {
     const { t } = useTranslation();
     if (tickets.length === 0 && !loading) return null;

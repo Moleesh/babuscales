@@ -127,8 +127,7 @@ const FIXED_FIELD_ACCESSORS: Record<string, FixedFieldAccessor> = {
 };
 
 // The 5 fixed FieldIds' actual controls — which widget renders now comes
-// from the schema's own `field.Kind` (task: "use the json itself to
-// generate them") instead of a hardcoded per-FieldId switch; only the
+// from the schema's own `field.Kind` instead of a hardcoded per-FieldId switch; only the
 // typed-state binding above stays keyed by FieldId, since ticket.fields is a
 // typed struct rather than the generic customFields bag. Capture
 // buttons/stability logic live in CalcCard, not here (kept as-is — those are
@@ -238,7 +237,7 @@ interface FieldsListArgs extends FixedFieldCaches {
     t: (key: string) => string;
 }
 
-// One ordered pass over `ticketSchema.Fields` (PLAN §8) producing every grid
+// One ordered pass over `ticketSchema.Fields` producing every grid
 // item this card renders — the 5 fixed fields (dedicated controls, schema
 // order/label/Visible), the always-present read-only Date field paired
 // right after Vehicle No, and any other custom field (SchemaFieldRow,
@@ -314,8 +313,7 @@ export interface TicketFieldsCardProps {
 }
 
 // Split out of WeighingScreen (over the 300-line budget — docs/CodingStandards.md)
-// — the "Ticket" card. Fully schema-driven (task: "no hard coding ... json
-// only for all field"): every field, fixed or custom, renders in whatever
+// — the "Ticket" card. Fully schema-driven: every field, fixed or custom, renders in whatever
 // order the active Schema's Fields array lists it in, using whichever
 // control that FieldId maps to. Self-contained: everything it needs comes
 // in as props, nothing here reaches back into WeighingScreen's own state.
@@ -328,8 +326,8 @@ export const TicketFieldsCard = ({
     materialCache,
     transporterCache,
 }: TicketFieldsCardProps) => {
-    // Reads the live, admin-editable schema (Settings → Fields & language,
-    // task #50) rather than a hardcoded field list, resolved through the
+    // Reads the live, admin-editable schema (Settings → Fields & language)
+    // rather than a hardcoded field list, resolved through the
     // active language.
     const { ticketSchema } = useSchema();
     const { lang, t } = useTranslation();

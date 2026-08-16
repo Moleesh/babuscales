@@ -19,7 +19,7 @@ export interface ReportsHeaderActionsProps {
 
 // Split out of ReportsScreen (over the line/complexity budget —
 // docs/CodingStandards.md) — the view switcher + "N waiting" chip + the
-// report-builder wizard trigger (task: Reports rework, item 4) in the
+// report-builder wizard trigger in the
 // Card's headerRight.
 export const ReportsHeaderActions = ({
     view,

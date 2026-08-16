@@ -15,9 +15,9 @@ import {
 import type { Decimal } from "./Decimal";
 import type { FormulaExpr } from "./parse";
 
-// A formula value is a Decimal (weights and money share one representation
-// — PLAN §6.6), a boolean (comparisons, `If` conditions) or a string
-// (`Category(Material) == "Mineral"`, PLAN §8.1).
+// A formula value is a Decimal (weights and money share one representation),
+// a boolean (comparisons, `If` conditions) or a string
+// (`Category(Material) == "Mineral"`).
 export type FormulaValue = Decimal | boolean | string;
 
 export interface FormulaContext {
@@ -27,7 +27,7 @@ export interface FormulaContext {
     callFunction?: (name: string, args: FormulaValue[]) => FormulaValue;
 }
 
-// Bug fix (found writing task #61's evaluate.test.ts): plain `JSON.stringify(v)`
+// Bug fix (found writing evaluate.test.ts): plain `JSON.stringify(v)`
 // crashes with "Do not know how to serialize a BigInt" the moment `v` is a
 // Decimal (its `mantissa` field is a bigint) — exactly the case `asBoolean`
 // hits on a formula mistake like `If(Gross, ...)`. That crash replaced the
@@ -125,7 +125,7 @@ const requireOne = (args: FormulaValue[], name: string): FormulaValue => {
 };
 
 // The language has no loops, so the only runaway risk is pathological
-// nesting — this is the "hard time bound" PLAN §8.1 asks for, enforced as
+// nesting — this is the "hard time bound" the language needs, enforced as
 // a depth guard rather than a wall clock (the evaluator is synchronous).
 const MAX_DEPTH = 64;
 

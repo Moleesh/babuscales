@@ -24,7 +24,7 @@ export interface BuildTicketColumnsArgs {
     /** Settings' `Formats.DateFmt`/`TimeFmt` — the "at" column renders in them. */
     dateFmt: string;
     timeFmt: "24" | "12";
-    /** Report-builder wizard MVP (task: Reports rework, item 4) — `null`
+    /** Report-builder wizard MVP — `null`
      * (the default) shows every column, same as before the wizard existed.
      * A non-null list restricts the table to just those keys plus the
      * always-shown trailing "action" column. */
@@ -106,8 +106,8 @@ const buildAllTicketColumns = ({
 ];
 
 // Split out of ReportsScreen (over the line/complexity budget —
-// docs/CodingStandards.md) — the Tickets-view DataTable columns. Task:
-// Reports rework, item 4 — `visibleColumnKeys` (set by the report-builder
+// docs/CodingStandards.md) — the Tickets-view DataTable columns.
+// `visibleColumnKeys` (set by the report-builder
 // wizard) filters the list down; `null` (the default) keeps every column,
 // same as before the wizard existed.
 export const buildTicketColumns = (args: BuildTicketColumnsArgs): DataTableColumn<TicketRow>[] => {

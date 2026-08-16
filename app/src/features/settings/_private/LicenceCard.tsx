@@ -11,9 +11,8 @@ import styles from "./_styles/SystemPane.module.css";
 import { LicenceActivationFields } from "./LicenceActivationFields";
 import { useLicenceCardState } from "./useLicenceCardState";
 
-// PLAN §4.10 "licence with trial and expiry · UID machine binding", task
-// #38 — the request/activate round trip is entirely offline (task #37's
-// own design): this card only ever calls `@engines/licensing`'s two Tauri
+// "Licence with trial and expiry · UID machine binding" —
+// the request/activate round trip is entirely offline by design: this card only ever calls `@engines/licensing`'s two Tauri
 // commands, never a server. `unlocked` gates Activate/Clear the same way
 // every other write on this pane is gated; the status line itself is
 // always visible, locked or not, since an operator needs to see "trial

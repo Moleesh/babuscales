@@ -13,8 +13,8 @@ export interface UseMasterListPage {
     loadMore: () => void;
 }
 
-// Keyset-paginated list for MastersListCard only (PLAN §21 medium bucket,
-// "Load more"). Independent of useMasterCache, which stays the "load
+// Keyset-paginated list for MastersListCard only ("Load more"). Independent
+// of useMasterCache, which stays the "load
 // everything once, filter every keystroke locally" source of truth for
 // record-selection/form editing on this screen and for every
 // SearchableDropdown elsewhere (useMasterCache.ts) — nothing here touches

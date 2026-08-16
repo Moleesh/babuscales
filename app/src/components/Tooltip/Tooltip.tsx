@@ -37,9 +37,9 @@ export interface TooltipProps {
     children: ReactNode;
 }
 
-// A themed replacement for the native `title` attribute (task: "revamp the
-// tooltip so it can be used in other components, and it matches the theme
-// and localization"). The browser's own title tooltip ignores every design
+// A themed replacement for the native `title` attribute, so it can be
+// reused across components and matches the app's theme and localization.
+// The browser's own title tooltip ignores every design
 // token — wrong font, wrong colors, a multi-second delay, unstyleable — so
 // it looked out of place next to a themed app and couldn't carry a
 // translated string consistently. This wraps a single trigger element and

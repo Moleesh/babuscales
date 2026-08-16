@@ -8,7 +8,7 @@ const OPERATING_HOURS = { start: 6, end: 20 } as const;
 export const isSameDay = (iso: string, referenceIso: string): boolean =>
     iso.slice(0, 10) === referenceIso.slice(0, 10);
 
-// PLAN §21 — "can we have a drop down to specify if its per day, month,
+// "Can we have a drop down to specify if its per day, month,
 // week, year, all... change all the column based on that also... this also
 // includes ticket by hour." One period, driving the KPI strip, the material
 // split and the activity chart together — `day` keeps the original
@@ -42,7 +42,7 @@ export interface HourBucket {
     count: number;
 }
 
-/** PLAN §18 "Tickets by hour" — real counts from today's rows, not the mock's fixed demo curve. */
+/** "Tickets by hour" — real counts from today's rows, not the mock's fixed demo curve. */
 export const hourlyTicketCounts = (rows: TicketRow[], referenceIso: string): HourBucket[] => {
     const buckets = new Map<number, number>();
     for (let hour = OPERATING_HOURS.start; hour <= OPERATING_HOURS.end; hour++)
@@ -164,7 +164,7 @@ export const computeActivityBuckets = (
 export interface DashboardKpis {
     ticketsToday: number;
     netTonnesToday: number;
-    /** PLAN §7.5 — parked, one-weight tickets. Counted across all days, not just today: an open ticket from yesterday is still waiting. */
+    /** Parked, one-weight tickets. Counted across all days, not just today: an open ticket from yesterday is still waiting. */
     waitingCount: number;
     avgNetKgPerTicket: number;
     /** The mock's "Charge collected" KPI — real now (engines/billing), though still the flat per-ticket rate, not a per-vehicle-type/material one. */
@@ -194,14 +194,14 @@ export interface MaterialSplitEntry {
     material: string;
     tonnes: number;
     share: number;
-    /** How many completed tickets fed this material's tonnage — task:
-     * "get a load count on both the charts", shown next to each row's
+    /** How many completed tickets fed this material's tonnage — a load
+     * count on both charts, shown next to each row's
      * weight so a heavy-but-rare material reads differently from a
      * light-but-frequent one. */
     count: number;
 }
 
-// PLAN §18 "where the tonnage is coming from" — the selected period's
+// "Where the tonnage is coming from" — the selected period's
 // completed tickets, grouped by Material and sorted heaviest-first, capped
 // to `limit` entries so the card doesn't grow unbounded on a busy
 // month/year with many materials.

@@ -22,7 +22,7 @@ const resolveScope = (): ParentNode => {
 // Enter walks every field and button on the visible screen or open dialog,
 // exactly like Tab — including buttons, which Tab does not always reach
 // consistently across browsers. Shift+Enter reverses. Space still presses a
-// focused button; Enter here only ever moves focus (PLAN §13).
+// focused button; Enter here only ever moves focus.
 export const useEnterAsTab = (): void => {
     useEffect(() => {
         const onKeyDown = (event: KeyboardEvent) => {

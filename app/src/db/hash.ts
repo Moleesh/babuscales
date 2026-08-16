@@ -17,7 +17,7 @@ export const sha256Hex = async (input: string | Uint8Array): Promise<string> => 
 
 // Recursively sorts object keys so the same body always serialises to the
 // same bytes, regardless of insertion order. Without this, `body_hash`
-// (PLAN §6.1) would change on a round trip through JSON.parse/stringify
+// would change on a round trip through JSON.parse/stringify
 // even though nothing in the document did.
 const canonicalize = (value: unknown): unknown => {
     if (Array.isArray(value)) return value.map(canonicalize);
@@ -30,7 +30,7 @@ const canonicalize = (value: unknown): unknown => {
     return value;
 };
 
-// `body_hash` — "hash of CURRENT body, not a chain" (PLAN §6.1). Detects a
+// `body_hash` — "hash of CURRENT body, not a chain". Detects a
 // silently altered record; it does not, by itself, prove ordering.
 export const hashBody = (body: JsonRecord): Promise<string> =>
     sha256Hex(JSON.stringify(canonicalize(body)));

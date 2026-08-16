@@ -3,7 +3,7 @@ import type { CaptureType } from "@db/ticketBody";
 import type { IndicatorListener, IndicatorSource } from "./types";
 import { resetLorryTicker, startLoadLorry, type LorryTickerState } from "./_private/lorryPhysics";
 
-/** PLAN §13 — "weight is only accepted after N consecutive stable readings". Settings' Weighing pane overrides these live (Stability gate — mock's `#setReads`/`#setBand`). */
+/** "Weight is only accepted after N consecutive stable readings". Settings' Weighing pane overrides these live (Stability gate — mock's `#setReads`/`#setBand`). */
 const DEFAULT_SETTLE_TICKS = 12;
 const DEFAULT_CLOSE_ENOUGH_KG = 40;
 
@@ -29,7 +29,7 @@ export interface SimulatedIndicatorSource extends IndicatorSource {
 }
 
 // No hardware yet is not a reason the demo, training or development should
-// stall (PLAN §4.8's "simulated indicator"). The settle physics themselves
+// stall — this is the "simulated indicator". The settle physics themselves
 // now live in `_private/lorryPhysics.ts`, shared with serialIndicator.ts's
 // own (optional, settings-gated) `loadLorry`.
 export const createSimulatedIndicator = (

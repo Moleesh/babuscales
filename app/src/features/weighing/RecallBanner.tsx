@@ -13,8 +13,8 @@ export interface RecallBannerProps {
     offers: RecallOffer[];
 }
 
-// PLAN §9.2 — "Recall is not silent prefill... each item a separate choice
-// the operator accepts or ignores." Nothing here applies itself.
+// "Recall is not silent prefill... each item a separate choice the
+// operator accepts or ignores." Nothing here applies itself.
 export const RecallBanner = ({ offers }: RecallBannerProps) => {
     const { t } = useTranslation();
     if (offers.length === 0) return null;

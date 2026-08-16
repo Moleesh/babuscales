@@ -13,7 +13,7 @@ export interface TicketsSortRowProps {
 }
 
 // Split out of TicketsView (over the line/complexity budget —
-// docs/CodingStandards.md) — task: Reports rework, item 2. A plain
+// docs/CodingStandards.md). A plain
 // "Sort by" select plus an asc/desc toggle button, the same shape as
 // SummaryView's own group-by select — deliberately not clickable column
 // headers, which would mean threading sort state into the shared

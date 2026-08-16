@@ -1,4 +1,4 @@
-// The English baseline — always present, always the fallback (PLAN §8.3).
+// The English baseline — always present, always the fallback.
 // In the mock this was snapshotted from the DOM at boot; there is no DOM to
 // snapshot here, so this file is the canonical source instead. A language
 // pack only ever overrides a subset of these keys.

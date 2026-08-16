@@ -56,8 +56,8 @@ const NumberInput = ({ id, value, onChange, readOnly }: KindInputProps) => (
 // `Kind: "Date"` custom fields store a plain "YYYY-MM-DD" string — exactly
 // DatePicker's own value contract — so this swap is safe: nothing about
 // the generic schema field-type system's storage shape changes, only which
-// control renders it (task: replace the OS-drawn native date popup, which
-// the custom cursor follower can't reach). `Kind: "DateTime"` below is
+// control renders it — replacing the OS-drawn native date popup, which
+// the custom cursor follower can't reach. `Kind: "DateTime"` below is
 // deliberately left as the native `<input type="datetime-local">` — its
 // "YYYY-MM-DDTHH:mm" value has a time component DatePicker doesn't offer a
 // row for yet (see this file's own DateTimeInput comment for the full
@@ -72,9 +72,8 @@ const DateInput = ({ id, value, onChange, readOnly }: KindInputProps) => (
     />
 );
 
-// Left as the native control — no time row exists on DatePicker (task:
-// "leave datetime-local fields as native for now", decided rather than
-// half-building a time picker under this pass). Swapping it would also mean
+// Left as the native control — no time row exists on DatePicker, decided
+// rather than half-building a time picker under this pass. Swapping it would also mean
 // reformatting/reparsing "YYYY-MM-DDTHH:mm" through a still-string value
 // contract, which is more surface than this pass needs to touch.
 const DateTimeInput = ({ id, value, onChange, readOnly }: KindInputProps) => (
@@ -251,7 +250,7 @@ const ValidationMessages = ({ rules, lang }: ValidationMessagesProps) => (
 );
 
 // The generic renderer for any Field from the active Schema that isn't one
-// of the 5 fixed ticket fields (PLAN §8) — evaluates its gates against
+// of the 5 fixed ticket fields — evaluates its gates against
 // `ctx`, renders the right control for its Kind, and surfaces its
 // Validate rules inline. Read TicketFieldsCard.tsx for how this plugs in.
 export const SchemaFieldRow = ({ field, value, onChange, ctx, readOnly, masterCaches }: SchemaFieldRowProps) => {

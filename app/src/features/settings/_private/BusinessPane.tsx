@@ -6,7 +6,7 @@ import type { BusinessInfo } from "../settingsSchema";
 import { useSettings } from "../useSettings";
 import styles from "./_styles/BusinessPane.module.css";
 
-// New default-open Settings pane (PLAN §21) — name/address/phone shown in
+// New default-open Settings pane — name/address/phone shown in
 // the header's `siteLabel` (App.tsx) used to be a hardcoded string; this is
 // the one place to edit it. Admin-gated like every other configuration
 // pane (not "operator comfort" — see AppearancePane's own note on that

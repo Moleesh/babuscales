@@ -24,7 +24,7 @@ export interface ReportsDateRangeRowProps {
 // Split out of ReportsCardBody (over the line/complexity budget —
 // docs/CodingStandards.md) — the date-range filter row that sits above
 // the Tickets/Summary view content so it visibly scopes both. Also carries
-// the "include backed/old-series tickets" toggle (task: fresh-series
+// the "include backed/old-series tickets" toggle (a fresh-series
 // reset) — same row as the date range since both are display-only scoping
 // controls over the same `rows`, not data-shaping ones like filter/group.
 export const ReportsDateRangeRow = ({
@@ -40,8 +40,8 @@ export const ReportsDateRangeRow = ({
     return (
         <div className={styles.dateRange}>
             {/* Native `<input type="date">` swapped for the themed DatePicker
-                (task: the OS-drawn native calendar can't be styled and the
-                custom cursor follower can't reach it) — same "YYYY-MM-DD"
+                — the OS-drawn native calendar can't be styled and the
+                custom cursor follower can't reach it — same "YYYY-MM-DD"
                 value contract, so nothing downstream of onDateFromChange/
                 onDateToChange had to change. */}
             <DatePicker

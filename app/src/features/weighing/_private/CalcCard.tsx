@@ -49,8 +49,7 @@ interface ChargeBoxProps {
 }
 
 // Charge used to be a read-only CalcBox showing an auto-derived amount; now
-// it's a plain editable field, same as Challan No (task: "no need for
-// charge calculation also" — editable field, no auto-calc). Kept inside the
+// it's a plain editable field, same as Challan No — no auto-calc. Kept inside the
 // same four-box grid rather than moved to TicketFieldsCard since it's still
 // conceptually part of "Captured & calculated," just no longer computed.
 const ChargeBox = ({ label, value, onChange, readOnly }: ChargeBoxProps) => (
@@ -101,8 +100,8 @@ const TareGrossBoxes = ({
 }: TareGrossBoxesProps) => {
     const { t, lang } = useTranslation();
     // Gross first, Tare second — a loaded lorry weighing in before it's
-    // unloaded is the common case (task: "can we put gross first here"),
-    // same order the mock's four-box grid now reads left to right.
+    // unloaded is the common case, same order the mock's four-box grid now
+    // reads left to right.
     return (
         <>
             {manualGross ? (
@@ -141,11 +140,11 @@ const TareGrossBoxes = ({
 };
 
 export interface CalcCardProps {
-    /** The active Schema — Gross/Tare/Net/Charge box labels resolve against it (falling back to the current i18n defaults) rather than being hardcoded (task: "no hard coding ... including gross and net", "the values not the button"). */
+    /** The active Schema — Gross/Tare/Net/Charge box labels resolve against it (falling back to the current i18n defaults) rather than being hardcoded. */
     ticketSchema: Schema;
     weights: DerivedWeights;
     captures: Capture[];
-    /** Operator-entered, same field as challanNo — no auto-calc (task: "no need for charge calculation also"). */
+    /** Operator-entered, same field as challanNo — no auto-calc. */
     chargeValue: string;
     onChargeChange: (value: string) => void;
     materialRate: number | null;

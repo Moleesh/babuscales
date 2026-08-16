@@ -12,7 +12,7 @@ export interface MemoryState {
     /** Append-only, insertion order is the chain order. */
     audit: AuditRow[];
     outbox: Map<string, OutboxRow>;
-    /** Current numbering epoch per `${DocKind}:${ProfileId}` — PLAN §6.1. */
+    /** Current numbering epoch per `${DocKind}:${ProfileId}`. */
     seriesEpoch: Map<string, number>;
     /** Operator-chosen first number for the current epoch, per `${DocKind}:${ProfileId}`. Defaults to 1 when a series has never been reset. */
     seriesStart: Map<string, number>;

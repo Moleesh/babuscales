@@ -9,7 +9,7 @@ import { WeightDisplay } from "../WeightDisplay";
 
 describe("WeightDisplay", () => {
     it("shows the live weight, formatted with the shared weight formatter", () => {
-        // The "0 / 50,000 kg" capacity-ratio text was removed (PLAN §21 bug
+        // The "0 / 50,000 kg" capacity-ratio text was removed (bug
         // report: it can read as a warning to operators) — the fill bar
         // (still driven by capacityKg) is the only remaining capacity cue.
         render(<WeightDisplay weightKg={1250} capacityKg={50000} stable motion={false} />);

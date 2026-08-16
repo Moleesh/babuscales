@@ -89,7 +89,7 @@ export const formatWeightKg = (kg: number): string => Math.round(kg).toLocaleStr
 
 // "Display unit" (Settings' Appearance pane) — most Indian sites weigh in
 // kg, not tonnes, so a chart/KPI reading "3.4 t" reads as an unfamiliar
-// unit to an Indian operator (PLAN §21). This is the general converter that
+// unit to an Indian operator. This is the general converter that
 // setting is built on; the indicator itself always reports kg
 // (IndicatorReading.WeightKg) — this only ever touches what's *displayed*.
 export const WEIGHT_UNITS = ["kg", "t"] as const;

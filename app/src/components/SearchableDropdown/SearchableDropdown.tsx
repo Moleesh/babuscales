@@ -38,7 +38,7 @@ const DropdownResults = ({
                 type="button"
                 className={`${styles.option} ${index === highlightedIndex ? styles.highlighted : ""}`}
                 data-cursor="compact"
-                /* Reachable by mouse/click, not by Enter-as-Tab's field walk (PLAN §13) —
+                /* Reachable by mouse/click, not by Enter-as-Tab's field walk —
                    it lives outside the natural tab sequence on purpose (useEnterAsTab.ts).
                    Keyboard reach comes from the input's own onKeyDown instead. */
                 tabIndex={-1}
@@ -66,7 +66,7 @@ const DropdownResults = ({
     </div>
 );
 
-// A field that searches master data as you type (PLAN §8.2). One
+// A field that searches master data as you type. One
 // component behind every ⌕ field — Vehicle No, Party, Material,
 // Transporter — so "search the Masters tab" means the same thing
 // everywhere it appears.

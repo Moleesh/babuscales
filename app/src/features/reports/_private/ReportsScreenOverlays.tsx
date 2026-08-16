@@ -31,7 +31,7 @@ export interface ReportsScreenOverlaysProps {
 
 // Split out of ReportsScreen (over the line/complexity budget —
 // docs/CodingStandards.md) — everything ReportsScreen renders outside the
-// Card: the sticky bottom Print/Export bar (task: Reports rework, item 3)
+// Card: the sticky bottom Print/Export bar
 // and the two modals (print preview, report-builder wizard).
 export const ReportsScreenOverlays = ({
     reportSlipData,

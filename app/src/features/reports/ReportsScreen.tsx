@@ -14,28 +14,28 @@ export interface ReportsScreenProps {
     /** Resumes (open ticket) or reopens (completed ticket, to reprint) into the shared Weighing deck and switches there. */
     onOpenTicket: (doc: DocRow) => void;
     /** Set by App.tsx when Dashboard's "waiting" KPI tile sends the operator
-     * here wanting the waiting-on-second-weight filter pre-applied (PLAN §21
+     * here wanting the waiting-on-second-weight filter pre-applied (a
      * bug fix — see useReportsScreenController's own comment). */
     reportsIntent?: { kind: "waiting"; nonce: number } | null;
 }
 
-// PLAN §13.1 — "there is no Tickets tab... a ticket list is a report that
+// "There is no Tickets tab... a ticket list is a report that
 // has not been grouped yet." One dataset (reportRows.ts), one toggle
 // between the flat Tickets view and the grouped Summary view. Print is real
 // (reportPrintRows.ts + ReportPrintModal, mirroring the per-ticket print
-// engine — Phase-2 item 19/23). Export CSV/Excel are real too
-// (engines/export — hand-rolled CSV and OOXML .xlsx writers, task #53),
+// engine). Export CSV/Excel are real too
+// (engines/export — hand-rolled CSV and OOXML .xlsx writers),
 // reusing reportSlipData's own Head/Rows so an export can never drift from
 // what Print sends to the slip. Export PDF stays disabled: the OS print
 // dialog's own "Save as PDF" already covers it via the Print button, so a
 // distinct PDF export path wasn't built.
 //
-// Saved report definitions (task #54, db/reportDefs.ts) — name the current
+// Saved report definitions (db/reportDefs.ts) — name the current
 // (view, group-by, filter) combination and recall it later with one click.
 // Deliberately not the fuller "visual query builder over the dynamic
-// schema" PLAN §18 describes — reportDefs.ts's own comment has the full
-// reasoning; the short version is task #50 never built schema-driven field
-// rendering, so there's no dynamic field data yet to build a query builder
+// schema" — reportDefs.ts's own comment has the full
+// reasoning; the short version is schema-driven field
+// rendering was never built, so there's no dynamic field data yet to build a query builder
 // over, and the reference mock never built one either.
 //
 // Split into reportColumns/reportSlipData/reportExport (data shaping),

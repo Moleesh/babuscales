@@ -3,7 +3,7 @@ export type DatePresetKey = "today" | "month" | "year" | "all";
 const toDateOnly = (date: Date): string => date.toISOString().slice(0, 10);
 
 /**
- * Report-builder wizard MVP (task: Reports rework, item 4) quick presets —
+ * Report-builder wizard MVP quick presets —
  * also what Dashboard's own period concept means by "today"/"this month"/
  * "this year" (App.tsx's `onNavigateToReports` intent, wired the same way
  * the existing "waiting" intent is). "all" clears both bounds, matching

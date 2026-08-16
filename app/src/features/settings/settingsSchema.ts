@@ -21,7 +21,7 @@ const IS_TAURI_BUILD = import.meta.env.VITE_DATA_ADAPTER === "tauri";
 // toggles." — those three are exactly what's here.
 const rulesSchema = z.object({
     StrictTare: z.boolean(),
-    // PLAN §21 — "Send to lorry" (ActionsCard.tsx) used to only ever appear
+    // "Send to lorry" (ActionsCard.tsx) used to only ever appear
     // on the simulated indicator adapter, because the real serial one had no
     // `loadLorry` at all — an accidental, adapter-tied way to hide a button
     // meant for local testing/demoing. Both adapters implement `loadLorry`
@@ -45,7 +45,7 @@ const rulesSchema = z.object({
     // still flows through the same `Capture` pipeline as a scale reading —
     // see useWeighingTicket's `manualCapture`, `Source: "Manual"`.
     ManualEntry: z.boolean().default(false),
-    // Task: whether completing a ticket's second weight (the one that
+    // Whether completing a ticket's second weight (the one that
     // finishes an already-saved, single-weight ticket — see
     // useTicketPersistenceActions.save in useWeighingTicket.ts) keeps that
     // ticket's own number, or gets issued a fresh one of its own while the
@@ -85,8 +85,8 @@ const formatsSchema = z.object({
     DateFmt: z.enum(DATE_FORMATS),
     TimeFmt: z.enum(["24", "12"]),
     AmountDp: z.union([z.literal(0), z.literal(2)]),
-    /** Dashboard/report weight display — Indian sites read kg, not tonnes
-     * (PLAN §21); the indicator itself always reports kg regardless of
+    /** Dashboard/report weight display — Indian sites read kg, not tonnes;
+     * the indicator itself always reports kg regardless of
      * this. See constants/numberFormat.ts's `formatWeightIn`. */
     WeightUnit: z.enum(WEIGHT_UNITS).default("kg"),
 });
@@ -104,8 +104,8 @@ export const PARITY_OPTIONS = ["none", "odd", "even"] as const;
 // dialog (window.print(), engines/print) always lets the operator pick the
 // real target printer themselves, on both the demo and the desktop build —
 // so this list stays a stated *preference* (which detected printer plays
-// the "A4"/"Mx"/"Th" role), not a live binding, same as the mock. Task #52
-// added real driver-level enumeration (@engines/printers, PrintPane.tsx's
+// the "A4"/"Mx"/"Th" role), not a live binding, same as the mock. Real
+// driver-level enumeration (@engines/printers, PrintPane.tsx's
 // "Detected printers" card) so an admin can see what's actually plugged in
 // while choosing a preference here — the mock never had that.
 export const PRINTER_KINDS = ["a4", "mx", "th"] as const;
@@ -155,12 +155,12 @@ export interface IntegrationFixture {
     config: string;
 }
 export const INTEGRATION_FIXTURES: readonly IntegrationFixture[] = [
-    // Task #44 — WhatsApp stays decorative by decision, not oversight, and
+    // WhatsApp stays decorative by decision, not oversight, and
     // unlike every other still-decorative row here it never will get a real
     // worker: WhatsApp only has two paths in, and neither is a fit. (1) Meta's
     // official Cloud API needs a paid, Meta-approved business account and a
-    // per-message cost — the thing PLAN.md §23 open question 5 flags as "the
-    // only per-message cost" left once SMS (task #43) sidestepped it via a
+    // per-message cost — the only per-message cost
+    // left once SMS sidestepped it via a
     // bring-your-own serial GSM modem. WhatsApp has no serial/AT-command
     // equivalent — it's a proprietary end-to-end-encrypted app protocol, not
     // a modem you can talk to over a COM port. (2) The unofficial libraries
@@ -177,7 +177,7 @@ export const INTEGRATION_FIXTURES: readonly IntegrationFixture[] = [
     { key: "board", name: "Outdoor display board", config: "Port · protocol" },
 ];
 
-// PLAN §18's own separate "Remote access — Cloudflare Tunnel" spec — not
+// Its own separate "Remote access — Cloudflare Tunnel" spec — not
 // one of the mock's eight INTEGRATIONS fixtures (it doesn't appear in
 // demo/BabuScales-demo.html at all), so it isn't ported alongside them.
 // The connector token itself never lives in this schema, or in any
@@ -189,7 +189,7 @@ const remoteAccessSchema = z.object({
 });
 export type RemoteAccessConfig = z.infer<typeof remoteAccessSchema>;
 
-// Task #51 — Appearance pane's `SKINS` array (demo/BabuScales-demo.html),
+// Appearance pane's `SKINS` array (demo/BabuScales-demo.html),
 // verbatim keys/names/swatch colours. The skins themselves already live in
 // styles/tokens.css as `[data-skin="…"]` blocks (ported in an earlier
 // task); this is just the picker's own fixture list, same "fixed list, no
@@ -228,7 +228,7 @@ const integrationsSchema = z.object({
 });
 export type IntegrationsConfig = z.infer<typeof integrationsSchema>;
 
-// Task #42's real Email/SMTP ticket delivery — non-secret relay settings
+// Real Email/SMTP ticket delivery — non-secret relay settings
 // only. The password never lives here: it goes straight to the Windows
 // Credential Manager (src-tauri/src/security/mod.rs), same "never a config
 // file, never the repository" split as RemoteAccessConfig's `Enabled`
@@ -274,16 +274,16 @@ const boardSchema = z.object({
 });
 export type BoardConfig = z.infer<typeof boardSchema>;
 
-// PLAN §17's setup wizard, scoped down (app/README.md known gap) to just
+// The setup wizard, scoped down (app/README.md known gap) to just
 // the fields a real connection needs — see settings/_private/ConnectionsPane.tsx.
 const connectionsSchema = z.object({
     /** Empty = not configured yet — App.tsx's SerialConnectionSync leaves the indicator idle at a stable zero rather than attempting a connection. */
     IndicatorPort: z.string(),
     IndicatorBaud: z.number().int().positive(),
-    /** A regex with one capture group around the weight — PLAN §17's "custom-pattern fallback so any indicator works without a code change" (src-tauri/src/devices/indicator.rs's `parse_weight`). Empty uses that function's built-in numeric-extraction fallback instead. */
+    /** A regex with one capture group around the weight — a custom-pattern fallback so any indicator works without a code change (src-tauri/src/devices/indicator.rs's `parse_weight`). Empty uses that function's built-in numeric-extraction fallback instead. */
     IndicatorPattern: z.string(),
-    /** Wire framing (task: "for capturing the indicator setting ... what
-     * all settings do we use") — previously hardcoded on the Rust side to
+    /** Wire framing — for capturing which settings the indicator uses;
+     * previously hardcoded on the Rust side to
      * 8-N-1/LF/not-reversed with no way to change any of it. Mirrors
      * src-tauri/src/devices/indicator.rs's `IndicatorFraming` field-for-field
      * (its `#[serde(rename_all = "PascalCase")]` is what makes the
@@ -305,13 +305,13 @@ const connectionsSchema = z.object({
      * that side. Ignored once `IndicatorPattern` is set. */
     IndicatorStartChar: z.string().max(1),
     IndicatorEndChar: z.string().max(1),
-    /** Task #43's GSM modem, on its own serial port — same "empty = not configured yet" shape as `IndicatorPort`, checked the same way before a send is attempted. */
+    /** The GSM modem, on its own serial port — same "empty = not configured yet" shape as `IndicatorPort`, checked the same way before a send is attempted. */
     GsmPort: z.string(),
     GsmBaud: z.number().int().positive(),
 });
 export type ConnectionsConfig = z.infer<typeof connectionsSchema>;
 
-// Task #45 — PLAN §18's "scheduled daily summary". `Time` is a plain
+// The "scheduled daily summary". `Time` is a plain
 // "HH:MM" 24-hour string (an `<input type="time">`'s own value shape), not a
 // Date — there's nothing to serialize/parse, and it compares correctly
 // against `dailySummaryEmail.ts`'s `nowLocalHm()` as a plain string.
@@ -329,7 +329,7 @@ const dailySummarySchema = z.object({
 export type DailySummaryConfig = z.infer<typeof dailySummarySchema>;
 
 /** Settings' new default-open "Business" pane — the name/address/phone that
- * used to be a hardcoded string in App.tsx's `siteLabel` prop (PLAN §21). */
+ * used to be a hardcoded string in App.tsx's `siteLabel` prop. */
 const businessSchema = z.object({
     Name: z.string(),
     Address: z.string(),
@@ -364,7 +364,7 @@ export const settingsBodySchema = z.object({
     DailySummary: dailySummarySchema,
     /** "Operator on duty" (mock's `#opChip`/Appearance pane `#setOp`) — a free-text label, not an account; deliberately not admin-gated. */
     OperatorName: z.string(),
-    /** Task #51 — Appearance pane's Theme picker. Neither field is admin-gated, same reasoning as `OperatorName`. */
+    /** Appearance pane's Theme picker. Neither field is admin-gated, same reasoning as `OperatorName`. */
     Skin: z.enum(SKIN_KEYS),
     TextScale: z.union([z.literal(0.9), z.literal(1), z.literal(1.12), z.literal(1.28)]),
     AdminPasswordHash: z.string(),
@@ -405,7 +405,7 @@ export const DEFAULT_FORMATS: DisplayFormats = {
     DateFmt: "dd MMM yyyy",
     TimeFmt: "24",
     AmountDp: 2,
-    /** Per PLAN §21: "in india we use kg instead of ton" — kg is the
+    /** "In india we use kg instead of ton" — kg is the
      * out-of-the-box default, tonnes is opt-in. */
     WeightUnit: "kg",
 };
@@ -435,7 +435,7 @@ export const DEFAULT_PRINTERS: PrintersConfig = {
     Th: "TVS RP 3200 Star",
 };
 
-/** Opt-in, off by default (PLAN §18's own words, verbatim). */
+/** Opt-in, off by default. */
 export const DEFAULT_REMOTE_ACCESS: RemoteAccessConfig = {
     Enabled: false,
 };
@@ -484,7 +484,7 @@ export const DEFAULT_INTEGRATIONS: IntegrationsConfig = {
     board: false,
 };
 
-/** Was a plain RULE_DEFS constant — now `t`-threaded (task #12/#16, mirrors reportRows.ts's viewOptions(t) precedent) so label/note re-render on language change. */
+/** Was a plain RULE_DEFS constant — now `t`-threaded (mirrors reportRows.ts's viewOptions(t) precedent) so label/note re-render on language change. */
 export const ruleDefs = (t: (key: string) => string): readonly [key: keyof WeighingRules, label: string, note: string][] => [
     ["StrictTare", t("settings.weighingRules.strictTare.label"), t("settings.weighingRules.strictTare.note")],
     [

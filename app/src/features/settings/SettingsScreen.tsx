@@ -60,12 +60,12 @@ export const SettingsScreen = ({ onResetTicketSeries, onAddLanguagePack }: Setti
                     size="big"
                     ariaLabel={t("settings.ariaLabel")}
                 />
-                {/* Moved here from the app's top bar (PLAN §21 — it was
-                    showing on every tab, not just Settings). */}
+                {/* Moved here from the app's top bar — it was
+                    showing on every tab, not just Settings. */}
                 <AdminChip />
             </div>
 
-            {/* Task: hidden on "biz" (Business & Appearance) by request — most
+            {/* Hidden on "biz" (Business & Appearance) by request — most
                 of that tab (AppearancePane's Skin/TextScale/OperatorName) is
                 deliberately never admin-gated at all, so the banner read as
                 noise there even though BusinessPane's own fields still

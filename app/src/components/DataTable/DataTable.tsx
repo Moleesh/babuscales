@@ -32,8 +32,8 @@ const ESTIMATED_ROW_HEIGHT = 37;
 // frame's row range catches up.
 const OVERSCAN = 8;
 
-// Windowed rendering (PLAN §9.1's "row virtualisation... not built yet" —
-// task: Reports tab switch still laggy after the ticket-fetch cache landed,
+// Windowed rendering (row virtualisation wasn't built yet —
+// the Reports tab switch was still laggy after the ticket-fetch cache landed,
 // traced to *this* component always mounting every row's real `<tr>` DOM
 // node regardless of dataset size). `.wrapper` is now its own bounded,
 // scrollable region (DataTable.module.css) instead of growing the whole

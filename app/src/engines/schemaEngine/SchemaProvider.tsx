@@ -5,7 +5,7 @@ import { SchemaContext } from "./_private/SchemaContext";
 import type { Schema } from "./types";
 
 export interface SchemaProviderProps {
-    /** Already loaded from `config` (ConfigKind: "Schema") by `db/schema.ts`'s `loadTicketSchema` — App.tsx's job, same split as I18nProvider's `packs` prop. Falls back to `DEFAULT_TICKET_SCHEMA` until a site saves its own (task #50). */
+    /** Already loaded from `config` (ConfigKind: "Schema") by `db/schema.ts`'s `loadTicketSchema` — App.tsx's job, same split as I18nProvider's `packs` prop. Falls back to `DEFAULT_TICKET_SCHEMA` until a site saves its own. */
     ticketSchema: Schema;
     /** `db/schema.ts`'s `listTicketSchemas` result — every saved schema, for a Settings dropdown. */
     schemas: Schema[];

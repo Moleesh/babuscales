@@ -33,7 +33,7 @@ const useCloseOnOutsideClick = (open: boolean, onClose: () => void) => {
 
 // A plain `<select>`'s own dropdown list is drawn by the OS/webview, not
 // this page — none of the app's CSS (or the custom cursor that replaces the
-// native one everywhere else, task #62) can reach into it. This renders the
+// native one everywhere else) can reach into it. This renders the
 // whole list as ordinary DOM buttons instead, so it looks and behaves like
 // the rest of the app rather than switching to native chrome the moment it
 // opens.
@@ -42,10 +42,9 @@ export const Select = <T extends string>({ id, value, options, disabled, onChang
     const ref = useCloseOnOutsideClick(open, () => setOpen(false));
     const selected = options.find((option) => option.value === value);
 
-    // Disabling the trigger (e.g. Settings' admin auto-lock firing mid-open —
-    // task: "I open the dropdown and in the meantime the admin password
-    // expires, the dropdown is not closed") only stops new clicks; it
-    // doesn't touch `open`, so an already-open list stayed on screen,
+    // Disabling the trigger (e.g. Settings' admin auto-lock firing mid-open,
+    // while the dropdown is open and the admin password expires) only stops
+    // new clicks; it doesn't touch `open`, so an already-open list stayed on screen,
     // floating over a now-disabled field. Force it shut the moment
     // `disabled` flips true instead of waiting for an outside click.
     useLayoutEffect(() => {

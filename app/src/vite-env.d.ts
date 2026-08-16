@@ -1,7 +1,7 @@
 /// <reference types="vite/client" />
 
 interface ImportMetaEnv {
-    /** "memory" (default) or "tauri" — see src/db/createDataPort.ts and PLAN §20.2. */
+    /** "memory" (default) or "tauri" — see src/db/createDataPort.ts. */
     readonly VITE_DATA_ADAPTER?: string;
 }
 

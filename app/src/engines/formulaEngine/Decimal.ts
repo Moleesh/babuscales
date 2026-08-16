@@ -1,6 +1,6 @@
-// A fixed-point decimal, BigInt-backed — PLAN §6.6: "Money and rates are
+// A fixed-point decimal, BigInt-backed: "Money and rates are
 // decimal strings with BigInt-backed arithmetic — never JavaScript floats."
-// Weights use the same type at scale 0, so the formula engine (§8.1) has
+// Weights use the same type at scale 0, so the formula engine has
 // exactly one number representation, not two.
 export interface Decimal {
     readonly mantissa: bigint;
@@ -62,7 +62,7 @@ export const div = (
     const numAbs = a.mantissa < 0n ? -a.mantissa : a.mantissa;
     const denAbs = b.mantissa < 0n ? -b.mantissa : b.mantissa;
 
-    // Bug fix (found writing task #61's Decimal.test.ts — Round(1.005, 2) was
+    // Bug fix (found writing Decimal.test.ts — Round(1.005, 2) was
     // returning 1.00, not 1.01): when `shift` is negative, the target scale
     // asks for *fewer* fractional digits than the operands already carry, so
     // we must scale the denominator UP, never the numerator DOWN — dividing

@@ -14,7 +14,7 @@ export interface WeighingLeftColumnProps {
     recallOffers: RecallOffer[];
     caches: WeighingCaches;
     billing: TicketBilling;
-    /** The active Schema — threaded to CalcCard so its Gross/Tare/Net/Charge box labels can be schema-sourced (task: "no hard coding ... including gross and net"). */
+    /** The active Schema — threaded to CalcCard so its Gross/Tare/Net/Charge box labels can be schema-sourced. */
     ticketSchema: Schema;
     amountDp: 0 | 2;
     /** Settings → Weighing → Rules.ManualEntry — threaded to CalcCard's Tare/Gross boxes. */

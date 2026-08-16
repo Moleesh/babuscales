@@ -3,7 +3,7 @@ import { afterEach } from "vitest";
 
 import "@testing-library/jest-dom/vitest";
 
-// Vitest setup file (task #61) — registers jest-dom's matchers
+// Vitest setup file — registers jest-dom's matchers
 // (toBeInTheDocument, toHaveTextContent, etc.) once for every test file,
 // per vitest.config.ts's `test.setupFiles`. vitest.config.ts sets
 // `globals: false` (explicit `import { describe, it, expect } from

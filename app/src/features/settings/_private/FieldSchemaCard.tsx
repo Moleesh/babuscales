@@ -23,9 +23,8 @@ interface VisibilityToggleArgs {
     onToggleVisible: (fieldId: string) => void;
 }
 
-// One row's own show/hide button (task: "add [a] button ... below the
-// field ... to easily hide and show the field instead of changing them
-// every time") — flips that field's `Visible` on the active schema and
+// One row's own show/hide button — lets an operator easily hide and show
+// the field instead of changing them every time; flips that field's `Visible` on the active schema and
 // re-saves it, the same effect as hand-editing and re-uploading the JSON.
 const VisibilityToggle = ({ field, unlocked, schemaBusy, t, onToggleVisible }: VisibilityToggleArgs) => {
     const visible = field.Visible !== false;
@@ -80,7 +79,7 @@ const fieldColumns = ({
 
 export interface FieldSchemaCardProps {
     ticketSchema: Schema;
-    /** Every saved schema (built-in default + every upload) — task: "allow multiple uploads and have a drop to list them". */
+    /** Every saved schema (built-in default + every upload) — lets you keep multiple uploads and pick from a dropdown. */
     schemas: Schema[];
     lang: string;
     unlocked: boolean;

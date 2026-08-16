@@ -6,7 +6,7 @@ import { useDataPort } from "./useDataPort";
 export interface UseMasterCache {
     rows: MasterRow[];
     loading: boolean;
-    /** Client-side substring match against the loaded rows — instant, no round-trip per keystroke (PLAN §9.1). Once a kind is confirmed larger than one cache page this also kicks off a background DataPort search for novel terms and merges it in, so the *next* call (next keystroke/render) can find rows this call couldn't yet see — see the module comment below. */
+    /** Client-side substring match against the loaded rows — instant, no round-trip per keystroke. Once a kind is confirmed larger than one cache page this also kicks off a background DataPort search for novel terms and merges it in, so the *next* call (next keystroke/render) can find rows this call couldn't yet see — see the module comment below. */
     search: (query: string) => MasterRow[];
     save: (draft: MasterDraft) => Promise<MasterRow>;
     reload: () => void;
@@ -14,7 +14,7 @@ export interface UseMasterCache {
 
 // A kind can run into the tens/hundreds of thousands of rows (vehicles,
 // parties) at a busy site over years — loading every one of them up front
-// doesn't scale (PLAN §21). This instead loads one bounded page
+// doesn't scale. This instead loads one bounded page
 // (CACHE_LIMIT) eagerly, which covers every shop small enough that the
 // whole kind fits in a page — the overwhelmingly common case, and identical
 // in behaviour to the old "load everything" cache for it. Only once a kind

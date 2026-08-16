@@ -9,8 +9,8 @@ import { newId } from "./id";
 // query this app needs (no "get definition by id" screen), just "load
 // the list, show it, let the operator recall or delete one."
 //
-// Deliberately scoped down from PLAN §18's fuller "visual query builder
-// over the dynamic schema": task #50 left schema-driven field *rendering*
+// Deliberately scoped down from a fuller "visual query builder
+// over the dynamic schema" — schema-driven field *rendering* was left
 // unbuilt (custom FieldIds validate and save but never reach the ticket
 // form or ticket data — see FieldsLanguagePane.tsx's own comment), so
 // there is no dynamic field data anywhere in this app to group or filter
@@ -34,7 +34,7 @@ export interface ReportDefinition {
     View: string;
     GroupBy: string;
     Filter: string;
-    /** Report-builder wizard MVP (task: Reports rework, item 4) — date range
+    /** Report-builder wizard MVP — date range
      * (`yyyy-MM-dd`, matching reportRows.ts's own date-only filter) and a
      * comma-joined list of visible ticket-column keys. Both optional so
      * pre-existing saved defs (View/GroupBy/Filter only) still round-trip

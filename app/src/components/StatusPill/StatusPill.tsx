@@ -21,7 +21,7 @@ export interface StatusPillProps {
      * single-gross case.
      */
     netKg?: number | null;
-    /** Struck through, faded — a cancellation is a flag, not a status (PLAN §7.4). */
+    /** Struck through, faded — a cancellation is a flag, not a status. */
     cancelled?: boolean;
     labels?: StatusPillLabels;
     /** Settings' `Formats.WeightUnit` — defaults to "kg" so a caller that predates this
@@ -52,7 +52,7 @@ const Segment = ({ label, kg, net, weightUnit }: SegmentProps) => {
 };
 
 // The one status: a ticket's state is its tare, its gross, and the net they
-// produce — nothing named, nothing to keep in sync (PLAN §7.4). Rendered by
+// produce — nothing named, nothing to keep in sync. Rendered by
 // this one component everywhere a ticket's status appears.
 export const StatusPill = ({
     tareKg,

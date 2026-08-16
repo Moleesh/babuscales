@@ -2,7 +2,7 @@ import styles from "../_styles/AppShell.module.css";
 
 // The weighbridge seen from the side: the deck carries the letters, the
 // load cells carry the deck. BS is a constant maker's mark, not the real
-// logo — the real one is a deferred action item (PLAN §23, item 1). The
+// logo — the real one is a deferred action item. The
 // deck glows and the two load cells pulse in sequence, left then right —
 // weight settling across the bridge — a slow, ambient loop since this
 // sits in the persistent top bar (see markDeckGlow/markCellPulse,

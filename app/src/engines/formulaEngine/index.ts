@@ -8,6 +8,6 @@ import { evaluateExpr } from "./evaluate";
 import type { FormulaContext, FormulaValue } from "./evaluate";
 import { parseFormula } from "./parse";
 
-/** Parses and evaluates in one call — the common case for a field's formula (PLAN §8.1). */
+/** Parses and evaluates in one call — the common case for a field's formula. */
 export const evaluateFormula = (source: string, ctx: FormulaContext): FormulaValue =>
     evaluateExpr(parseFormula(source), ctx);

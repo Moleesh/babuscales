@@ -14,8 +14,8 @@ export interface AppModalProps {
 }
 
 // The one dialog every screen-blocking prompt in the app is built from
-// (PLAN §10) — ported from the mock's ".modal"/".sheet". `data-enter-scope`
-// makes it the active Enter-as-Tab scope while open (PLAN §13), same
+// — ported from the mock's ".modal"/".sheet". `data-enter-scope`
+// makes it the active Enter-as-Tab scope while open, same
 // mechanism as `ContextualHelp`'s drawer. Backdrop click and Escape both
 // close it, matching every one of the mock's own modals. Focus management
 // (move in on open, restore on close, trap Tab) lives in `useModalFocus`.

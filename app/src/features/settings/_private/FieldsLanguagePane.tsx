@@ -16,13 +16,13 @@ export interface FieldsLanguagePaneProps {
 
 // Fields & language pane (demo/BabuScales-demo.html's `data-pane="fields"`).
 //
-// Field schema (task #50, PLAN §8.3) — the schema itself is real and
+// The field schema itself is real and
 // persisted (each upload its own `config` row, ConfigKind: "Schema", keyed
 // by SchemaId — db/schema.ts) and drives Weighing's field rendering live
 // (TicketFieldsCard.tsx/SchemaFieldRow.tsx read it via `useSchema()`),
 // including `Visible`/`Required`/`ReadOnly`/`Validate`. A site can save
 // several schemas side by side and pick which is active from the dropdown
-// below (task: "allow multiple uploads and have a drop to list them"); a
+// below; a
 // field's own show/hide toggle re-saves the active schema with just that
 // field's `Visible` flipped, in place of hand-editing and re-uploading.
 //

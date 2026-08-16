@@ -35,7 +35,7 @@ export interface BuildRecallOffersArgs {
 
 // Split out of WeighingScreen (which was creeping past the 300-line budget —
 // docs/CodingStandards.md) rather than left inline — this is the one place
-// PLAN §9.2's three recall offers (resume an open ticket, reuse a stored
+// the three recall offers (resume an open ticket, reuse a stored
 // tare, fill from the vehicle's last ticket) get built, and it doesn't
 // touch JSX at all.
 export const buildRecallOffers = ({

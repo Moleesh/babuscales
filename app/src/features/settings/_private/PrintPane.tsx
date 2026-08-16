@@ -17,11 +17,10 @@ import { PrinterFixturesCard } from "./PrinterFixturesCard";
 const printerSource = createPrinterSource();
 
 // The mock's other card, "Print templates" (a New-template wizard with live
-// preview), isn't ported: PLAN §21's roadmap table names the visual
-// template designer as a Phase 8 item — "designed for, not built" — so it
-// stays out of scope here; the three built-in layouts (A4/Thermal/Matrix,
-// Tasks 23 & 26) are the only templates this build has. `t`-threaded (task
-// #16, mirrors ruleDefs(t) in settingsSchema.ts) since it
+// preview), isn't ported: the roadmap names the visual
+// template designer as a later item — "designed for, not built" — so it
+// stays out of scope here; the three built-in layouts (A4/Thermal/Matrix)
+// are the only templates this build has. `t`-threaded (mirrors ruleDefs(t) in settingsSchema.ts) since it
 // needs to re-render on language change — no longer a static module constant.
 const templatesCard = (t: (key: string) => string) => (
     <Card title={<span className="lbl">{t("settings.printTemplates.title")}</span>}>
@@ -31,7 +30,7 @@ const templatesCard = (t: (key: string) => string) => (
 
 // Print & printers pane (demo/BabuScales-demo.html's `data-pane="print"`) —
 // the Printers section, plus a real addition the mock never had: "Detected
-// printers" (task #52), reading Windows's own installed-printer list via
+// printers", reading Windows's own installed-printer list via
 // `EnumPrintersW` (devices/printers.rs). window.print() (engines/print's
 // per-ticket and bulk-report slips both use it) always opens the real OS
 // print dialog, where the operator picks the actual target printer

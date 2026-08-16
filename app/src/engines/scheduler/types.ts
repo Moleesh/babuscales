@@ -1,4 +1,4 @@
-// PLAN §21's "true OS-level scheduler for the daily summary" gap — the
+// True OS-level scheduler for the daily summary — the
 // Windows Task Scheduler entry is what actually wakes the app at
 // `DailySummary.Time` even if it's closed (Rust:
 // `src-tauri/src/commands/scheduler.rs`'s `sync_daily_summary_task`); this

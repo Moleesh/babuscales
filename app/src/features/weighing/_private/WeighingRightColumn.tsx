@@ -19,7 +19,7 @@ export interface WeighingRightColumnProps {
     onSave: () => void;
     onOpenPrintModal: () => void;
     /** Jumps to the Cameras tab (App.tsx's `setActiveTab`) — a shortcut out
-     * of this decorative sidebar to the real Cameras screen (PLAN §21). */
+     * of this decorative sidebar to the real Cameras screen. */
     onNavigateToCameras: () => void;
 }
 

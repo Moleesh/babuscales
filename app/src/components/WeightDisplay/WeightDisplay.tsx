@@ -48,9 +48,9 @@ const DEFAULT_LABELS: WeightDisplayLabels = {
 };
 
 // The live weight indicator readout — one instrument, shown at full size on
-// the Weighing screen and compact everywhere else it needs to stay visible
-// (PLAN §13). Never blocks: a lorry parks with one weight and the deck is
-// free again immediately (§7.5) — this component just shows what the
+// the Weighing screen and compact everywhere else it needs to stay visible.
+// Never blocks: a lorry parks with one weight and the deck is
+// free again immediately — this component just shows what the
 // bridge currently reads, nothing about who is waiting.
 export const WeightDisplay = ({
     weightKg,

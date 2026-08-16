@@ -16,7 +16,7 @@ export interface SegmentedControlProps<Value extends string> {
 }
 
 // A row of mutually-exclusive buttons — which master kind, which settings
-// pane, which report view (PLAN §10). Ported from the mock's ".segbar".
+// pane, which report view. Ported from the mock's ".segbar".
 export const SegmentedControl = <Value extends string>({
     options,
     value,

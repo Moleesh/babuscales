@@ -43,7 +43,7 @@ export const renderMatrixSlip = (p: SlipData): string =>
 // roll driven by plain text, as this renderer's return type is, has no way
 // to emit a bitmap — there's no ESC/POS raster driver in this codebase,
 // app/README.md known gap). Now that the URL it stands in for is real
-// (@engines/verification, task #33), printing the actual address is more
+// (@engines/verification), printing the actual address is more
 // useful than a graphic this pipeline can't draw; the line is dropped
 // entirely rather than kept as a placeholder when there's nothing real to
 // print (feature off, or the ticket has no VerifyUrl yet).

@@ -113,7 +113,7 @@ const ReportsActiveView = ({
 // Split out of ReportsScreen (over the line/complexity budget —
 // docs/CodingStandards.md) — the Card's body: saved-reports row and the
 // active view (Tickets or Summary). The Print/Export button row moved out
-// to ReportsScreen's own sticky bottom bar (task: Reports rework, item 3).
+// to ReportsScreen's own sticky bottom bar.
 export const ReportsCardBody = ({
     dateFrom,
     onDateFromChange,

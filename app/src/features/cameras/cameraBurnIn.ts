@@ -4,7 +4,7 @@ import { formatTicketNo } from "@features/weighing";
 
 // Ported from the mock's `renderCams`: `state.no + " · " + fmt(last.kg) +
 // " kg · " + fTime(last.at)` — the text a real system would burn into the
-// frame at capture time (PLAN §16's "overlay stamp"), shown here as plain
+// frame at capture time (the "overlay stamp"), shown here as plain
 // text over the decorative tile since there is no real frame to burn it
 // into (cameraFixtures.ts's own comment).
 // Deliberately fixed-kg, not Formats.WeightUnit — this mimics what a real

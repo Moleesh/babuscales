@@ -1,6 +1,6 @@
 import type { Localized } from "./types";
 
-// The manual, one topic per tab (PLAN §11). Field names are PascalCase
+// The manual, one topic per tab. Field names are PascalCase
 // because this is what a `config` row's body looks like once help content
 // actually lives there — this file is the bundled fallback a fresh install
 // starts with, not a permanent source. `ta` is authored alongside `en` for

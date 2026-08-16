@@ -20,7 +20,7 @@ describe("StatusPill", () => {
         expect(screen.getByText(formatWeightIn(2500, "kg"))).toBeInTheDocument();
     });
 
-    it("uses the ticket's own netKg (task #46 multi-gross) instead of gross - tare when given", () => {
+    it("uses the ticket's own netKg (multi-gross) instead of gross - tare when given", () => {
         // Two Gross captures summing to more net than grossKg - tareKg would.
         render(<StatusPill tareKg={1000} grossKg={3500} netKg={4200} />);
         expect(screen.getByText(formatWeightIn(4200, "kg"))).toBeInTheDocument();
