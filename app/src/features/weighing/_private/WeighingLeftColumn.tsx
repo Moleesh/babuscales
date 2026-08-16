@@ -1,4 +1,5 @@
 import type { WeightUnit } from "@constants/numberFormat";
+import type { Schema } from "@engines/schemaEngine";
 
 import type { RecallOffer } from "../RecallBanner";
 import type { UseWeighingTicket } from "../useWeighingTicket";
@@ -13,6 +14,8 @@ export interface WeighingLeftColumnProps {
     recallOffers: RecallOffer[];
     caches: WeighingCaches;
     billing: TicketBilling;
+    /** The active Schema — threaded to CalcCard so its Gross/Tare/Net/Charge box labels can be schema-sourced (task: "no hard coding ... including gross and net"). */
+    ticketSchema: Schema;
     amountDp: 0 | 2;
     /** Settings → Weighing → Rules.ManualEntry — threaded to CalcCard's Tare/Gross boxes. */
     manualEntry: boolean;
@@ -32,6 +35,7 @@ export const WeighingLeftColumn = ({
     recallOffers,
     caches,
     billing,
+    ticketSchema,
     amountDp,
     manualEntry,
     weightUnit,
@@ -49,6 +53,7 @@ export const WeighingLeftColumn = ({
             transporterCache={caches.transporter}
         />
         <CalcCard
+            ticketSchema={ticketSchema}
             weights={ticket.weights}
             captures={ticket.captures}
             chargeValue={ticket.fields.charge}

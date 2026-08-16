@@ -1,9 +1,13 @@
+import { Fragment } from "react";
+import type { ReactNode } from "react";
+
 import { Card } from "@components/Card";
 import { Field, FieldGrid } from "@components/Field";
 import { SearchableDropdown } from "@components/SearchableDropdown";
 import type { MasterKind } from "@db/types";
 import type { UseMasterCache } from "@db/useMasterCache";
 import { useSchema } from "@engines/schemaEngine";
+import type { Field as SchemaField } from "@engines/schemaEngine";
 import { resolveLocalized } from "@i18n/types";
 import { useTranslation } from "@i18n/useTranslation";
 
@@ -14,7 +18,8 @@ import { formatTicketNo } from "../ticketNumber";
 import type { UseWeighingTicket } from "../useWeighingTicket";
 import { buildTicketFormulaContext } from "./buildTicketFormulaContext";
 import { SchemaFieldRow } from "./SchemaFieldRow";
-import { FIXED_FIELD_IDS } from "./ticketFieldIds";
+import { evaluateFieldVisible } from "./schemaFieldValidation";
+import { CAPTURE_FIELD_IDS, FIXED_FIELD_IDS } from "./ticketFieldIds";
 
 interface MasterDropdownFieldProps {
     id: string;
@@ -46,12 +51,7 @@ const MasterDropdownField = ({
     readOnly,
     spellCheck,
 }: MasterDropdownFieldProps) => (
-    <Field
-        id={id}
-        label={label}
-        searchTitle={searchTitle}
-        recalled={recalled}
-    >
+    <Field id={id} label={label} searchTitle={searchTitle} recalled={recalled}>
         <SearchableDropdown
             id={id}
             value={value}
@@ -65,161 +65,175 @@ const MasterDropdownField = ({
     </Field>
 );
 
-interface VehicleDateRowProps {
-    ticket: UseWeighingTicket;
+interface FixedFieldCaches {
     vehicleCache: UseMasterCache;
-    vehicleLabel: string;
-    ticketDate: string;
-}
-
-const VehicleDateRow = ({ ticket, vehicleCache, vehicleLabel, ticketDate }: VehicleDateRowProps) => {
-    const { t } = useTranslation();
-    return (
-        <FieldGrid columns={2}>
-            <MasterDropdownField
-                id="fVeh"
-                label={vehicleLabel}
-                searchTitle={t("weigh.searchVehicles")}
-                value={ticket.fields.vehicleNo}
-                onChange={(value) => ticket.setField("vehicleNo", value)}
-                cache={vehicleCache}
-                readOnly={ticket.isLocked}
-                spellCheck={false}
-            />
-            <Field id="fDate" label={t("weigh.ticketDate")}>
-                <input id="fDate" readOnly value={ticketDate} className={styles.dateField} />
-            </Field>
-        </FieldGrid>
-    );
-};
-
-interface PartyMaterialRowProps {
-    ticket: UseWeighingTicket;
     partyCache: UseMasterCache;
     materialCache: UseMasterCache;
-    partyLabel: string;
-    materialLabel: string;
-}
-
-const PartyMaterialRow = ({
-    ticket,
-    partyCache,
-    materialCache,
-    partyLabel,
-    materialLabel,
-}: PartyMaterialRowProps) => {
-    const { t } = useTranslation();
-    return (
-        <FieldGrid columns={2}>
-            <MasterDropdownField
-                id="fParty"
-                label={partyLabel}
-                searchTitle={t("weigh.searchParties")}
-                recalled={ticket.recalledFields.has("party")}
-                value={ticket.fields.party}
-                onChange={(value) => ticket.setField("party", value)}
-                cache={partyCache}
-                readOnly={ticket.isLocked}
-            />
-            <MasterDropdownField
-                id="fMat"
-                label={materialLabel}
-                searchTitle={t("weigh.searchMaterials")}
-                recalled={ticket.recalledFields.has("material")}
-                value={ticket.fields.material}
-                onChange={(value) => ticket.setField("material", value)}
-                cache={materialCache}
-                readOnly={ticket.isLocked}
-            />
-        </FieldGrid>
-    );
-};
-
-interface ChallanTransporterRowProps {
-    ticket: UseWeighingTicket;
     transporterCache: UseMasterCache;
-    transporterLabel: string;
 }
 
-const ChallanTransporterRow = ({
-    ticket,
-    transporterCache,
-    transporterLabel,
-}: ChallanTransporterRowProps) => {
-    const { t } = useTranslation();
-    return (
-        <FieldGrid columns={2}>
-            <Field id="fChal" label={t("weigh.challanNo")}>
-                <input
-                    id="fChal"
-                    value={ticket.fields.challanNo}
-                    onChange={(event) => ticket.setField("challanNo", event.target.value)}
+interface BuildFixedControlArgs extends FixedFieldCaches {
+    ticket: UseWeighingTicket;
+    label: string;
+    t: (key: string) => string;
+}
+
+// The 5 fixed FieldIds' actual controls — unchanged widgets, just picked by
+// FieldId instead of by position, so a schema can reorder/hide/relabel them
+// without this file growing a new branch per layout (task: "yes, fully
+// schema-driven"). Capture buttons/stability logic live in CalcCard, not
+// here, so there's nothing hardware-shaped in this switch at all.
+const buildFixedControl = (fieldId: string, args: BuildFixedControlArgs): ReactNode => {
+    const { ticket, label, t, vehicleCache, partyCache, materialCache, transporterCache } = args;
+    switch (fieldId) {
+        case "VehicleNo":
+            return (
+                <MasterDropdownField
+                    id="fVeh"
+                    label={label}
+                    searchTitle={t("weigh.searchVehicles")}
+                    value={ticket.fields.vehicleNo}
+                    onChange={(value) => ticket.setField("vehicleNo", value)}
+                    cache={vehicleCache}
                     readOnly={ticket.isLocked}
-                    autoComplete="off"
+                    spellCheck={false}
                 />
-            </Field>
-            <MasterDropdownField
-                id="fTrans"
-                label={transporterLabel}
-                recalled={ticket.recalledFields.has("transporter")}
-                value={ticket.fields.transporter}
-                onChange={(value) => ticket.setField("transporter", value)}
-                cache={transporterCache}
-                readOnly={ticket.isLocked}
-            />
-        </FieldGrid>
-    );
+            );
+        case "Party":
+            return (
+                <MasterDropdownField
+                    id="fParty"
+                    label={label}
+                    searchTitle={t("weigh.searchParties")}
+                    recalled={ticket.recalledFields.has("party")}
+                    value={ticket.fields.party}
+                    onChange={(value) => ticket.setField("party", value)}
+                    cache={partyCache}
+                    readOnly={ticket.isLocked}
+                />
+            );
+        case "Material":
+            return (
+                <MasterDropdownField
+                    id="fMat"
+                    label={label}
+                    searchTitle={t("weigh.searchMaterials")}
+                    recalled={ticket.recalledFields.has("material")}
+                    value={ticket.fields.material}
+                    onChange={(value) => ticket.setField("material", value)}
+                    cache={materialCache}
+                    readOnly={ticket.isLocked}
+                />
+            );
+        case "Transporter":
+            return (
+                <MasterDropdownField
+                    id="fTrans"
+                    label={label}
+                    recalled={ticket.recalledFields.has("transporter")}
+                    value={ticket.fields.transporter}
+                    onChange={(value) => ticket.setField("transporter", value)}
+                    cache={transporterCache}
+                    readOnly={ticket.isLocked}
+                />
+            );
+        case "ChallanNo":
+            return (
+                <Field id="fChal" label={label}>
+                    <input
+                        id="fChal"
+                        value={ticket.fields.challanNo}
+                        onChange={(event) => ticket.setField("challanNo", event.target.value)}
+                        readOnly={ticket.isLocked}
+                        autoComplete="off"
+                    />
+                </Field>
+            );
+        default:
+            return null;
+    }
 };
 
-interface CustomFieldsSectionProps {
+// One fixed field's control, plus the read-only Date field paired right
+// after Vehicle No — split out of buildFieldItems purely to keep that loop
+// body under the line budget (docs/CodingStandards.md).
+const buildFixedItems = (
+    field: SchemaField,
+    lang: string,
+    ticketDate: string,
+    args: Omit<BuildFixedControlArgs, "label">,
+): { key: string; node: ReactNode }[] => {
+    const label = resolveLocalized(field.Label, lang);
+    const items: { key: string; node: ReactNode }[] = [
+        { key: field.FieldId, node: buildFixedControl(field.FieldId, { ...args, label }) },
+    ];
+    // The read-only Ticket Date field has no schema backing of its own —
+    // kept paired immediately after Vehicle No, same spot it has always
+    // occupied, rather than growing a fake schema entry just to give it a
+    // sort position.
+    if (field.FieldId === "VehicleNo") {
+        items.push({
+            key: "TicketDate",
+            node: (
+                <Field id="fDate" label={args.t("weigh.ticketDate")}>
+                    <input id="fDate" readOnly value={ticketDate} className={styles.dateField} />
+                </Field>
+            ),
+        });
+    }
+    return items;
+};
+
+interface FieldsListArgs extends FixedFieldCaches {
     ticket: UseWeighingTicket;
-    schemaFields: ReturnType<typeof useSchema>["ticketSchema"]["Fields"];
-    vehicleCache: UseMasterCache;
-    partyCache: UseMasterCache;
-    materialCache: UseMasterCache;
-    transporterCache: UseMasterCache;
+    schemaFields: SchemaField[];
+    ticketDate: string;
+    lang: string;
+    t: (key: string) => string;
 }
 
-// Any Field in the active Schema that isn't one of the 5 fixed ones above,
-// rendered generically by SchemaFieldRow (PLAN §8). A schema with no such
-// fields renders nothing here (`customFieldDefs` is `[]`) — but
-// DEFAULT_TICKET_SCHEMA itself already carries one: a Formula-kind "Net"
-// field (Abs(Gross - Tare)) that was previously dead data (TicketFieldsCard
-// only ever read the 5 fixed FieldIds off the schema before this). Wiring
-// this renderer in surfaces it for the first time — a deliberate, in-scope
-// consequence of "make a custom field in the schema actually render", not a
-// bug; flagged here because it means today's default ticket screen gains a
-// visible Net row it didn't have before this change. Pulled out of
-// TicketFieldsCard itself so that component's own body stays under the
-// line budget.
-const CustomFieldsSection = ({
+// One ordered pass over `ticketSchema.Fields` (PLAN §8) producing every grid
+// item this card renders — the 5 fixed fields (dedicated controls, schema
+// order/label/VisibleWhen), the always-present read-only Date field paired
+// right after Vehicle No, and any other custom field (SchemaFieldRow,
+// unchanged). Gross/Tare/Net/Charge FieldIds are skipped here entirely —
+// CalcCard owns those boxes; a schema entry for one only supplies its label
+// there (see ticketFieldIds.ts's CAPTURE_FIELD_IDS comment). Split out of
+// TicketFieldsCard's own body so that component stays a plain layout shell.
+const buildFieldItems = ({
     ticket,
     schemaFields,
+    ticketDate,
+    lang,
+    t,
     vehicleCache,
     partyCache,
     materialCache,
     transporterCache,
-}: CustomFieldsSectionProps) => {
-    const customFieldDefs = schemaFields.filter((field) => !FIXED_FIELD_IDS.includes(field.FieldId));
-    if (customFieldDefs.length === 0) return null;
-
+}: FieldsListArgs): { key: string; node: ReactNode }[] => {
     const ctx = buildTicketFormulaContext(ticket, ticket.customFields);
-    // Only the four master kinds already cached on this screen — a custom
-    // Search field targeting any other MasterKind has nowhere to search
-    // here; SchemaFieldRow renders its own "not yet supported" placeholder
-    // for that case rather than this screen adding new useMasterCache calls.
     const masterCaches: Partial<Record<MasterKind, UseMasterCache>> = {
         Vehicle: vehicleCache,
         Party: partyCache,
         Material: materialCache,
         Transporter: transporterCache,
     };
+    const items: { key: string; node: ReactNode }[] = [];
+    const fixedArgs = { ticket, t, vehicleCache, partyCache, materialCache, transporterCache };
 
-    return (
-        <FieldGrid columns={2}>
-            {customFieldDefs.map((field) => (
+    for (const field of schemaFields) {
+        if (CAPTURE_FIELD_IDS.includes(field.FieldId)) continue;
+        if (!evaluateFieldVisible(field, ctx)) continue;
+
+        if (FIXED_FIELD_IDS.includes(field.FieldId)) {
+            items.push(...buildFixedItems(field, lang, ticketDate, fixedArgs));
+            continue;
+        }
+
+        items.push({
+            key: field.FieldId,
+            node: (
                 <SchemaFieldRow
-                    key={field.FieldId}
                     field={field}
                     value={ticket.customFields[field.FieldId] ?? null}
                     onChange={(value) => ticket.setCustomField(field.FieldId, value)}
@@ -227,9 +241,19 @@ const CustomFieldsSection = ({
                     readOnly={ticket.isLocked}
                     masterCaches={masterCaches}
                 />
-            ))}
-        </FieldGrid>
-    );
+            ),
+        });
+    }
+    return items;
+};
+
+// Groups the flat, schema-ordered item list into `.grid2` rows — FieldGrid
+// itself is a pure CSS wrapper with no pairing logic of its own (checked
+// FieldGrid.tsx), so whoever composes children into it has to chunk them.
+const chunkPairs = <T,>(items: T[]): T[][] => {
+    const rows: T[][] = [];
+    for (let i = 0; i < items.length; i += 2) rows.push(items.slice(i, i + 2));
+    return rows;
 };
 
 export interface TicketFieldsCardProps {
@@ -243,10 +267,11 @@ export interface TicketFieldsCardProps {
 }
 
 // Split out of WeighingScreen (over the 300-line budget — docs/CodingStandards.md)
-// — the "Ticket" card's four SearchableDropdown fields plus Challan No and
-// the read-only date, exactly as laid out in demo/BabuScales-demo.html's
-// `.grid2` field rows. Self-contained: everything it needs comes in as
-// props, nothing here reaches back into WeighingScreen's own state.
+// — the "Ticket" card. Fully schema-driven (task: "no hard coding ... json
+// only for all field"): every field, fixed or custom, renders in whatever
+// order the active Schema's Fields array lists it in, using whichever
+// control that FieldId maps to. Self-contained: everything it needs comes
+// in as props, nothing here reaches back into WeighingScreen's own state.
 export const TicketFieldsCard = ({
     ticket,
     ticketDate,
@@ -257,48 +282,36 @@ export const TicketFieldsCard = ({
     transporterCache,
 }: TicketFieldsCardProps) => {
     // Reads the live, admin-editable schema (Settings → Fields & language,
-    // task #50) rather than the hardcoded DEFAULT_TICKET_SCHEMA constant, and
-    // resolves through the active language — previously this always showed
-    // `.en` regardless of the language toggle, a real (if minor) bug.
+    // task #50) rather than a hardcoded field list, resolved through the
+    // active language.
     const { ticketSchema } = useSchema();
     const { lang, t } = useTranslation();
-    const fieldLabel = (fieldId: string): string => {
-        const field = ticketSchema.Fields.find((candidate) => candidate.FieldId === fieldId);
-        return field ? resolveLocalized(field.Label, lang) : fieldId;
-    };
+
+    const items = buildFieldItems({
+        ticket,
+        schemaFields: ticketSchema.Fields,
+        ticketDate,
+        lang,
+        t,
+        vehicleCache,
+        partyCache,
+        materialCache,
+        transporterCache,
+    });
 
     return (
         <Card
             title={<span className="lbl">{t("weigh.ticket")}</span>}
             headerRight={<span className="chip num">{formatTicketNo(ticket.docSeq)}</span>}
         >
-            <VehicleDateRow
-                ticket={ticket}
-                vehicleCache={vehicleCache}
-                vehicleLabel={fieldLabel("VehicleNo")}
-                ticketDate={ticketDate}
-            />
-            <PartyMaterialRow
-                ticket={ticket}
-                partyCache={partyCache}
-                materialCache={materialCache}
-                partyLabel={fieldLabel("Party")}
-                materialLabel={fieldLabel("Material")}
-            />
+            {chunkPairs(items).map((row) => (
+                <FieldGrid key={row.map((item) => item.key).join("_")} columns={2}>
+                    {row.map((item) => (
+                        <Fragment key={item.key}>{item.node}</Fragment>
+                    ))}
+                </FieldGrid>
+            ))}
             <RecallBanner offers={recallOffers} />
-            <ChallanTransporterRow
-                ticket={ticket}
-                transporterCache={transporterCache}
-                transporterLabel={fieldLabel("Transporter")}
-            />
-            <CustomFieldsSection
-                ticket={ticket}
-                schemaFields={ticketSchema.Fields}
-                vehicleCache={vehicleCache}
-                partyCache={partyCache}
-                materialCache={materialCache}
-                transporterCache={transporterCache}
-            />
         </Card>
     );
 };

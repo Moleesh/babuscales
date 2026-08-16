@@ -5,10 +5,12 @@ import type { WeightUnit } from "@constants/numberFormat";
 import type { Capture, CaptureType } from "@db/ticketBody";
 import type { DerivedWeights } from "@db/ticketBody";
 import { hasCapture } from "@db/ticketBody";
+import type { Schema } from "@engines/schemaEngine";
 import { useTranslation } from "@i18n/useTranslation";
 
 import { CalcFormula } from "./CalcFormula";
 import { ManualCalcBox } from "./ManualCalcBox";
+import { resolveFieldLabel } from "./ticketFieldIds";
 import styles from "../_styles/WeighingScreen.module.css";
 
 const formatStamp = (
@@ -77,6 +79,8 @@ interface TareGrossBoxesProps {
     weightUnit: WeightUnit;
     dateFmt: string;
     timeFmt: "24" | "12";
+    grossLabel: string;
+    tareLabel: string;
 }
 
 // Pulled out of CalcCard's own body (over the line budget —
@@ -92,6 +96,8 @@ const TareGrossBoxes = ({
     weightUnit,
     dateFmt,
     timeFmt,
+    grossLabel,
+    tareLabel,
 }: TareGrossBoxesProps) => {
     const { t, lang } = useTranslation();
     // Gross first, Tare second — a loaded lorry weighing in before it's
@@ -101,13 +107,13 @@ const TareGrossBoxes = ({
         <>
             {manualGross ? (
                 <ManualCalcBox
-                    label={t("gross")}
+                    label={grossLabel}
                     onSubmit={(weightKg) => onManualCapture(weightKg, "Gross")}
                     weightUnit={weightUnit}
                 />
             ) : (
                 <CalcBox
-                    label={t("gross")}
+                    label={grossLabel}
                     value={weights.grossKg !== null ? formatWeightIn(weights.grossKg, weightUnit) : "—"}
                     stamp={
                         formatStamp(grossCaptures[grossCaptures.length - 1]?.At, lang, dateFmt, timeFmt) +
@@ -119,13 +125,13 @@ const TareGrossBoxes = ({
             )}
             {manualTare ? (
                 <ManualCalcBox
-                    label={t("tare")}
+                    label={tareLabel}
                     onSubmit={(weightKg) => onManualCapture(weightKg, "Tare")}
                     weightUnit={weightUnit}
                 />
             ) : (
                 <CalcBox
-                    label={t("tare")}
+                    label={tareLabel}
                     value={weights.tareKg !== null ? formatWeightIn(weights.tareKg, weightUnit) : "—"}
                     stamp={formatStamp(captures.find((c) => c.Type === "Tare")?.At, lang, dateFmt, timeFmt)}
                 />
@@ -135,6 +141,8 @@ const TareGrossBoxes = ({
 };
 
 export interface CalcCardProps {
+    /** The active Schema — Gross/Tare/Net/Charge box labels resolve against it (falling back to the current i18n defaults) rather than being hardcoded (task: "no hard coding ... including gross and net", "the values not the button"). */
+    ticketSchema: Schema;
     weights: DerivedWeights;
     captures: Capture[];
     /** Operator-entered, same field as challanNo — no auto-calc (task: "no need for charge calculation also"). */
@@ -165,6 +173,7 @@ export interface CalcCardProps {
 // reason): only `ticket.weights`/`captures`, `charge`/`materialRate`/
 // `value` and `Formats.AmountDp` — no master-cache or DataPort deps.
 export const CalcCard = ({
+    ticketSchema,
     weights,
     captures,
     chargeValue,
@@ -179,7 +188,9 @@ export const CalcCard = ({
     dateFmt,
     timeFmt,
 }: CalcCardProps) => {
-    const { t } = useTranslation();
+    const { t, lang } = useTranslation();
+    const boxLabel = (fieldId: string, fallback: string) =>
+        resolveFieldLabel(ticketSchema.Fields, fieldId, lang, fallback);
     // Task #46 — every Gross capture, in the order they were taken; length 1
     // covers today's single-gross ticket unchanged.
     const grossCaptures = captures.filter((c) => c.Type === "Gross");
@@ -204,14 +215,16 @@ export const CalcCard = ({
                     weightUnit={weightUnit}
                     dateFmt={dateFmt}
                     timeFmt={timeFmt}
+                    grossLabel={boxLabel("Gross", t("gross"))}
+                    tareLabel={boxLabel("Tare", t("tare"))}
                 />
                 <CalcBox
-                    label={t("net")}
+                    label={boxLabel("Net", t("net"))}
                     value={weights.netKg !== null ? formatWeightIn(weights.netKg, weightUnit) : "—"}
                     lead={weights.netKg !== null}
                 />
                 <ChargeBox
-                    label={t("charge")}
+                    label={boxLabel("Charge", t("charge"))}
                     value={chargeValue}
                     onChange={onChargeChange}
                     readOnly={isLocked}

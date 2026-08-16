@@ -260,15 +260,21 @@ export const SchemaFieldRow = ({ field, value, onChange, ctx, readOnly, masterCa
 
     if (!evaluateFieldVisible(field, ctx)) return null;
 
+    // Unlike VisibleWhen (where "no formula" correctly means "always
+    // visible" — see evaluateGate's own doc comment), an absent
+    // RequiredWhen/ReadOnlyWhen must mean "not required"/"not read-only",
+    // not "always" — evaluateGate's shared default-true is only right for
+    // the Visible case, so these two are gated on the formula being present
+    // at all rather than calling evaluateGate unconditionally.
     let required = false;
     let fieldReadOnly = readOnly;
     try {
-        required = evaluateGate(field.RequiredWhen, ctx);
+        required = field.RequiredWhen ? evaluateGate(field.RequiredWhen, ctx) : false;
     } catch {
         required = false;
     }
     try {
-        fieldReadOnly = readOnly || evaluateGate(field.ReadOnlyWhen, ctx);
+        fieldReadOnly = readOnly || (field.ReadOnlyWhen ? evaluateGate(field.ReadOnlyWhen, ctx) : false);
     } catch {
         fieldReadOnly = readOnly;
     }

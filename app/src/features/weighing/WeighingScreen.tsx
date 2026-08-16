@@ -9,7 +9,7 @@ import { useTranslation } from "@i18n/useTranslation";
 import { buildTicketFormulaContext } from "./_private/buildTicketFormulaContext";
 import { PrintPreviewModal } from "./_private/PrintPreviewModal";
 import { hasBlockingCustomFieldError } from "./_private/schemaFieldValidation";
-import { FIXED_FIELD_IDS } from "./_private/ticketFieldIds";
+import { CAPTURE_FIELD_IDS, FIXED_FIELD_IDS } from "./_private/ticketFieldIds";
 import { useDeliveryChannels } from "./_private/useDeliveryChannels";
 import { useWeighingScreenDerived } from "./_private/useWeighingScreenDerived";
 import { useWeighingScreenTickets } from "./_private/useWeighingScreenTickets";
@@ -34,7 +34,7 @@ const computeHasBlockingCustomFieldError = (
     ticketSchema: ReturnType<typeof useSchema>["ticketSchema"],
 ): boolean => {
     const customFieldDefs = ticketSchema.Fields.filter(
-        (field) => !FIXED_FIELD_IDS.includes(field.FieldId),
+        (field) => !FIXED_FIELD_IDS.includes(field.FieldId) && !CAPTURE_FIELD_IDS.includes(field.FieldId),
     );
     const formulaCtx = buildTicketFormulaContext(ticket, ticket.customFields);
     return hasBlockingCustomFieldError(customFieldDefs, formulaCtx);
@@ -114,6 +114,7 @@ export const WeighingScreen = ({ ticket, licenseGated, onNavigateToCameras }: We
                     recallOffers,
                     caches,
                     billing,
+                    ticketSchema,
                     amountDp: settings.Formats.AmountDp,
                     manualEntry: settings.Rules.ManualEntry,
                     weightUnit: settings.Formats.WeightUnit,
