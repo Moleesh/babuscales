@@ -51,7 +51,6 @@ const fieldSchema = z.discriminatedUnion("Kind", [
 
 export const ticketSchemaSchema = z.object({
     SchemaId: z.string().min(1),
-    DocKind: z.string().min(1),
     Fields: z.array(fieldSchema).min(1),
 });
 

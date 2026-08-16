@@ -11,7 +11,6 @@ import type { Schema } from "./types";
 // an admin adds, which has no existing app string to fall back to.
 export const DEFAULT_TICKET_SCHEMA: Schema = {
     SchemaId: "default-ticket",
-    DocKind: "Ticket",
     Fields: [
         {
             FieldId: "VehicleNo",

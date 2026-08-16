@@ -118,7 +118,5 @@ export type Field =
 // pack is (task #50).
 export interface Schema extends JsonRecord {
     SchemaId: string;
-    /** "Ticket" | "Invoice" — matches DocKind, kept as a string so a future doc kind needs no engine change. */
-    DocKind: string;
     Fields: Field[];
 }
