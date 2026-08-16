@@ -78,77 +78,117 @@ interface BuildFixedControlArgs extends FixedFieldCaches {
     t: (key: string) => string;
 }
 
-// The 5 fixed FieldIds' actual controls — unchanged widgets, just picked by
-// FieldId instead of by position, so a schema can reorder/hide/relabel them
-// without this file growing a new branch per layout (task: "yes, fully
-// schema-driven"). Capture buttons/stability logic live in CalcCard, not
-// here, so there's nothing hardware-shaped in this switch at all.
-const buildFixedControl = (fieldId: string, args: BuildFixedControlArgs): ReactNode => {
+// The typed-state binding for each of the 5 fixed FieldIds — necessary
+// wiring (ticket.fields is a typed struct, not the generic customFields bag
+// SchemaFieldRow reads from), kept as a small per-FieldId lookup rather than
+// duplicated inline in every branch of buildFixedControl below.
+interface FixedFieldAccessor {
+    id: string;
+    getValue: (ticket: UseWeighingTicket) => string;
+    setValue: (ticket: UseWeighingTicket, value: string) => void;
+    searchTitleKey?: string;
+    recalledKey?: "party" | "material" | "transporter";
+    spellCheck?: boolean;
+}
+
+const FIXED_FIELD_ACCESSORS: Record<string, FixedFieldAccessor> = {
+    VehicleNo: {
+        id: "fVeh",
+        getValue: (ticket) => ticket.fields.vehicleNo,
+        setValue: (ticket, value) => ticket.setField("vehicleNo", value),
+        searchTitleKey: "weigh.searchVehicles",
+        spellCheck: false,
+    },
+    Party: {
+        id: "fParty",
+        getValue: (ticket) => ticket.fields.party,
+        setValue: (ticket, value) => ticket.setField("party", value),
+        searchTitleKey: "weigh.searchParties",
+        recalledKey: "party",
+    },
+    Material: {
+        id: "fMat",
+        getValue: (ticket) => ticket.fields.material,
+        setValue: (ticket, value) => ticket.setField("material", value),
+        searchTitleKey: "weigh.searchMaterials",
+        recalledKey: "material",
+    },
+    Transporter: {
+        id: "fTrans",
+        getValue: (ticket) => ticket.fields.transporter,
+        setValue: (ticket, value) => ticket.setField("transporter", value),
+        recalledKey: "transporter",
+    },
+    ChallanNo: {
+        id: "fChal",
+        getValue: (ticket) => ticket.fields.challanNo,
+        setValue: (ticket, value) => ticket.setField("challanNo", value),
+    },
+};
+
+// The 5 fixed FieldIds' actual controls — which widget renders now comes
+// from the schema's own `field.Kind` (task: "use the json itself to
+// generate them") instead of a hardcoded per-FieldId switch; only the
+// typed-state binding above stays keyed by FieldId, since ticket.fields is a
+// typed struct rather than the generic customFields bag. Capture
+// buttons/stability logic live in CalcCard, not here (kept as-is — those are
+// hardware-tied, not a pure rendering choice).
+const buildFixedControl = (field: SchemaField, args: BuildFixedControlArgs): ReactNode => {
     const { ticket, label, t, vehicleCache, partyCache, materialCache, transporterCache } = args;
-    switch (fieldId) {
-        case "VehicleNo":
+    const accessor = FIXED_FIELD_ACCESSORS[field.FieldId];
+    if (!accessor) return null;
+    const masterCaches: Partial<Record<MasterKind, UseMasterCache>> = {
+        Vehicle: vehicleCache,
+        Party: partyCache,
+        Material: materialCache,
+        Transporter: transporterCache,
+    };
+
+    switch (field.Kind) {
+        case "Search": {
+            const cache = field.Master ? masterCaches[field.Master] : undefined;
+            if (!cache) return null;
             return (
                 <MasterDropdownField
-                    id="fVeh"
+                    id={accessor.id}
                     label={label}
-                    searchTitle={t("weigh.searchVehicles")}
-                    value={ticket.fields.vehicleNo}
-                    onChange={(value) => ticket.setField("vehicleNo", value)}
-                    cache={vehicleCache}
+                    searchTitle={accessor.searchTitleKey ? t(accessor.searchTitleKey) : undefined}
+                    recalled={accessor.recalledKey ? ticket.recalledFields.has(accessor.recalledKey) : undefined}
+                    value={accessor.getValue(ticket)}
+                    onChange={(value) => accessor.setValue(ticket, value)}
+                    cache={cache}
                     readOnly={ticket.isLocked}
-                    spellCheck={false}
+                    spellCheck={accessor.spellCheck}
                 />
             );
-        case "Party":
+        }
+        case "Text":
             return (
-                <MasterDropdownField
-                    id="fParty"
-                    label={label}
-                    searchTitle={t("weigh.searchParties")}
-                    recalled={ticket.recalledFields.has("party")}
-                    value={ticket.fields.party}
-                    onChange={(value) => ticket.setField("party", value)}
-                    cache={partyCache}
-                    readOnly={ticket.isLocked}
-                />
-            );
-        case "Material":
-            return (
-                <MasterDropdownField
-                    id="fMat"
-                    label={label}
-                    searchTitle={t("weigh.searchMaterials")}
-                    recalled={ticket.recalledFields.has("material")}
-                    value={ticket.fields.material}
-                    onChange={(value) => ticket.setField("material", value)}
-                    cache={materialCache}
-                    readOnly={ticket.isLocked}
-                />
-            );
-        case "Transporter":
-            return (
-                <MasterDropdownField
-                    id="fTrans"
-                    label={label}
-                    recalled={ticket.recalledFields.has("transporter")}
-                    value={ticket.fields.transporter}
-                    onChange={(value) => ticket.setField("transporter", value)}
-                    cache={transporterCache}
-                    readOnly={ticket.isLocked}
-                />
-            );
-        case "ChallanNo":
-            return (
-                <Field id="fChal" label={label}>
+                <Field id={accessor.id} label={label}>
                     <input
-                        id="fChal"
-                        value={ticket.fields.challanNo}
-                        onChange={(event) => ticket.setField("challanNo", event.target.value)}
+                        id={accessor.id}
+                        value={accessor.getValue(ticket)}
+                        onChange={(event) => accessor.setValue(ticket, event.target.value)}
                         readOnly={ticket.isLocked}
                         autoComplete="off"
                     />
                 </Field>
             );
+        // The 5 fixed FieldIds only ever ship as Search or Text in
+        // defaultTicketSchema.ts today; any other Kind here would mean an
+        // admin retyped a built-in field's Kind in the schema editor —
+        // render nothing rather than guess at a control for it.
+        case "Number":
+        case "Weight":
+        case "Money":
+        case "Date":
+        case "DateTime":
+        case "Boolean":
+        case "Select":
+        case "Formula":
+        case "Sequence":
+        case "Media":
+        case "Note":
         default:
             return null;
     }
@@ -171,7 +211,7 @@ const buildFixedItems = (
         ? resolveLocalized(field.Label, lang)
         : args.t(FIELD_LABEL_KEYS[field.FieldId] ?? field.FieldId);
     const items: { key: string; node: ReactNode }[] = [
-        { key: field.FieldId, node: buildFixedControl(field.FieldId, { ...args, label }) },
+        { key: field.FieldId, node: buildFixedControl(field, { ...args, label }) },
     ];
     // The read-only Ticket Date field has no schema backing of its own —
     // kept paired immediately after Vehicle No, same spot it has always
