@@ -10,8 +10,20 @@ import { useTranslation } from "@i18n/useTranslation";
 
 import { CalcFormula } from "./CalcFormula";
 import { ManualCalcBox } from "./ManualCalcBox";
+import { evaluateFieldVisible } from "./schemaFieldValidation";
 import { resolveFieldLabel } from "./ticketFieldIds";
 import styles from "../_styles/WeighingScreen.module.css";
+
+// Gross/Tare (`Captured: "Gross" | "Tare"`) are the manual-entry capture
+// inputs, not just display — hiding them would remove the only way to key
+// in a weight, so unlike every other field their box always renders
+// regardless of `Visible`. Net and Charge are pure display/editable-amount
+// boxes and honor `Visible` like any other field (evaluateFieldVisible,
+// same helper TicketFieldsCard/SchemaFieldRow use).
+const isBoxVisible = (ticketSchema: Schema, fieldId: string): boolean => {
+    const field = ticketSchema.Fields.find((candidate) => candidate.FieldId === fieldId);
+    return !field || evaluateFieldVisible(field);
+};
 
 const formatStamp = (
     iso: string | undefined,
@@ -217,17 +229,21 @@ export const CalcCard = ({
                     grossLabel={boxLabel("Gross", t("weigh.gross"))}
                     tareLabel={boxLabel("Tare", t("weigh.tare"))}
                 />
-                <CalcBox
-                    label={boxLabel("Net", t("weigh.net"))}
-                    value={weights.netKg !== null ? formatWeightIn(weights.netKg, weightUnit) : "—"}
-                    lead={weights.netKg !== null}
-                />
-                <ChargeBox
-                    label={boxLabel("Charge", t("weigh.charge"))}
-                    value={chargeValue}
-                    onChange={onChargeChange}
-                    readOnly={isLocked}
-                />
+                {isBoxVisible(ticketSchema, "Net") && (
+                    <CalcBox
+                        label={boxLabel("Net", t("weigh.net"))}
+                        value={weights.netKg !== null ? formatWeightIn(weights.netKg, weightUnit) : "—"}
+                        lead={weights.netKg !== null}
+                    />
+                )}
+                {isBoxVisible(ticketSchema, "Charge") && (
+                    <ChargeBox
+                        label={boxLabel("Charge", t("weigh.charge"))}
+                        value={chargeValue}
+                        onChange={onChargeChange}
+                        readOnly={isLocked}
+                    />
+                )}
             </div>
             <CalcFormula
                 tareKg={weights.tareKg}

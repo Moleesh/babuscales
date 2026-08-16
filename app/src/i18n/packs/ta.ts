@@ -425,6 +425,7 @@ export const TA_PACK: LanguagePack = {
         "settings.fieldSchema.activeLabel": "செயலில் உள்ள திட்டம்",
         "settings.fieldSchema.show": "காட்டு",
         "settings.fieldSchema.hide": "மறை",
+        "settings.fieldSchema.alwaysShown": "எப்போதும் காட்டப்படும்",
 
         "settings.indicator.title": "எடை காட்டி",
         "settings.indicator.customPattern": "தனிப்பயன் மாதிரி (மேம்பட்டது)",

@@ -26,16 +26,25 @@ interface VisibilityToggleArgs {
 // One row's own show/hide button — lets an operator easily hide and show
 // the field instead of changing them every time; flips that field's `Visible` on the active schema and
 // re-saves it, the same effect as hand-editing and re-uploading the JSON.
+// Gross/Tare (`Captured: "Gross" | "Tare"`, CalcCard.tsx) are the manual-entry
+// capture inputs, not just display — CalcCard always renders their box
+// regardless of `Visible`, so a toggle here would silently do nothing; show
+// a static label instead of a button that lies about having an effect. Net
+// and Charge are also `Calculated` but are plain display/editable-amount
+// boxes, and CalcCard does honor their `Visible` — they keep the toggle.
 const VisibilityToggle = ({ field, unlocked, schemaBusy, t, onToggleVisible }: VisibilityToggleArgs) => {
     const visible = field.Visible !== false;
+    if (field.Captured === "Gross" || field.Captured === "Tare") {
+        return <span className={styles.visibilityStatic}>{t("settings.fieldSchema.alwaysShown")}</span>;
+    }
     return (
         <button
             type="button"
-            className={`${styles.visibilityToggle} ${visible ? styles.visibilityOn : styles.visibilityOff}`}
+            className={`${styles.visibilityToggle} ${visible ? "" : styles.visibilityOff}`}
             disabled={!unlocked || schemaBusy}
             onClick={() => onToggleVisible(field.FieldId)}
         >
-            {visible ? t("settings.fieldSchema.show") : t("settings.fieldSchema.hide")}
+            {visible ? t("settings.fieldSchema.hide") : t("settings.fieldSchema.show")}
         </button>
     );
 };

@@ -410,6 +410,7 @@ export const EN_STRINGS: Record<string, string> = {
     "settings.fieldSchema.activeLabel": "Active schema",
     "settings.fieldSchema.show": "Show",
     "settings.fieldSchema.hide": "Hide",
+    "settings.fieldSchema.alwaysShown": "Always shown",
 
     "settings.indicator.title": "Weight indicator",
     "settings.indicator.customPattern": "Custom pattern (advanced)",

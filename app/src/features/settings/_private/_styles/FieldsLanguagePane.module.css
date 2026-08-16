@@ -99,6 +99,15 @@
     color: var(--dim);
     border-style: dashed;
 }
+.visibility-static {
+    display: inline-block;
+    padding: 2px 9px;
+    border-radius: 7px;
+    border: 1px solid transparent;
+    font-size: 0.6875rem;
+    color: var(--dim);
+    white-space: nowrap;
+}
 
 .applied {
     font-size: 0.6875rem;
