@@ -112,6 +112,34 @@ export type Field =
     | MediaField
     | NoteField;
 
+// The columns a master record of a given MasterKind carries beyond its
+// built-in `Name` (db/types.ts's `MasterRow.Name`/`Body: JsonRecord`) —
+// deliberately a narrower kind set than `FieldKind` above: no Search
+// (a master doesn't reference another master), Formula/Sequence (nothing
+// evaluates a master row standing alone), Weight/Media (not needed yet).
+// Drives both the Masters screen's add/edit form and its list columns
+// (masterColumns.tsx/MasterFormFields.tsx), replacing what used to be a
+// handful of hardcoded per-kind fields (Material's Rate, Party's
+// Email/Phone, everyone's Notes) — those three now ship as this schema's
+// own default `Masters` config instead of being baked into the UI.
+export type MasterColumnKind = "Text" | "Number" | "Money" | "Boolean" | "Select" | "Note";
+
+export interface MasterColumn {
+    FieldId: string;
+    /** Optional, same fallback as `FieldBase.Label` — falls back to `masterColumnLabelKeys.ts`'s per-FieldId i18n key, then the raw FieldId. */
+    Label?: Localized;
+    Kind: MasterColumnKind;
+    /** Defaults to not-required when omitted. */
+    Required?: boolean;
+    /** Only meaningful when `Kind` is `"Select"`. */
+    Options?: SelectOption[];
+}
+
+export interface MasterSchema {
+    Kind: MasterKind;
+    Columns: MasterColumn[];
+}
+
 // Extends `JsonRecord` (same reason `LanguagePack` does, i18n/types.ts) — a
 // schema is saved as a `config` row's `Body` verbatim (ConfigKind:
 // "Schema", db/schema.ts), and uploaded as a file the same way a language
@@ -119,4 +147,6 @@ export type Field =
 export interface Schema extends JsonRecord {
     SchemaId: string;
     Fields: Field[];
+    /** Which extra columns each MasterKind's records carry (task: "we will specify what all column we need for master"). Optional — a schema with no `Masters` block means every kind has just its built-in Name, same as before this existed. */
+    Masters?: MasterSchema[];
 }

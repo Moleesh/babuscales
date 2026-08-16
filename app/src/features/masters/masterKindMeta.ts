@@ -1,6 +1,8 @@
 import type { SegmentedOption } from "@components/SegmentedControl";
 import { MASTER_KINDS } from "@db/types";
 import type { MasterKind } from "@db/types";
+import type { MasterColumn } from "@engines/schemaEngine";
+import { resolveLocalized } from "@i18n/types";
 import type { Localized } from "@i18n/types";
 
 export interface MasterKindMeta {
@@ -81,3 +83,19 @@ export const buildKindOptions = (
         value: kind,
         label: t(`masters.${kind.toLowerCase()}.label`),
     }));
+
+// The built-in `Masters` columns (defaultTicketSchema.ts's Rate/Email/Phone/
+// Notes) carry no `Label` of their own — same "resolve from this app's own
+// i18n strings by FieldId" shape as schemaEngine's `FIELD_LABEL_KEYS`, kept
+// here instead since only the Masters screen needs it. A genuinely custom
+// column an admin adds via schema upload supplies its own `Label` and never
+// hits this fallback.
+const MASTER_COLUMN_LABEL_KEYS: Partial<Record<string, string>> = {
+    Rate: "masters.field.rate",
+    Email: "masters.field.email",
+    Phone: "masters.field.phone",
+    Notes: "masters.field.notes",
+};
+
+export const masterColumnLabel = (column: MasterColumn, lang: string, t: Translate): string =>
+    column.Label ? resolveLocalized(column.Label, lang) : t(MASTER_COLUMN_LABEL_KEYS[column.FieldId] ?? column.FieldId);

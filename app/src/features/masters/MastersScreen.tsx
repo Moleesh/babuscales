@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { SegmentedControl } from "@components/SegmentedControl";
 import type { MasterKind } from "@db/types";
+import { useSchema } from "@engines/schemaEngine";
 import { useSettings } from "@features/settings";
 import { useTranslation } from "@i18n/useTranslation";
 
@@ -27,9 +28,19 @@ import { buildKindOptions } from "./masterKindMeta";
 export const MastersScreen = () => {
     const { lang, t } = useTranslation();
     const { settings } = useSettings();
+    const { ticketSchema } = useSchema();
     const [activeKind, setActiveKind] = useState<MasterKind>("Party");
     const [query, setQuery] = useState("");
-    const { totalCount, reload, list, form } = useMastersScreenState(activeKind, query);
+    // Which extra columns this kind's records carry (task: "specify what
+    // all column we need for master ... that's how the master have to be
+    // populated") — Schema.Masters, defaults to none for a kind the active
+    // schema doesn't declare (an upload that predates this feature, or a
+    // custom kind nobody configured columns for yet).
+    const masterColumns = useMemo(
+        () => ticketSchema.Masters?.find((entry) => entry.Kind === activeKind)?.Columns ?? [],
+        [ticketSchema.Masters, activeKind],
+    );
+    const { totalCount, reload, list, form } = useMastersScreenState(activeKind, masterColumns, query);
 
     useEffect(() => {
         setQuery("");
@@ -38,16 +49,17 @@ export const MastersScreen = () => {
     const kindLower = activeKind.toLowerCase();
     const columns = useMemo(
         () =>
-            buildMasterColumns(
+            buildMasterColumns({
                 activeKind,
+                masterColumns,
                 styles,
                 t,
                 lang,
-                settings.Formats.WeightUnit,
-                settings.Formats.DateFmt,
-                settings.Formats.TimeFmt,
-            ),
-        [activeKind, t, lang, settings.Formats.WeightUnit, settings.Formats.DateFmt, settings.Formats.TimeFmt],
+                weightUnit: settings.Formats.WeightUnit,
+                dateFmt: settings.Formats.DateFmt,
+                timeFmt: settings.Formats.TimeFmt,
+            }),
+        [activeKind, masterColumns, t, lang, settings.Formats.WeightUnit, settings.Formats.DateFmt, settings.Formats.TimeFmt],
     );
     const kindOptions = useMemo(() => buildKindOptions(lang, t), [lang, t]);
 
@@ -73,6 +85,8 @@ export const MastersScreen = () => {
 
             <MastersFormCard
                 activeKind={activeKind}
+                columns={masterColumns}
+                lang={lang}
                 addNewLabel={t(`masters.${kindLower}.addNew`)}
                 onReload={() => reload()}
                 t={t}

@@ -1,9 +1,11 @@
 import type { DataTableColumn } from "@components/DataTable";
 import { formatDateTimeInFmt, formatMoney, formatWeightIn } from "@constants/numberFormat";
 import type { WeightUnit } from "@constants/numberFormat";
-import { getMaterialRate } from "@db/materialBody";
 import { isStoredTareBody, isStoredTareStale, storedTareAgeDays } from "@db/storedTare";
 import type { MasterKind, MasterRow } from "@db/types";
+import type { MasterColumn } from "@engines/schemaEngine";
+
+import { masterColumnLabel } from "../masterKindMeta";
 
 /** Same shape as useTranslation()'s `t` — threaded in as a param since this is a plain helper, not a component. */
 type Translate = (key: string) => string;
@@ -47,54 +49,51 @@ const storedTareColumns = (
     },
 ];
 
-const kindSpecificColumn = (activeKind: MasterKind, t: Translate): DataTableColumn<MasterRow> =>
-    activeKind === "Material"
-        ? {
-              key: "rate",
-              header: t("masters.col.rate"),
-              numeric: true,
-              render: (row) => {
-                  const rate = getMaterialRate(row.Body);
-                  return rate !== null ? formatMoney(rate, 2) : "—";
-              },
-          }
-        : activeKind === "Party"
-          ? {
-                key: "email",
-                header: t("masters.col.email"),
-                render: (row) => (typeof row.Body.Email === "string" ? row.Body.Email : "—"),
-            }
-          : {
-                key: "notes",
-                header: t("masters.col.notes"),
-                render: (row) => (typeof row.Body.Notes === "string" ? row.Body.Notes : "—"),
-            };
+const renderColumnValue = (column: MasterColumn, raw: unknown): string => {
+    if (raw === undefined || raw === null || raw === "") return "—";
+    if (column.Kind === "Money") return typeof raw === "number" ? formatMoney(raw, 2) : "—";
+    if (column.Kind === "Boolean") return raw === true || raw === "true" ? "✓" : "—";
+    return typeof raw === "string" || typeof raw === "number" || typeof raw === "boolean" ? String(raw) : "—";
+};
+
+// One DataTable column per schema-declared Masters column (Schema.Masters,
+// App.tsx's ticketSchema) — replaces the old fixed rate/email/phone/notes
+// branches (task: "specify what all column we need for master").
+const dynamicColumns = (masterColumns: MasterColumn[], lang: string, t: Translate): DataTableColumn<MasterRow>[] =>
+    masterColumns.map((column) => ({
+        key: column.FieldId,
+        header: masterColumnLabel(column, lang, t),
+        numeric: column.Kind === "Number" || column.Kind === "Money",
+        render: (row) => renderColumnValue(column, row.Body[column.FieldId]),
+    }));
+
+export interface BuildMasterColumnsArgs {
+    activeKind: MasterKind;
+    masterColumns: MasterColumn[];
+    styles: CSSModuleClasses;
+    t: Translate;
+    lang: string;
+    weightUnit: WeightUnit;
+    dateFmt: string;
+    timeFmt: "24" | "12";
+}
 
 // Split out of MastersScreen (over the line/complexity budget —
-// docs/CodingStandards.md) — the per-kind DataTable column list, unchanged
-// from the inline version it replaces.
-export const buildMasterColumns = (
-    activeKind: MasterKind,
-    styles: CSSModuleClasses,
-    t: Translate,
-    lang: string,
-    weightUnit: WeightUnit,
-    dateFmt: string,
-    timeFmt: "24" | "12",
-): DataTableColumn<MasterRow>[] => {
+// docs/CodingStandards.md) — the per-kind DataTable column list.
+export const buildMasterColumns = ({
+    activeKind,
+    masterColumns,
+    styles,
+    t,
+    lang,
+    weightUnit,
+    dateFmt,
+    timeFmt,
+}: BuildMasterColumnsArgs): DataTableColumn<MasterRow>[] => {
     if (activeKind === "StoredTare") return storedTareColumns(styles, t, weightUnit);
     return [
         { key: "name", header: t("masters.col.name"), render: (row) => row.Name },
-        kindSpecificColumn(activeKind, t),
-        ...(activeKind === "Party"
-            ? [
-                  {
-                      key: "phone",
-                      header: t("masters.col.phone"),
-                      render: (row: MasterRow) => (typeof row.Body.Phone === "string" ? row.Body.Phone : "—"),
-                  } satisfies DataTableColumn<MasterRow>,
-              ]
-            : []),
+        ...dynamicColumns(masterColumns, lang, t),
         {
             key: "active",
             header: t("masters.col.status"),

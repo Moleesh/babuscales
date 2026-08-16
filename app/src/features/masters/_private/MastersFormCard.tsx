@@ -1,5 +1,6 @@
 import { Card } from "@components/Card";
 import type { MasterKind, MasterRow } from "@db/types";
+import type { MasterColumn } from "@engines/schemaEngine";
 
 import { MasterFormActions } from "./MasterFormActions";
 import { MasterFormFields } from "./MasterFormFields";
@@ -9,6 +10,8 @@ import styles from "../_styles/MastersScreen.module.css";
 
 export interface MastersFormCardProps {
     activeKind: MasterKind;
+    columns: MasterColumn[];
+    lang: string;
     selected: MasterRow | null;
     addNewLabel: string;
     form: MasterFormState;
@@ -26,6 +29,8 @@ export interface MastersFormCardProps {
 // buttons). Now uses the t() function for translatable strings.
 export const MastersFormCard = ({
     activeKind,
+    columns,
+    lang,
     selected,
     addNewLabel,
     form,
@@ -46,7 +51,7 @@ export const MastersFormCard = ({
             {activeKind === "StoredTare" ? (
                 <StoredTareFormFields form={form} onChange={onChange} />
             ) : (
-                <MasterFormFields activeKind={activeKind} form={form} onChange={onChange} />
+                <MasterFormFields columns={columns} lang={lang} form={form} onChange={onChange} />
             )}
             <MasterFormActions
                 selected={selected}

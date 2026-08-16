@@ -1,6 +1,7 @@
 import { useState } from "react";
 
 import type { MasterDraft, MasterKind, MasterRow } from "@db/types";
+import type { MasterColumn } from "@engines/schemaEngine";
 
 import { buildMasterBody } from "./masterFormBody";
 import type { MasterFormState } from "./masterFormState";
@@ -8,6 +9,7 @@ import { emptyForm, formFromRow } from "./masterFormState";
 
 export interface UseMasterFormActionsArgs {
     activeKind: MasterKind;
+    columns: MasterColumn[];
     selected: MasterRow | null;
     form: MasterFormState;
     setForm: (form: MasterFormState) => void;
@@ -28,6 +30,7 @@ export interface UseMasterFormActions {
 // unchanged from the inline version it replaces.
 export const useMasterFormActions = ({
     activeKind,
+    columns,
     selected,
     form,
     setForm,
@@ -38,7 +41,7 @@ export const useMasterFormActions = ({
 
     const selectRow = (row: MasterRow): void => {
         setSelectedId(row.MasterId);
-        setForm(formFromRow(row));
+        setForm(formFromRow(row, columns));
     };
 
     const startNew = (): void => {
@@ -54,7 +57,7 @@ export const useMasterFormActions = ({
                 MasterId: selected?.MasterId,
                 MasterKind: activeKind,
                 Name: form.name.trim(),
-                Body: buildMasterBody(activeKind, form),
+                Body: buildMasterBody(activeKind, form, columns),
                 IsActive: selected?.IsActive,
             });
             selectRow(row);

@@ -49,9 +49,30 @@ const fieldSchema = z.discriminatedUnion("Kind", [
     z.object({ ...fieldBaseShape, Kind: z.literal("Note") }),
 ]);
 
+const masterColumnBaseShape = {
+    FieldId: z.string().min(1),
+    Label: localizedSchema.optional(),
+    Required: z.boolean().optional(),
+};
+
+const masterColumnSchema = z.discriminatedUnion("Kind", [
+    z.object({ ...masterColumnBaseShape, Kind: z.literal("Text") }),
+    z.object({ ...masterColumnBaseShape, Kind: z.literal("Number") }),
+    z.object({ ...masterColumnBaseShape, Kind: z.literal("Money") }),
+    z.object({ ...masterColumnBaseShape, Kind: z.literal("Boolean") }),
+    z.object({ ...masterColumnBaseShape, Kind: z.literal("Select"), Options: z.array(selectOptionSchema).min(1) }),
+    z.object({ ...masterColumnBaseShape, Kind: z.literal("Note") }),
+]);
+
+const masterSchemaSchema = z.object({
+    Kind: z.enum(MASTER_KINDS),
+    Columns: z.array(masterColumnSchema),
+});
+
 export const ticketSchemaSchema = z.object({
     SchemaId: z.string().min(1),
     Fields: z.array(fieldSchema).min(1),
+    Masters: z.array(masterSchemaSchema).optional(),
 });
 
 export const parseTicketSchema = (raw: unknown): Schema => ticketSchemaSchema.parse(raw);

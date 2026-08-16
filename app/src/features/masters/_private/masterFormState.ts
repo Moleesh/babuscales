@@ -1,27 +1,22 @@
-import { getMaterialRate } from "@db/materialBody";
 import { isStoredTareBody } from "@db/storedTare";
 import type { MasterRow } from "@db/types";
+import type { MasterColumn } from "@engines/schemaEngine";
 
 export interface MasterFormState {
     name: string;
-    notes: string;
     weightKg: string;
     capturedAt: string;
     partyName: string;
-    rate: string;
-    email: string;
-    phone: string;
+    /** One entry per schema-declared MasterColumn, keyed by FieldId — replaces what used to be a fixed notes/rate/email/phone shape (task: "specify what all column we need for master"). Unused for StoredTare, which keeps its own weightKg/capturedAt/partyName fields above. */
+    extra: Record<string, string>;
 }
 
 export const emptyForm = (): MasterFormState => ({
     name: "",
-    notes: "",
     weightKg: "",
     capturedAt: "",
     partyName: "",
-    rate: "",
-    email: "",
-    phone: "",
+    extra: {},
 });
 
 const toDateTimeLocal = (iso: string): string => {
@@ -33,29 +28,25 @@ const toDateTimeLocal = (iso: string): string => {
 
 // Split out of MastersScreen (over the line/complexity budget —
 // docs/CodingStandards.md) — MasterFormState plus the row<->form
-// conversions, unchanged from the inline version it replaces.
-export const formFromRow = (row: MasterRow): MasterFormState => {
+// conversions. `columns` is the active kind's schema-declared Masters
+// columns (Schema.Masters, App.tsx's ticketSchema) — every non-StoredTare
+// kind reads its extra fields generically off `row.Body[FieldId]` now,
+// rather than the old fixed notes/rate/email/phone shape.
+export const formFromRow = (row: MasterRow, columns: MasterColumn[]): MasterFormState => {
     if (row.MasterKind === "StoredTare" && isStoredTareBody(row.Body)) {
         return {
             name: row.Name,
-            notes: "",
             weightKg: String(row.Body.WeightKg),
             capturedAt: toDateTimeLocal(row.Body.CapturedAt),
             partyName: row.Body.PartyName ?? "",
-            rate: "",
-            email: "",
-            phone: "",
+            extra: {},
         };
     }
-    const rate = getMaterialRate(row.Body);
-    return {
-        name: row.Name,
-        notes: typeof row.Body.Notes === "string" ? row.Body.Notes : "",
-        weightKg: "",
-        capturedAt: "",
-        partyName: "",
-        rate: rate !== null ? String(rate) : "",
-        email: typeof row.Body.Email === "string" ? row.Body.Email : "",
-        phone: typeof row.Body.Phone === "string" ? row.Body.Phone : "",
-    };
+    const extra: Record<string, string> = {};
+    for (const column of columns) {
+        const raw = row.Body[column.FieldId];
+        extra[column.FieldId] =
+            typeof raw === "string" || typeof raw === "number" || typeof raw === "boolean" ? String(raw) : "";
+    }
+    return { name: row.Name, weightKg: "", capturedAt: "", partyName: "", extra };
 };

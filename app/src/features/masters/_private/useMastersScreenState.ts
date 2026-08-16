@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import type { MasterKind, MasterRow } from "@db/types";
 import { useDataPort } from "@db/useDataPort";
 import { useMasterCache } from "@db/useMasterCache";
+import type { MasterColumn } from "@engines/schemaEngine";
 
 import { emptyForm } from "./masterFormState";
 import { useMasterFormActions } from "./useMasterFormActions";
@@ -13,7 +14,7 @@ import { useMasterListPage } from "./useMasterListPage";
 // visible list, PLAN §21) — plus the form-action handlers, into one object
 // so the screen component itself stays under the line budget
 // (docs/CodingStandards.md).
-export const useMastersScreenState = (activeKind: MasterKind, query: string) => {
+export const useMastersScreenState = (activeKind: MasterKind, columns: MasterColumn[], query: string) => {
     const db = useDataPort();
     const { rows, save, reload } = useMasterCache(activeKind);
     const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -28,7 +29,7 @@ export const useMastersScreenState = (activeKind: MasterKind, query: string) => 
     const selected: MasterRow | null = selectedId
         ? (rows.find((row) => row.MasterId === selectedId) ?? null)
         : null;
-    const formActions = useMasterFormActions({ activeKind, selected, form, setForm, setSelectedId, save });
+    const formActions = useMasterFormActions({ activeKind, columns, selected, form, setForm, setSelectedId, save });
     const { rows: pageRows, loading, hasMore, loadingMore, loadMore } = useMasterListPage(db, activeKind, query);
 
     useEffect(() => {

@@ -1,26 +1,78 @@
 import { Field, FieldGrid } from "@components/Field";
-import type { MasterKind } from "@db/types";
+import { Select } from "@components/Select";
+import type { MasterColumn } from "@engines/schemaEngine";
+import { resolveLocalized } from "@i18n/types";
 import { useTranslation } from "@i18n/useTranslation";
 
+import { masterColumnLabel } from "../masterKindMeta";
 import type { MasterFormState } from "./masterFormState";
 
 export interface MasterFormFieldsProps {
-    activeKind: MasterKind;
+    columns: MasterColumn[];
+    lang: string;
     form: MasterFormState;
     onChange: (next: MasterFormState) => void;
 }
 
-const gridColumns = (activeKind: MasterKind): 2 | 3 | 4 =>
-    activeKind === "Party" ? 4 : activeKind === "Material" ? 3 : 2;
+const gridColumns = (count: number): 2 | 3 | 4 => (count >= 3 ? 4 : count === 2 ? 3 : 2);
+
+const MasterColumnInput = ({
+    column,
+    lang,
+    value,
+    onChange,
+}: {
+    column: MasterColumn;
+    lang: string;
+    value: string;
+    onChange: (value: string) => void;
+}) => {
+    const inputId = `mf-${column.FieldId}`;
+    if (column.Kind === "Boolean") {
+        return (
+            <input
+                id={inputId}
+                type="checkbox"
+                checked={value === "true"}
+                onChange={(event) => onChange(event.target.checked ? "true" : "false")}
+            />
+        );
+    }
+    if (column.Kind === "Select") {
+        return (
+            <Select
+                id={inputId}
+                value={value}
+                options={column.Options.map((option) => ({ value: option.Value, label: resolveLocalized(option.Label, lang) }))}
+                onChange={onChange}
+            />
+        );
+    }
+    const numeric = column.Kind === "Number" || column.Kind === "Money";
+    return (
+        <input
+            id={inputId}
+            type={numeric ? "number" : "text"}
+            inputMode={numeric ? "decimal" : undefined}
+            min={numeric ? 0 : undefined}
+            value={value}
+            onChange={(event) => onChange(event.target.value)}
+            autoComplete="off"
+        />
+    );
+};
 
 // Split out of MastersScreen (over the line/complexity budget —
-// docs/CodingStandards.md) — the Name/Notes/Rate/E-mail/Phone add/edit
-// fields shared by every kind except Stored Tare, unchanged from the
-// inline version it replaces.
-export const MasterFormFields = ({ activeKind, form, onChange }: MasterFormFieldsProps) => {
+// docs/CodingStandards.md) — the Name field plus every schema-declared
+// Masters column (Schema.Masters, App.tsx's ticketSchema) for the active
+// kind, replacing what used to be a fixed notes/rate/email/phone shape
+// hardcoded per-kind here (task: "specify what all column we need for
+// master ... that's how the master have to be populated"). Stored Tare has
+// its own StoredTareFormFields instead — it isn't schema-driven.
+export const MasterFormFields = ({ columns, lang, form, onChange }: MasterFormFieldsProps) => {
     const { t } = useTranslation();
     return (
-        <FieldGrid columns={gridColumns(activeKind)}>
+        <FieldGrid columns={gridColumns(columns.length)}>
             <Field id="mfName" label={t("masters.field.name")}>
                 <input
                     id="mfName"
@@ -29,55 +81,18 @@ export const MasterFormFields = ({ activeKind, form, onChange }: MasterFormField
                     autoComplete="off"
                 />
             </Field>
-            <Field id="mfNotes" label={t("masters.field.notes")}>
-                <input
-                    id="mfNotes"
-                    value={form.notes}
-                    onChange={(event) => onChange({ ...form, notes: event.target.value })}
-                    autoComplete="off"
-                />
-            </Field>
-            {activeKind === "Material" && (
-                <Field id="mfRate" label={t("masters.field.rate")}>
-                    <input
-                        id="mfRate"
-                        type="number"
-                        inputMode="decimal"
-                        min={0}
-                        value={form.rate}
-                        onChange={(event) => onChange({ ...form, rate: event.target.value })}
+            {columns.map((column) => (
+                <Field key={column.FieldId} id={`mf-${column.FieldId}`} label={masterColumnLabel(column, lang, t)}>
+                    <MasterColumnInput
+                        column={column}
+                        lang={lang}
+                        value={form.extra[column.FieldId] ?? ""}
+                        onChange={(value) =>
+                            onChange({ ...form, extra: { ...form.extra, [column.FieldId]: value } })
+                        }
                     />
                 </Field>
-            )}
-            {activeKind === "Party" && (
-                // Task #42 — read at print time so "Send a copy by e-mail" has
-                // somewhere to send to. Optional: an empty Masters record just
-                // means that party's tickets never enqueue an Email outbox
-                // row, same as no phone number means no SMS.
-                <Field id="mfEmail" label={t("masters.field.email")}>
-                    <input
-                        id="mfEmail"
-                        type="email"
-                        value={form.email}
-                        onChange={(event) => onChange({ ...form, email: event.target.value })}
-                        autoComplete="off"
-                    />
-                </Field>
-            )}
-            {activeKind === "Party" && (
-                // Task #43 — read at print time so "Send a copy by SMS" has
-                // somewhere to send to. Optional, same "skip quietly" shape as
-                // an empty E-mail above.
-                <Field id="mfPhone" label={t("masters.field.phone")}>
-                    <input
-                        id="mfPhone"
-                        type="tel"
-                        value={form.phone}
-                        onChange={(event) => onChange({ ...form, phone: event.target.value })}
-                        autoComplete="off"
-                    />
-                </Field>
-            )}
+            ))}
         </FieldGrid>
     );
 };

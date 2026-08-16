@@ -67,4 +67,34 @@ export const DEFAULT_TICKET_SCHEMA: Schema = {
             Calculated: true,
         },
     ],
+    // The same per-kind extras the Masters screen used to hardcode
+    // (masterFormBody.ts/masterColumns.tsx before this Masters block
+    // existed) — Material's Rate (task: "netweight * cost per material",
+    // already wired through billing/value.ts's `computeValue`), Party's
+    // Email/Phone (read at print time for the e-mail/SMS outbox), and a
+    // plain Notes column for every other kind. StoredTare is left out —
+    // it has its own system-populated shape (WeightKg/CapturedAt/PartyName,
+    // db/storedTare.ts) rather than free-form user columns.
+    Masters: [
+        {
+            Kind: "Party",
+            Columns: [
+                { FieldId: "Email", Kind: "Text" },
+                { FieldId: "Phone", Kind: "Text" },
+                { FieldId: "Notes", Kind: "Note" },
+            ],
+        },
+        {
+            Kind: "Material",
+            Columns: [
+                { FieldId: "Rate", Kind: "Money" },
+                { FieldId: "Notes", Kind: "Note" },
+            ],
+        },
+        { Kind: "Vehicle", Columns: [{ FieldId: "Notes", Kind: "Note" }] },
+        { Kind: "VehicleType", Columns: [{ FieldId: "Notes", Kind: "Note" }] },
+        { Kind: "Transporter", Columns: [{ FieldId: "Notes", Kind: "Note" }] },
+        { Kind: "Place", Columns: [{ FieldId: "Notes", Kind: "Note" }] },
+        { Kind: "Operator", Columns: [{ FieldId: "Notes", Kind: "Note" }] },
+    ],
 };
