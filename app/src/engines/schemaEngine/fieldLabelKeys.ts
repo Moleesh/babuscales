@@ -7,13 +7,13 @@
 // admin field-schema table can share it without reaching into each other's
 // private folders.
 export const FIELD_LABEL_KEYS: Partial<Record<string, string>> = {
-    VehicleNo: "vehicleNo",
-    Party: "party",
-    Material: "material",
-    Transporter: "transporter",
+    VehicleNo: "weigh.vehicleNo",
+    Party: "weigh.party",
+    Material: "weigh.material",
+    Transporter: "weigh.transporter",
     ChallanNo: "weigh.challanNo",
-    Gross: "gross",
-    Tare: "tare",
-    Net: "net",
-    Charge: "charge",
+    Gross: "weigh.gross",
+    Tare: "weigh.tare",
+    Net: "weigh.net",
+    Charge: "weigh.charge",
 };

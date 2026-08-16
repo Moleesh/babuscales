@@ -10,8 +10,8 @@ import styles from "../_styles/WeighingScreen.module.css";
 import type { UseWeighingTicket } from "../useWeighingTicket";
 
 const kindOptions = (t: ReturnType<typeof useTranslation>["t"]): SegmentedOption<CaptureType>[] => [
-    { value: "Tare", label: t("tare") },
-    { value: "Gross", label: t("gross") },
+    { value: "Tare", label: t("weigh.tare") },
+    { value: "Gross", label: t("weigh.gross") },
 ];
 
 // Exactly one Tare and one Gross per ticket — once a kind is captured it's

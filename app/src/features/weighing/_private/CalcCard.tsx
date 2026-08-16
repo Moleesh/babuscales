@@ -215,16 +215,16 @@ export const CalcCard = ({
                     weightUnit={weightUnit}
                     dateFmt={dateFmt}
                     timeFmt={timeFmt}
-                    grossLabel={boxLabel("Gross", t("gross"))}
-                    tareLabel={boxLabel("Tare", t("tare"))}
+                    grossLabel={boxLabel("Gross", t("weigh.gross"))}
+                    tareLabel={boxLabel("Tare", t("weigh.tare"))}
                 />
                 <CalcBox
-                    label={boxLabel("Net", t("net"))}
+                    label={boxLabel("Net", t("weigh.net"))}
                     value={weights.netKg !== null ? formatWeightIn(weights.netKg, weightUnit) : "—"}
                     lead={weights.netKg !== null}
                 />
                 <ChargeBox
-                    label={boxLabel("Charge", t("charge"))}
+                    label={boxLabel("Charge", t("weigh.charge"))}
                     value={chargeValue}
                     onChange={onChargeChange}
                     readOnly={isLocked}
