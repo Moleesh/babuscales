@@ -31,7 +31,8 @@ export interface ValidationRule {
 
 export interface FieldBase {
     FieldId: string;
-    Label: Localized;
+    /** Optional — the built-in fields (VehicleNo/Party/Material/Transporter/ChallanNo/Gross/Tare/Net/Charge) have no Label here at all and resolve their display text from this app's own i18n strings by FieldId instead (see `ticketFieldIds.ts`'s `resolveFieldLabel`); only a genuinely custom field an admin adds needs to supply one. */
+    Label?: Localized;
     Help?: Localized;
     /** Defaults to visible when omitted. */
     Visible?: boolean;

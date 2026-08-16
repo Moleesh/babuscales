@@ -21,7 +21,7 @@ const validationRuleSchema = z.object({
 
 const fieldBaseShape = {
     FieldId: z.string().min(1),
-    Label: localizedSchema,
+    Label: localizedSchema.optional(),
     Help: localizedSchema.optional(),
     Visible: z.boolean().optional(),
     Required: z.boolean().optional(),

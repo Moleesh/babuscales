@@ -1,11 +1,18 @@
 import { Card } from "@components/Card";
 import { DataTable } from "@components/DataTable";
 import type { DataTableColumn } from "@components/DataTable";
+import { FIELD_LABEL_KEYS } from "@engines/schemaEngine";
 import type { Field, Schema } from "@engines/schemaEngine";
 import { resolveLocalized } from "@i18n/types";
 import { useTranslation } from "@i18n/useTranslation";
 
 import styles from "./_styles/FieldsLanguagePane.module.css";
+
+// The 9 built-in fields carry no `Label` at all (defaultTicketSchema.ts) —
+// same FieldId → i18n-key fallback the Weighing screen itself uses, so
+// this table shows the same text an operator sees rather than a blank cell.
+const fieldLabel = (field: Field, lang: string, t: (key: string) => string): string =>
+    field.Label ? resolveLocalized(field.Label, lang) : t(FIELD_LABEL_KEYS[field.FieldId] ?? field.FieldId);
 
 const fieldColumns = (lang: string, t: (key: string) => string): DataTableColumn<Field>[] => [
     { key: "id", header: t("settings.fieldSchema.col.field"), render: (field) => field.FieldId },
@@ -13,7 +20,7 @@ const fieldColumns = (lang: string, t: (key: string) => string): DataTableColumn
     {
         key: "label",
         header: t("settings.fieldSchema.col.label"),
-        render: (field) => resolveLocalized(field.Label, lang),
+        render: (field) => fieldLabel(field, lang, t),
     },
 ];
 

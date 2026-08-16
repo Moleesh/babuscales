@@ -265,7 +265,7 @@ export const SchemaFieldRow = ({ field, value, onChange, ctx, readOnly, masterCa
     const failing = failingValidationRules(field.Validate, ctx);
 
     return (
-        <Field id={`fCustom_${field.FieldId}`} label={field.Label}>
+        <Field id={`fCustom_${field.FieldId}`} label={field.Label ?? field.FieldId}>
             <FieldInput
                 field={field}
                 value={value}

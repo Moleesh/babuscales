@@ -19,7 +19,7 @@ import type { UseWeighingTicket } from "../useWeighingTicket";
 import { buildTicketFormulaContext } from "./buildTicketFormulaContext";
 import { SchemaFieldRow } from "./SchemaFieldRow";
 import { evaluateFieldVisible } from "./schemaFieldValidation";
-import { FIXED_FIELD_IDS, isCalculatedField } from "./ticketFieldIds";
+import { FIELD_LABEL_KEYS, FIXED_FIELD_IDS, isCalculatedField } from "./ticketFieldIds";
 
 interface MasterDropdownFieldProps {
     id: string;
@@ -163,7 +163,13 @@ const buildFixedItems = (
     ticketDate: string,
     args: Omit<BuildFixedControlArgs, "label">,
 ): { key: string; node: ReactNode }[] => {
-    const label = resolveLocalized(field.Label, lang);
+    // Built-in fixed fields ship with no schema `Label` at all (see
+    // defaultTicketSchema.ts's own comment) — fall back to this app's own
+    // i18n string for the FieldId; only a genuinely custom FieldId with no
+    // FIELD_LABEL_KEYS entry falls all the way back to its raw FieldId.
+    const label = field.Label
+        ? resolveLocalized(field.Label, lang)
+        : args.t(FIELD_LABEL_KEYS[field.FieldId] ?? field.FieldId);
     const items: { key: string; node: ReactNode }[] = [
         { key: field.FieldId, node: buildFixedControl(field.FieldId, { ...args, label }) },
     ];
