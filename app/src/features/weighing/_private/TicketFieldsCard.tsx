@@ -19,7 +19,7 @@ import type { UseWeighingTicket } from "../useWeighingTicket";
 import { buildTicketFormulaContext } from "./buildTicketFormulaContext";
 import { SchemaFieldRow } from "./SchemaFieldRow";
 import { evaluateFieldVisible } from "./schemaFieldValidation";
-import { CAPTURE_FIELD_IDS, FIXED_FIELD_IDS } from "./ticketFieldIds";
+import { FIXED_FIELD_IDS, isCalculatedField } from "./ticketFieldIds";
 
 interface MasterDropdownFieldProps {
     id: string;
@@ -194,12 +194,13 @@ interface FieldsListArgs extends FixedFieldCaches {
 
 // One ordered pass over `ticketSchema.Fields` (PLAN §8) producing every grid
 // item this card renders — the 5 fixed fields (dedicated controls, schema
-// order/label/VisibleWhen), the always-present read-only Date field paired
+// order/label/Visible), the always-present read-only Date field paired
 // right after Vehicle No, and any other custom field (SchemaFieldRow,
-// unchanged). Gross/Tare/Net/Charge FieldIds are skipped here entirely —
-// CalcCard owns those boxes; a schema entry for one only supplies its label
-// there (see ticketFieldIds.ts's CAPTURE_FIELD_IDS comment). Split out of
-// TicketFieldsCard's own body so that component stays a plain layout shell.
+// unchanged). Any `Calculated` field (default schema: Gross/Tare/Net/Charge)
+// is skipped here entirely — CalcCard owns those boxes; a schema entry for
+// one only supplies its label there (see ticketFieldIds.ts's
+// isCalculatedField comment). Split out of TicketFieldsCard's own body so
+// that component stays a plain layout shell.
 const buildFieldItems = ({
     ticket,
     schemaFields,
@@ -222,8 +223,8 @@ const buildFieldItems = ({
     const fixedArgs = { ticket, t, vehicleCache, partyCache, materialCache, transporterCache };
 
     for (const field of schemaFields) {
-        if (CAPTURE_FIELD_IDS.includes(field.FieldId)) continue;
-        if (!evaluateFieldVisible(field, ctx)) continue;
+        if (isCalculatedField(field)) continue;
+        if (!evaluateFieldVisible(field)) continue;
 
         if (FIXED_FIELD_IDS.includes(field.FieldId)) {
             items.push(...buildFixedItems(field, lang, ticketDate, fixedArgs));

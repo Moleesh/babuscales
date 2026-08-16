@@ -33,12 +33,17 @@ export interface FieldBase {
     FieldId: string;
     Label: Localized;
     Help?: Localized;
-    VisibleWhen?: string;
-    RequiredWhen?: string;
-    ReadOnlyWhen?: string;
+    /** Defaults to visible when omitted. */
+    Visible?: boolean;
+    /** Defaults to not-required when omitted. */
+    Required?: boolean;
+    /** Defaults to editable when omitted. */
+    ReadOnly?: boolean;
     Validate?: ValidationRule[];
-    /** Requires the admin session to be unlocked to change — PLAN §12. */
-    Protected?: boolean;
+    /** Renders in the Weighing screen's "Captured & calculated" card (CalcCard.tsx) instead of as a generic Ticket field row — the field supplies only its Label there; the box's own value/behavior is unchanged (task: "the values not the button"). */
+    Calculated?: boolean;
+    /** Only meaningful when `Calculated` is true and this field mirrors one of CalcCard's two physical-capture boxes rather than a derived one (e.g. Net's Formula) — which capture type it stands for. */
+    Captured?: "Gross" | "Tare";
 }
 
 export interface TextField extends FieldBase {

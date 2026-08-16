@@ -11,58 +11,33 @@ import {
 } from "./schemaFieldValidation";
 
 describe("evaluateFieldVisible", () => {
-    it("returns true when VisibleWhen is undefined", () => {
+    it("returns true when Visible is undefined", () => {
         const field: Field = {
             FieldId: "test",
             Kind: "Text",
             Label: { en: "Test" },
         };
-        const ctx: FormulaContext = { getVariable: () => "" };
-        expect(evaluateFieldVisible(field, ctx)).toBe(true);
+        expect(evaluateFieldVisible(field)).toBe(true);
     });
 
-    it("returns true when VisibleWhen evaluates to true", () => {
+    it("returns true when Visible is true", () => {
         const field: Field = {
             FieldId: "test",
             Kind: "Text",
             Label: { en: "Test" },
-            VisibleWhen: "Gross > 50",
+            Visible: true,
         };
-        const ctx: FormulaContext = { getVariable: () => fromInt(100) };
-        expect(evaluateFieldVisible(field, ctx)).toBe(true);
+        expect(evaluateFieldVisible(field)).toBe(true);
     });
 
-    it("returns false when VisibleWhen evaluates to false", () => {
+    it("returns false when Visible is false", () => {
         const field: Field = {
             FieldId: "test",
             Kind: "Text",
             Label: { en: "Test" },
-            VisibleWhen: "Gross > 50",
+            Visible: false,
         };
-        const ctx: FormulaContext = { getVariable: () => fromInt(30) };
-        expect(evaluateFieldVisible(field, ctx)).toBe(false);
-    });
-
-    it("returns true (defaults to visible) when VisibleWhen formula throws an error", () => {
-        const field: Field = {
-            FieldId: "test",
-            Kind: "Text",
-            Label: { en: "Test" },
-            VisibleWhen: "InvalidFunction()",
-        };
-        const ctx: FormulaContext = { getVariable: () => "" };
-        expect(evaluateFieldVisible(field, ctx)).toBe(true);
-    });
-
-    it("returns true (defaults to visible) when VisibleWhen evaluates to non-boolean", () => {
-        const field: Field = {
-            FieldId: "test",
-            Kind: "Text",
-            Label: { en: "Test" },
-            VisibleWhen: "Gross",
-        };
-        const ctx: FormulaContext = { getVariable: () => fromInt(100) };
-        expect(evaluateFieldVisible(field, ctx)).toBe(true);
+        expect(evaluateFieldVisible(field)).toBe(false);
     });
 });
 
@@ -182,7 +157,7 @@ describe("hasBlockingCustomFieldError: visibility interaction", () => {
                 FieldId: "field1",
                 Kind: "Text",
                 Label: { en: "Field 1" },
-                VisibleWhen: "1 > 0",
+                Visible: true,
                 Validate: [
                     {
                         Formula: "1 > 0",
@@ -202,7 +177,7 @@ describe("hasBlockingCustomFieldError: visibility interaction", () => {
                 FieldId: "field1",
                 Kind: "Text",
                 Label: { en: "Field 1" },
-                VisibleWhen: undefined, // visible by default
+                Visible: undefined, // visible by default
                 Validate: [
                     {
                         Formula: "1 < 0", // fails
@@ -224,7 +199,7 @@ describe("hasBlockingCustomFieldError: hidden-field handling", () => {
                 FieldId: "field1",
                 Kind: "Text",
                 Label: { en: "Field 1" },
-                VisibleWhen: "1 < 0", // hidden
+                Visible: false,
                 Validate: [
                     {
                         Formula: "1 < 0",
@@ -237,26 +212,6 @@ describe("hasBlockingCustomFieldError: hidden-field handling", () => {
         const ctx: FormulaContext = { getVariable: () => "" };
         expect(hasBlockingCustomFieldError(fields, ctx)).toBe(false);
     });
-
-    it("ignores blocking errors from broken VisibleWhen formulas (defaults to visible)", () => {
-        const fields: Field[] = [
-            {
-                FieldId: "field1",
-                Kind: "Text",
-                Label: { en: "Field 1" },
-                VisibleWhen: "InvalidFunction()", // broken, defaults to visible
-                Validate: [
-                    {
-                        Formula: "1 < 0",
-                        Severity: "Block",
-                        Message: { en: "Blocking error" },
-                    },
-                ],
-            },
-        ];
-        const ctx: FormulaContext = { getVariable: () => "" };
-        expect(hasBlockingCustomFieldError(fields, ctx)).toBe(true);
-    });
 });
 
 describe("hasBlockingCustomFieldError: multiple fields, some hidden", () => {
@@ -266,7 +221,7 @@ describe("hasBlockingCustomFieldError: multiple fields, some hidden", () => {
                 FieldId: "field1",
                 Kind: "Text",
                 Label: { en: "Field 1" },
-                VisibleWhen: "1 < 0",
+                Visible: false,
                 Validate: [
                     {
                         Formula: "1 < 0",
@@ -279,7 +234,7 @@ describe("hasBlockingCustomFieldError: multiple fields, some hidden", () => {
                 FieldId: "field2",
                 Kind: "Text",
                 Label: { en: "Field 2" },
-                VisibleWhen: "1 > 0",
+                Visible: true,
                 Validate: [
                     {
                         Formula: "1 > 0", // passes

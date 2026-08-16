@@ -7,7 +7,6 @@ import type { UseMasterCache } from "@db/useMasterCache";
 import { evaluateFormula } from "@engines/formulaEngine";
 import type { FormulaContext } from "@engines/formulaEngine";
 import { toDecimalString } from "@engines/formulaEngine/Decimal";
-import { evaluateGate } from "@engines/schemaEngine";
 import type { Field as SchemaField } from "@engines/schemaEngine";
 import { resolveLocalized } from "@i18n/types";
 import { useTranslation } from "@i18n/useTranslation";
@@ -258,26 +257,10 @@ const ValidationMessages = ({ rules, lang }: ValidationMessagesProps) => (
 export const SchemaFieldRow = ({ field, value, onChange, ctx, readOnly, masterCaches }: SchemaFieldRowProps) => {
     const { lang } = useTranslation();
 
-    if (!evaluateFieldVisible(field, ctx)) return null;
+    if (!evaluateFieldVisible(field)) return null;
 
-    // Unlike VisibleWhen (where "no formula" correctly means "always
-    // visible" — see evaluateGate's own doc comment), an absent
-    // RequiredWhen/ReadOnlyWhen must mean "not required"/"not read-only",
-    // not "always" — evaluateGate's shared default-true is only right for
-    // the Visible case, so these two are gated on the formula being present
-    // at all rather than calling evaluateGate unconditionally.
-    let required = false;
-    let fieldReadOnly = readOnly;
-    try {
-        required = field.RequiredWhen ? evaluateGate(field.RequiredWhen, ctx) : false;
-    } catch {
-        required = false;
-    }
-    try {
-        fieldReadOnly = readOnly || (field.ReadOnlyWhen ? evaluateGate(field.ReadOnlyWhen, ctx) : false);
-    } catch {
-        fieldReadOnly = readOnly;
-    }
+    const required = field.Required === true;
+    const fieldReadOnly = readOnly || field.ReadOnly === true;
 
     const failing = failingValidationRules(field.Validate, ctx);
 

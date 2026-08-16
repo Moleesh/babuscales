@@ -38,30 +38,36 @@ export const DEFAULT_TICKET_SCHEMA: Schema = {
         },
         // Gross/Tare/Net/Charge carry no real Kind-driven control — those 4
         // boxes are CalcCard.tsx's own hardware-shaped capture/edit UI
-        // (task: "the values not the button") — these entries exist purely
-        // to give each box a schema-sourced Label like every other field,
-        // per "no hard coding ... including gross and net". TicketFieldsCard
-        // skips them entirely (CAPTURE_FIELD_IDS) rather than rendering a
-        // second, generic row for them.
+        // (task: "the values not the button"). `Calculated: true` is what
+        // routes a field here instead of the generic Ticket field loop
+        // (TicketFieldsCard skips every Calculated field); `Captured`
+        // marks the two that mirror a physical capture rather than a
+        // derived value.
         {
             FieldId: "Gross",
-            Kind: "Weight",
+            Kind: "Number",
+            Captured: "Gross",
+            Calculated: true,
             Label: { en: "Gross", ta: "மொத்த எடை" },
         },
         {
             FieldId: "Tare",
-            Kind: "Weight",
+            Kind: "Number",
+            Captured: "Tare",
+            Calculated: true,
             Label: { en: "Tare", ta: "தார எடை" },
         },
         {
             FieldId: "Net",
             Kind: "Formula",
             Formula: "Abs(Gross - Tare)",
+            Calculated: true,
             Label: { en: "Net", ta: "நிகர எடை" },
         },
         {
             FieldId: "Charge",
             Kind: "Money",
+            Calculated: true,
             Label: { en: "Charge", ta: "கட்டணம்" },
         },
     ],

@@ -7,14 +7,8 @@ import type { Field, ValidationRule } from "@engines/schemaEngine";
 // non-component file so importing them doesn't trip react-refresh's "only
 // export components" rule, and so the two call sites can never drift.
 
-/** A broken VisibleWhen must never hide the whole form (or block Save) silently, but it also must not crash the screen — default to visible. */
-export const evaluateFieldVisible = (field: Field, ctx: FormulaContext): boolean => {
-    try {
-        return evaluateGate(field.VisibleWhen, ctx);
-    } catch {
-        return true;
-    }
-};
+/** A plain boolean now (no formula) — defaults to visible when omitted. */
+export const evaluateFieldVisible = (field: Field): boolean => field.Visible !== false;
 
 /** A rule "passes" when its formula evaluates true — a *failing* rule is one whose gate comes back false. A broken rule formula is treated as "not failing" (silently inert) rather than crashing the screen or blocking Save on a schema authoring mistake this pass has no UI to surface. */
 export const failingValidationRules = (
@@ -35,6 +29,6 @@ export const failingValidationRules = (
 export const hasBlockingCustomFieldError = (fields: Field[], ctx: FormulaContext): boolean =>
     fields.some(
         (field) =>
-            evaluateFieldVisible(field, ctx) &&
+            evaluateFieldVisible(field) &&
             failingValidationRules(field.Validate, ctx).some((rule) => rule.Severity === "Block"),
     );

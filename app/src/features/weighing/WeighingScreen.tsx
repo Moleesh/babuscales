@@ -9,7 +9,7 @@ import { useTranslation } from "@i18n/useTranslation";
 import { buildTicketFormulaContext } from "./_private/buildTicketFormulaContext";
 import { PrintPreviewModal } from "./_private/PrintPreviewModal";
 import { hasBlockingCustomFieldError } from "./_private/schemaFieldValidation";
-import { CAPTURE_FIELD_IDS, FIXED_FIELD_IDS } from "./_private/ticketFieldIds";
+import { FIXED_FIELD_IDS, isCalculatedField } from "./_private/ticketFieldIds";
 import { useDeliveryChannels } from "./_private/useDeliveryChannels";
 import { useWeighingScreenDerived } from "./_private/useWeighingScreenDerived";
 import { useWeighingScreenTickets } from "./_private/useWeighingScreenTickets";
@@ -34,7 +34,7 @@ const computeHasBlockingCustomFieldError = (
     ticketSchema: ReturnType<typeof useSchema>["ticketSchema"],
 ): boolean => {
     const customFieldDefs = ticketSchema.Fields.filter(
-        (field) => !FIXED_FIELD_IDS.includes(field.FieldId) && !CAPTURE_FIELD_IDS.includes(field.FieldId),
+        (field) => !FIXED_FIELD_IDS.includes(field.FieldId) && !isCalculatedField(field),
     );
     const formulaCtx = buildTicketFormulaContext(ticket, ticket.customFields);
     return hasBlockingCustomFieldError(customFieldDefs, formulaCtx);

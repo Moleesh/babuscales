@@ -23,11 +23,12 @@ const fieldBaseShape = {
     FieldId: z.string().min(1),
     Label: localizedSchema,
     Help: localizedSchema.optional(),
-    VisibleWhen: z.string().optional(),
-    RequiredWhen: z.string().optional(),
-    ReadOnlyWhen: z.string().optional(),
+    Visible: z.boolean().optional(),
+    Required: z.boolean().optional(),
+    ReadOnly: z.boolean().optional(),
     Validate: z.array(validationRuleSchema).optional(),
-    Protected: z.boolean().optional(),
+    Calculated: z.boolean().optional(),
+    Captured: z.enum(["Gross", "Tare"]).optional(),
 };
 
 const selectOptionSchema = z.object({ Value: z.string().min(1), Label: localizedSchema });

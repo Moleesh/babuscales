@@ -21,8 +21,8 @@ export interface FieldsLanguagePaneProps {
 // (TicketFieldsCard.tsx reads it via `useSchema()`). What's still NOT
 // built — documented, not attempted — is schema-driven field *rendering*:
 // uploading a schema with a new custom FieldId doesn't add an input to
-// Weighing, and `VisibleWhen`/`RequiredWhen`/`ReadOnlyWhen`/`Validate`
-// formulas aren't evaluated against the ticket form. That's a separate,
+// Weighing, and `Visible`/`Required`/`ReadOnly`/`Validate`
+// aren't evaluated against the ticket form. That's a separate,
 // much larger feature (app/README.md known gap). Uploading a schema that
 // only relabels/reorders/indexes the five existing FieldIds works today;
 // a schema introducing new ones is accepted (it validates) but its extra

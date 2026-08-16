@@ -11,13 +11,8 @@ import { resolveLocalized } from "@i18n/types";
 // doesn't trip react-refresh's "only export components" rule.
 export const FIXED_FIELD_IDS = ["VehicleNo", "Party", "Material", "Transporter", "ChallanNo"];
 
-// The 4 CAPTURED & CALCULATED boxes (CalcCard.tsx) — capture/formula logic
-// stays exactly as-is (task: "the values not the button"), but a schema
-// entry with one of these FieldIds now supplies that box's *label* instead
-// of the box being generically re-rendered as a custom field row. Excluded
-// from SchemaFieldRow's generic pass everywhere alongside FIXED_FIELD_IDS so
-// e.g. the default schema's "Net" Formula field doesn't also show up twice.
-export const CAPTURE_FIELD_IDS = ["Gross", "Tare", "Net", "Charge"];
+/** A `Calculated` field (`Field.Calculated`, e.g. the default schema's Gross/Tare/Net/Charge) belongs in CalcCard's "Captured & calculated" card, not the generic Ticket field loop — capture/formula logic stays exactly as-is (task: "the values not the button"), the schema entry only supplies that box's *label*. No fixed FieldId list: any field an admin flags `Calculated: true` routes here, so a custom calculated field works the same way without a code change. */
+export const isCalculatedField = (field: Field): boolean => field.Calculated === true;
 
 /** Looks up `fieldId`'s Label in the active Schema, falling back to `fallback` (usually a plain i18n string) when the schema has no such field — shared by TicketFieldsCard's fixed rows and CalcCard's capture boxes so both source their labels from the same JSON. */
 export const resolveFieldLabel = (fields: Field[], fieldId: string, lang: string, fallback: string): string => {
