@@ -1,7 +1,7 @@
 import type { SegmentedOption } from "@components/SegmentedControl";
 import { MASTER_KINDS } from "@db/types";
 import type { MasterKind } from "@db/types";
-import type { MasterColumn } from "@engines/schemaEngine";
+import type { MasterColumn, Schema } from "@engines/schemaEngine";
 import { resolveLocalized } from "@i18n/types";
 import type { Localized } from "@i18n/types";
 
@@ -16,6 +16,17 @@ export interface MasterKindMeta {
 // order (Parties · Materials · Vehicles · Vehicle Types ·
 // Transporters · Places · Operators · Stored Tares).
 export const MASTER_KIND_ORDER: MasterKind[] = [...MASTER_KINDS];
+
+// Same "only what the active schema actually declares" rule as the
+// Weighing screen's own fields (CalcCard.tsx/TicketFieldsCard.tsx) — a kind
+// only gets a tab when the schema's own `Masters` block lists it. An empty
+// or missing `Masters` block means zero tabs, full stop — a Search field
+// referencing a kind isn't enough on its own; the schema has to actually
+// configure that kind's columns to claim it.
+export const visibleMasterKinds = (schema: Schema): MasterKind[] => {
+    const declared = new Set<MasterKind>((schema.Masters ?? []).map((entry) => entry.Kind));
+    return MASTER_KIND_ORDER.filter((kind) => declared.has(kind));
+};
 
 export const MASTER_KIND_META: Record<MasterKind, MasterKindMeta> = {
     Party: {
@@ -78,10 +89,15 @@ type Translate = (key: string) => string;
 export const buildKindOptions = (
     _lang: string,
     t: Translate,
+    kinds: MasterKind[] = MASTER_KIND_ORDER,
 ): SegmentedOption<MasterKind>[] =>
-    MASTER_KIND_ORDER.map((kind) => ({
+    kinds.map((kind) => ({
         value: kind,
-        label: t(`masters.${kind.toLowerCase()}.label`),
+        // i18n keys keep the kind's own camelCase ("masters.vehicleType.label",
+        // "masters.storedTare.label") — lowercasing the whole kind broke the
+        // multi-word ones (`vehicletype`/`storedtare` don't exist as keys),
+        // showing the raw key instead of a label.
+        label: t(`masters.${kind.charAt(0).toLowerCase()}${kind.slice(1)}.label`),
     }));
 
 // The built-in `Masters` columns (defaultTicketSchema.ts's Rate/Email/Phone/

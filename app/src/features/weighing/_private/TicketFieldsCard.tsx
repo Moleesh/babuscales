@@ -200,6 +200,7 @@ const buildFixedItems = (
     field: SchemaField,
     lang: string,
     ticketDate: string,
+    ticketDateField: SchemaField | undefined,
     args: Omit<BuildFixedControlArgs, "label">,
 ): { key: string; node: ReactNode }[] => {
     // Built-in fixed fields ship with no schema `Label` at all (see
@@ -212,15 +213,16 @@ const buildFixedItems = (
     const items: { key: string; node: ReactNode }[] = [
         { key: field.FieldId, node: buildFixedControl(field, { ...args, label }) },
     ];
-    // The read-only Ticket Date field has no schema backing of its own —
-    // kept paired immediately after Vehicle No, same spot it has always
-    // occupied, rather than growing a fake schema entry just to give it a
-    // sort position.
-    if (field.FieldId === "VehicleNo") {
+    // The read-only Ticket Date field is paired immediately after Vehicle
+    // No, same spot it's always occupied — but only when the active schema
+    // actually declares a "TicketDate" FieldId (defaultTicketSchema.ts) and
+    // hasn't hidden it via `Visible: false`, same as any other field.
+    if (field.FieldId === "VehicleNo" && ticketDateField && evaluateFieldVisible(ticketDateField)) {
+        const dateLabel = ticketDateField.Label ? resolveLocalized(ticketDateField.Label, lang) : args.t("weigh.ticketDate");
         items.push({
             key: "TicketDate",
             node: (
-                <Field id="fDate" label={args.t("weigh.ticketDate")}>
+                <Field id="fDate" label={dateLabel}>
                     <input id="fDate" readOnly value={ticketDate} className={styles.dateField} />
                 </Field>
             ),
@@ -266,13 +268,18 @@ const buildFieldItems = ({
     };
     const items: { key: string; node: ReactNode }[] = [];
     const fixedArgs = { ticket, t, vehicleCache, partyCache, materialCache, transporterCache };
+    // TicketDate has no control of its own in the generic loop below — it's
+    // spliced in right after VehicleNo by buildFixedItems instead, so it's
+    // looked up once here rather than re-found on every VehicleNo pass.
+    const ticketDateField = schemaFields.find((field) => field.FieldId === "TicketDate");
 
     for (const field of schemaFields) {
+        if (field.FieldId === "TicketDate") continue;
         if (isCalculatedField(field)) continue;
         if (!evaluateFieldVisible(field)) continue;
 
         if (FIXED_FIELD_IDS.includes(field.FieldId)) {
-            items.push(...buildFixedItems(field, lang, ticketDate, fixedArgs));
+            items.push(...buildFixedItems(field, lang, ticketDate, ticketDateField, fixedArgs));
             continue;
         }
 
@@ -349,6 +356,7 @@ export const TicketFieldsCard = ({
             title={<span className="lbl">{t("weigh.ticket")}</span>}
             headerRight={<span className="chip num">{formatTicketNo(ticket.docSeq)}</span>}
         >
+            {items.length === 0 && <p className={styles.emptySchema}>{t("weigh.ticket.empty")}</p>}
             {chunkPairs(items).map((row) => (
                 <FieldGrid key={row.map((item) => item.key).join("_")} columns={2}>
                     {row.map((item) => (

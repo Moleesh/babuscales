@@ -41,7 +41,7 @@ export const FieldsLanguagePane = ({ onAddLanguagePack }: FieldsLanguagePaneProp
     const { packs, lang } = useTranslation();
     const { ticketSchema, schemas, setTicketSchema, setActiveSchemaId } = useSchema();
     const { unlocked } = useSettings();
-    const { schemaMessage, schemaBusy, handleSchemaFile, resetSchema } =
+    const { schemaMessage, schemaBusy, handleSchemaFile, handleSchemaText, resetSchema } =
         useFieldSchemaUpload(setTicketSchema);
     const { message, busy, handleFile } = useLanguagePackUpload(onAddLanguagePack);
 
@@ -65,6 +65,7 @@ export const FieldsLanguagePane = ({ onAddLanguagePack }: FieldsLanguagePaneProp
                 schemaBusy={schemaBusy}
                 schemaMessage={schemaMessage}
                 onSchemaFile={(file) => void handleSchemaFile(file)}
+                onSchemaText={(text) => void handleSchemaText(text)}
                 onReset={() => void resetSchema()}
                 onSelectActiveSchema={(schemaId) => void setActiveSchemaId(schemaId)}
                 onToggleFieldVisible={toggleFieldVisible}

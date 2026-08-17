@@ -1,3 +1,5 @@
+import { useState } from "react";
+
 import { Card } from "@components/Card";
 import { DataTable } from "@components/DataTable";
 import type { DataTableColumn } from "@components/DataTable";
@@ -26,17 +28,12 @@ interface VisibilityToggleArgs {
 // One row's own show/hide button — lets an operator easily hide and show
 // the field instead of changing them every time; flips that field's `Visible` on the active schema and
 // re-saves it, the same effect as hand-editing and re-uploading the JSON.
-// Gross/Tare (`Captured: "Gross" | "Tare"`, CalcCard.tsx) are the manual-entry
-// capture inputs, not just display — CalcCard always renders their box
-// regardless of `Visible`, so a toggle here would silently do nothing; show
-// a static label instead of a button that lies about having an effect. Net
-// and Charge are also `Calculated` but are plain display/editable-amount
-// boxes, and CalcCard does honor their `Visible` — they keep the toggle.
+// Every field in this table — Gross/Tare included — honors `Visible` the
+// same way (CalcCard.tsx's `isBoxVisible`), so they all get the same
+// Hide/Show toggle; no more "Always shown" exception now that hiding
+// Gross/Tare here actually does something.
 const VisibilityToggle = ({ field, unlocked, schemaBusy, t, onToggleVisible }: VisibilityToggleArgs) => {
     const visible = field.Visible !== false;
-    if (field.Captured === "Gross" || field.Captured === "Tare") {
-        return <span className={styles.visibilityStatic}>{t("settings.fieldSchema.alwaysShown")}</span>;
-    }
     return (
         <button
             type="button"
@@ -95,6 +92,8 @@ export interface FieldSchemaCardProps {
     schemaBusy: boolean;
     schemaMessage: { text: string; bad: boolean } | null;
     onSchemaFile: (file: File) => void;
+    /** Same parse/apply path as `onSchemaFile` — the "paste JSON" box next to the drop-zone, for a schema copied from elsewhere rather than saved as a file. */
+    onSchemaText: (text: string) => void;
     onReset: () => void;
     onSelectActiveSchema: (schemaId: string) => void;
     onToggleFieldVisible: (fieldId: string) => void;
@@ -131,6 +130,74 @@ const SchemaDropZone = ({
         />
     </label>
 );
+
+// A collapsed-by-default alternative to the drop-zone above — for a schema
+// copied from a chat, an editor, or another site's Settings rather than
+// saved as a `.json` file. Starts as a single link so it doesn't compete
+// with the drop-zone for attention; clicking it swaps in a compact
+// textarea + Apply, same width as the card.
+const SchemaPasteBox = ({
+    unlocked,
+    schemaBusy,
+    onSchemaText,
+    t,
+}: {
+    unlocked: boolean;
+    schemaBusy: boolean;
+    onSchemaText: (text: string) => void;
+    t: (key: string) => string;
+}) => {
+    const [open, setOpen] = useState(false);
+    const [text, setText] = useState("");
+    if (!open) {
+        return (
+            <button
+                type="button"
+                className={styles.pasteToggle}
+                disabled={!unlocked}
+                onClick={() => setOpen(true)}
+            >
+                {t("settings.fieldSchema.pasteInstead")}
+            </button>
+        );
+    }
+    return (
+        <div className={styles.pasteBox}>
+            <textarea
+                className={styles.pasteInput}
+                rows={3}
+                placeholder={'{ "SchemaId": …, "Fields": […] }'}
+                value={text}
+                disabled={schemaBusy || !unlocked}
+                onChange={(event) => setText(event.target.value)}
+            />
+            <div className={styles.pasteActions}>
+                <button
+                    type="button"
+                    className={styles.resetButton}
+                    disabled={schemaBusy || !unlocked || !text.trim()}
+                    onClick={() => {
+                        onSchemaText(text);
+                        setText("");
+                        setOpen(false);
+                    }}
+                >
+                    {t("settings.fieldSchema.pasteApply")}
+                </button>
+                <button
+                    type="button"
+                    className={styles.pasteToggle}
+                    onClick={() => {
+                        setOpen(false);
+                        setText("");
+                    }}
+                >
+                    {t("settings.fieldSchema.pasteCancel")}
+                </button>
+            </div>
+        </div>
+    );
+};
 
 // The "which saved schema is active" picker — every upload keeps its own
 // row (db/schema.ts's `ticketSchemaConfigId`, keyed by SchemaId), so
@@ -171,6 +238,7 @@ const FieldSchemaCardBody = ({
     schemaBusy,
     schemaMessage,
     onSchemaFile,
+    onSchemaText,
     onReset,
     onSelectActiveSchema,
     onToggleFieldVisible,
@@ -190,6 +258,7 @@ const FieldSchemaCardBody = ({
                 />
             )}
             <SchemaDropZone unlocked={unlocked} schemaBusy={schemaBusy} onSchemaFile={onSchemaFile} t={t} />
+            <SchemaPasteBox unlocked={unlocked} schemaBusy={schemaBusy} onSchemaText={onSchemaText} t={t} />
             {unlocked && (
                 <button type="button" className={styles.resetButton} disabled={schemaBusy} onClick={onReset}>
                     {t("settings.fieldSchema.resetToDefault")}

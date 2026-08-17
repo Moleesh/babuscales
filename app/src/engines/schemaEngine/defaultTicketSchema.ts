@@ -17,6 +17,17 @@ export const DEFAULT_TICKET_SCHEMA: Schema = {
             Kind: "Search",
             Master: "Vehicle",
         },
+        // The read-only stamp paired right after Vehicle No — no
+        // Kind-driven control of its own (TicketFieldsCard.tsx renders it
+        // as a fixed, always-read-only input regardless of `Kind`), same
+        // "the values, not the button" pattern Gross/Tare/Net/Charge use.
+        // Presence here is what decides whether the box shows at all;
+        // `Visible: false` still just hides it, same as any other field.
+        {
+            FieldId: "TicketDate",
+            Kind: "Date",
+            ReadOnly: true,
+        },
         {
             FieldId: "Party",
             Kind: "Search",
@@ -31,10 +42,6 @@ export const DEFAULT_TICKET_SCHEMA: Schema = {
             FieldId: "Transporter",
             Kind: "Search",
             Master: "Transporter",
-        },
-        {
-            FieldId: "ChallanNo",
-            Kind: "Text",
         },
         // Gross/Tare/Net/Charge carry no real Kind-driven control — those 4
         // boxes are CalcCard.tsx's own hardware-shaped capture/edit UI
