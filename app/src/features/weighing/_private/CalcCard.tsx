@@ -14,15 +14,16 @@ import { evaluateFieldVisible } from "./schemaFieldValidation";
 import { resolveFieldLabel } from "./ticketFieldIds";
 import styles from "../_styles/WeighingScreen.module.css";
 
-// Gross/Tare (`Captured: "Gross" | "Tare"`) are the manual-entry capture
-// inputs, not just display — hiding them would remove the only way to key
-// in a weight, so unlike every other field their box always renders
-// regardless of `Visible`. Net and Charge are pure display/editable-amount
-// boxes and honor `Visible` like any other field (evaluateFieldVisible,
-// same helper TicketFieldsCard/SchemaFieldRow use).
+// Every box in this card — Gross/Tare included — only renders when its
+// FieldId is actually present in the active schema; a schema that omits
+// Gross/Tare entirely (e.g. a minimal ticket type with no scale capture)
+// genuinely has no such box, same as any other field a schema doesn't
+// declare. `Visible: false` on a field that *is* present still just hides
+// it (evaluateFieldVisible, same helper TicketFieldsCard/SchemaFieldRow
+// use) rather than dropping it from the schema outright.
 const isBoxVisible = (ticketSchema: Schema, fieldId: string): boolean => {
     const field = ticketSchema.Fields.find((candidate) => candidate.FieldId === fieldId);
-    return !field || evaluateFieldVisible(field);
+    return !!field && evaluateFieldVisible(field);
 };
 
 const formatStamp = (
@@ -92,6 +93,8 @@ interface TareGrossBoxesProps {
     timeFmt: "24" | "12";
     grossLabel: string;
     tareLabel: string;
+    showGross: boolean;
+    showTare: boolean;
 }
 
 // Pulled out of CalcCard's own body (over the line budget —
@@ -109,6 +112,8 @@ const TareGrossBoxes = ({
     timeFmt,
     grossLabel,
     tareLabel,
+    showGross,
+    showTare,
 }: TareGrossBoxesProps) => {
     const { t, lang } = useTranslation();
     // Gross first, Tare second — a loaded lorry weighing in before it's
@@ -116,37 +121,39 @@ const TareGrossBoxes = ({
     // reads left to right.
     return (
         <>
-            {manualGross ? (
-                <ManualCalcBox
-                    label={grossLabel}
-                    onSubmit={(weightKg) => onManualCapture(weightKg, "Gross")}
-                    weightUnit={weightUnit}
-                />
-            ) : (
-                <CalcBox
-                    label={grossLabel}
-                    value={weights.grossKg !== null ? formatWeightIn(weights.grossKg, weightUnit) : "—"}
-                    stamp={
-                        formatStamp(grossCaptures[grossCaptures.length - 1]?.At, lang, dateFmt, timeFmt) +
-                        (grossCaptures.length > 1
-                            ? ` · ${grossCaptures.length} ${t("weigh.loadsSuffix")}`
-                            : "")
-                    }
-                />
-            )}
-            {manualTare ? (
-                <ManualCalcBox
-                    label={tareLabel}
-                    onSubmit={(weightKg) => onManualCapture(weightKg, "Tare")}
-                    weightUnit={weightUnit}
-                />
-            ) : (
-                <CalcBox
-                    label={tareLabel}
-                    value={weights.tareKg !== null ? formatWeightIn(weights.tareKg, weightUnit) : "—"}
-                    stamp={formatStamp(captures.find((c) => c.Type === "Tare")?.At, lang, dateFmt, timeFmt)}
-                />
-            )}
+            {showGross &&
+                (manualGross ? (
+                    <ManualCalcBox
+                        label={grossLabel}
+                        onSubmit={(weightKg) => onManualCapture(weightKg, "Gross")}
+                        weightUnit={weightUnit}
+                    />
+                ) : (
+                    <CalcBox
+                        label={grossLabel}
+                        value={weights.grossKg !== null ? formatWeightIn(weights.grossKg, weightUnit) : "—"}
+                        stamp={
+                            formatStamp(grossCaptures[grossCaptures.length - 1]?.At, lang, dateFmt, timeFmt) +
+                            (grossCaptures.length > 1
+                                ? ` · ${grossCaptures.length} ${t("weigh.loadsSuffix")}`
+                                : "")
+                        }
+                    />
+                ))}
+            {showTare &&
+                (manualTare ? (
+                    <ManualCalcBox
+                        label={tareLabel}
+                        onSubmit={(weightKg) => onManualCapture(weightKg, "Tare")}
+                        weightUnit={weightUnit}
+                    />
+                ) : (
+                    <CalcBox
+                        label={tareLabel}
+                        value={weights.tareKg !== null ? formatWeightIn(weights.tareKg, weightUnit) : "—"}
+                        stamp={formatStamp(captures.find((c) => c.Type === "Tare")?.At, lang, dateFmt, timeFmt)}
+                    />
+                ))}
         </>
     );
 };
@@ -213,8 +220,14 @@ export const CalcCard = ({
     // know whether *it specifically* still needs a weight.
     const manualTare = manualEntry && !isLocked && !hasCapture(captures, "Tare");
     const manualGross = manualEntry && !isLocked && !hasCapture(captures, "Gross");
+    const showGross = isBoxVisible(ticketSchema, "Gross");
+    const showTare = isBoxVisible(ticketSchema, "Tare");
+    const showNet = isBoxVisible(ticketSchema, "Net");
+    const showCharge = isBoxVisible(ticketSchema, "Charge");
+    const noBoxes = !showGross && !showTare && !showNet && !showCharge;
     return (
         <Card title={<span className="lbl">{t("weigh.capturedAndCalculated")}</span>}>
+            {noBoxes && <p className={styles.emptySchema}>{t("weigh.capturedAndCalculated.empty")}</p>}
             <div className={styles.calc}>
                 <TareGrossBoxes
                     weights={weights}
@@ -228,15 +241,17 @@ export const CalcCard = ({
                     timeFmt={timeFmt}
                     grossLabel={boxLabel("Gross", t("weigh.gross"))}
                     tareLabel={boxLabel("Tare", t("weigh.tare"))}
+                    showGross={showGross}
+                    showTare={showTare}
                 />
-                {isBoxVisible(ticketSchema, "Net") && (
+                {showNet && (
                     <CalcBox
                         label={boxLabel("Net", t("weigh.net"))}
                         value={weights.netKg !== null ? formatWeightIn(weights.netKg, weightUnit) : "—"}
                         lead={weights.netKg !== null}
                     />
                 )}
-                {isBoxVisible(ticketSchema, "Charge") && (
+                {showCharge && (
                     <ChargeBox
                         label={boxLabel("Charge", t("weigh.charge"))}
                         value={chargeValue}

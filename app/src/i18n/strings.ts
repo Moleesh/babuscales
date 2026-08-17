@@ -62,6 +62,7 @@ export const EN_STRINGS: Record<string, string> = {
     "weigh.weightInMotion": "Weight in motion — capture is locked until it settles.",
 
     "weigh.capturedAndCalculated": "Captured & calculated",
+    "weigh.capturedAndCalculated.empty": "This schema has no Gross/Tare/Net/Charge fields configured — add some in Settings → Field schema.",
     "weigh.draft": "Draft",
     "weigh.capture.bothCaptured": "Both weights captured",
     "weigh.capture.awaitingSave": "Save first",
@@ -92,6 +93,7 @@ export const EN_STRINGS: Record<string, string> = {
     "weigh.ticketDate": "Ticket Date",
     "weigh.challanNo": "Challan No",
     "weigh.ticket": "Ticket",
+    "weigh.ticket.empty": "This schema has no ticket fields configured — add some in Settings → Field schema.",
 
     "weigh.cameras": "Cameras",
     "weigh.of": "of",
@@ -99,6 +101,7 @@ export const EN_STRINGS: Record<string, string> = {
     "weigh.goToCameras": "Go to Cameras tab →",
 
     "masters.kindLabel": "Master kind",
+    "masters.noneConfigured": "This schema doesn't configure any master kinds — add a Masters block in Settings → Field schema.",
     "masters.col.name": "Name",
     "masters.col.vehicle": "Vehicle",
     "masters.col.weight": "Weight",
@@ -410,7 +413,9 @@ export const EN_STRINGS: Record<string, string> = {
     "settings.fieldSchema.activeLabel": "Active schema",
     "settings.fieldSchema.show": "Show",
     "settings.fieldSchema.hide": "Hide",
-    "settings.fieldSchema.alwaysShown": "Always shown",
+    "settings.fieldSchema.pasteInstead": "…or paste JSON instead",
+    "settings.fieldSchema.pasteApply": "Apply",
+    "settings.fieldSchema.pasteCancel": "Cancel",
 
     "settings.indicator.title": "Weight indicator",
     "settings.indicator.customPattern": "Custom pattern (advanced)",

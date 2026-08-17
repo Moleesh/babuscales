@@ -69,6 +69,50 @@
     cursor: not-allowed;
 }
 
+/* SchemaPasteBox — a compact, collapsed-by-default alternative to .drop for a
+   schema copied as text rather than saved as a .json file. */
+.paste-toggle {
+    justify-self: start;
+    padding: 0;
+    border: none;
+    background: none;
+    color: var(--dim);
+    font: inherit;
+    font-size: 0.6875rem;
+    cursor: pointer;
+    text-decoration: underline dotted;
+}
+.paste-toggle:hover:not(:disabled) {
+    color: var(--led);
+}
+.paste-toggle:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+.paste-box {
+    display: grid;
+    gap: 6px;
+}
+.paste-input {
+    padding: 7px 9px;
+    border: 1px solid var(--line);
+    border-radius: 9px;
+    background: var(--panel-2);
+    color: var(--text);
+    font: inherit;
+    font-size: 0.75rem;
+    resize: vertical;
+}
+.paste-input:focus {
+    outline: none;
+    border-color: var(--led);
+}
+.paste-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
 .active-schema-row {
     display: flex;
     align-items: center;
@@ -98,15 +142,6 @@
 .visibility-off {
     color: var(--dim);
     border-style: dashed;
-}
-.visibility-static {
-    display: inline-block;
-    padding: 2px 9px;
-    border-radius: 7px;
-    border: 1px solid transparent;
-    font-size: 0.6875rem;
-    color: var(--dim);
-    white-space: nowrap;
 }
 
 .applied {

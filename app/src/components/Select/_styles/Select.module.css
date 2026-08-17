@@ -3,7 +3,10 @@
    doesn't change how the field reads inside a FieldGrid. */
 .wrap {
     position: relative;
-    min-width: 0;
+    /* Enough for a typical SchemaId/option label ("default-ticket") without
+       truncating — a caller in a tighter layout can still override this on
+       its own wrapping element; this is just a sane floor, not a fixed size. */
+    min-width: 140px;
 }
 .trigger {
     display: flex;
@@ -115,6 +118,9 @@
     color: var(--text);
     font: inherit;
     font-size: 0.8125rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 .option:hover {
     background: var(--panel-2);

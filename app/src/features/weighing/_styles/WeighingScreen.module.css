@@ -138,6 +138,15 @@
     line-height: 1.6;
 }
 
+/* TicketFieldsCard/CalcCard — shown instead of the field grid/box row when
+   the active schema declares none of that card's fields at all. */
+.empty-schema {
+    font-size: 0.75rem;
+    color: var(--dim);
+    margin: 0;
+    line-height: 1.6;
+}
+
 /* Schema-driven custom fields (SchemaFieldRow) — inline Validate feedback
    under a field. Block reuses --alert (same red the licence-gated hint
    would use), Warn/Note use --warn; neither is a new visual tier beyond

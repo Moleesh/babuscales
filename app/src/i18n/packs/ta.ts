@@ -75,6 +75,7 @@ export const TA_PACK: LanguagePack = {
         "weigh.weightInMotion": "எடை அசைவில் உள்ளது — நிலையாகும் வரை பதிவு தடுக்கப்பட்டுள்ளது.",
 
         "weigh.capturedAndCalculated": "பதிவு செய்து கணக்கிடப்பட்டது",
+        "weigh.capturedAndCalculated.empty": "இந்த ஸ்கீமாவில் Gross/Tare/Net/Charge புலங்கள் எதுவும் கட்டமைக்கப்படவில்லை — அமைப்புகள் → புலத் திட்டத்தில் சேர்க்கவும்.",
         "weigh.draft": "வரைவு",
         "weigh.capture.bothCaptured": "இரு எடைகளும் பதிவு செய்யப்பட்டன",
         "weigh.capture.awaitingSave": "முதலில் சேமி",
@@ -105,6 +106,7 @@ export const TA_PACK: LanguagePack = {
         "weigh.ticketDate": "டிக்கெட் தேதி",
         "weigh.challanNo": "சலான் எண்",
         "weigh.ticket": "டிக்கெட்",
+        "weigh.ticket.empty": "இந்த ஸ்கீமாவில் டிக்கெட் புலங்கள் எதுவும் கட்டமைக்கப்படவில்லை — அமைப்புகள் → புலத் திட்டத்தில் சேர்க்கவும்.",
 
         "weigh.cameras": "கேமராக்கள்",
         "weigh.of": "இல்",
@@ -112,6 +114,7 @@ export const TA_PACK: LanguagePack = {
         "weigh.goToCameras": "கேமராக்கள் தாவலுக்குச் செல் →",
 
         "masters.kindLabel": "அடிப்படைத் தரவு வகை",
+        "masters.noneConfigured": "இந்த ஸ்கீமா எந்த அடிப்படைத் தரவு வகையையும் கட்டமைக்கவில்லை — அமைப்புகள் → புலத் திட்டத்தில் ஒரு Masters தொகுதியைச் சேர்க்கவும்.",
         "masters.col.name": "பெயர்",
         "masters.col.vehicle": "வாகனம்",
         "masters.col.weight": "எடை",
@@ -425,7 +428,9 @@ export const TA_PACK: LanguagePack = {
         "settings.fieldSchema.activeLabel": "செயலில் உள்ள திட்டம்",
         "settings.fieldSchema.show": "காட்டு",
         "settings.fieldSchema.hide": "மறை",
-        "settings.fieldSchema.alwaysShown": "எப்போதும் காட்டப்படும்",
+        "settings.fieldSchema.pasteInstead": "…அல்லது JSON ஒட்டவும்",
+        "settings.fieldSchema.pasteApply": "செயல்படுத்து",
+        "settings.fieldSchema.pasteCancel": "ரத்து செய்",
 
         "settings.indicator.title": "எடை காட்டி",
         "settings.indicator.customPattern": "தனிப்பயன் மாதிரி (மேம்பட்டது)",

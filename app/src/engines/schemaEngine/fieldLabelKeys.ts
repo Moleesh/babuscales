@@ -8,6 +8,7 @@
 // private folders.
 export const FIELD_LABEL_KEYS: Partial<Record<string, string>> = {
     VehicleNo: "weigh.vehicleNo",
+    TicketDate: "weigh.ticketDate",
     Party: "weigh.party",
     Material: "weigh.material",
     Transporter: "weigh.transporter",

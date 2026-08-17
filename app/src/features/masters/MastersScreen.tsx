@@ -11,7 +11,7 @@ import { MastersFormCard } from "./_private/MastersFormCard";
 import { MastersListCard } from "./_private/MastersListCard";
 import { useMastersScreenState } from "./_private/useMastersScreenState";
 import styles from "./_styles/MastersScreen.module.css";
-import { buildKindOptions } from "./masterKindMeta";
+import { buildKindOptions, visibleMasterKinds } from "./masterKindMeta";
 
 // One screen for everything saved: Parties, Materials,
 // Vehicles, Vehicle Types, Transporters, Places, Operators, Stored Tares.
@@ -31,6 +31,15 @@ export const MastersScreen = () => {
     const { ticketSchema } = useSchema();
     const [activeKind, setActiveKind] = useState<MasterKind>("Party");
     const [query, setQuery] = useState("");
+    const kinds = useMemo(() => visibleMasterKinds(ticketSchema), [ticketSchema]);
+    // The active kind can go stale when the schema changes out from under it
+    // (an upload drops the kind currently open, or "Party" — the initial
+    // default — isn't in this schema at all) — fall back to whatever kind
+    // is actually available rather than showing an empty/mismatched screen.
+    useEffect(() => {
+        const fallback = kinds[0];
+        if (!kinds.includes(activeKind) && fallback) setActiveKind(fallback);
+    }, [kinds, activeKind]);
     // Which extra columns this kind's records carry — "specify what
     // all column we need for master ... that's how the master have to be
     // populated" — Schema.Masters, defaults to none for a kind the active
@@ -46,7 +55,10 @@ export const MastersScreen = () => {
         setQuery("");
     }, [activeKind]);
 
-    const kindLower = activeKind.toLowerCase();
+    // i18n keys keep the kind's own camelCase ("masters.vehicleType.label",
+    // "masters.storedTare.label") — lowercasing the whole kind broke the
+    // multi-word ones (masterKindMeta.ts's buildKindOptions had the same bug).
+    const kindLower = activeKind.charAt(0).toLowerCase() + activeKind.slice(1);
     const columns = useMemo(
         () =>
             buildMasterColumns({
@@ -61,7 +73,15 @@ export const MastersScreen = () => {
             }),
         [activeKind, masterColumns, t, lang, settings.Formats.WeightUnit, settings.Formats.DateFmt, settings.Formats.TimeFmt],
     );
-    const kindOptions = useMemo(() => buildKindOptions(lang, t), [lang, t]);
+    const kindOptions = useMemo(() => buildKindOptions(lang, t, kinds), [lang, t, kinds]);
+
+    if (kinds.length === 0) {
+        return (
+            <div className={styles.screen}>
+                <p>{t("masters.noneConfigured")}</p>
+            </div>
+        );
+    }
 
     return (
         <div className={styles.screen}>
