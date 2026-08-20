@@ -7,4 +7,5 @@ export const createNoopWindowPin = (): WindowPinSource => ({
     setAlwaysOnTop: () => Promise.resolve(),
     minimize: () => Promise.resolve(),
     close: () => Promise.resolve(),
+    fillScreen: () => Promise.resolve(),
 });

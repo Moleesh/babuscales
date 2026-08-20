@@ -4,6 +4,7 @@ import type { Schema } from "@engines/schemaEngine";
 import type { RecallOffer } from "../RecallBanner";
 import type { UseWeighingTicket } from "../useWeighingTicket";
 import { CalcCard } from "./CalcCard";
+import type { CalcSegment } from "./calcSegments";
 import type { TicketBilling } from "./ticketBilling";
 import { TicketFieldsCard } from "./TicketFieldsCard";
 import type { WeighingCaches } from "./useWeighingScreenTickets";
@@ -24,6 +25,8 @@ export interface WeighingLeftColumnProps {
     /** Settings' `Formats.DateFmt`/`TimeFmt` — threaded to CalcCard's Tare/Gross capture stamps. */
     dateFmt: string;
     timeFmt: "24" | "12";
+    /** `useComputedCalcFields` (WeighingScreen.tsx) — threaded straight to CalcCard's own calc-chain rows. */
+    calcSegments: CalcSegment[];
 }
 
 // Split out of WeighingScreen (over the line budget — docs/CodingStandards.md)
@@ -41,6 +44,7 @@ export const WeighingLeftColumn = ({
     weightUnit,
     dateFmt,
     timeFmt,
+    calcSegments,
 }: WeighingLeftColumnProps) => (
     <>
         <TicketFieldsCard
@@ -68,6 +72,7 @@ export const WeighingLeftColumn = ({
             weightUnit={weightUnit}
             dateFmt={dateFmt}
             timeFmt={timeFmt}
+            calcSegments={calcSegments}
         />
     </>
 );

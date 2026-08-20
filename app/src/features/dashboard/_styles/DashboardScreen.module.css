@@ -3,9 +3,17 @@
     gap: 13px;
 }
 
+/* Sticks under the shell's own sticky weight header (`--shell-header-h`,
+   AppShell.tsx) while the KPIs/charts/recent-tickets below scroll — same
+   fix as Settings' tab bar and Reports' date/filter row. */
 .period-row {
     display: flex;
     justify-content: flex-end;
+    position: sticky;
+    top: var(--shell-header-h, 0px);
+    z-index: 2;
+    background: var(--void);
+    padding-block: 4px;
 }
 
 .loading {

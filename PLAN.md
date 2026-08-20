@@ -1295,8 +1295,22 @@ keyboard/state and recall-offer logic — since it wasn't needed for real relief
 lower bound past it, documented in `useMastersScreenState.ts`'s comment rather than solved with a
 new count query nothing has asked for yet.
 
-**Next up — none. Every item above is done; test/verify/CI/push (tasks #19/#20) run once now,
-covering everything in this batch, then push to `origin/main`.**
+**Next up:**
+
+9. **LAN read-only web portal.** Extend the existing LAN verification server (`net/mod.rs`, port
+   8420, already shipping today for QR ticket verification) with read-only Dashboard, Reports,
+   Masters and Tickets (list/detail/**reprint** via browser print) views, so any browser on the
+   same network — not just a phone scanning a QR code — can see and reprint from the same live
+   data the desktop app holds, no auth (nothing writable is exposed), weight/camera live view
+   deferred as a placeholder until the real indicator/camera work lands, APK/mobile deferred to a
+   later client of the same endpoints. **Scoped, not started** — full analysis, architecture
+   decision and per-surface effort breakdown in `docs/Plan-LanReadOnlyPortal.md`. The Reports/
+   Dashboard piece is the real unknown (4,420 lines of aggregation logic that exists only in
+   TypeScript today, no Rust equivalent to call into) and needs its own read-through before
+   scoping further — see that file's §4c and §5 before starting.
+
+Once #9 is scoped and built: test/verify/CI/push (tasks #19/#20) run once, covering everything in
+this batch, then push to `origin/main`.
 
 **Deferred by decision — designed for, not built, revisit only if the decision is revisited:**
 

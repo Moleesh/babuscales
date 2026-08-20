@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import type { ReactNode } from "react";
 
 import { ScrollArea } from "@components/ScrollArea";
@@ -143,10 +143,34 @@ export const AppShell = ({
     useEnterAsTab();
     const { t } = useTranslation();
     const mainRef = useRef<HTMLDivElement>(null);
+    const headerStickyRef = useRef<HTMLDivElement>(null);
     // Mounted once, app-wide, same as CustomCursor — see useContextMenu.ts,
     // which replaces the native right-click menu in desktop view so the
     // app can offer its own copy/cut/paste instead.
     const { menu, close } = useContextMenu();
+
+    // Exposes the sticky header's actual rendered height (varies: compact vs
+    // full-size, per BIG_HEADER_TABS) as a CSS var on `.main` — any other
+    // sticky element further down (e.g. Settings' own tab bar,
+    // SettingsScreen.module.css's `.top-row`) can offset its own `top` by
+    // this instead of also sitting at `top: 0` and disappearing behind the
+    // header once both are stuck (same z-index=0 slot, header wins on
+    // z-index). Runs even when `header` is absent — var just settles to 0px.
+    useEffect(() => {
+        const headerEl = headerStickyRef.current;
+        const mainEl = mainRef.current;
+        if (!mainEl) return;
+        if (!headerEl) {
+            mainEl.style.setProperty("--shell-header-h", "0px");
+            return;
+        }
+        const observer = new ResizeObserver(([entry]) => {
+            if (!entry) return;
+            mainEl.style.setProperty("--shell-header-h", `${entry.contentRect.height}px`);
+        });
+        observer.observe(headerEl);
+        return () => observer.disconnect();
+    }, [header]);
 
     return (
         <div className={styles.app}>
@@ -185,7 +209,11 @@ export const AppShell = ({
                     own top edge) does that; AppShell.module.css drops the
                     sticky behavior back to plain scroll under the same
                     ~880px mobile breakpoint the tab bar itself uses. */}
-                {header && <div className={styles.headerSticky}>{header}</div>}
+                {header && (
+                    <div ref={headerStickyRef} className={styles.headerSticky}>
+                        {header}
+                    </div>
+                )}
                 <div className={styles.screen}>{children}</div>
             </ScrollArea>
             {menu && <ContextMenu menu={menu} onClose={close} />}

@@ -176,6 +176,32 @@ export const sortTicketRows = (
     return sortDir === "asc" ? sorted : sorted.reverse();
 };
 
+// Task: "if I have like more than 100 it will kill the flow" — DataTable
+// already windows its own DOM rows, but the Tickets view still handed it
+// every matching row at once (a site running a full day/week can easily
+// clear a few hundred). Real pagination — a bounded slice per page — caps
+// both what DataTable has to window *and* what a screen reader/keyboard
+// tab-through has to step across, not just what's actually painted.
+// Print/export deliberately still read the *full* `visibleRows`
+// (useReportsScreenData.ts), not the paginated slice — a report should
+// never silently print only the current page.
+export const TICKET_PAGE_SIZE = 50;
+
+export const ticketPageCount = (rowCount: number, pageSize: number = TICKET_PAGE_SIZE): number =>
+    Math.max(1, Math.ceil(rowCount / pageSize));
+
+/** Clamps `pageIndex` into range first — a filter/search/sort change can
+ * leave a stale page index past the new (shorter) result set. */
+export const paginateTicketRows = (
+    rows: TicketRow[],
+    pageIndex: number,
+    pageSize: number = TICKET_PAGE_SIZE,
+): TicketRow[] => {
+    const clamped = Math.min(Math.max(pageIndex, 0), ticketPageCount(rows.length, pageSize) - 1);
+    const start = clamped * pageSize;
+    return rows.slice(start, start + pageSize);
+};
+
 /** Ticket-column keys the report-builder wizard can show/hide — mirrors reportColumns.tsx's `buildTicketColumns`
  * key list 1:1, minus "action" (Resume/Reprint isn't a data column, always
  * shown). */

@@ -1,14 +1,17 @@
 import { Card } from "@components/Card";
 import { StatusPill } from "@components/StatusPill";
-import { formatDateTimeInFmt, formatWeightIn } from "@constants/numberFormat";
+import { formatDateTimeInFmt, formatPlainNumber, formatWeightIn } from "@constants/numberFormat";
 import type { WeightUnit } from "@constants/numberFormat";
 import type { Capture, CaptureType } from "@db/ticketBody";
 import type { DerivedWeights } from "@db/ticketBody";
 import { hasCapture } from "@db/ticketBody";
+import { getAllFields } from "@engines/schemaEngine";
 import type { Schema } from "@engines/schemaEngine";
+import { resolveLocalized } from "@i18n/types";
 import { useTranslation } from "@i18n/useTranslation";
 
 import { CalcFormula } from "./CalcFormula";
+import type { CalcSegment } from "./calcSegments";
 import { ManualCalcBox } from "./ManualCalcBox";
 import { evaluateFieldVisible } from "./schemaFieldValidation";
 import { resolveFieldLabel } from "./ticketFieldIds";
@@ -22,7 +25,7 @@ import styles from "../_styles/WeighingScreen.module.css";
 // it (evaluateFieldVisible, same helper TicketFieldsCard/SchemaFieldRow
 // use) rather than dropping it from the schema outright.
 const isBoxVisible = (ticketSchema: Schema, fieldId: string): boolean => {
-    const field = ticketSchema.Fields.find((candidate) => candidate.FieldId === fieldId);
+    const field = getAllFields(ticketSchema).find((candidate) => candidate.FieldId === fieldId);
     return !!field && evaluateFieldVisible(field);
 };
 
@@ -79,6 +82,37 @@ const ChargeBox = ({ label, value, onChange, readOnly }: ChargeBoxProps) => (
         />
         <div className={styles.calcStamp}>&nbsp;</div>
     </div>
+);
+
+const SEGMENT_HEADING_KEYS: Record<CalcSegment["segment"], string> = {
+    Intermediate: "weigh.calcSegment.intermediate",
+    Final: "weigh.calcSegment.final",
+};
+
+// One `CalcSegment` group (useComputedCalcFields.ts) — a labeled heading
+// ("Intermediate results"/"Final results") over its own row of read-only
+// boxes, same visual language as the fixed 4-box grid above it just without
+// the stamp/lead/pending states those 4 have (a schema-driven `Formula`
+// field has none of those concepts). A field whose formula threw (an input
+// the operator hasn't filled in yet) shows "—", same as an unresolved
+// Gross/Tare box.
+const CalcSegmentRows = ({ segments, lang, t }: { segments: CalcSegment[]; lang: string; t: (key: string) => string }) => (
+    <>
+        {segments.map(({ segment, items }) => (
+            <div key={segment} className={styles.calcSegment}>
+                <span className={styles.calcSegmentHeading}>{t(SEGMENT_HEADING_KEYS[segment])}</span>
+                <div className={styles.calcSegmentGrid}>
+                    {items.map(({ fieldId, field, value }) => (
+                        <CalcBox
+                            key={fieldId}
+                            label={field.Label ? resolveLocalized(field.Label, lang) : fieldId}
+                            value={value !== undefined ? formatPlainNumber(value) : "—"}
+                        />
+                    ))}
+                </div>
+            </div>
+        ))}
+    </>
 );
 
 interface TareGrossBoxesProps {
@@ -181,6 +215,8 @@ export interface CalcCardProps {
     /** Settings' `Formats.DateFmt`/`TimeFmt` — the Tare/Gross capture stamps display in these. */
     dateFmt: string;
     timeFmt: "24" | "12";
+    /** `useComputedCalcFields` (WeighingScreen.tsx) — every non-fixed `Calculated` `Formula` field the active schema declares (e.g. a Godown schema's calc chain), already evaluated and grouped by `Segment`. Empty for a schema with none, same as `DEFAULT_TICKET_SCHEMA`'s today. */
+    calcSegments: CalcSegment[];
 }
 
 // Split out of WeighingScreen (over the 300-line budget — docs/CodingStandards.md)
@@ -205,10 +241,11 @@ export const CalcCard = ({
     weightUnit,
     dateFmt,
     timeFmt,
+    calcSegments,
 }: CalcCardProps) => {
     const { t, lang } = useTranslation();
-    const boxLabel = (fieldId: string, fallback: string) =>
-        resolveFieldLabel(ticketSchema.Fields, fieldId, lang, fallback);
+    const allFields = getAllFields(ticketSchema);
+    const boxLabel = (fieldId: string, fallback: string) => resolveFieldLabel(allFields, fieldId, lang, fallback);
     // Task #46 — every Gross capture, in the order they were taken; length 1
     // covers today's single-gross ticket unchanged.
     const grossCaptures = captures.filter((c) => c.Type === "Gross");
@@ -260,6 +297,7 @@ export const CalcCard = ({
                     />
                 )}
             </div>
+            <CalcSegmentRows segments={calcSegments} lang={lang} t={t} />
             <CalcFormula
                 tareKg={weights.tareKg}
                 grossKg={weights.grossKg}

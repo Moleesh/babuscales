@@ -14,6 +14,21 @@
     gap: 8px;
 }
 
+/* Date range + Tickets' search/filter/sort row, stacked and stuck together
+   under the shell's sticky weight header — see ReportsCardBody.tsx's own
+   comment. `top` offsets by `--shell-header-h` (AppShell.tsx), same pattern
+   as SettingsScreen.module.css's `.top-row`, so this sticks below the
+   header instead of disappearing behind it. */
+.sticky-filters {
+    display: grid;
+    gap: 11px;
+    position: sticky;
+    top: var(--shell-header-h, 0px);
+    z-index: 2;
+    background: var(--void);
+    padding-block: 4px;
+}
+
 .header-actions {
     display: flex;
     align-items: center;
@@ -79,18 +94,32 @@
     flex-wrap: wrap;
 }
 
-/* Task: Reports rework, item 3 — hangs at the bottom of `.main`'s scroll
-   area (AppShell.module.css) as the screen scrolls, so Print/Export stay
-   reachable without scrolling back up. Same panel/border/radius treatment
-   as Card's own chrome so it reads as part of the screen, not an overlay. */
+/* Task: Reports rework, item 3 originally made this `position: sticky;
+   bottom: 0` so Print/Export stayed reachable without scrolling back up.
+   Task: "when the data is limited can we move footer to end" — `.main`
+   (AppShell.module.css) is always stretched to fill the full viewport pane
+   regardless of how much content is actually in it, so a sticky bottom bar
+   still had room to float all the way down to the pane's true bottom edge
+   even on a short page (e.g. a last, partly-empty ticket page), leaving a
+   large gap of bare background above it. Plain static flow instead — the
+   bar now always sits directly after the Card, never floating away from
+   its content, and simply scrolls off with everything else on a long page. */
 .bottom-bar {
-    position: sticky;
-    bottom: 0;
-    z-index: 5;
     background: var(--panel);
     border: 1px solid var(--line);
     border-radius: var(--radius);
     padding: 11px;
+    display: flex;
+    /* `flex-end`, not `center` — the Export PDF button's own two-line
+       caption (ReportsActionsRow.tsx) makes `.actions` noticeably taller
+       than `.page-row` beside it; centering the two blocks against their
+       different heights read as the bar bulging/tilting instead of sitting
+       level. Bottom-anchoring both keeps their button rows on one shared
+       baseline regardless of the caption underneath. */
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 11px;
+    flex-wrap: wrap;
 }
 
 .sort-row {
@@ -117,6 +146,53 @@
 .sort-dir-btn:hover {
     border-color: var(--led-dim);
     color: var(--led);
+}
+
+/* Task: "double scroll bar" — DataTable.module.css's `.wrapper` is its own
+   bounded, independently-scrolling region (65vh by default, for its
+   windowed rendering); once Tickets paginates at 50 rows/page that inner
+   scrollbar next to `.main`'s outer one reads as two scrollbars for what's
+   rarely even a full page. Unsets the bound (DataTable's own
+   `--datatable-max-height` custom property) so a page's rows just grow the
+   card and `.main` is the only scroll container — pagination is what keeps
+   row count bounded now, not DataTable's own windowing. */
+.tickets-table {
+    --datatable-max-height: none;
+}
+
+/* Tickets pagination (TICKET_PAGE_SIZE, reportRows.ts) — now lives in the
+   sticky bottom bar alongside Print/Export (ReportsScreenOverlays.tsx)
+   instead of directly under the table, so it's always reachable without
+   scrolling back down to a short last page. */
+.page-row {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 9px;
+}
+
+.page-btn {
+    padding: 6px 10px;
+    border-radius: 7px;
+    border: 1px solid var(--line);
+    background: var(--panel-2);
+    color: var(--text);
+    font: inherit;
+    cursor: pointer;
+}
+.page-btn:hover:not(:disabled) {
+    border-color: var(--led-dim);
+    color: var(--led);
+}
+.page-btn:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+.page-label {
+    font-size: 0.75rem;
+    color: var(--dim);
+    font-variant-numeric: tabular-nums;
 }
 
 .waiting {

@@ -1,8 +1,10 @@
 import { useState } from "react";
 
+import { useToast } from "@components/Toast";
 import { parseLangFile } from "@i18n/langFileFormat";
 import { languagePackSchema } from "@i18n/schemas";
 import type { LanguagePack } from "@i18n/types";
+import { useTranslation } from "@i18n/useTranslation";
 
 interface FlashMessage {
     text: string;
@@ -26,6 +28,8 @@ export const useLanguagePackUpload = (
 ): UseLanguagePackUpload => {
     const [message, setMessage] = useState<FlashMessage | null>(null);
     const [busy, setBusy] = useState(false);
+    const { showToast } = useToast();
+    const { t } = useTranslation();
 
     const handleFile = async (file: File): Promise<void> => {
         setBusy(true);
@@ -42,6 +46,7 @@ export const useLanguagePackUpload = (
                 text: `Applied · ${pack.pack.Name} · ${Object.keys(pack.pack.Strings).length} strings`,
                 bad: false,
             });
+            showToast(t("components.toast.saved"));
         } catch (err) {
             setMessage({
                 text: `Could not read the file — ${err instanceof Error ? err.message : String(err)}`,

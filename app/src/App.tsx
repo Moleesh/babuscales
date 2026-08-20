@@ -5,6 +5,7 @@ import { AppShell } from "@components/AppShell";
 import type { AppShellTab } from "@components/AppShell";
 import { ContextualHelp } from "@components/ContextualHelp";
 import { CustomCursor } from "@components/CustomCursor";
+import { ToastProvider } from "@components/Toast";
 import { Tooltip } from "@components/Tooltip";
 import { WeightDisplay } from "@components/WeightDisplay";
 import type { DateFmt, WeightUnit } from "@constants/numberFormat";
@@ -313,11 +314,20 @@ const ShellWeightHeader = ({
 const buildNavTabs = (t: ReturnType<typeof useTranslation>["t"]): AppShellTab[] =>
     PRIMARY_TAB_KEYS.map((key) => ({ key, label: t(`nav.${key}`), icon: TAB_ICONS[key] }));
 
-// Per-session only — a relaunch always comes back to
-// `tauri.conf.json`'s own `alwaysOnTop: true`, same as the config itself,
-// since this is just React state with nothing behind it that persists.
+// Per-session only — nothing here persists, so every relaunch comes back to
+// this same hand-off regardless of how the pin was left last time.
+// index.html's splash (splashWindowControls.ts) already fills the screen
+// and pins the window the moment the splash itself shows — well before
+// this ever mounts — and exposes its own pin button's live state via
+// `aria-pressed`. Reading that once at mount (not `useState(true)`) is
+// what lets an operator who un-pinned during the loading screen keep that
+// choice once Shell's own pin icon takes over, instead of the two icons
+// silently disagreeing. Defaults to pinned if the splash element is
+// already gone (e.g. a hot-reload mid-session, not a real launch).
 const usePinToggle = (windowPin: WindowPinSource) => {
-    const [pinned, setPinned] = useState(true);
+    const [pinned, setPinned] = useState(
+        () => document.getElementById("app-splash-pin")?.getAttribute("aria-pressed") !== "false",
+    );
     useEffect(() => {
         void windowPin.setAlwaysOnTop(pinned);
     }, [windowPin, pinned]);
@@ -429,30 +439,35 @@ const useShellTopBar = ({
     return { topRight };
 };
 
-const Shell = ({ onAddLanguagePack, windowPin }: ShellProps) => {
-    const { t, lang, setLang, packs } = useTranslation();
-    const [activeTab, setActiveTab] = useState<(typeof TAB_KEYS)[number]>("weigh");
-    const [helpOpen, setHelpOpen] = useState(false);
-    const reading = useIndicatorReading();
-    const db = useDataPort();
-    const { settings, loading: settingsLoading } = useSettings();
-    const license = useLicense();
-    useRemoveInitialSplash(!settingsLoading);
-    const ticket = useWeighingTicket(settings.OperatorName, settings.Rules.SameTicketNo);
-    const otherPack = packs.find((pack) => pack.Code !== "en") ?? null;
-    const { openTicket, resetTicketSeries } = useShellTicketActions(ticket, db, setActiveTab);
-    const { reportsIntent, onNavigateToReports } = useReportsNavigation(setActiveTab);
-    useDraftLabelSync(t);
-    const { topRight } = useShellTopBar({
-        windowPin,
-        lang,
-        setLang,
-        otherPack,
-        helpOpen,
-        setHelpOpen,
-        onOpenSettings: () => setActiveTab("settings"),
-    });
+// Split out of Shell purely to stay under CodingStandards' 60-line function
+// budget — Shell's hooks alone already fill most of that, so the JSX it
+// used to return directly is now this sibling, taking exactly what it needs
+// rather than re-deriving anything.
+interface ShellBodyProps {
+    settings: ReturnType<typeof useSettings>["settings"];
+    activeTab: (typeof TAB_KEYS)[number];
+    setActiveTab: (tab: (typeof TAB_KEYS)[number]) => void;
+    topRight: ReactNode;
+    reading: ReturnType<typeof useIndicatorReading>;
+    lang: string;
+    t: ReturnType<typeof useTranslation>["t"];
+    license: ReturnType<typeof useLicense>;
+    ticket: UseWeighingTicket;
+    openTicket: ReturnType<typeof useShellTicketActions>["openTicket"];
+    onNavigateToReports: () => void;
+    resetTicketSeries: ReturnType<typeof useShellTicketActions>["resetTicketSeries"];
+    onAddLanguagePack: (pack: LanguagePack) => Promise<void>;
+    reportsIntent: ReturnType<typeof useReportsNavigation>["reportsIntent"];
+    helpOpen: boolean;
+    setHelpOpen: (open: boolean) => void;
+}
 
+const ShellBody = (props: ShellBodyProps) => {
+    const {
+        settings, activeTab, setActiveTab, topRight, reading, lang, t, license,
+        ticket, openTicket, onNavigateToReports, resetTicketSeries,
+        onAddLanguagePack, reportsIntent, helpOpen, setHelpOpen,
+    } = props;
     return (
         <AppShell
             siteLabel={buildSiteLabel(settings.Business)}
@@ -494,6 +509,52 @@ const Shell = ({ onAddLanguagePack, windowPin }: ShellProps) => {
                 labels={{ title: t("help"), close: t("components.contextualHelp.close") }}
             />
         </AppShell>
+    );
+};
+
+const Shell = ({ onAddLanguagePack, windowPin }: ShellProps) => {
+    const { t, lang, setLang, packs } = useTranslation();
+    const [activeTab, setActiveTab] = useState<(typeof TAB_KEYS)[number]>("weigh");
+    const [helpOpen, setHelpOpen] = useState(false);
+    const reading = useIndicatorReading();
+    const db = useDataPort();
+    const { settings, loading: settingsLoading } = useSettings();
+    const license = useLicense();
+    useRemoveInitialSplash(!settingsLoading);
+    const ticket = useWeighingTicket(settings.OperatorName, settings.Rules.SameTicketNo);
+    const otherPack = packs.find((pack) => pack.Code !== "en") ?? null;
+    const { openTicket, resetTicketSeries } = useShellTicketActions(ticket, db, setActiveTab);
+    const { reportsIntent, onNavigateToReports } = useReportsNavigation(setActiveTab);
+    useDraftLabelSync(t);
+    const { topRight } = useShellTopBar({
+        windowPin,
+        lang,
+        setLang,
+        otherPack,
+        helpOpen,
+        setHelpOpen,
+        onOpenSettings: () => setActiveTab("settings"),
+    });
+
+    return (
+        <ShellBody
+            settings={settings}
+            activeTab={activeTab}
+            setActiveTab={setActiveTab}
+            topRight={topRight}
+            reading={reading}
+            lang={lang}
+            t={t}
+            license={license}
+            ticket={ticket}
+            openTicket={openTicket}
+            onNavigateToReports={onNavigateToReports}
+            resetTicketSeries={resetTicketSeries}
+            onAddLanguagePack={onAddLanguagePack}
+            reportsIntent={reportsIntent}
+            helpOpen={helpOpen}
+            setHelpOpen={setHelpOpen}
+        />
     );
 };
 
@@ -905,35 +966,37 @@ export const App = () => {
 
     return (
         <I18nProvider packs={packs}>
-            <CustomCursor />
-            <DataPortProvider db={db}>
-                <SettingsProvider>
-                    <LicenseProvider source={licensing}>
-                        <IndicatorProvider source={indicator}>
-                            <VerificationServerProvider source={verificationServer}>
-                                <TunnelProvider source={tunnel}>
-                                    <SchemaProvider
-                                        ticketSchema={ticketSchema}
-                                        schemas={schemas}
-                                        onSetTicketSchema={setTicketSchema}
-                                        onSetActiveSchemaId={setActiveSchemaId}
-                                    >
-                                        <StabilityGateSync indicator={indicator} />
-                                        <SerialConnectionSync indicator={indicator} />
-                                        <VerificationServerSync source={verificationServer} />
-                                        <RemoteAccessSync source={tunnel} />
-                                        <DailySummarySync />
-                                        <DailySummaryTaskSync scheduler={scheduler} />
-                                        <HeadlessDailySummarySync scheduler={scheduler} />
-                                        <OutboxWorkerSync />
-                                        <Shell onAddLanguagePack={addLanguagePack} windowPin={windowPin} />
-                                    </SchemaProvider>
-                                </TunnelProvider>
-                            </VerificationServerProvider>
-                        </IndicatorProvider>
-                    </LicenseProvider>
-                </SettingsProvider>
-            </DataPortProvider>
+            <ToastProvider>
+                <CustomCursor />
+                <DataPortProvider db={db}>
+                    <SettingsProvider>
+                        <LicenseProvider source={licensing}>
+                            <IndicatorProvider source={indicator}>
+                                <VerificationServerProvider source={verificationServer}>
+                                    <TunnelProvider source={tunnel}>
+                                        <SchemaProvider
+                                            ticketSchema={ticketSchema}
+                                            schemas={schemas}
+                                            onSetTicketSchema={setTicketSchema}
+                                            onSetActiveSchemaId={setActiveSchemaId}
+                                        >
+                                            <StabilityGateSync indicator={indicator} />
+                                            <SerialConnectionSync indicator={indicator} />
+                                            <VerificationServerSync source={verificationServer} />
+                                            <RemoteAccessSync source={tunnel} />
+                                            <DailySummarySync />
+                                            <DailySummaryTaskSync scheduler={scheduler} />
+                                            <HeadlessDailySummarySync scheduler={scheduler} />
+                                            <OutboxWorkerSync />
+                                            <Shell onAddLanguagePack={addLanguagePack} windowPin={windowPin} />
+                                        </SchemaProvider>
+                                    </TunnelProvider>
+                                </VerificationServerProvider>
+                            </IndicatorProvider>
+                        </LicenseProvider>
+                    </SettingsProvider>
+                </DataPortProvider>
+            </ToastProvider>
         </I18nProvider>
     );
 };

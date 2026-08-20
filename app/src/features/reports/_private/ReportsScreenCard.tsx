@@ -55,7 +55,7 @@ export const ReportsScreenCard = ({ s, onSeedDemoTickets, loading }: ReportsScre
                 groupBy={s.groupBy}
                 onGroupByChange={s.setGroupBy}
                 ticketColumns={s.ticketColumns}
-                visibleRows={s.visibleRows}
+                pagedRows={s.pagedRows}
                 summaryColumns={s.summaryColumns}
                 summaryRows={s.summaryRows}
             />

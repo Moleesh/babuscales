@@ -15,6 +15,10 @@ export interface ReportsActionsRowProps {
 // rework, item 1 — CSV/Excel now sit behind one ExportMenu popover instead
 // of two separate buttons; item 3 — this row itself now renders inside
 // ReportsScreen's sticky bottom bar rather than inline in the card body.
+// Task: "make print and export pdf button same as export" — Print no
+// longer stands out as the one `primary` (orange) button in this row; the
+// disabled Export PDF placeholder moved out of its own button into the
+// Export dropdown itself (ExportMenu.tsx), next to the two real formats.
 export const ReportsActionsRow = ({
     onPrint,
     onExportXlsx,
@@ -23,18 +27,7 @@ export const ReportsActionsRow = ({
     const { t } = useTranslation();
     return (
         <div className={styles.actions}>
-            <Button variant="primary" onClick={onPrint}>
-                {t("reports.print")}
-            </Button>
-            {/* `style`, not a new CSS class — Button's own caption has no
-                width limit, so this button's long one-line caption sentence
-                stretched it wide enough to dominate the row next to Print/
-                Export (reported: "not that good", layout/spacing). Capping
-                the width lets the caption wrap to two lines instead, back
-                in scale with its neighbours. */}
-            <Button disabled caption={t("reports.exportPdfCaption")} style={{ maxWidth: 200 }}>
-                {t("reports.exportPdf")}
-            </Button>
+            <Button onClick={onPrint}>{t("reports.print")}</Button>
             <ExportMenu onExportXlsx={onExportXlsx} onExportCsv={onExportCsv} />
         </div>
     );

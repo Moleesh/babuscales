@@ -156,6 +156,13 @@
     color: var(--text);
     box-shadow: inset 0 -2px 0 var(--led);
 }
+/* Tauri's webview treats a mouse click as focus-visible, not just keyboard
+   nav (base.css's :focus-visible), so every tab click drew a loud amber box
+   around the label. The active tab already has its own underline for
+   "which tab is this" — drop the ring here, same fix as .iconbtn. */
+.tab:focus-visible {
+    outline: none;
+}
 .tab-icon {
     font-size: 0.75rem;
     color: var(--faint);

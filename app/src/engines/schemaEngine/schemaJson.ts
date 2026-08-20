@@ -29,6 +29,7 @@ const fieldBaseShape = {
     Validate: z.array(validationRuleSchema).optional(),
     Calculated: z.boolean().optional(),
     Captured: z.enum(["Gross", "Tare"]).optional(),
+    Group: z.enum(["Intermediate", "Final"]).optional(),
 };
 
 const selectOptionSchema = z.object({ Value: z.string().min(1), Label: localizedSchema });
@@ -69,9 +70,15 @@ const masterSchemaSchema = z.object({
     Columns: z.array(masterColumnSchema),
 });
 
+const fieldSegmentSchema = z.object({
+    Segment: z.string().min(1),
+    Label: localizedSchema.optional(),
+    Fields: z.array(fieldSchema).min(1),
+});
+
 export const ticketSchemaSchema = z.object({
     SchemaId: z.string().min(1),
-    Fields: z.array(fieldSchema).min(1),
+    Segments: z.array(fieldSegmentSchema).min(1),
     Masters: z.array(masterSchemaSchema).optional(),
 });
 

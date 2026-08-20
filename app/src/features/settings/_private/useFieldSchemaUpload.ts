@@ -1,8 +1,24 @@
 import { useState } from "react";
 import type { ZodIssue } from "zod";
 
-import { DEFAULT_TICKET_SCHEMA, ticketSchemaSchema } from "@engines/schemaEngine";
+import { useToast } from "@components/Toast";
+import { DEFAULT_TICKET_SCHEMA, getAllFields, ticketSchemaSchema } from "@engines/schemaEngine";
 import type { Schema } from "@engines/schemaEngine";
+import { useTranslation } from "@i18n/useTranslation";
+
+import { repairJson } from "./repairJson";
+
+// Tries the text as typed first, then a best-effort repair (comments and
+// trailing commas dropped, bare keys and single-quoted strings requoted) —
+// covers the same slip-ups the paste box's own Prettify button fixes, so
+// Apply doesn't hard-fail on a schema that only needed that cleanup.
+const parseLeniently = (text: string): unknown => {
+    try {
+        return JSON.parse(text);
+    } catch {
+        return JSON.parse(repairJson(text));
+    }
+};
 
 interface FlashMessage {
     text: string;
@@ -11,9 +27,10 @@ interface FlashMessage {
 
 // Zod's own wording ("Invalid input: expected string, received undefined")
 // is accurate but says nothing about *where* in the pasted/uploaded JSON the
-// problem is — turn the issue's `path` (e.g. ["Fields", 2, "FieldId"]) into
-// a plain "Fields[2].FieldId" pointer, and translate the couple of Zod
-// phrasings we actually hit into wording an operator recognizes.
+// problem is — turn the issue's `path` (e.g. ["Segments", 0, "Fields", 2,
+// "FieldId"]) into a plain "Segments[0].Fields[2].FieldId" pointer, and
+// translate the couple of Zod phrasings we actually hit into wording an
+// operator recognizes.
 const describeSchemaIssue = (issue: ZodIssue | undefined): string => {
     if (!issue) return "invalid shape";
     const where = issue.path.length
@@ -44,11 +61,13 @@ export const useFieldSchemaUpload = (
 ): UseFieldSchemaUpload => {
     const [schemaMessage, setSchemaMessage] = useState<FlashMessage | null>(null);
     const [schemaBusy, setSchemaBusy] = useState(false);
+    const { showToast } = useToast();
+    const { t } = useTranslation();
 
     const applySchemaText = async (text: string): Promise<void> => {
         setSchemaBusy(true);
         try {
-            const parsed = ticketSchemaSchema.safeParse(JSON.parse(text));
+            const parsed = ticketSchemaSchema.safeParse(parseLeniently(text));
             if (!parsed.success) {
                 setSchemaMessage({
                     text: `Not a field schema — ${describeSchemaIssue(parsed.error.issues[0])}`,
@@ -57,7 +76,8 @@ export const useFieldSchemaUpload = (
                 return;
             }
             await setTicketSchema(parsed.data);
-            setSchemaMessage({ text: `Applied · ${parsed.data.Fields.length} fields`, bad: false });
+            setSchemaMessage({ text: `Applied · ${getAllFields(parsed.data).length} fields`, bad: false });
+            showToast(t("components.toast.saved"));
         } catch (err) {
             setSchemaMessage({
                 text: `Not valid JSON — ${err instanceof Error ? err.message : String(err)}`,
@@ -75,6 +95,7 @@ export const useFieldSchemaUpload = (
         try {
             await setTicketSchema(DEFAULT_TICKET_SCHEMA);
             setSchemaMessage({ text: "Reset to the built-in default schema", bad: false });
+            showToast(t("components.toast.saved"));
         } finally {
             setSchemaBusy(false);
         }

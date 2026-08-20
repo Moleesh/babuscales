@@ -23,6 +23,13 @@ tauri = { version = "2", features = ["tray-icon"] }
 # it survives every later sleep/wake without the OS having closed it in
 # between; there's no separate OS "on wake" hook to register against.
 tauri-plugin-autostart = "2"
+# Second-launch guard — reopening the app (Start Menu, desktop shortcut,
+# installer's "launch after install") while an instance is already
+# tray-resident restarts that existing instance instead of a second
+# `babuscales.exe` sharing the same sqlite file/serial ports/LAN server
+# port. Wired first in the builder chain below since it must intercept the
+# process before any other plugin/window setup runs.
+tauri-plugin-single-instance = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 thiserror = "2"

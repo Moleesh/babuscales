@@ -17,6 +17,19 @@
        its buttons onto a second line, because the row itself just grows
        past the viewport instead (Tamil-layout overflow, item 3). */
     min-width: 0;
+    /* Stays put while the pane content below scrolls — the tab bar +
+       Admin chip shouldn't disappear off the top on a long pane. Needs its
+       own opaque background since sticky content still sits above
+       whatever scrolls underneath it. `top` is offset by the shell's own
+       sticky weight-header height (AppShell.tsx sets `--shell-header-h` on
+       `.main` via ResizeObserver) — without this both this row and that
+       header stick to the same `top: 0` slot and this row just disappears
+       behind the header's higher z-index instead of stacking under it. */
+    position: sticky;
+    top: var(--shell-header-h, 0px);
+    z-index: 2;
+    background: var(--void);
+    padding-block: 4px;
 }
 .top-row > * {
     min-width: 0;

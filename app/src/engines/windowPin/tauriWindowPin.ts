@@ -1,3 +1,4 @@
+import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 
 import type { WindowPinSource } from "./types";
@@ -9,4 +10,5 @@ export const createTauriWindowPin = (): WindowPinSource => ({
     // what actually reaches lib.rs's close-to-tray behaviour from a
     // frontend button click.
     close: () => getCurrentWindow().hide(),
+    fillScreen: () => invoke("fill_screen"),
 });

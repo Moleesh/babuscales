@@ -63,6 +63,8 @@ export const EN_STRINGS: Record<string, string> = {
 
     "weigh.capturedAndCalculated": "Captured & calculated",
     "weigh.capturedAndCalculated.empty": "This schema has no Gross/Tare/Net/Charge fields configured — add some in Settings → Field schema.",
+    "weigh.calcSegment.intermediate": "Intermediate results",
+    "weigh.calcSegment.final": "Final results",
     "weigh.draft": "Draft",
     "weigh.capture.bothCaptured": "Both weights captured",
     "weigh.capture.awaitingSave": "Save first",
@@ -269,6 +271,7 @@ export const EN_STRINGS: Record<string, string> = {
     "components.appShell.pinOn": "Keep window on top (on) — click to turn off",
     "components.appShell.pinOff": "Keep window on top (off) — click to turn on",
     "components.contextualHelp.close": "Close help",
+    "components.toast.saved": "Saved",
 
     "settings.dateTimeFormats.title": "Date & time",
     "settings.amountAdmin.title": "Amounts & admin password",
@@ -336,6 +339,11 @@ export const EN_STRINGS: Record<string, string> = {
     "contextMenu.paste": "Paste",
     "reports.searchPlaceholder": "Search vehicle, party, ticket no, challan…",
     "reports.searchAriaLabel": "Search tickets",
+    "reports.page.pagePrefix": "Page",
+    "reports.page.ofPrefix": "of",
+    "reports.page.prev": "Prev",
+    "reports.page.next": "Next",
+    "reports.page.ariaLabel": "Page navigation",
     "reports.summaryEmpty": "No completed tickets in this group yet",
     "reports.ticketsEmpty": "Nothing matches that filter",
     "reports.savedReportsDeletePrefix": "Delete saved report",
@@ -416,6 +424,8 @@ export const EN_STRINGS: Record<string, string> = {
     "settings.fieldSchema.pasteInstead": "…or paste JSON instead",
     "settings.fieldSchema.pasteApply": "Apply",
     "settings.fieldSchema.pasteCancel": "Cancel",
+    "settings.fieldSchema.pastePrettify": "Prettify",
+    "settings.fieldSchema.pastePrettifyFailed": "Can't prettify — not valid JSON",
 
     "settings.indicator.title": "Weight indicator",
     "settings.indicator.customPattern": "Custom pattern (advanced)",

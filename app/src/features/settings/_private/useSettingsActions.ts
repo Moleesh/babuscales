@@ -1,8 +1,11 @@
 import { useCallback } from "react";
 
+import { useToast } from "@components/Toast";
+import { useTranslation } from "@i18n/useTranslation";
+
 import { hashAdminPassword } from "../adminAuth";
-import { DEFAULT_OPERATOR_NAME } from "../settingsSchema";
 import type { SettingsBody, SkinKey, TextScale } from "../settingsSchema";
+import { useOperatorComfortActions } from "./useOperatorComfortActions";
 
 export interface UseSettingsActionsArgs {
     settings: SettingsBody;
@@ -30,12 +33,25 @@ export const useSettingsActions = ({
     unlocked,
     persist,
 }: UseSettingsActionsArgs): UseSettingsActions => {
+    const { showToast } = useToast();
+    const { t } = useTranslation();
+    // Every write below goes through this, so the "Saved" toast (task: a
+    // small self-clearing notification on every save) only has to be
+    // written once rather than repeated after each `persist` call.
+    const persistWithToast = useCallback(
+        async (next: SettingsBody): Promise<void> => {
+            await persist(next);
+            showToast(t("components.toast.saved"));
+        },
+        [persist, showToast, t],
+    );
+
     const save = useCallback(
         async (next: SettingsBody): Promise<void> => {
             if (!unlocked) return;
-            await persist(next);
+            await persistWithToast(next);
         },
-        [unlocked, persist],
+        [unlocked, persistWithToast],
     );
 
     const changeAdminPassword = useCallback(
@@ -47,30 +63,7 @@ export const useSettingsActions = ({
         [unlocked, settings, save],
     );
 
-    const setOperatorName = useCallback(
-        async (name: string): Promise<void> => {
-            const trimmed = name.trim() || DEFAULT_OPERATOR_NAME;
-            if (trimmed === settings.OperatorName) return;
-            await persist({ ...settings, OperatorName: trimmed });
-        },
-        [settings, persist],
-    );
-
-    const setSkin = useCallback(
-        async (skin: SkinKey): Promise<void> => {
-            if (skin === settings.Skin) return;
-            await persist({ ...settings, Skin: skin });
-        },
-        [settings, persist],
-    );
-
-    const setTextScale = useCallback(
-        async (scale: TextScale): Promise<void> => {
-            if (scale === settings.TextScale) return;
-            await persist({ ...settings, TextScale: scale });
-        },
-        [settings, persist],
-    );
+    const { setOperatorName, setSkin, setTextScale } = useOperatorComfortActions(settings, persistWithToast);
 
     const recordDailySummarySent = useCallback(
         async (dateIso: string): Promise<void> => {

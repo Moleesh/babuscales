@@ -2,7 +2,7 @@ import { useState } from "react";
 
 import { formatDateTimeInFmt } from "@constants/numberFormat";
 import { useIndicator, useIndicatorReading } from "@engines/indicator";
-import { useSchema } from "@engines/schemaEngine";
+import { getAllFields, useSchema } from "@engines/schemaEngine";
 import { useSettings } from "@features/settings";
 import { useTranslation } from "@i18n/useTranslation";
 
@@ -10,6 +10,7 @@ import { buildTicketFormulaContext } from "./_private/buildTicketFormulaContext"
 import { PrintPreviewModal } from "./_private/PrintPreviewModal";
 import { hasBlockingCustomFieldError } from "./_private/schemaFieldValidation";
 import { FIXED_FIELD_IDS, isCalculatedField } from "./_private/ticketFieldIds";
+import { useComputedCalcFields } from "./_private/useComputedCalcFields";
 import { useDeliveryChannels } from "./_private/useDeliveryChannels";
 import { useWeighingScreenDerived } from "./_private/useWeighingScreenDerived";
 import { useWeighingScreenTickets } from "./_private/useWeighingScreenTickets";
@@ -33,7 +34,7 @@ const computeHasBlockingCustomFieldError = (
     ticket: UseWeighingTicket,
     ticketSchema: ReturnType<typeof useSchema>["ticketSchema"],
 ): boolean => {
-    const customFieldDefs = ticketSchema.Fields.filter(
+    const customFieldDefs = getAllFields(ticketSchema).filter(
         (field) => !FIXED_FIELD_IDS.includes(field.FieldId) && !isCalculatedField(field),
     );
     const formulaCtx = buildTicketFormulaContext(ticket, ticket.customFields);
@@ -98,6 +99,7 @@ export const WeighingScreen = ({ ticket, licenseGated, onNavigateToCameras }: We
         settings.Formats.TimeFmt,
     );
     const hasBlockingCustomFieldErrorValue = computeHasBlockingCustomFieldError(ticket, ticketSchema);
+    const calcSegments = useComputedCalcFields(ticket, ticketSchema);
 
     return (
         <div className={styles.screen}>
@@ -120,6 +122,7 @@ export const WeighingScreen = ({ ticket, licenseGated, onNavigateToCameras }: We
                     weightUnit: settings.Formats.WeightUnit,
                     dateFmt: settings.Formats.DateFmt,
                     timeFmt: settings.Formats.TimeFmt,
+                    calcSegments,
                 }}
                 right={{
                     ticket,

@@ -76,6 +76,8 @@ export const TA_PACK: LanguagePack = {
 
         "weigh.capturedAndCalculated": "பதிவு செய்து கணக்கிடப்பட்டது",
         "weigh.capturedAndCalculated.empty": "இந்த ஸ்கீமாவில் Gross/Tare/Net/Charge புலங்கள் எதுவும் கட்டமைக்கப்படவில்லை — அமைப்புகள் → புலத் திட்டத்தில் சேர்க்கவும்.",
+        "weigh.calcSegment.intermediate": "இடைநிலை முடிவுகள்",
+        "weigh.calcSegment.final": "இறுதி முடிவுகள்",
         "weigh.draft": "வரைவு",
         "weigh.capture.bothCaptured": "இரு எடைகளும் பதிவு செய்யப்பட்டன",
         "weigh.capture.awaitingSave": "முதலில் சேமி",
@@ -282,6 +284,7 @@ export const TA_PACK: LanguagePack = {
         "components.appShell.pinOn": "சாளரத்தை மேலே வைத்திரு (இயக்கத்தில்) — அணைக்க கிளிக் செய்யவும்",
         "components.appShell.pinOff": "சாளரத்தை மேலே வைத்திரு (அணைக்கப்பட்டது) — இயக்க கிளிக் செய்யவும்",
         "components.contextualHelp.close": "உதவியை மூடு",
+        "components.toast.saved": "சேமிக்கப்பட்டது",
 
         "settings.dateTimeFormats.title": "தேதி & நேரம்",
         "settings.amountAdmin.title": "தொகைகள் & நிர்வாக கடவுச்சொல்",
@@ -350,6 +353,11 @@ export const TA_PACK: LanguagePack = {
         "contextMenu.paste": "ஒட்டு",
         "reports.searchPlaceholder": "வாகனம், தரப்பு, டிக்கெட் எண், சலான்…",
         "reports.searchAriaLabel": "டிக்கெட்டுகளைத் தேடு",
+        "reports.page.pagePrefix": "பக்கம்",
+        "reports.page.ofPrefix": "இல்",
+        "reports.page.prev": "முந்தையது",
+        "reports.page.next": "அடுத்தது",
+        "reports.page.ariaLabel": "பக்க வழிசெலுத்தல்",
         "reports.summaryEmpty": "இந்தக் குழுவில் இன்னும் முடிக்கப்பட்ட டிக்கெட்டுகள் இல்லை",
         "reports.ticketsEmpty": "அந்த வடிகட்டிக்கு பொருந்துவது எதுவும் இல்லை",
         "reports.savedReportsDeletePrefix": "சேமித்த அறிக்கையை நீக்கு",
@@ -431,6 +439,8 @@ export const TA_PACK: LanguagePack = {
         "settings.fieldSchema.pasteInstead": "…அல்லது JSON ஒட்டவும்",
         "settings.fieldSchema.pasteApply": "செயல்படுத்து",
         "settings.fieldSchema.pasteCancel": "ரத்து செய்",
+        "settings.fieldSchema.pastePrettify": "அழகுபடுத்து",
+        "settings.fieldSchema.pastePrettifyFailed": "அழகுபடுத்த முடியவில்லை — சரியான JSON இல்லை",
 
         "settings.indicator.title": "எடை காட்டி",
         "settings.indicator.customPattern": "தனிப்பயன் மாதிரி (மேம்பட்டது)",

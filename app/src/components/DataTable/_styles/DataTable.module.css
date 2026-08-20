@@ -6,7 +6,15 @@
 .wrapper {
     overflow-x: auto;
     overflow-y: auto;
-    max-height: 65vh;
+    /* Overridable per-caller via the `--datatable-max-height` custom
+       property (inherits through from an ancestor, e.g. Reports' own
+       `.tickets-table` — ReportsScreen.module.css) — task: "double scroll
+       bar" complaint once Tickets started paginating at 50 rows/page; a
+       bounded inner scroll region stacked inside `.main`'s own outer scroll
+       reads as two scrollbars once a page rarely fills 65vh anyway. Other
+       callers (Masters, Settings, Dashboard) keep the 65vh default,
+       unaffected. */
+    max-height: var(--datatable-max-height, 65vh);
 }
 
 .table {
@@ -25,6 +33,15 @@
     padding: 7px 9px;
     border-bottom: 1px solid var(--line);
     white-space: nowrap;
+    /* `.wrapper` (below) is DataTable's own bounded, independently-scrolling
+       region (windowed rendering) — this is the scroll the Reports table
+       actually does, not `.main`'s. Without this, the column header row
+       scrolls away with the body rows once there are enough to overflow
+       `.wrapper`'s `max-height`, leaving rows with no labels above them. */
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: var(--panel);
 }
 
 .table td {

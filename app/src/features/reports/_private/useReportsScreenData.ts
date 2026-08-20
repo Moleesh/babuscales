@@ -11,8 +11,10 @@ import {
     filterRowsByDateRange,
     filterRowsBySeries,
     filterTicketRows,
+    paginateTicketRows,
     sortTicketRows,
     summarizeTicketRows,
+    ticketPageCount,
 } from "../reportRows";
 import type {
     GroupKey,
@@ -40,6 +42,8 @@ export interface UseReportsScreenDataArgs {
     groupBy: GroupKey;
     sortKey: TicketSortKey;
     sortDir: SortDir;
+    /** Tickets view's current page (0-based) — see reportRows.ts's `paginateTicketRows`. */
+    pageIndex: number;
     visibleColumnKeys: TicketColumnKey[] | null;
     onOpenTicket: (doc: DocRow) => void;
     amountDp: 0 | 2;
@@ -54,6 +58,9 @@ export interface UseReportsScreenDataArgs {
 export interface UseReportsScreenData {
     waitingCount: number;
     visibleRows: TicketRow[];
+    /** The one page of `visibleRows` DataTable actually renders — see reportRows.ts's `paginateTicketRows`. */
+    pagedRows: TicketRow[];
+    pageCount: number;
     summaryRows: SummaryRow[];
     reportSlipData: ReturnType<typeof buildReportsScreenSlipData>;
     ticketColumns: DataTableColumn<TicketRow>[];
@@ -76,6 +83,7 @@ export const useReportsScreenData = ({
     groupBy,
     sortKey,
     sortDir,
+    pageIndex,
     visibleColumnKeys,
     onOpenTicket,
     amountDp,
@@ -103,6 +111,11 @@ export const useReportsScreenData = ({
     const visibleRows = useMemo(
         () => sortTicketRows(filterTicketRows(dateFilteredRows, query, filter), sortKey, sortDir),
         [dateFilteredRows, query, filter, sortKey, sortDir],
+    );
+    const pageCount = useMemo(() => ticketPageCount(visibleRows.length), [visibleRows]);
+    const pagedRows = useMemo(
+        () => paginateTicketRows(visibleRows, pageIndex),
+        [visibleRows, pageIndex],
     );
     const summaryRows = useMemo(
         () => summarizeTicketRows(dateFilteredRows, groupBy),
@@ -146,6 +159,8 @@ export const useReportsScreenData = ({
     return {
         waitingCount,
         visibleRows,
+        pagedRows,
+        pageCount,
         summaryRows,
         reportSlipData,
         ticketColumns,

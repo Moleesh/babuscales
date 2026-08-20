@@ -45,6 +45,21 @@ use state::AppState;
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() -> tauri::Result<()> {
     tauri::Builder::default()
+        // Second-launch guard — same "always full restart" reasoning as the
+        // tray icon's left-click/"Show" handlers above: reopening the app
+        // while an instance is already running (tray-resident or on
+        // screen) must not spawn a second process fighting the first over
+        // the sqlite file, serial ports and the LAN verification server's
+        // port. This callback runs in the *already-running* instance the
+        // moment a second launch is detected, so `app.restart()` here is
+        // what actually replaces the (possibly wedged) old process — the
+        // second launch's own process exits on its own once this plugin's
+        // OS-level single-instance lock hands off to it. Registered first
+        // so it can short-circuit before autostart/tray/window setup below
+        // ever run a second time.
+        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+            app.restart();
+        }))
         // Launch-at-login (PLAN §21 window-behaviour item) — the app then
         // stays running (see the close-to-tray handler below), so it's live
         // again after every later sleep/wake without needing a separate "on
@@ -86,82 +101,21 @@ pub fn run() -> tauri::Result<()> {
             use tauri_plugin_autostart::ManagerExt;
             let _ = app.autolaunch().enable();
 
-            // Fills the screen without asking Windows for either of its own
-            // "fill the screen" window states — both were tried and each had
-            // a real cost. `fullscreen: true` (tauri.conf.json) put the
-            // window into genuine OS exclusive/borderless-fullscreen mode,
-            // which on Windows silently blocks programmatic `.minimize()`
-            // (and made `.hide()` unreliable) regardless of `minimizable`/
-            // capability settings. `maximized: true` avoided that, but a
-            // borderless (`decorations: false`) + maximized window has a
-            // well-known Windows/DWM quirk where the invisible resize border
-            // pokes a sliver of the desktop out past the bottom edge — the
-            // "white bottom bar" bug. Matching the primary monitor's size
-            // and pinning position to (0,0) directly gets the same visual
-            // result as either flag while keeping the window in Windows'
-            // ordinary, unmaximized/unfullscreened state, where minimize
-            // and hide behave normally and there's no maximize-border
-            // artifact to draw.
-            if let Some(window) = app.get_webview_window("main") {
-                if let Ok(Some(monitor)) = window.primary_monitor() {
-                    let target_pos = *monitor.position();
-                    let target_size = *monitor.size();
-                    let _ = window.set_size(target_size);
-                    let _ = window.set_position(target_pos);
-
-                    // Windows/DWM reserves an invisible resize-border/shadow
-                    // margin around every top-level window — even a
-                    // `resizable: false`, `decorations: false` one — which
-                    // is the exact same class of artifact the comment above
-                    // already fought once (the "white bottom bar" bug when
-                    // this used `maximized: true`). Pinning to the monitor's
-                    // exact bounds instead of asking Windows to maximize
-                    // dodges that specific bug, but at (0,0) the border has
-                    // nowhere to poke *outward* into, so it eats *inward*
-                    // from the visible client area instead — the "white
-                    // space on left and top" reported here. Rather than
-                    // hardcoding a border width (wrong at every DPI scale
-                    // but one), read back what the OS actually placed the
-                    // window at and grow/shift by the measured discrepancy
-                    // — this is self-correcting across monitors/scale
-                    // factors instead of a guessed constant.
-                    if let (Ok(_actual_pos), Ok(actual_outer), Ok(actual_inner)) =
-                        (window.outer_position(), window.outer_size(), window.inner_size())
-                    {
-                        // `outer_size` (window rect incl. the invisible
-                        // border) already equals what we asked for — the
-                        // border isn't extra pixels tacked onto the outside,
-                        // it's carved out of the *inside*, so `inner_size`
-                        // (the actual visible/content rect) comes back
-                        // smaller than `outer_size` on every edge. The
-                        // previous version of this fix only grew the window
-                        // *size* by that shortfall, which pads the extra
-                        // pixels onto the bottom-right — the top-left inward
-                        // gap this was meant to fix was never touched.
-                        // Correct fix: the border eats roughly evenly from
-                        // all four sides, so shift the window's position
-                        // up-left by half the shortfall (pushing the
-                        // invisible left/top border off the visible monitor
-                        // area) *and* grow the size by the full shortfall
-                        // (covering both the half we just shifted past and
-                        // the matching half still owed on the right/bottom).
-                        let border_x = actual_outer.width.saturating_sub(actual_inner.width);
-                        let border_y = actual_outer.height.saturating_sub(actual_inner.height);
-                        if border_x != 0 || border_y != 0 {
-                            let half_x = (border_x / 2) as i32;
-                            let half_y = (border_y / 2) as i32;
-                            let _ = window.set_position(tauri::PhysicalPosition::new(
-                                target_pos.x - half_x,
-                                target_pos.y - half_y,
-                            ));
-                            let _ = window.set_size(tauri::PhysicalSize::new(
-                                target_size.width + border_x,
-                                target_size.height + border_y,
-                            ));
-                        }
-                    }
-                }
-            }
+            // The window opens at `tauri.conf.json`'s configured 1280×800
+            // size, unpinned — no fill-to-monitor here any more. That used
+            // to run right here in `.setup()`, before the webview had drawn
+            // a single frame, which made the window already full-screen and
+            // pinned before the operator ever saw it open. Filling the
+            // screen without asking Windows for either of its own "fill the
+            // screen" window states (both were tried and had real costs —
+            // `fullscreen: true` broke `.minimize()`/`.hide()` on Windows;
+            // `maximized: true` on a borderless window drew a stray sliver
+            // of desktop past the bottom edge, the "white bottom bar" bug)
+            // is still the right approach — it now lives in
+            // `commands::window::fill_screen`, a command the frontend calls
+            // once the UI (pin icon included) is actually on screen, so
+            // there's a visible small-window moment first and the fill+pin
+            // transition happens where the operator can see it happen.
 
             // The only tray icon this app creates — tauri.conf.json used to
             // also declare `app.trayIcon`, which auto-builds a second,
@@ -186,22 +140,28 @@ pub fn run() -> tauri::Result<()> {
                 // handling, unaffected by this flag.
                 .show_menu_on_left_click(false)
                 .on_tray_icon_event(|tray, event| {
+                    // Left-click restores from tray the same way the menu's
+                    // own "Restart" does — a full `app.restart()`, not
+                    // unminimize/show/focus on the existing (possibly
+                    // crashed-frontend, possibly dev-server-down) window.
+                    // Reopening from tray is deliberately never a "just
+                    // reveal what's already there" action any more: a
+                    // window hidden to the tray (the X button, below) can
+                    // sit for hours with a frontend that's silently wedged
+                    // (a dev-server crash, a stuck async call), and simply
+                    // showing it again would surface that same broken state
+                    // instead of recovering it. The daily-summary
+                    // scheduler/LAN verification server restart along with
+                    // everything else — `app.manage(AppState { .. })`
+                    // below runs again on the fresh process, so nothing is
+                    // left orphaned.
                     if let TrayIconEvent::Click {
                         button: tauri::tray::MouseButton::Left,
                         button_state: tauri::tray::MouseButtonState::Up,
                         ..
                     } = event
                     {
-                        if let Some(window) = tray.app_handle().get_webview_window("main") {
-                            // `hide()` doesn't clear a prior minimize (the
-                            // window-event handler above hides while still
-                            // minimized) — without this, `show()` alone can
-                            // bring back a window the OS still considers
-                            // minimized, invisible again on some platforms.
-                            let _ = window.unminimize();
-                            let _ = window.show();
-                            let _ = window.set_focus();
-                        }
+                        tray.app_handle().restart();
                     }
                 })
                 .on_menu_event(|app, event| match event.id.as_ref() {
@@ -213,13 +173,11 @@ pub fn run() -> tauri::Result<()> {
                     // Explorer refreshes; same artifact as a manual
                     // taskkill-based restart, not a new bug this introduces.
                     "restart" => app.restart(),
-                    "show" => {
-                        if let Some(window) = app.get_webview_window("main") {
-                            let _ = window.unminimize();
-                            let _ = window.show();
-                            let _ = window.set_focus();
-                        }
-                    }
+                    // Same reasoning as the tray icon's own left-click,
+                    // above — "Show" is another way to reopen from tray, so
+                    // it gets the same full restart instead of revealing a
+                    // possibly-wedged existing window.
+                    "show" => app.restart(),
                     _ => {}
                 })
                 .build(app)?;
@@ -252,6 +210,7 @@ pub fn run() -> tauri::Result<()> {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
+            commands::window::fill_screen,
             commands::docs::get_doc,
             commands::docs::list_docs,
             commands::docs::save_doc,

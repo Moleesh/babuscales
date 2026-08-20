@@ -19,4 +19,12 @@ export interface WindowPinSource {
         relying on an event that never fires here. A no-op outside the
         desktop build. */
     close: () => Promise<void>;
+    /** Grows the window to fill the primary monitor — called once from
+        App.tsx after the UI has actually rendered (the pin icon included),
+        so the window opens at its configured 1280×800 size first and only
+        fills the screen where the operator can see it happen, rather than
+        already being full-screen before anything's drawn. Rust's own
+        `commands::window::fill_screen` — a no-op outside the desktop
+        build. */
+    fillScreen: () => Promise<void>;
 }

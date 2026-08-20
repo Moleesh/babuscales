@@ -59,6 +59,7 @@ const useReportsScreenFilters = () => {
     const [sortKey, setSortKey] = useState<TicketSortKey>("at");
     const [sortDir, setSortDir] = useState<SortDir>("desc");
     const [visibleColumnKeys, setVisibleColumnKeys] = useState<TicketColumnKey[] | null>(null);
+    const [pageIndex, setPageIndex] = useState(0);
     return {
         view,
         setView,
@@ -84,7 +85,28 @@ const useReportsScreenFilters = () => {
         setSortDir,
         visibleColumnKeys,
         setVisibleColumnKeys,
+        pageIndex,
+        setPageIndex,
     };
+};
+
+// Split out of useReportsScreenController (over the line/complexity budget —
+// docs/CodingStandards.md) — resets Tickets pagination back to page 1
+// whenever anything that reshuffles or reshortens `visibleRows` changes.
+// Without this, narrowing a search from page 3 of 300 rows down to 4 rows
+// would leave the table stuck on an empty page 3 instead of jumping back.
+const useResetPageOnFilterChange = (
+    setPageIndex: (pageIndex: number) => void,
+    query: string,
+    filter: TicketRowFilter,
+    dateFrom: string,
+    dateTo: string,
+    sortKey: TicketSortKey,
+    sortDir: SortDir,
+): void => {
+    useEffect(() => {
+        setPageIndex(0);
+    }, [setPageIndex, query, filter, dateFrom, dateTo, sortKey, sortDir]);
 };
 
 // Split out of useReportsScreenController (over the line/complexity budget —
@@ -139,6 +161,10 @@ export const useReportsScreenController = ({
         setDateTo,
         visibleColumnKeys,
         setVisibleColumnKeys,
+        query,
+        sortKey,
+        sortDir,
+        setPageIndex,
     } = filters;
 
     const savedReportActions = useSavedReportActions({
@@ -176,6 +202,7 @@ export const useReportsScreenController = ({
     };
 
     useReportsIntentEffect(reportsIntent, setView, setFilter);
+    useResetPageOnFilterChange(setPageIndex, query, filter, dateFrom, dateTo, sortKey, sortDir);
 
     return { ...filters, savedReportActions, showWaiting, dateFmt, ...screenData };
 };

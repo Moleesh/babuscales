@@ -89,6 +89,12 @@
     opacity: 0.35;
     cursor: not-allowed;
 }
+/* Tauri's webview treats a mouse click as focus-visible (base.css's
+   :focus-visible), so clicking this link drew an amber box around it —
+   same fix as AppShell's .tab:focus-visible. */
+.paste-toggle:focus-visible {
+    outline: none;
+}
 .paste-box {
     display: grid;
     gap: 6px;
@@ -99,8 +105,9 @@
     border-radius: 9px;
     background: var(--panel-2);
     color: var(--text);
-    font: inherit;
+    font-family: var(--mono);
     font-size: 0.75rem;
+    min-height: 260px;
     resize: vertical;
 }
 .paste-input:focus {
@@ -130,6 +137,9 @@
     font-size: 0.6875rem;
     cursor: pointer;
     white-space: nowrap;
+    /* "Hide" and "Show" are different widths — without this the column
+       (and the table around it) resizes every time a row is toggled. */
+    width: 52px;
 }
 .visibility-toggle:hover:not(:disabled) {
     border-color: var(--led-dim);

@@ -4,6 +4,7 @@ import { ReportBuilderModal } from "./ReportBuilderModal";
 import { exportReportCsv, exportReportXlsx } from "./reportExport";
 import { ReportPrintModal } from "./ReportPrintModal";
 import { ReportsActionsRow } from "./ReportsActionsRow";
+import { TicketsPaginationRow } from "./TicketsView";
 import type { UseSavedReportActions } from "./useSavedReportActions";
 import styles from "../_styles/ReportsScreen.module.css";
 import type { GroupKey, ReportView, TicketColumnKey, TicketRowFilter } from "../reportRows";
@@ -16,6 +17,10 @@ export interface ReportsScreenOverlaysProps {
     onBuilderOpenChange: (open: boolean) => void;
     view: ReportView;
     onViewChange: (view: ReportView) => void;
+    /** Tickets pagination — only rendered in the bottom bar when `view === "tickets"`. See reportRows.ts's `paginateTicketRows`. */
+    pageIndex: number;
+    pageCount: number;
+    onPageIndexChange: (pageIndex: number) => void;
     groupBy: GroupKey;
     onGroupByChange: (groupBy: GroupKey) => void;
     filter: TicketRowFilter;
@@ -52,16 +57,31 @@ export const ReportsScreenOverlays = ({
     visibleColumnKeys,
     onVisibleColumnKeysChange,
     savedReportActions,
+    pageIndex,
+    pageCount,
+    onPageIndexChange,
 }: ReportsScreenOverlaysProps) => (
     <>
         {/* `.main`'s scroll container (AppShell.module.css) is what this
-            bar's `position: sticky` sticks against. */}
+            bar's `position: sticky` sticks against. Tickets pagination sits
+            on the right, opposite Print/Export — task: "put the page bar
+            to the footer" — so it's always reachable without scrolling back
+            up past a short last page, and never disappears once the inner
+            table's own scroll region was removed (ReportsScreen.module.css's
+            `.tickets-table`). */}
         <div className={styles.bottomBar}>
             <ReportsActionsRow
                 onPrint={() => onPrintOpenChange(true)}
                 onExportXlsx={() => exportReportXlsx(reportSlipData)}
                 onExportCsv={() => exportReportCsv(reportSlipData)}
             />
+            {view === "tickets" && (
+                <TicketsPaginationRow
+                    pageIndex={pageIndex}
+                    pageCount={pageCount}
+                    onPageIndexChange={onPageIndexChange}
+                />
+            )}
         </div>
         <ReportPrintModal
             open={printOpen}

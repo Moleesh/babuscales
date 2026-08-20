@@ -64,6 +64,15 @@ export const ExportMenu = ({ onExportXlsx, onExportCsv }: ExportMenuProps) => {
                     >
                         {t("reports.exportCsv")}
                     </button>
+                    {/* Not a real export path — the OS print dialog's own
+                        "Save as PDF" already covers it (ReportsActionsRow's
+                        own prior comment, same reasoning, just relocated
+                        here out of its own standalone button). Disabled,
+                        informational only. */}
+                    <button type="button" role="menuitem" className={styles.item} disabled>
+                        {t("reports.exportPdf")}
+                        <small className={styles.itemCaption}>{t("reports.exportPdfCaption")}</small>
+                    </button>
                 </div>
             )}
         </div>

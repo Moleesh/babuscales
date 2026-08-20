@@ -1,3 +1,4 @@
+import { useToast } from "@components/Toast";
 import { useSchema } from "@engines/schemaEngine";
 import type { Schema } from "@engines/schemaEngine";
 import type { LanguagePack } from "@i18n/types";
@@ -38,21 +39,25 @@ export interface FieldsLanguagePaneProps {
 // parse/validate/save path, without also wiring `dragenter`/`dragover`/
 // `drop` listeners nothing else in this codebase uses yet.
 export const FieldsLanguagePane = ({ onAddLanguagePack }: FieldsLanguagePaneProps) => {
-    const { packs, lang } = useTranslation();
+    const { packs, lang, t } = useTranslation();
     const { ticketSchema, schemas, setTicketSchema, setActiveSchemaId } = useSchema();
     const { unlocked } = useSettings();
     const { schemaMessage, schemaBusy, handleSchemaFile, handleSchemaText, resetSchema } =
         useFieldSchemaUpload(setTicketSchema);
     const { message, busy, handleFile } = useLanguagePackUpload(onAddLanguagePack);
+    const { showToast } = useToast();
 
     const toggleFieldVisible = (fieldId: string): void => {
         const updated: Schema = {
             ...ticketSchema,
-            Fields: ticketSchema.Fields.map((field) =>
-                field.FieldId === fieldId ? { ...field, Visible: field.Visible === false } : field,
-            ),
+            Segments: ticketSchema.Segments.map((seg) => ({
+                ...seg,
+                Fields: seg.Fields.map((field) =>
+                    field.FieldId === fieldId ? { ...field, Visible: field.Visible === false } : field,
+                ),
+            })),
         };
-        void setTicketSchema(updated);
+        void setTicketSchema(updated).then(() => showToast(t("components.toast.saved")));
     };
 
     return (

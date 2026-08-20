@@ -87,6 +87,13 @@ export const formatDateTimeInFmt = (
 // readings showed decimals mid-flight.
 export const formatWeightKg = (kg: number): string => Math.round(kg).toLocaleString(INDIAN_LOCALE);
 
+// Same whole-number/grouped-digits rounding as `formatWeightKg`, just
+// without the implied "this is a weight" — a schema's own `Formula` fields
+// (CalcCard's calc-chain rows, e.g. a Godown schema's NoOfBags/Adjust/
+// ExcessShortage) carry no unit of their own to suffix, unlike
+// `formatWeightIn`/`formatMoney`.
+export const formatPlainNumber = (value: number): string => Math.round(value).toLocaleString(INDIAN_LOCALE);
+
 // "Display unit" (Settings' Appearance pane) — most Indian sites weigh in
 // kg, not tonnes, so a chart/KPI reading "3.4 t" reads as an unfamiliar
 // unit to an Indian operator. This is the general converter that

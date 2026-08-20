@@ -71,6 +71,33 @@
 .calc-pending .calc-value {
     color: var(--faint);
 }
+
+/* CalcCard's own calc-chain rows (CalcSegmentRows) — a schema's non-fixed
+   `Calculated` `Formula` fields (e.g. a Godown schema's NetAfterBags/.../
+   GodownGross/GodownNet), grouped "Intermediate" then "Final" under the
+   fixed 4-box grid above. Reuses `.calc-box`/`.calc-value` for each item so
+   these rows read as the same kind of number, just their own grouped row. */
+.calc-segment {
+    display: grid;
+    gap: 6px;
+    margin-top: 9px;
+}
+.calc-segment-heading {
+    font-size: 0.6875rem;
+    color: var(--dim);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+.calc-segment-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 9px;
+}
+@media (max-width: 560px) {
+    .calc-segment-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
 /* Charge's own box (CalcCard.tsx) — an editable input standing in for what
    used to be a read-only `.calc-value` (task: "no need for charge
    calculation also" — plain editable field, no auto-calc). Same type scale

@@ -1,0 +1,53 @@
+/* Fixed to the viewport, not the scroll container — a save can happen from
+   anywhere (a card near the bottom of a long Settings pane), so this always
+   shows in the same place regardless of scroll position. Bottom-center: out
+   of the way of the top bar's controls and AppShell's own tab row. */
+.stack {
+    position: fixed;
+    left: 50%;
+    bottom: 22px;
+    transform: translateX(-50%);
+    z-index: 80;
+    display: flex;
+    flex-direction: column-reverse;
+    align-items: center;
+    gap: 8px;
+    pointer-events: none;
+}
+
+.toast {
+    padding: 7px 14px;
+    border-radius: 999px;
+    border: 1px solid var(--led-dim);
+    background: var(--panel);
+    color: var(--text);
+    font-size: 0.75rem;
+    white-space: nowrap;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.28);
+    /* Duration must match ToastProvider's own TOAST_MS (2200ms) — this is
+       purely the fade/slide, not what decides how long the toast stays;
+       ToastProvider's timer removes it from the DOM right as this finishes. */
+    animation: toast-life 2200ms ease both;
+}
+
+@keyframes toast-life {
+    0% {
+        opacity: 0;
+        transform: translateY(6px);
+    }
+    10%,
+    80% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    100% {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .toast {
+        animation: none;
+    }
+}

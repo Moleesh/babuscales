@@ -4,12 +4,13 @@ import { Card } from "@components/Card";
 import { DataTable } from "@components/DataTable";
 import type { DataTableColumn } from "@components/DataTable";
 import { Select } from "@components/Select";
-import { FIELD_LABEL_KEYS } from "@engines/schemaEngine";
+import { FIELD_LABEL_KEYS, getAllFields } from "@engines/schemaEngine";
 import type { Field, Schema } from "@engines/schemaEngine";
 import { resolveLocalized } from "@i18n/types";
 import { useTranslation } from "@i18n/useTranslation";
 
 import styles from "./_styles/FieldsLanguagePane.module.css";
+import { repairJson } from "./repairJson";
 
 // The 9 built-in fields carry no `Label` at all (defaultTicketSchema.ts) —
 // same FieldId → i18n-key fallback the Weighing screen itself uses, so
@@ -131,6 +132,132 @@ const SchemaDropZone = ({
     </label>
 );
 
+interface PasteBoxActionsProps {
+    unlocked: boolean;
+    schemaBusy: boolean;
+    text: string;
+    t: (key: string) => string;
+    onApply: () => void;
+    onPrettify: () => void;
+    onCancel: () => void;
+}
+
+// Split out of SchemaPasteBox (over the line budget — docs/CodingStandards.md)
+// — Apply/Prettify/Cancel, all disabled the same way whenever there's
+// nothing usable in the box yet.
+const PasteBoxActions = ({ unlocked, schemaBusy, text, t, onApply, onPrettify, onCancel }: PasteBoxActionsProps) => (
+    <div className={styles.pasteActions}>
+        <button
+            type="button"
+            className={styles.resetButton}
+            disabled={schemaBusy || !unlocked || !text.trim()}
+            onClick={onApply}
+        >
+            {t("settings.fieldSchema.pasteApply")}
+        </button>
+        <button
+            type="button"
+            className={styles.pasteToggle}
+            disabled={schemaBusy || !unlocked || !text.trim()}
+            onClick={onPrettify}
+        >
+            {t("settings.fieldSchema.pastePrettify")}
+        </button>
+        <button type="button" className={styles.pasteToggle} onClick={onCancel}>
+            {t("settings.fieldSchema.pasteCancel")}
+        </button>
+    </div>
+);
+
+interface PasteBoxFieldsProps {
+    text: string;
+    schemaBusy: boolean;
+    unlocked: boolean;
+    prettifyFailed: boolean;
+    t: (key: string) => string;
+    onChange: (text: string) => void;
+}
+
+// The textarea + its own inline error — split out of SchemaPasteBox purely
+// to stay under the per-function line budget (docs/CodingStandards.md).
+const PasteBoxFields = ({ text, schemaBusy, unlocked, prettifyFailed, t, onChange }: PasteBoxFieldsProps) => (
+    <>
+        <textarea
+            className={styles.pasteInput}
+            rows={16}
+            placeholder={'{ "SchemaId": …, "Segments": […] }'}
+            value={text}
+            disabled={schemaBusy || !unlocked}
+            onChange={(event) => onChange(event.target.value)}
+            spellCheck={false}
+        />
+        {prettifyFailed && <p className={styles.bad}>{t("settings.fieldSchema.pastePrettifyFailed")}</p>}
+    </>
+);
+
+// Reformats whatever's in the box with 2-space indent — the same shape the
+// schemas this app hands out (docs/examples/*.json) already use — so a
+// minified or inconsistently-indented paste is easy to read/edit before
+// hitting Apply. Tries the text as-is first, then falls back to a repaired
+// version (trailing commas dropped, bare keys quoted) — leaves the text
+// untouched (and flags the error) only if neither parses.
+const prettifyJson = (text: string): string => {
+    try {
+        return JSON.stringify(JSON.parse(text), null, 2);
+    } catch {
+        return JSON.stringify(JSON.parse(repairJson(text)), null, 2);
+    }
+};
+
+interface PasteBoxOpenProps {
+    unlocked: boolean;
+    schemaBusy: boolean;
+    onSchemaText: (text: string) => void;
+    t: (key: string) => string;
+    onClose: () => void;
+}
+
+// The expanded textarea + fields + actions — split out of SchemaPasteBox
+// purely to stay under the per-function line budget (docs/CodingStandards.md).
+const PasteBoxOpen = ({ unlocked, schemaBusy, onSchemaText, t, onClose }: PasteBoxOpenProps) => {
+    const [text, setText] = useState("");
+    const [prettifyFailed, setPrettifyFailed] = useState(false);
+    return (
+        <div className={styles.pasteBox}>
+            <PasteBoxFields
+                text={text}
+                schemaBusy={schemaBusy}
+                unlocked={unlocked}
+                prettifyFailed={prettifyFailed}
+                t={t}
+                onChange={(value) => {
+                    setText(value);
+                    setPrettifyFailed(false);
+                }}
+            />
+            <PasteBoxActions
+                unlocked={unlocked}
+                schemaBusy={schemaBusy}
+                text={text}
+                t={t}
+                onApply={() => {
+                    onSchemaText(text);
+                    onClose();
+                }}
+                onPrettify={() => {
+                    try {
+                        setText(prettifyJson(text));
+                        setPrettifyFailed(false);
+                    } catch {
+                        setPrettifyFailed(true);
+                    }
+                }}
+                onCancel={onClose}
+            />
+        </div>
+    );
+};
+
 // A collapsed-by-default alternative to the drop-zone above — for a schema
 // copied from a chat, an editor, or another site's Settings rather than
 // saved as a `.json` file. Starts as a single link so it doesn't compete
@@ -148,7 +275,6 @@ const SchemaPasteBox = ({
     t: (key: string) => string;
 }) => {
     const [open, setOpen] = useState(false);
-    const [text, setText] = useState("");
     if (!open) {
         return (
             <button
@@ -162,40 +288,13 @@ const SchemaPasteBox = ({
         );
     }
     return (
-        <div className={styles.pasteBox}>
-            <textarea
-                className={styles.pasteInput}
-                rows={3}
-                placeholder={'{ "SchemaId": …, "Fields": […] }'}
-                value={text}
-                disabled={schemaBusy || !unlocked}
-                onChange={(event) => setText(event.target.value)}
-            />
-            <div className={styles.pasteActions}>
-                <button
-                    type="button"
-                    className={styles.resetButton}
-                    disabled={schemaBusy || !unlocked || !text.trim()}
-                    onClick={() => {
-                        onSchemaText(text);
-                        setText("");
-                        setOpen(false);
-                    }}
-                >
-                    {t("settings.fieldSchema.pasteApply")}
-                </button>
-                <button
-                    type="button"
-                    className={styles.pasteToggle}
-                    onClick={() => {
-                        setOpen(false);
-                        setText("");
-                    }}
-                >
-                    {t("settings.fieldSchema.pasteCancel")}
-                </button>
-            </div>
-        </div>
+        <PasteBoxOpen
+            unlocked={unlocked}
+            schemaBusy={schemaBusy}
+            onSchemaText={onSchemaText}
+            t={t}
+            onClose={() => setOpen(false)}
+        />
     );
 };
 
@@ -269,7 +368,7 @@ const FieldSchemaCardBody = ({
             )}
             <DataTable
                 columns={fieldColumns({ lang, t, unlocked, schemaBusy, onToggleVisible: onToggleFieldVisible })}
-                rows={ticketSchema.Fields}
+                rows={getAllFields(ticketSchema)}
                 getRowId={(field) => field.FieldId}
                 emptyMessage={t("settings.fieldSchema.empty")}
             />
@@ -286,7 +385,7 @@ export const FieldSchemaCard = (props: FieldSchemaCardProps) => {
             title={<span className="lbl">{t("settings.fieldSchema.title")}</span>}
             headerRight={
                 <span className="chip num">
-                    {props.ticketSchema.Fields.length} {t("settings.fieldSchema.fieldsSuffix")}
+                    {getAllFields(props.ticketSchema).length} {t("settings.fieldSchema.fieldsSuffix")}
                 </span>
             }
         >

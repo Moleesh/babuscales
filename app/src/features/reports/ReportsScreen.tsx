@@ -89,6 +89,9 @@ export const ReportsScreen = ({ onOpenTicket, reportsIntent = null }: ReportsScr
                 visibleColumnKeys={s.visibleColumnKeys}
                 onVisibleColumnKeysChange={s.setVisibleColumnKeys}
                 savedReportActions={s.savedReportActions}
+                pageIndex={s.pageIndex}
+                pageCount={s.pageCount}
+                onPageIndexChange={s.setPageIndex}
             />
         </div>
     );

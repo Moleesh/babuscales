@@ -11,67 +11,77 @@ import type { Schema } from "./types";
 // an admin adds, which has no existing app string to fall back to.
 export const DEFAULT_TICKET_SCHEMA: Schema = {
     SchemaId: "default-ticket",
-    Fields: [
+    Segments: [
         {
-            FieldId: "VehicleNo",
-            Kind: "Search",
-            Master: "Vehicle",
-        },
-        // The read-only stamp paired right after Vehicle No — no
-        // Kind-driven control of its own (TicketFieldsCard.tsx renders it
-        // as a fixed, always-read-only input regardless of `Kind`), same
-        // "the values, not the button" pattern Gross/Tare/Net/Charge use.
-        // Presence here is what decides whether the box shows at all;
-        // `Visible: false` still just hides it, same as any other field.
-        {
-            FieldId: "TicketDate",
-            Kind: "Date",
-            ReadOnly: true,
-        },
-        {
-            FieldId: "Party",
-            Kind: "Search",
-            Master: "Party",
-        },
-        {
-            FieldId: "Material",
-            Kind: "Search",
-            Master: "Material",
-        },
-        {
-            FieldId: "Transporter",
-            Kind: "Search",
-            Master: "Transporter",
-        },
-        // Gross/Tare/Net/Charge carry no real Kind-driven control — those 4
-        // boxes are CalcCard.tsx's own hardware-shaped capture/edit UI
-        // — the values, not the button. `Calculated: true` is what
-        // routes a field here instead of the generic Ticket field loop
-        // (TicketFieldsCard skips every Calculated field); `Captured`
-        // marks the two that mirror a physical capture rather than a
-        // derived value.
-        {
-            FieldId: "Gross",
-            Kind: "Number",
-            Captured: "Gross",
-            Calculated: true,
+            Segment: "CurrentTicket",
+            Fields: [
+                {
+                    FieldId: "VehicleNo",
+                    Kind: "Search",
+                    Master: "Vehicle",
+                },
+                // The read-only stamp paired right after Vehicle No — no
+                // Kind-driven control of its own (TicketFieldsCard.tsx renders it
+                // as a fixed, always-read-only input regardless of `Kind`), same
+                // "the values, not the button" pattern Gross/Tare/Net/Charge use.
+                // Presence here is what decides whether the box shows at all;
+                // `Visible: false` still just hides it, same as any other field.
+                {
+                    FieldId: "TicketDate",
+                    Kind: "Date",
+                    ReadOnly: true,
+                },
+                {
+                    FieldId: "Party",
+                    Kind: "Search",
+                    Master: "Party",
+                },
+                {
+                    FieldId: "Material",
+                    Kind: "Search",
+                    Master: "Material",
+                },
+                {
+                    FieldId: "Transporter",
+                    Kind: "Search",
+                    Master: "Transporter",
+                },
+            ],
         },
         {
-            FieldId: "Tare",
-            Kind: "Number",
-            Captured: "Tare",
-            Calculated: true,
-        },
-        {
-            FieldId: "Net",
-            Kind: "Formula",
-            Formula: "Abs(Gross - Tare)",
-            Calculated: true,
-        },
-        {
-            FieldId: "Charge",
-            Kind: "Money",
-            Calculated: true,
+            // Gross/Tare/Net/Charge carry no real Kind-driven control — those 4
+            // boxes are CalcCard.tsx's own hardware-shaped capture/edit UI
+            // — the values, not the button. `Calculated: true` is what
+            // routes a field here instead of the generic Ticket field loop
+            // (TicketFieldsCard skips every Calculated field); `Captured`
+            // marks the two that mirror a physical capture rather than a
+            // derived value.
+            Segment: "CapturedCalculated",
+            Fields: [
+                {
+                    FieldId: "Gross",
+                    Kind: "Number",
+                    Captured: "Gross",
+                    Calculated: true,
+                },
+                {
+                    FieldId: "Tare",
+                    Kind: "Number",
+                    Captured: "Tare",
+                    Calculated: true,
+                },
+                {
+                    FieldId: "Net",
+                    Kind: "Formula",
+                    Formula: "Abs(Gross - Tare)",
+                    Calculated: true,
+                },
+                {
+                    FieldId: "Charge",
+                    Kind: "Money",
+                    Calculated: true,
+                },
+            ],
         },
     ],
     // The same per-kind extras the Masters screen used to hardcode

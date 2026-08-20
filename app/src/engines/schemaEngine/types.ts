@@ -45,6 +45,21 @@ export interface FieldBase {
     Calculated?: boolean;
     /** Only meaningful when `Calculated` is true and this field mirrors one of CalcCard's two physical-capture boxes rather than a derived one (e.g. Net's Formula) — which capture type it stands for. */
     Captured?: "Gross" | "Tare";
+    /**
+     * Only meaningful when `Calculated` is true and this isn't one of
+     * CalcCard's 4 fixed boxes (Gross/Tare/Net/Charge) — which row of
+     * CalcCard's own calc-chain groups this `Formula` field renders under.
+     * `"Intermediate"` for a step along the way (e.g. a Godown schema's
+     * NetAfterBags/EstimatedWeight/ExcessShortage/TotalAdjustment),
+     * `"Final"` for the number the ticket is actually settled on (e.g.
+     * GodownGross/GodownNet). Omitted defaults to `"Final"` — a schema that
+     * doesn't care to distinguish the two still gets a sensible single
+     * group rather than being silently dropped. Named `Group` (not
+     * `Segment`) to avoid clashing with `FieldSegment.Segment` below — that
+     * one names which *card* a field belongs to, this one only matters
+     * once a field is already inside CapturedCalculated's own calc rows.
+     */
+    Group?: "Intermediate" | "Final";
 }
 
 export interface TextField extends FieldBase {
@@ -140,13 +155,32 @@ export interface MasterSchema {
     Columns: MasterColumn[];
 }
 
+// One named group of fields — which *card* they belong to (`"CurrentTicket"`
+// → TicketFieldsCard, `"CapturedCalculated"` → CalcCard are the two keys the
+// app actually renders differently today; any other string is accepted but
+// falls into TicketFieldsCard's generic loop, same as an unrecognized
+// FieldId would). `Label` is optional — both known keys already have their
+// own i18n card title (`weigh.ticket`/`weigh.capturedAndCalculated`); only a
+// site-defined third segment would need to supply one.
+export interface FieldSegment {
+    Segment: string;
+    Label?: Localized;
+    Fields: Field[];
+}
+
 // Extends `JsonRecord` (same reason `LanguagePack` does, i18n/types.ts) — a
 // schema is saved as a `config` row's `Body` verbatim (ConfigKind:
 // "Schema", db/schema.ts), and uploaded as a file the same way a language
 // pack is.
 export interface Schema extends JsonRecord {
     SchemaId: string;
-    Fields: Field[];
+    Segments: FieldSegment[];
     /** Which extra columns each MasterKind's records carry. Optional — a schema with no `Masters` block means every kind has just its built-in Name, same as before this existed. */
     Masters?: MasterSchema[];
 }
+
+/** Every field across every segment, flattened back into schema order — the shape almost every consumer beyond the schema editor itself actually wants (TicketFieldsCard's field loop, CalcCard's calc-chain, validation, master upload's field count). */
+export const getAllFields = (schema: Schema): Field[] => schema.Segments.flatMap((seg) => seg.Fields);
+
+export const SEGMENT_CURRENT_TICKET = "CurrentTicket";
+export const SEGMENT_CAPTURED_CALCULATED = "CapturedCalculated";

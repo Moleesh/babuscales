@@ -3,7 +3,7 @@ import type { DataTableColumn } from "@components/DataTable";
 import { ReportsDateRangeRow } from "./ReportsDateRangeRow";
 import { SavedReportsRow } from "./SavedReportsRow";
 import { SummaryView } from "./SummaryView";
-import { TicketsView } from "./TicketsView";
+import { TicketsFilterRow, TicketsView } from "./TicketsView";
 import type { UseSavedReportActions } from "./useSavedReportActions";
 import styles from "../_styles/ReportsScreen.module.css";
 import type {
@@ -41,7 +41,8 @@ export interface ReportsCardBodyProps {
     groupBy: GroupKey;
     onGroupByChange: (groupBy: GroupKey) => void;
     ticketColumns: DataTableColumn<TicketRow>[];
-    visibleRows: TicketRow[];
+    /** Tickets view's current page only — see reportRows.ts's `paginateTicketRows`. Print/Export read `visibleRows` (the full set) separately, not this. The Prev/Next control itself lives in the sticky bottom bar (ReportsScreenOverlays.tsx), not here. */
+    pagedRows: TicketRow[];
     summaryColumns: DataTableColumn<SummaryRow>[];
     summaryRows: SummaryRow[];
 }
@@ -50,56 +51,30 @@ type ReportsActiveViewProps = Pick<
     ReportsCardBodyProps,
     | "loading"
     | "view"
-    | "query"
-    | "onQueryChange"
-    | "filter"
-    | "onFilterChange"
-    | "sortKey"
-    | "onSortKeyChange"
-    | "sortDir"
-    | "onSortDirChange"
     | "groupBy"
     | "onGroupByChange"
     | "ticketColumns"
-    | "visibleRows"
+    | "pagedRows"
     | "summaryColumns"
     | "summaryRows"
 >;
 
 // Split out of ReportsCardBody (over the line/complexity budget —
-// docs/CodingStandards.md) — the Tickets/Summary view switch itself.
+// docs/CodingStandards.md) — the Tickets/Summary view switch itself. Just
+// the table now — TicketsView's search/filter/sort row moved out to the
+// sticky wrapper above (ReportsCardBody's own `.sticky-filters`).
 const ReportsActiveView = ({
     loading,
     view,
-    query,
-    onQueryChange,
-    filter,
-    onFilterChange,
-    sortKey,
-    onSortKeyChange,
-    sortDir,
-    onSortDirChange,
     groupBy,
     onGroupByChange,
     ticketColumns,
-    visibleRows,
+    pagedRows,
     summaryColumns,
     summaryRows,
 }: ReportsActiveViewProps) =>
     view === "tickets" ? (
-        <TicketsView
-            query={query}
-            onQueryChange={onQueryChange}
-            filter={filter}
-            onFilterChange={onFilterChange}
-            sortKey={sortKey}
-            onSortKeyChange={onSortKeyChange}
-            sortDir={sortDir}
-            onSortDirChange={onSortDirChange}
-            columns={ticketColumns}
-            rows={visibleRows}
-            loading={loading}
-        />
+        <TicketsView columns={ticketColumns} rows={pagedRows} loading={loading} />
     ) : (
         <SummaryView
             groupBy={groupBy}
@@ -134,15 +109,33 @@ export const ReportsCardBody = ({
             onRecall={savedReportActions.handleRecallReport}
             onDelete={savedReportActions.handleDeleteReport}
         />
-        <ReportsDateRangeRow
-            dateFrom={dateFrom}
-            onDateFromChange={onDateFromChange}
-            dateTo={dateTo}
-            onDateToChange={onDateToChange}
-            includeBacked={includeBacked}
-            onIncludeBackedChange={onIncludeBackedChange}
-            dateFmt={dateFmt}
-        />
+        {/* Date range + (for Tickets) the search/filter/sort row stick together
+            under the shell's own sticky weight header (AppShell.tsx's
+            `--shell-header-h`, same fix as Settings' tab bar) so they stay
+            reachable while the table underneath scrolls. */}
+        <div className={styles.stickyFilters}>
+            <ReportsDateRangeRow
+                dateFrom={dateFrom}
+                onDateFromChange={onDateFromChange}
+                dateTo={dateTo}
+                onDateToChange={onDateToChange}
+                includeBacked={includeBacked}
+                onIncludeBackedChange={onIncludeBackedChange}
+                dateFmt={dateFmt}
+            />
+            {view.view === "tickets" && (
+                <TicketsFilterRow
+                    query={view.query}
+                    onQueryChange={view.onQueryChange}
+                    filter={view.filter}
+                    onFilterChange={view.onFilterChange}
+                    sortKey={view.sortKey}
+                    onSortKeyChange={view.onSortKeyChange}
+                    sortDir={view.sortDir}
+                    onSortDirChange={view.onSortDirChange}
+                />
+            )}
+        </div>
         <ReportsActiveView {...view} />
     </div>
 );

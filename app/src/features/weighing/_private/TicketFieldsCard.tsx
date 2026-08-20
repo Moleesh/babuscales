@@ -6,7 +6,7 @@ import { Field, FieldGrid } from "@components/Field";
 import { SearchableDropdown } from "@components/SearchableDropdown";
 import type { MasterKind } from "@db/types";
 import type { UseMasterCache } from "@db/useMasterCache";
-import { useSchema } from "@engines/schemaEngine";
+import { getAllFields, useSchema } from "@engines/schemaEngine";
 import type { Field as SchemaField } from "@engines/schemaEngine";
 import { resolveLocalized } from "@i18n/types";
 import { useTranslation } from "@i18n/useTranslation";
@@ -321,9 +321,10 @@ export interface TicketFieldsCardProps {
 
 // Split out of WeighingScreen (over the 300-line budget — docs/CodingStandards.md)
 // — the "Ticket" card. Fully schema-driven: every field, fixed or custom, renders in whatever
-// order the active Schema's Fields array lists it in, using whichever
-// control that FieldId maps to. Self-contained: everything it needs comes
-// in as props, nothing here reaches back into WeighingScreen's own state.
+// order the active Schema's Segments list them in (flattened via
+// `getAllFields`), using whichever control that FieldId maps to.
+// Self-contained: everything it needs comes in as props, nothing here
+// reaches back into WeighingScreen's own state.
 export const TicketFieldsCard = ({
     ticket,
     ticketDate,
@@ -341,7 +342,7 @@ export const TicketFieldsCard = ({
 
     const items = buildFieldItems({
         ticket,
-        schemaFields: ticketSchema.Fields,
+        schemaFields: getAllFields(ticketSchema),
         ticketDate,
         lang,
         t,

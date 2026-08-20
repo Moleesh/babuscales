@@ -18,6 +18,8 @@
 }
 
 .item {
+    display: grid;
+    gap: 2px;
     padding: 8px 10px;
     border: none;
     border-radius: 7px;
@@ -28,6 +30,19 @@
     text-align: left;
     cursor: pointer;
 }
-.item:hover {
+.item:hover:not(:disabled) {
     background: var(--panel-2);
+}
+.item:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Export PDF's "Use Print → Save as PDF..." note — same role as
+   Button.module.css's own `.caption` under a button label, one level down
+   in a menu item instead. */
+.item-caption {
+    font-size: 0.625rem;
+    color: var(--dim);
+    font-weight: 400;
 }
