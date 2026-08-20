@@ -24,7 +24,7 @@ pub fn fill_screen(window: tauri::WebviewWindow) -> Result<(), String> {
     // in `.setup()` with `decorations: false` from the start); doing it
     // after `set_decorations` keeps that assumption true, rather than
     // measuring a stale titlebar-inclusive `inner_size`.
-    let _ = window.set_decorations(false);
+    window.set_decorations(false).map_err(|err| err.to_string())?;
 
     let monitor = window
         .primary_monitor()
@@ -32,8 +32,10 @@ pub fn fill_screen(window: tauri::WebviewWindow) -> Result<(), String> {
         .ok_or("no primary monitor")?;
     let target_pos = *monitor.position();
     let target_size = *monitor.size();
-    let _ = window.set_size(target_size);
-    let _ = window.set_position(target_pos);
+    window.set_size(target_size).map_err(|err| err.to_string())?;
+    window
+        .set_position(target_pos)
+        .map_err(|err| err.to_string())?;
 
     // Windows/DWM reserves an invisible resize-border/shadow margin around
     // every top-level window — even a `resizable: false`, `decorations:
@@ -51,14 +53,18 @@ pub fn fill_screen(window: tauri::WebviewWindow) -> Result<(), String> {
         if border_x != 0 || border_y != 0 {
             let half_x = (border_x / 2) as i32;
             let half_y = (border_y / 2) as i32;
-            let _ = window.set_position(tauri::PhysicalPosition::new(
-                target_pos.x - half_x,
-                target_pos.y - half_y,
-            ));
-            let _ = window.set_size(tauri::PhysicalSize::new(
-                target_size.width + border_x,
-                target_size.height + border_y,
-            ));
+            window
+                .set_position(tauri::PhysicalPosition::new(
+                    target_pos.x - half_x,
+                    target_pos.y - half_y,
+                ))
+                .map_err(|err| err.to_string())?;
+            window
+                .set_size(tauri::PhysicalSize::new(
+                    target_size.width + border_x,
+                    target_size.height + border_y,
+                ))
+                .map_err(|err| err.to_string())?;
         }
     }
     Ok(())

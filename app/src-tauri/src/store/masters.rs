@@ -42,7 +42,12 @@ pub fn list_masters(conn: &Connection, query: &MasterQuery) -> Result<Vec<Master
     // memory adapter's `toLowerCase().includes(...)` closely enough for a
     // substring search over master names.
     if query.search.is_some() {
-        clauses.push("name LIKE :search");
+        // Without ESCAPE, `%`/`_` typed into the search box act as SQL
+        // wildcards rather than literal characters — a search for "A_1"
+        // would silently also match "AB1". `\` is escaped into the pattern
+        // below alongside them so a literal backslash in the search term
+        // doesn't itself get read as an escape introducer.
+        clauses.push("name LIKE :search ESCAPE '\\'");
     }
     // Keyset pagination: "the next rows after the one the caller last saw",
     // in the same `name COLLATE NOCASE ASC, master_id` order the query
@@ -74,7 +79,10 @@ pub fn list_masters(conn: &Connection, query: &MasterQuery) -> Result<Vec<Master
     if let Some(v) = &is_active_int {
         named.push((":is_active", v));
     }
-    let search_pattern = query.search.as_ref().map(|s| format!("%{s}%"));
+    let search_pattern = query.search.as_ref().map(|s| {
+        let escaped = s.replace('\\', "\\\\").replace('%', "\\%").replace('_', "\\_");
+        format!("%{escaped}%")
+    });
     if let Some(v) = &search_pattern {
         named.push((":search", v));
     }

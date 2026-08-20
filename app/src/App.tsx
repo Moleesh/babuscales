@@ -703,10 +703,18 @@ const DailySummarySync = () => {
     const cfg = settings.DailySummary;
     const smtp = settings.Smtp;
     const amountDp = settings.Formats.AmountDp;
+    // Guards against overlapping sends: `cfg.LastSentDate` only updates once
+    // the whole enqueue→SMTP→update chain below finishes, and the 60s tick
+    // re-checks nothing else — without this, an SMTP send that takes longer
+    // than 60s (or a rejection, see the missing-catch fix below) lets the
+    // next tick pass the same "not sent today" check and send a duplicate
+    // summary. Same shape as HeadlessDailySummarySync's own `hasRunRef`.
+    const sendingRef = useRef(false);
 
     useEffect(() => {
         if (!cfg.Enabled) return;
         const checkDue = (): void => {
+            if (sendingRef.current) return;
             const today = todayLocalDate();
             if (cfg.LastSentDate === today) return;
             // Normally wait for the scheduled time of day — but once a
@@ -716,6 +724,7 @@ const DailySummarySync = () => {
             if (nowLocalHm() < cfg.Time && !isMoreThanOneDayLate(cfg.LastSentDate, today)) return;
             const to = cfg.Recipient.trim();
             if (!to) return;
+            sendingRef.current = true;
             void (async () => {
                 const docs = await db.listDocs({ DocKind: "Ticket" });
                 const { subject, body } = buildDailySummaryEmail(docs, today, amountDp);
@@ -736,7 +745,20 @@ const DailySummarySync = () => {
                     reconcileOutboxOutcome(result, outboxRow.Attempts),
                 );
                 await recordDailySummarySent(today);
-            })();
+            })()
+                // Without this, a rejection anywhere in the chain (SMTP
+                // down, DB error) becomes an unhandled rejection:
+                // `recordDailySummarySent` never runs, `LastSentDate` stays
+                // stale, and — worse — `sendingRef` would stay stuck true
+                // forever, so the `finally` below is what makes the next
+                // tick's retry actually possible instead of wedging this
+                // sync permanently off.
+                .catch((err: unknown) => {
+                    console.error("Daily summary send failed", err);
+                })
+                .finally(() => {
+                    sendingRef.current = false;
+                });
         };
         checkDue();
         const timer = setInterval(checkDue, 60_000);

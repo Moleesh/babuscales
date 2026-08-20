@@ -105,7 +105,14 @@ export const useSettingsRecord = (db: DataPort): UseSettingsRecord => {
             setSettings(body);
             setVersion(freshVersion);
             setLoading(false);
-        })();
+        })().catch((err: unknown) => {
+            // Unhandled before this: a rejected getConfig/saveConfig left
+            // `loading` stuck true forever with no trace of why — clearing
+            // it here at least lets the rest of the app proceed on the
+            // SYNC_DEFAULT_BODY fallback instead of hanging on a spinner.
+            console.error("Settings record load failed", err);
+            if (!cancelled) setLoading(false);
+        });
         return () => {
             cancelled = true;
         };

@@ -43,7 +43,13 @@ export const useLicenseRecord = (db: DataPort): UseLicenseRecord => {
             if (cancelled) return;
             setBody(fresh);
             setVersion(saved.Version);
-        })();
+        })().catch((err: unknown) => {
+            // Unhandled before this: a rejected getConfig/saveConfig (disk
+            // full, corrupt store) left `body` stuck at its initial `null`
+            // forever with no trace of why — licensing has no toast surface
+            // this deep, so a console error is the floor, not the full fix.
+            console.error("License record load failed", err);
+        });
         return () => {
             cancelled = true;
         };

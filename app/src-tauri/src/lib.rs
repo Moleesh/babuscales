@@ -79,7 +79,9 @@ pub fn run() -> tauri::Result<()> {
             if window.label() == "main" {
                 if let WindowEvent::CloseRequested { api, .. } = event {
                     api.prevent_close();
-                    let _ = window.hide();
+                    if let Err(err) = window.hide() {
+                        eprintln!("close-to-tray: window.hide() failed: {err}");
+                    }
                 }
                 // No Resized-based "hide on minimize" here on purpose — an
                 // earlier version of this handler treated every minimize
@@ -99,7 +101,9 @@ pub fn run() -> tauri::Result<()> {
         .setup(|app| {
             // Idempotent — safe to call on every launch, not just the first.
             use tauri_plugin_autostart::ManagerExt;
-            let _ = app.autolaunch().enable();
+            if let Err(err) = app.autolaunch().enable() {
+                eprintln!("autolaunch: enable() failed: {err}");
+            }
 
             // The window opens at `tauri.conf.json`'s configured 1280×800
             // size, unpinned — no fill-to-monitor here any more. That used

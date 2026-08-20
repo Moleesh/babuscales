@@ -285,6 +285,8 @@ export const TA_PACK: LanguagePack = {
         "components.appShell.pinOff": "சாளரத்தை மேலே வைத்திரு (அணைக்கப்பட்டது) — இயக்க கிளிக் செய்யவும்",
         "components.contextualHelp.close": "உதவியை மூடு",
         "components.toast.saved": "சேமிக்கப்பட்டது",
+        "components.toast.saveFailed": "சேமிப்பு தோல்வியடைந்தது — டிக்கெட் சேமிக்கப்படவில்லை. மீண்டும் முயற்சிக்கவும்.",
+        "components.toast.printFailed": "அச்சிடல் தோல்வியடைந்தது — ரசீது அச்சிடப்பட்டதாக பதிவு செய்யப்படவில்லை. மீண்டும் முயற்சிக்கவும்.",
 
         "settings.dateTimeFormats.title": "தேதி & நேரம்",
         "settings.amountAdmin.title": "தொகைகள் & நிர்வாக கடவுச்சொல்",

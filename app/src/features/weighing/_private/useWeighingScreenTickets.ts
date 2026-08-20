@@ -1,14 +1,16 @@
 import { useMemo } from "react";
 
+import { useToast } from "@components/Toast";
 import type { DocRow } from "@db/types";
 import { useMasterCache } from "@db/useMasterCache";
 import type { UseMasterCache } from "@db/useMasterCache";
+import { useTranslation } from "@i18n/useTranslation";
 
 import { listOpenTickets } from "../recall";
 import type { OpenTicketSummary } from "../recall";
 import type { UseWeighingTicket } from "../useWeighingTicket";
-import { useTicketDocs } from "./useTicketDocs";
 import { upsertTypedMasters } from "./upsertTypedMasters";
+import { useTicketDocs } from "./useTicketDocs";
 
 // The five master caches this screen reads, bundled into one value —
 // everything downstream (WeighingLeftColumn, useWeighingScreenDerived's
@@ -38,6 +40,8 @@ export interface UseWeighingScreenTickets {
 // from the inline versions they replace.
 export const useWeighingScreenTickets = (ticket: UseWeighingTicket): UseWeighingScreenTickets => {
     const { allTicketDocs, loading: ticketsLoading, bumpRefresh } = useTicketDocs();
+    const { showToast } = useToast();
+    const { t } = useTranslation();
 
     const caches: WeighingCaches = {
         vehicle: useMasterCache("Vehicle"),
@@ -61,9 +65,18 @@ export const useWeighingScreenTickets = (ticket: UseWeighingTicket): UseWeighing
         // Material/Transporter into the Masters table before the doc save
         // itself — no more inline "＋ Add" button in TicketFieldsCard.tsx,
         // this is where that used to happen instead.
-        await upsertTypedMasters(caches, ticket.fields);
-        await ticket.save();
-        bumpRefresh();
+        try {
+            await upsertTypedMasters(caches, ticket.fields);
+            await ticket.save();
+            bumpRefresh();
+        } catch (err) {
+            // ticket.save() had no failure feedback at all — a rejected
+            // save (licence gate, disk full, corrupt body) used to clear
+            // the spinner silently, so the operator believed the ticket
+            // was saved when it wasn't.
+            console.error("Ticket save failed", err);
+            showToast(t("components.toast.saveFailed"));
+        }
     };
 
     return { caches, allTicketDocs, ticketsLoading, openTickets, bumpRefresh, handleResume, handleSave };

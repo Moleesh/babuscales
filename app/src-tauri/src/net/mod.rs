@@ -161,12 +161,15 @@ fn handle_request(app: &AppHandle, request: tiny_http::Request) {
 }
 
 fn html_response(status: StatusCode, body: String) -> Response<std::io::Cursor<Vec<u8>>> {
-    Response::from_string(body)
-        .with_status_code(status)
-        .with_header(
-            Header::from_bytes(&b"Content-Type"[..], &b"text/html; charset=utf-8"[..])
-                .expect("static header is always valid"),
-        )
+    let response = Response::from_string(body).with_status_code(status);
+    // `expect` is banned outside main.rs (docs/CodingStandards.md) — this
+    // literal header is provably valid today, but a response without a
+    // Content-Type header (the browser then guesses) is a far safer
+    // degradation than a panic that takes the whole LAN server down.
+    match Header::from_bytes(&b"Content-Type"[..], &b"text/html; charset=utf-8"[..]) {
+        Ok(header) => response.with_header(header),
+        Err(_) => response,
+    }
 }
 
 fn route(app: &AppHandle, url: &str) -> Response<std::io::Cursor<Vec<u8>>> {
@@ -227,12 +230,27 @@ fn asset_response(
         return html_response(StatusCode(404), error_page("Not found", "No such photo."));
     };
 
-    Response::from_data(bytes).with_header(
-        Header::from_bytes(&b"Content-Type"[..], meta.mime_type.as_bytes()).unwrap_or_else(|_| {
-            Header::from_bytes(&b"Content-Type"[..], &b"application/octet-stream"[..])
-                .expect("static header is always valid")
-        }),
-    )
+    let response = Response::from_data(bytes);
+    // Same "degrade, don't panic" reasoning as html_response's own
+    // Content-Type header above — an unrecognised/invalid stored
+    // `mime_type` falls back to the static octet-stream header, and only
+    // if even that literal somehow fails to parse does the response go out
+    // with no Content-Type at all rather than crashing the LAN server.
+    let content_type = Header::from_bytes(&b"Content-Type"[..], meta.mime_type.as_bytes())
+        .or_else(|_| Header::from_bytes(&b"Content-Type"[..], &b"application/octet-stream"[..]));
+    // A stored asset's bytes are never guaranteed to be what its
+    // `mime_type` claims, and this endpoint is reachable by anything on the
+    // LAN (see #9's open-binding note) — nosniff stops a browser from
+    // sniffing unexpected bytes as HTML/script and executing them.
+    let nosniff = Header::from_bytes(&b"X-Content-Type-Options"[..], &b"nosniff"[..]);
+    let response = match content_type {
+        Ok(header) => response.with_header(header),
+        Err(_) => response,
+    };
+    match nosniff {
+        Ok(header) => response.with_header(header),
+        Err(_) => response,
+    }
 }
 
 fn ticket_references_asset(body: &Json, asset_id: &str) -> bool {

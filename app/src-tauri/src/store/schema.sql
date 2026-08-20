@@ -96,10 +96,21 @@ CREATE TABLE IF NOT EXISTS audit (
   action TEXT NOT NULL, target TEXT, body TEXT NOT NULL, row_hash TEXT NOT NULL,
   prev_hash TEXT
 );
+-- Every LAN verification-page hit (net/mod.rs) walks the audit chain for a
+-- ticket ordered by time — without this, that's a full-table scan on every
+-- QR scan, growing linearly with the whole app's audit history rather than
+-- just the one ticket's rows.
+CREATE INDEX IF NOT EXISTS ix_audit_target_at
+  ON audit (target, at);
 CREATE TABLE IF NOT EXISTS outbox (
   outbox_id TEXT PRIMARY KEY, channel TEXT NOT NULL, body TEXT NOT NULL,
   attempts INTEGER NOT NULL DEFAULT 0, next_try_at TEXT, state TEXT NOT NULL
 );
+-- useOutboxWorker.ts's 30s drain always filters on state (Pending/Failed)
+-- and, per row, on channel — without this it's a full scan of the whole
+-- outbox history on every poll instead of just the rows actually due.
+CREATE INDEX IF NOT EXISTS ix_outbox_state_channel
+  ON outbox (state, channel);
 CREATE TABLE IF NOT EXISTS journal (
   journal_id TEXT PRIMARY KEY, at TEXT NOT NULL, applied INTEGER NOT NULL
   DEFAULT 0, body TEXT NOT NULL

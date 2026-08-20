@@ -1,5 +1,5 @@
 import type { Dispatch } from "react";
-import { useCallback, useEffect, useReducer } from "react";
+import { useCallback, useEffect, useReducer, useRef } from "react";
 
 import { newId } from "@db/id";
 import {
@@ -127,7 +127,7 @@ const buildTicketBody = (
     ...(Object.keys(customFields).length > 0 ? { CustomFields: customFields } : {}),
 });
 
-const initialTicketState = (): TicketState => ({
+export const initialTicketState = (): TicketState => ({
     docId: null,
     docSeq: null,
     fields: emptyFields(),
@@ -154,7 +154,11 @@ type TicketAction =
     | { type: "Resumed"; doc: DocRow }
     | { type: "Printed" };
 
-const ticketReducer = (state: TicketState, action: TicketAction): TicketState => {
+// Exported (alongside `initialTicketState` below) purely so the unit test
+// can drive it directly — the doc comment above this reducer already
+// promises "a plain function to unit-test without touching React at all",
+// which needs both of these visible outside the module to actually happen.
+export const ticketReducer = (state: TicketState, action: TicketAction): TicketState => {
     switch (action.type) {
         case "SetField":
             return { ...state, fields: { ...state.fields, [action.key]: action.value } };
@@ -342,8 +346,18 @@ const useTicketPersistenceActions = ({
     dispatch,
     indicator,
 }: TicketPersistenceDeps) => {
+    // `saving` (dispatched below) isn't visible until React re-renders, so
+    // a double-click/double-tap on the Save button — easy on a touchscreen
+    // weighbridge terminal — can pass the `isLocked`/`captures.length`
+    // guard twice before the disabled state ever paints. With `docId` still
+    // null on both calls, that creates two separate ticket docs (two
+    // numbers) for the one lorry. This ref is checked and set synchronously,
+    // before any `await`, to actually close that window.
+    const savingRef = useRef(false);
+
     const save = useCallback(async () => {
-        if (isLocked || captures.length === 0) return;
+        if (isLocked || captures.length === 0 || savingRef.current) return;
+        savingRef.current = true;
         dispatch({ type: "SetSaving", saving: true });
         try {
             // Task: `docId` only exists here already if an earlier save
@@ -387,6 +401,7 @@ const useTicketPersistenceActions = ({
             // still editable for the second capture — and only actually
             // resets on an explicit "New ticket" click (startNew below).
         } finally {
+            savingRef.current = false;
             dispatch({ type: "SetSaving", saving: false });
         }
     }, [
@@ -412,7 +427,13 @@ const useTicketPersistenceActions = ({
         dispatch({ type: "SetSaving", saving: true });
         try {
             const nextCount = printCount + 1;
-            dispatch({ type: "Printed" });
+            // Dispatched only after the save actually succeeds — this used
+            // to run before the `await`, so a failed `db.saveDoc` (licence
+            // gate, disk full, corrupt body) still left the in-memory
+            // `printCount` bumped. Since the Print button's own `disabled`
+            // is `!docId || printCount > 0`, that permanently disabled
+            // re-printing for a ticket the DB never actually recorded as
+            // printed.
             await db.saveDoc({
                 DocId: docId,
                 DocKind: "Ticket",
@@ -421,6 +442,7 @@ const useTicketPersistenceActions = ({
                     PrintCount: nextCount,
                 },
             });
+            dispatch({ type: "Printed" });
         } finally {
             dispatch({ type: "SetSaving", saving: false });
         }

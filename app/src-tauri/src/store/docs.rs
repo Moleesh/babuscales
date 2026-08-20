@@ -59,9 +59,8 @@ pub fn list_docs(conn: &Connection, query: &DocQuery) -> Result<Vec<DocRow>, App
         sql.push_str(&clauses.join(" AND "));
     }
     sql.push_str(" ORDER BY created_at DESC");
-    if let Some(limit) = query.limit {
+    if query.limit.is_some() {
         sql.push_str(" LIMIT :limit OFFSET :offset");
-        let _ = limit; // bound below alongside offset
     }
 
     let mut statement = conn.prepare(&sql)?;

@@ -1,3 +1,4 @@
+import { useToast } from "@components/Toast";
 import { useDataPort } from "@db/useDataPort";
 import type { UseMasterCache } from "@db/useMasterCache";
 import type { EmailSource } from "@engines/email/types";
@@ -5,6 +6,7 @@ import { reconcileOutboxOutcome } from "@engines/outbox";
 import type { SmsSource } from "@engines/sms/types";
 import { todayLocalDate } from "@features/reports/dailySummaryEmail";
 import type { SettingsBody } from "@features/settings";
+import { useTranslation } from "@i18n/useTranslation";
 
 import { formatTicketNo } from "../ticketNumber";
 import type { UseWeighingTicket } from "../useWeighingTicket";
@@ -197,6 +199,8 @@ export const useTicketDelivery = ({
     onDelivered,
 }: UseTicketDeliveryArgs) => {
     const db = useDataPort();
+    const { showToast } = useToast();
+    const { t } = useTranslation();
 
     // "All integrations... through the durable outbox, so none
     // can delay or lose a ticket." The LAN verification page itself needs
@@ -211,7 +215,17 @@ export const useTicketDelivery = ({
     // — see that file's own comment on why "Verification" rows are left
     // alone.
     const handlePrint = async (): Promise<void> => {
-        await ticket.print();
+        // ticket.print() had no failure feedback — same "silent success"
+        // gap as handleSave (useWeighingScreenTickets.ts) had, and here it
+        // also aborted the rest of delivery (email/SMS/webhook enqueue)
+        // with no indication why.
+        try {
+            await ticket.print();
+        } catch (err) {
+            console.error("Ticket print failed", err);
+            showToast(t("components.toast.printFailed"));
+            return;
+        }
         if (verifyUrl && ticket.docId) {
             await db.enqueueOutbox({
                 Channel: "Verification",

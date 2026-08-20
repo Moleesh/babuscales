@@ -272,6 +272,8 @@ export const EN_STRINGS: Record<string, string> = {
     "components.appShell.pinOff": "Keep window on top (off) — click to turn on",
     "components.contextualHelp.close": "Close help",
     "components.toast.saved": "Saved",
+    "components.toast.saveFailed": "Save failed — the ticket was not saved. Please try again.",
+    "components.toast.printFailed": "Print failed — the receipt was not recorded as printed. Please try again.",
 
     "settings.dateTimeFormats.title": "Date & time",
     "settings.amountAdmin.title": "Amounts & admin password",

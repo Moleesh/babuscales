@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import type { JsonRecord, OutboxRow } from "@db/types";
 import { useDataPort } from "@db/useDataPort";
@@ -158,26 +158,69 @@ export const useOutboxWorker = (): void => {
     const [email] = useState<EmailSource>(() => createEmailSource());
     const [sms] = useState<SmsSource>(() => createSmsSource());
     const [channels] = useState<OutboxChannelSources>(() => createOutboxChannels());
+    // Read inside drainOnce instead of a dep — putting the whole `settings`
+    // object in the effect's deps meant any unrelated settings edit (e.g. a
+    // language change) tore down and recreated this 30s poller and fired an
+    // immediate extra drain. The interval identity only needs to depend on
+    // things that actually change the drain logic itself.
+    const settingsRef = useRef(settings);
+    settingsRef.current = settings;
+    // Best-effort guard against the 30s tick starting a second drain while
+    // the first is still awaiting a slow send — without it, both drains can
+    // list the same `Pending` row before either has flipped it to
+    // `Sending`, sending it twice.
+    const drainingRef = useRef(false);
 
     useEffect(() => {
         const drainOnce = async (): Promise<void> => {
-            const nowIso = new Date().toISOString();
-            const [pending, failed] = await Promise.all([
-                db.listOutbox({ State: "Pending" }),
-                db.listOutbox({ State: "Failed" }),
-            ]);
-            const due = [...pending, ...failed.filter((row) => isDueFailedRow(row, nowIso))];
+            if (drainingRef.current) return;
+            drainingRef.current = true;
+            try {
+                const nowIso = new Date().toISOString();
+                const [pending, failed] = await Promise.all([
+                    db.listOutbox({ State: "Pending" }),
+                    db.listOutbox({ State: "Failed" }),
+                ]);
+                const due = [...pending, ...failed.filter((row) => isDueFailedRow(row, nowIso))];
 
-            for (const row of due) {
-                if (!isDrainable(row.Channel)) continue;
-                await db.updateOutbox(row.OutboxId, { State: "Sending" });
-                const result = await SENDERS[row.Channel](row.Body, { settings, email, sms, channels });
-                await db.updateOutbox(row.OutboxId, reconcileOutboxOutcome(result, row.Attempts));
+                for (const row of due) {
+                    if (!isDrainable(row.Channel)) continue;
+                    await db.updateOutbox(row.OutboxId, { State: "Sending" });
+                    // A per-row try/catch, not one around the whole loop —
+                    // without it, a single throwing send (rather than an
+                    // ordinary `{Ok: false}` result) would abort the loop
+                    // entirely and leave that row stuck at `State:
+                    // "Sending"` forever, since nothing re-lists rows in
+                    // that state.
+                    try {
+                        const result = await SENDERS[row.Channel](row.Body, {
+                            settings: settingsRef.current,
+                            email,
+                            sms,
+                            channels,
+                        });
+                        await db.updateOutbox(row.OutboxId, reconcileOutboxOutcome(result, row.Attempts));
+                    } catch (err) {
+                        // Named so the `{ Ok: false; Error }` shape is
+                        // constructed once, matching ChannelSendResult
+                        // exactly — inlined into the call below, TS's
+                        // excess-property check on object literals rejects
+                        // `Error` because reconcileOutboxOutcome's own
+                        // parameter type is the narrower `{ Ok: boolean }`.
+                        const failure: { Ok: false; Error: string } = {
+                            Ok: false,
+                            Error: err instanceof Error ? err.message : String(err),
+                        };
+                        await db.updateOutbox(row.OutboxId, reconcileOutboxOutcome(failure, row.Attempts));
+                    }
+                }
+            } finally {
+                drainingRef.current = false;
             }
         };
 
         const timer = setInterval(() => void drainOnce(), POLL_INTERVAL_MS);
         void drainOnce();
         return () => clearInterval(timer);
-    }, [db, settings, email, sms, channels]);
+    }, [db, email, sms, channels]);
 };
