@@ -192,6 +192,63 @@ const TareGrossBoxes = ({
     );
 };
 
+interface NetChargeBoxesProps {
+    weights: DerivedWeights;
+    weightUnit: WeightUnit;
+    showNet: boolean;
+    showCharge: boolean;
+    netLabel: string;
+    chargeLabel: string;
+    chargeValue: string;
+    onChargeChange: (value: string) => void;
+    isLocked: boolean;
+}
+
+// Pulled out of CalcCard's own body (over the line budget —
+// docs/CodingStandards.md) — the Net/Charge half of the four-box grid.
+const NetChargeBoxes = ({
+    weights,
+    weightUnit,
+    showNet,
+    showCharge,
+    netLabel,
+    chargeLabel,
+    chargeValue,
+    onChargeChange,
+    isLocked,
+}: NetChargeBoxesProps) => (
+    <>
+        {showNet && (
+            <CalcBox
+                label={netLabel}
+                value={weights.netKg !== null ? formatWeightIn(weights.netKg, weightUnit) : "—"}
+                lead={weights.netKg !== null}
+            />
+        )}
+        {showCharge && (
+            <ChargeBox label={chargeLabel} value={chargeValue} onChange={onChargeChange} readOnly={isLocked} />
+        )}
+    </>
+);
+
+// Manual entry mode replaces a not-yet-captured Tare/Gross box with an
+// editable input. Gated on whether that type has been captured yet, not
+// on the ambient `kind` — `kind` goes null between captures (the
+// forced-save gate), but manual entry lets the operator fill in both
+// Tare and Gross without an intervening Save, so each box only needs to
+// know whether *it specifically* still needs a weight. Pulled out of
+// CalcCard purely to stay under the file's own line budget.
+const useCalcCardVisibility = (ticketSchema: Schema, captures: Capture[], manualEntry: boolean, isLocked: boolean) => {
+    const manualTare = manualEntry && !isLocked && !hasCapture(captures, "Tare");
+    const manualGross = manualEntry && !isLocked && !hasCapture(captures, "Gross");
+    const showGross = isBoxVisible(ticketSchema, "Gross");
+    const showTare = isBoxVisible(ticketSchema, "Tare");
+    const showNet = isBoxVisible(ticketSchema, "Net");
+    const showCharge = isBoxVisible(ticketSchema, "Charge");
+    const noBoxes = !showGross && !showTare && !showNet && !showCharge;
+    return { manualTare, manualGross, showGross, showTare, showNet, showCharge, noBoxes };
+};
+
 export interface CalcCardProps {
     /** The active Schema — Gross/Tare/Net/Charge box labels resolve against it (falling back to the current i18n defaults) rather than being hardcoded. */
     ticketSchema: Schema;
@@ -226,6 +283,82 @@ export interface CalcCardProps {
 // tracked this split named it "the cleanest candidate" for exactly that
 // reason): only `ticket.weights`/`captures`, `charge`/`materialRate`/
 // `value` and `Formats.AmountDp` — no master-cache or DataPort deps.
+interface CalcBoxGridProps {
+    ticketSchema: Schema;
+    weights: DerivedWeights;
+    captures: Capture[];
+    grossCaptures: Capture[];
+    chargeValue: string;
+    onChargeChange: (value: string) => void;
+    manualEntry: boolean;
+    isLocked: boolean;
+    onManualCapture: TareGrossBoxesProps["onManualCapture"];
+    weightUnit: WeightUnit;
+    dateFmt: string;
+    timeFmt: "24" | "12";
+    boxLabel: (fieldId: string, fallback: string) => string;
+    t: ReturnType<typeof useTranslation>["t"];
+}
+
+// The `.calc` four-box grid plus its "nothing to show" fallback message —
+// pulled out of CalcCard purely to stay under the file's own line budget.
+const CalcBoxGrid = ({
+    ticketSchema,
+    weights,
+    captures,
+    grossCaptures,
+    chargeValue,
+    onChargeChange,
+    manualEntry,
+    isLocked,
+    onManualCapture,
+    weightUnit,
+    dateFmt,
+    timeFmt,
+    boxLabel,
+    t,
+}: CalcBoxGridProps) => {
+    const { manualTare, manualGross, showGross, showTare, showNet, showCharge, noBoxes } = useCalcCardVisibility(
+        ticketSchema,
+        captures,
+        manualEntry,
+        isLocked,
+    );
+    return (
+        <>
+            {noBoxes && <p className={styles.emptySchema}>{t("weigh.capturedAndCalculated.empty")}</p>}
+            <div className={styles.calc}>
+                <TareGrossBoxes
+                    weights={weights}
+                    captures={captures}
+                    grossCaptures={grossCaptures}
+                    manualTare={manualTare}
+                    manualGross={manualGross}
+                    onManualCapture={onManualCapture}
+                    weightUnit={weightUnit}
+                    dateFmt={dateFmt}
+                    timeFmt={timeFmt}
+                    grossLabel={boxLabel("Gross", t("weigh.gross"))}
+                    tareLabel={boxLabel("Tare", t("weigh.tare"))}
+                    showGross={showGross}
+                    showTare={showTare}
+                />
+                <NetChargeBoxes
+                    weights={weights}
+                    weightUnit={weightUnit}
+                    showNet={showNet}
+                    showCharge={showCharge}
+                    netLabel={boxLabel("Net", t("weigh.net"))}
+                    chargeLabel={boxLabel("Charge", t("weigh.charge"))}
+                    chargeValue={chargeValue}
+                    onChargeChange={onChargeChange}
+                    isLocked={isLocked}
+                />
+            </div>
+        </>
+    );
+};
+
 export const CalcCard = ({
     ticketSchema,
     weights,
@@ -249,54 +382,24 @@ export const CalcCard = ({
     // Task #46 — every Gross capture, in the order they were taken; length 1
     // covers today's single-gross ticket unchanged.
     const grossCaptures = captures.filter((c) => c.Type === "Gross");
-    // Manual entry mode replaces a not-yet-captured Tare/Gross box with an
-    // editable input. Gated on whether that type has been captured yet, not
-    // on the ambient `kind` — `kind` goes null between captures (the
-    // forced-save gate), but manual entry lets the operator fill in both
-    // Tare and Gross without an intervening Save, so each box only needs to
-    // know whether *it specifically* still needs a weight.
-    const manualTare = manualEntry && !isLocked && !hasCapture(captures, "Tare");
-    const manualGross = manualEntry && !isLocked && !hasCapture(captures, "Gross");
-    const showGross = isBoxVisible(ticketSchema, "Gross");
-    const showTare = isBoxVisible(ticketSchema, "Tare");
-    const showNet = isBoxVisible(ticketSchema, "Net");
-    const showCharge = isBoxVisible(ticketSchema, "Charge");
-    const noBoxes = !showGross && !showTare && !showNet && !showCharge;
     return (
         <Card title={<span className="lbl">{t("weigh.capturedAndCalculated")}</span>}>
-            {noBoxes && <p className={styles.emptySchema}>{t("weigh.capturedAndCalculated.empty")}</p>}
-            <div className={styles.calc}>
-                <TareGrossBoxes
-                    weights={weights}
-                    captures={captures}
-                    grossCaptures={grossCaptures}
-                    manualTare={manualTare}
-                    manualGross={manualGross}
-                    onManualCapture={onManualCapture}
-                    weightUnit={weightUnit}
-                    dateFmt={dateFmt}
-                    timeFmt={timeFmt}
-                    grossLabel={boxLabel("Gross", t("weigh.gross"))}
-                    tareLabel={boxLabel("Tare", t("weigh.tare"))}
-                    showGross={showGross}
-                    showTare={showTare}
-                />
-                {showNet && (
-                    <CalcBox
-                        label={boxLabel("Net", t("weigh.net"))}
-                        value={weights.netKg !== null ? formatWeightIn(weights.netKg, weightUnit) : "—"}
-                        lead={weights.netKg !== null}
-                    />
-                )}
-                {showCharge && (
-                    <ChargeBox
-                        label={boxLabel("Charge", t("weigh.charge"))}
-                        value={chargeValue}
-                        onChange={onChargeChange}
-                        readOnly={isLocked}
-                    />
-                )}
-            </div>
+            <CalcBoxGrid
+                ticketSchema={ticketSchema}
+                weights={weights}
+                captures={captures}
+                grossCaptures={grossCaptures}
+                chargeValue={chargeValue}
+                onChargeChange={onChargeChange}
+                manualEntry={manualEntry}
+                isLocked={isLocked}
+                onManualCapture={onManualCapture}
+                weightUnit={weightUnit}
+                dateFmt={dateFmt}
+                timeFmt={timeFmt}
+                boxLabel={boxLabel}
+                t={t}
+            />
             <CalcSegmentRows segments={calcSegments} lang={lang} t={t} />
             <CalcFormula
                 tareKg={weights.tareKg}

@@ -33,73 +33,70 @@ export interface BuildRecallOffersArgs {
     timeFmt: "24" | "12";
 }
 
+// The "resume an open ticket" offer — pulled out of buildRecallOffers purely
+// to stay under the file's own line budget.
+const buildResumeOffer = (args: BuildRecallOffersArgs): RecallOffer | null => {
+    const { ticket, allTicketDocs, lang, t, weightUnit, dateFmt, timeFmt } = args;
+    const openMatch = findOpenTicketForVehicle(
+        allTicketDocs.filter((doc) => doc.DocId !== ticket.docId),
+        ticket.fields.vehicleNo,
+    );
+    if (!openMatch) return null;
+    return {
+        key: "resume",
+        label: `${t("weigh.recall.resume")} ${formatTicketNo(openMatch.doc.DocSeq)}`,
+        hint: `${t(openMatch.kind === "Tare" ? "tare" : "gross")} ${formatWeightIn(openMatch.weightKg, weightUnit)} · ${formatStamp(openMatch.capturedAt, lang, dateFmt, timeFmt)}`,
+        onAccept: () => ticket.resume(openMatch.doc),
+    };
+};
+
+// The "reuse a stored tare" offer — pulled out of buildRecallOffers purely
+// to stay under the file's own line budget.
+const buildStoredTareOffer = (args: BuildRecallOffersArgs): RecallOffer | null => {
+    const { ticket, storedTareCache, strictTare, t, weightUnit } = args;
+    if (strictTare || ticket.captures.some((c) => c.Type === "Tare")) return null;
+    const storedTare = storedTareCache
+        .search(ticket.fields.vehicleNo)
+        .find((row) => isStoredTareBody(row.Body) && !isStoredTareStale(row.Body.CapturedAt));
+    if (!storedTare || !isStoredTareBody(storedTare.Body)) return null;
+    const body = storedTare.Body;
+    return {
+        key: "storedTare",
+        label: `${t("weigh.recall.useStoredTare")} ${formatWeightIn(body.WeightKg, weightUnit)}`,
+        hint: `${t("weigh.recall.takenAgo")} ${storedTareAgeDays(body.CapturedAt)} ${t("weigh.recall.daysAgo")}`,
+        onAccept: () => ticket.useStoredTare(body.WeightKg, body.CapturedAt),
+    };
+};
+
+// The "fill from the vehicle's last ticket" offer — pulled out of
+// buildRecallOffers purely to stay under the file's own line budget.
+const buildFillOffer = (args: BuildRecallOffersArgs): RecallOffer | null => {
+    const { ticket, allTicketDocs, t } = args;
+    const latest = findLatestTicketForVehicle(allTicketDocs, ticket.fields.vehicleNo, ticket.docId ?? undefined);
+    if (!latest || !(latest.body.Party || latest.body.Material || latest.body.Transporter)) return null;
+    const fill: Partial<Pick<TicketFormFields, "party" | "material" | "transporter">> = {
+        party: latest.body.Party,
+        material: latest.body.Material,
+        transporter: latest.body.Transporter,
+    };
+    return {
+        key: "fill",
+        label: `${t("weigh.recall.fillFrom")} ${formatTicketNo(latest.doc.DocSeq)}`,
+        hint:
+            [latest.body.Party, latest.body.Material].filter(Boolean).join(" · ") ||
+            t("weigh.recall.previousTicket"),
+        onAccept: () => ticket.applyRecalledFields(fill),
+    };
+};
+
 // Split out of WeighingScreen (which was creeping past the 300-line budget —
 // docs/CodingStandards.md) rather than left inline — this is the one place
 // the three recall offers (resume an open ticket, reuse a stored
 // tare, fill from the vehicle's last ticket) get built, and it doesn't
 // touch JSX at all.
-export const buildRecallOffers = ({
-    ticket,
-    allTicketDocs,
-    storedTareCache,
-    strictTare,
-    lang,
-    t,
-    weightUnit,
-    dateFmt,
-    timeFmt,
-}: BuildRecallOffersArgs): RecallOffer[] => {
-    if (ticket.isLocked || !ticket.fields.vehicleNo.trim()) return [];
-    const offers: RecallOffer[] = [];
-
-    const openMatch = findOpenTicketForVehicle(
-        allTicketDocs.filter((doc) => doc.DocId !== ticket.docId),
-        ticket.fields.vehicleNo,
+export const buildRecallOffers = (args: BuildRecallOffersArgs): RecallOffer[] => {
+    if (args.ticket.isLocked || !args.ticket.fields.vehicleNo.trim()) return [];
+    return [buildResumeOffer(args), buildStoredTareOffer(args), buildFillOffer(args)].filter(
+        (offer): offer is RecallOffer => offer !== null,
     );
-    if (openMatch) {
-        offers.push({
-            key: "resume",
-            label: `${t("weigh.recall.resume")} ${formatTicketNo(openMatch.doc.DocSeq)}`,
-            hint: `${t(openMatch.kind === "Tare" ? "tare" : "gross")} ${formatWeightIn(openMatch.weightKg, weightUnit)} · ${formatStamp(openMatch.capturedAt, lang, dateFmt, timeFmt)}`,
-            onAccept: () => ticket.resume(openMatch.doc),
-        });
-    }
-
-    if (!strictTare && ticket.captures.every((c) => c.Type !== "Tare")) {
-        const storedTare = storedTareCache
-            .search(ticket.fields.vehicleNo)
-            .find((row) => isStoredTareBody(row.Body) && !isStoredTareStale(row.Body.CapturedAt));
-        if (storedTare && isStoredTareBody(storedTare.Body)) {
-            const body = storedTare.Body;
-            offers.push({
-                key: "storedTare",
-                label: `${t("weigh.recall.useStoredTare")} ${formatWeightIn(body.WeightKg, weightUnit)}`,
-                hint: `${t("weigh.recall.takenAgo")} ${storedTareAgeDays(body.CapturedAt)} ${t("weigh.recall.daysAgo")}`,
-                onAccept: () => ticket.useStoredTare(body.WeightKg, body.CapturedAt),
-            });
-        }
-    }
-
-    const latest = findLatestTicketForVehicle(
-        allTicketDocs,
-        ticket.fields.vehicleNo,
-        ticket.docId ?? undefined,
-    );
-    if (latest && (latest.body.Party || latest.body.Material || latest.body.Transporter)) {
-        const fill: Partial<Pick<TicketFormFields, "party" | "material" | "transporter">> = {
-            party: latest.body.Party,
-            material: latest.body.Material,
-            transporter: latest.body.Transporter,
-        };
-        offers.push({
-            key: "fill",
-            label: `${t("weigh.recall.fillFrom")} ${formatTicketNo(latest.doc.DocSeq)}`,
-            hint:
-                [latest.body.Party, latest.body.Material].filter(Boolean).join(" · ") ||
-                t("weigh.recall.previousTicket"),
-            onAccept: () => ticket.applyRecalledFields(fill),
-        });
-    }
-
-    return offers;
 };

@@ -32,23 +32,11 @@ const ESTIMATED_ROW_HEIGHT = 37;
 // frame's row range catches up.
 const OVERSCAN = 8;
 
-// Windowed rendering (row virtualisation wasn't built yet —
-// the Reports tab switch was still laggy after the ticket-fetch cache landed,
-// traced to *this* component always mounting every row's real `<tr>` DOM
-// node regardless of dataset size). `.wrapper` is now its own bounded,
-// scrollable region (DataTable.module.css) instead of growing the whole
-// page, so only the rows actually scrolled into view — plus `OVERSCAN` on
-// each side — ever exist in the DOM. Two spacer rows (not padding on
-// `<tbody>`, which isn't a valid flex/box target here) hold the scrollbar's
-// total height so the browser's own scroll math stays correct without this
-// component reserving space for every off-screen row's real markup.
-export const DataTable = <Row,>({
-    columns,
-    rows,
-    getRowId,
-    onRowClick,
-    emptyMessage,
-}: DataTableProps<Row>) => {
+// The row-range math itself — pulled out of DataTable purely to stay under
+// the file's own line budget. See the callers' own comments for why
+// `recompute` is a stable `useCallback` and why the effect uses a real
+// object ref rather than a callback ref.
+const useVirtualizedRowRange = (rowCount: number) => {
     const wrapperRef = useRef<HTMLDivElement>(null);
     const rowHeightRef = useRef(ESTIMATED_ROW_HEIGHT);
     const [range, setRange] = useState({ start: 0, end: OVERSCAN * 2 });
@@ -95,7 +83,64 @@ export const DataTable = <Row,>({
     // unrelated render the way a fresh callback-ref function identity would.
     useLayoutEffect(() => {
         recompute();
-    }, [recompute, rows.length]);
+    }, [recompute, rowCount]);
+
+    return { wrapperRef, rowHeightRef, range, recompute };
+};
+
+interface DataTableRowProps<Row> {
+    row: Row;
+    columns: DataTableColumn<Row>[];
+    getRowId: (row: Row) => string;
+    onRowClick?: (row: Row) => void;
+}
+
+// One `<tr>` — pulled out of DataTable's render purely to stay under the
+// file's own line budget.
+const DataTableRow = <Row,>({ row, columns, getRowId, onRowClick }: DataTableRowProps<Row>) => (
+    <tr
+        key={getRowId(row)}
+        className={onRowClick ? styles.clickable : undefined}
+        onClick={onRowClick ? () => onRowClick(row) : undefined}
+        tabIndex={onRowClick ? 0 : undefined}
+        role={onRowClick ? "button" : undefined}
+        onKeyDown={
+            onRowClick
+                ? (event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                          event.preventDefault();
+                          onRowClick(row);
+                      }
+                  }
+                : undefined
+        }
+    >
+        {columns.map((column) => (
+            <td key={column.key} className={column.numeric ? styles.numeric : undefined}>
+                {column.render(row)}
+            </td>
+        ))}
+    </tr>
+);
+
+// Windowed rendering (row virtualisation wasn't built yet —
+// the Reports tab switch was still laggy after the ticket-fetch cache landed,
+// traced to *this* component always mounting every row's real `<tr>` DOM
+// node regardless of dataset size). `.wrapper` is now its own bounded,
+// scrollable region (DataTable.module.css) instead of growing the whole
+// page, so only the rows actually scrolled into view — plus `OVERSCAN` on
+// each side — ever exist in the DOM. Two spacer rows (not padding on
+// `<tbody>`, which isn't a valid flex/box target here) hold the scrollbar's
+// total height so the browser's own scroll math stays correct without this
+// component reserving space for every off-screen row's real markup.
+export const DataTable = <Row,>({
+    columns,
+    rows,
+    getRowId,
+    onRowClick,
+    emptyMessage,
+}: DataTableProps<Row>) => {
+    const { wrapperRef, rowHeightRef, range, recompute } = useVirtualizedRowRange(rows.length);
 
     if (rows.length === 0) {
         return <EmptyState title={emptyMessage ?? "Nothing here yet"} />;
@@ -130,32 +175,13 @@ export const DataTable = <Row,>({
                         </tr>
                     )}
                     {visibleRows.map((row) => (
-                        <tr
+                        <DataTableRow
                             key={getRowId(row)}
-                            className={onRowClick ? styles.clickable : undefined}
-                            onClick={onRowClick ? () => onRowClick(row) : undefined}
-                            tabIndex={onRowClick ? 0 : undefined}
-                            role={onRowClick ? "button" : undefined}
-                            onKeyDown={
-                                onRowClick
-                                    ? (event) => {
-                                          if (event.key === "Enter" || event.key === " ") {
-                                              event.preventDefault();
-                                              onRowClick(row);
-                                          }
-                                      }
-                                    : undefined
-                            }
-                        >
-                            {columns.map((column) => (
-                                <td
-                                    key={column.key}
-                                    className={column.numeric ? styles.numeric : undefined}
-                                >
-                                    {column.render(row)}
-                                </td>
-                            ))}
-                        </tr>
+                            row={row}
+                            columns={columns}
+                            getRowId={getRowId}
+                            onRowClick={onRowClick}
+                        />
                     ))}
                     {bottomSpacerHeight > 0 && (
                         <tr aria-hidden="true">

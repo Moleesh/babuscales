@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import type { ReactNode } from "react";
+import type { ReactNode, RefObject } from "react";
 
 import { ScrollArea } from "@components/ScrollArea";
 import { Tooltip } from "@components/Tooltip";
@@ -120,6 +120,36 @@ const TopBar = ({ siteLabel, tabs, activeTab, onNavigate, topRight, pin, section
     );
 };
 
+// Exposes the sticky header's actual rendered height (varies: compact vs
+// full-size, per BIG_HEADER_TABS) as a CSS var on `.main` — any other
+// sticky element further down (e.g. Settings' own tab bar,
+// SettingsScreen.module.css's `.top-row`) can offset its own `top` by
+// this instead of also sitting at `top: 0` and disappearing behind the
+// header once both are stuck (same z-index=0 slot, header wins on
+// z-index). Runs even when `header` is absent — var just settles to 0px.
+// Split out of AppShell purely to stay under the file's own line budget.
+const useStickyHeaderHeight = (
+    mainRef: RefObject<HTMLDivElement | null>,
+    headerStickyRef: RefObject<HTMLDivElement | null>,
+    header: ReactNode,
+): void => {
+    useEffect(() => {
+        const headerEl = headerStickyRef.current;
+        const mainEl = mainRef.current;
+        if (!mainEl) return;
+        if (!headerEl) {
+            mainEl.style.setProperty("--shell-header-h", "0px");
+            return;
+        }
+        const observer = new ResizeObserver(([entry]) => {
+            if (!entry) return;
+            mainEl.style.setProperty("--shell-header-h", `${entry.contentRect.height}px`);
+        });
+        observer.observe(headerEl);
+        return () => observer.disconnect();
+    }, [header, mainRef, headerStickyRef]);
+};
+
 // The five-tab frame every screen lives inside — dashboard,
 // weighing, cameras, reports, masters; Settings moved to the secondary
 // controls, App.tsx's `topRight`. Enter-as-Tab is wired here once, for the
@@ -148,29 +178,7 @@ export const AppShell = ({
     // which replaces the native right-click menu in desktop view so the
     // app can offer its own copy/cut/paste instead.
     const { menu, close } = useContextMenu();
-
-    // Exposes the sticky header's actual rendered height (varies: compact vs
-    // full-size, per BIG_HEADER_TABS) as a CSS var on `.main` — any other
-    // sticky element further down (e.g. Settings' own tab bar,
-    // SettingsScreen.module.css's `.top-row`) can offset its own `top` by
-    // this instead of also sitting at `top: 0` and disappearing behind the
-    // header once both are stuck (same z-index=0 slot, header wins on
-    // z-index). Runs even when `header` is absent — var just settles to 0px.
-    useEffect(() => {
-        const headerEl = headerStickyRef.current;
-        const mainEl = mainRef.current;
-        if (!mainEl) return;
-        if (!headerEl) {
-            mainEl.style.setProperty("--shell-header-h", "0px");
-            return;
-        }
-        const observer = new ResizeObserver(([entry]) => {
-            if (!entry) return;
-            mainEl.style.setProperty("--shell-header-h", `${entry.contentRect.height}px`);
-        });
-        observer.observe(headerEl);
-        return () => observer.disconnect();
-    }, [header]);
+    useStickyHeaderHeight(mainRef, headerStickyRef, header);
 
     return (
         <div className={styles.app}>

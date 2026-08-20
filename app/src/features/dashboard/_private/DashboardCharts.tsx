@@ -30,7 +30,14 @@ export interface DashboardChartsProps {
 // reserved for the axis label row).
 const BAR_AREA_PX = 173;
 
-export const DashboardCharts = ({ buckets, period, materialSplit, weightUnit }: DashboardChartsProps) => {
+interface ActivityBarChartProps {
+    buckets: ActivityBucket[];
+    period: DashboardPeriod;
+}
+
+// The hour/period bar chart — pulled out of DashboardCharts purely to stay
+// under the file's own line budget.
+const ActivityBarChart = ({ buckets, period }: ActivityBarChartProps) => {
     const { t } = useTranslation();
     const maxCount = Math.max(1, ...buckets.map((b) => b.count));
     // Task: "wont it be better if we can get a load count on both the
@@ -38,67 +45,86 @@ export const DashboardCharts = ({ buckets, period, materialSplit, weightUnit }: 
     // to each card's existing headerRight rather than as a new element, so
     // both charts read "range/title · N tickets|loads" the same way.
     const totalTickets = buckets.reduce((sum, bucket) => sum + bucket.count, 0);
+
+    return (
+        <Card
+            title={<span className="lbl">{t(`dashboard.chart.activity.${period}`)}</span>}
+            headerRight={
+                <span className="lbl">
+                    {buckets[0]?.label ?? ""} — {buckets[buckets.length - 1]?.label ?? ""} ·{" "}
+                    {totalTickets} {t("dashboard.chart.tickets")}
+                </span>
+            }
+        >
+            <div className={styles.bars}>
+                {buckets.map((bucket) => (
+                    <Tooltip
+                        key={bucket.id}
+                        style={{ flex: 1 }}
+                        label={`${bucket.label}: ${bucket.count} ${t("dashboard.chart.tickets")}`}
+                    >
+                        <div
+                            className={`${styles.bar} ${bucket.current ? styles.barNow : ""}`}
+                            style={{ height: `${Math.max(2, (bucket.count / maxCount) * BAR_AREA_PX)}px` }}
+                        >
+                            <span className={styles.barLabel}>{bucket.label}</span>
+                        </div>
+                    </Tooltip>
+                ))}
+            </div>
+        </Card>
+    );
+};
+
+interface MaterialSplitChartProps {
+    materialSplit: MaterialSplitEntry[];
+    weightUnit: WeightUnit;
+}
+
+// The material-split list — pulled out of DashboardCharts purely to stay
+// under the file's own line budget.
+const MaterialSplitChart = ({ materialSplit, weightUnit }: MaterialSplitChartProps) => {
+    const { t } = useTranslation();
     const totalLoads = materialSplit.reduce((sum, entry) => sum + entry.count, 0);
 
     return (
-        <div className={styles.grid2}>
-            <Card
-                title={<span className="lbl">{t(`dashboard.chart.activity.${period}`)}</span>}
-                headerRight={
+        <Card
+            title={<span className="lbl">{t("dashboard.chart.material")}</span>}
+            headerRight={
+                materialSplit.length > 0 && (
                     <span className="lbl">
-                        {buckets[0]?.label ?? ""} — {buckets[buckets.length - 1]?.label ?? ""} ·{" "}
-                        {totalTickets} {t("dashboard.chart.tickets")}
+                        {totalLoads} {t("dashboard.chart.loads")}
                     </span>
-                }
-            >
-                <div className={styles.bars}>
-                    {buckets.map((bucket) => (
-                        <Tooltip
-                            key={bucket.id}
-                            style={{ flex: 1 }}
-                            label={`${bucket.label}: ${bucket.count} ${t("dashboard.chart.tickets")}`}
-                        >
-                            <div
-                                className={`${styles.bar} ${bucket.current ? styles.barNow : ""}`}
-                                style={{ height: `${Math.max(2, (bucket.count / maxCount) * BAR_AREA_PX)}px` }}
-                            >
-                                <span className={styles.barLabel}>{bucket.label}</span>
-                            </div>
-                        </Tooltip>
-                    ))}
-                </div>
-            </Card>
-            <Card
-                title={<span className="lbl">{t("dashboard.chart.material")}</span>}
-                headerRight={
-                    materialSplit.length > 0 && (
-                        <span className="lbl">
-                            {totalLoads} {t("dashboard.chart.loads")}
-                        </span>
-                    )
-                }
-            >
-                <div className={styles.split}>
-                    {materialSplit.length === 0 ? (
-                        <span className={styles.hint}>{t("dashboard.chart.noMaterial")}</span>
-                    ) : (
-                        materialSplit.map((entry) => (
-                            <div key={entry.material} className={styles.splitRow}>
-                                <span>{entry.material}</span>
-                                <span className={styles.track}>
-                                    <i style={{ width: `${entry.share * 100}%` }} />
+                )
+            }
+        >
+            <div className={styles.split}>
+                {materialSplit.length === 0 ? (
+                    <span className={styles.hint}>{t("dashboard.chart.noMaterial")}</span>
+                ) : (
+                    materialSplit.map((entry) => (
+                        <div key={entry.material} className={styles.splitRow}>
+                            <span>{entry.material}</span>
+                            <span className={styles.track}>
+                                <i style={{ width: `${entry.share * 100}%` }} />
+                            </span>
+                            <span className={styles.splitValue}>
+                                <span className="num">{formatWeightIn(entry.tonnes * 1000, weightUnit)}</span>
+                                <span className={styles.hint}>
+                                    {entry.count} {t("dashboard.chart.loads")}
                                 </span>
-                                <span className={styles.splitValue}>
-                                    <span className="num">{formatWeightIn(entry.tonnes * 1000, weightUnit)}</span>
-                                    <span className={styles.hint}>
-                                        {entry.count} {t("dashboard.chart.loads")}
-                                    </span>
-                                </span>
-                            </div>
-                        ))
-                    )}
-                </div>
-            </Card>
-        </div>
+                            </span>
+                        </div>
+                    ))
+                )}
+            </div>
+        </Card>
     );
 };
+
+export const DashboardCharts = ({ buckets, period, materialSplit, weightUnit }: DashboardChartsProps) => (
+    <div className={styles.grid2}>
+        <ActivityBarChart buckets={buckets} period={period} />
+        <MaterialSplitChart materialSplit={materialSplit} weightUnit={weightUnit} />
+    </div>
+);

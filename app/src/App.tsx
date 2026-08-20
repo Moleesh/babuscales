@@ -315,19 +315,13 @@ const buildNavTabs = (t: ReturnType<typeof useTranslation>["t"]): AppShellTab[] 
     PRIMARY_TAB_KEYS.map((key) => ({ key, label: t(`nav.${key}`), icon: TAB_ICONS[key] }));
 
 // Per-session only — nothing here persists, so every relaunch comes back to
-// this same hand-off regardless of how the pin was left last time.
-// index.html's splash (splashWindowControls.ts) already fills the screen
-// and pins the window the moment the splash itself shows — well before
-// this ever mounts — and exposes its own pin button's live state via
-// `aria-pressed`. Reading that once at mount (not `useState(true)`) is
-// what lets an operator who un-pinned during the loading screen keep that
-// choice once Shell's own pin icon takes over, instead of the two icons
-// silently disagreeing. Defaults to pinned if the splash element is
-// already gone (e.g. a hot-reload mid-session, not a real launch).
+// this same default regardless of how the pin was left last time. Starts
+// pinned to match tauri.conf.json's own `alwaysOnTop: true` (what the
+// window already opens as, before this ever mounts — the splash itself no
+// longer touches the pin state, see splashWindowControls.ts) — this effect
+// then keeps that setting in sync with the toggle from here on.
 const usePinToggle = (windowPin: WindowPinSource) => {
-    const [pinned, setPinned] = useState(
-        () => document.getElementById("app-splash-pin")?.getAttribute("aria-pressed") !== "false",
-    );
+    const [pinned, setPinned] = useState(true);
     useEffect(() => {
         void windowPin.setAlwaysOnTop(pinned);
     }, [windowPin, pinned]);
@@ -696,6 +690,47 @@ const SerialConnectionSync = ({ indicator }: IndicatorSyncProps) => {
 // site never lets the OS task register at all (disabled, non-Windows dev
 // build) or the one time the machine happens to be already open and idle
 // right as `cfg.Time` ticks over.
+interface DailySummarySendArgs {
+    db: ReturnType<typeof useDataPort>;
+    email: ReturnType<typeof createEmailSource>;
+    today: string;
+    to: string;
+    amountDp: ReturnType<typeof useSettings>["settings"]["Formats"]["AmountDp"];
+    smtp: ReturnType<typeof useSettings>["settings"]["Smtp"];
+    recordDailySummarySent: (date: string) => Promise<void>;
+}
+
+// The enqueue→SMTP→update chain shared by DailySummarySync's per-minute
+// check below — pulled out purely so that component stays under the
+// per-function line budget, not shared with HeadlessDailySummarySync (see
+// that component's own "deliberately its own small duplicate" comment).
+const sendDailySummary = async ({
+    db,
+    email,
+    today,
+    to,
+    amountDp,
+    smtp,
+    recordDailySummarySent,
+}: DailySummarySendArgs): Promise<void> => {
+    const docs = await db.listDocs({ DocKind: "Ticket" });
+    const { subject, body } = buildDailySummaryEmail(docs, today, amountDp);
+    const outboxRow = await db.enqueueOutbox({
+        Channel: "Email",
+        Body: { Kind: "DailySummary", Date: today, To: to },
+    });
+    const result = await email.send({
+        host: smtp.Host,
+        port: smtp.Port,
+        username: smtp.Username,
+        to,
+        subject,
+        body,
+    });
+    await db.updateOutbox(outboxRow.OutboxId, reconcileOutboxOutcome(result, outboxRow.Attempts));
+    await recordDailySummarySent(today);
+};
+
 const DailySummarySync = () => {
     const db = useDataPort();
     const { settings, recordDailySummarySent } = useSettings();
@@ -725,27 +760,7 @@ const DailySummarySync = () => {
             const to = cfg.Recipient.trim();
             if (!to) return;
             sendingRef.current = true;
-            void (async () => {
-                const docs = await db.listDocs({ DocKind: "Ticket" });
-                const { subject, body } = buildDailySummaryEmail(docs, today, amountDp);
-                const outboxRow = await db.enqueueOutbox({
-                    Channel: "Email",
-                    Body: { Kind: "DailySummary", Date: today, To: to },
-                });
-                const result = await email.send({
-                    host: smtp.Host,
-                    port: smtp.Port,
-                    username: smtp.Username,
-                    to,
-                    subject,
-                    body,
-                });
-                await db.updateOutbox(
-                    outboxRow.OutboxId,
-                    reconcileOutboxOutcome(result, outboxRow.Attempts),
-                );
-                await recordDailySummarySent(today);
-            })()
+            void sendDailySummary({ db, email, today, to, amountDp, smtp, recordDailySummarySent })
                 // Without this, a rejection anywhere in the chain (SMTP
                 // down, DB error) becomes an unhandled rejection:
                 // `recordDailySummarySent` never runs, `LastSentDate` stays

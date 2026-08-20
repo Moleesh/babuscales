@@ -193,16 +193,24 @@ const buildFixedControl = (field: SchemaField, args: BuildFixedControlArgs): Rea
     }
 };
 
+interface BuildFixedItemsArgs {
+    field: SchemaField;
+    lang: string;
+    ticketDate: string;
+    ticketDateField: SchemaField | undefined;
+    controlArgs: Omit<BuildFixedControlArgs, "label">;
+}
+
 // One fixed field's control, plus the read-only Date field paired right
 // after Vehicle No — split out of buildFieldItems purely to keep that loop
 // body under the line budget (docs/CodingStandards.md).
-const buildFixedItems = (
-    field: SchemaField,
-    lang: string,
-    ticketDate: string,
-    ticketDateField: SchemaField | undefined,
-    args: Omit<BuildFixedControlArgs, "label">,
-): { key: string; node: ReactNode }[] => {
+const buildFixedItems = ({
+    field,
+    lang,
+    ticketDate,
+    ticketDateField,
+    controlArgs: args,
+}: BuildFixedItemsArgs): { key: string; node: ReactNode }[] => {
     // Built-in fixed fields ship with no schema `Label` at all (see
     // defaultTicketSchema.ts's own comment) — fall back to this app's own
     // i18n string for the FieldId; only a genuinely custom FieldId with no
@@ -279,7 +287,7 @@ const buildFieldItems = ({
         if (!evaluateFieldVisible(field)) continue;
 
         if (FIXED_FIELD_IDS.includes(field.FieldId)) {
-            items.push(...buildFixedItems(field, lang, ticketDate, ticketDateField, fixedArgs));
+            items.push(...buildFixedItems({ field, lang, ticketDate, ticketDateField, controlArgs: fixedArgs }));
             continue;
         }
 

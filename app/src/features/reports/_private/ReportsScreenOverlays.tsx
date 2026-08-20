@@ -34,6 +34,44 @@ export interface ReportsScreenOverlaysProps {
     savedReportActions: UseSavedReportActions;
 }
 
+interface ReportsBottomBarProps {
+    reportSlipData: ReportSlipData;
+    onPrintOpenChange: (open: boolean) => void;
+    view: ReportView;
+    pageIndex: number;
+    pageCount: number;
+    onPageIndexChange: (pageIndex: number) => void;
+}
+
+// The sticky bottom Print/Export + tickets-pagination bar — pulled out of
+// ReportsScreenOverlays purely to stay under the file's own line budget.
+const ReportsBottomBar = ({
+    reportSlipData,
+    onPrintOpenChange,
+    view,
+    pageIndex,
+    pageCount,
+    onPageIndexChange,
+}: ReportsBottomBarProps) => (
+    // `.main`'s scroll container (AppShell.module.css) is what this
+    // bar's `position: sticky` sticks against. Tickets pagination sits
+    // on the right, opposite Print/Export — task: "put the page bar
+    // to the footer" — so it's always reachable without scrolling back
+    // up past a short last page, and never disappears once the inner
+    // table's own scroll region was removed (ReportsScreen.module.css's
+    // `.tickets-table`).
+    <div className={styles.bottomBar}>
+        <ReportsActionsRow
+            onPrint={() => onPrintOpenChange(true)}
+            onExportXlsx={() => exportReportXlsx(reportSlipData)}
+            onExportCsv={() => exportReportCsv(reportSlipData)}
+        />
+        {view === "tickets" && (
+            <TicketsPaginationRow pageIndex={pageIndex} pageCount={pageCount} onPageIndexChange={onPageIndexChange} />
+        )}
+    </div>
+);
+
 // Split out of ReportsScreen (over the line/complexity budget —
 // docs/CodingStandards.md) — everything ReportsScreen renders outside the
 // Card: the sticky bottom Print/Export bar
@@ -62,27 +100,14 @@ export const ReportsScreenOverlays = ({
     onPageIndexChange,
 }: ReportsScreenOverlaysProps) => (
     <>
-        {/* `.main`'s scroll container (AppShell.module.css) is what this
-            bar's `position: sticky` sticks against. Tickets pagination sits
-            on the right, opposite Print/Export — task: "put the page bar
-            to the footer" — so it's always reachable without scrolling back
-            up past a short last page, and never disappears once the inner
-            table's own scroll region was removed (ReportsScreen.module.css's
-            `.tickets-table`). */}
-        <div className={styles.bottomBar}>
-            <ReportsActionsRow
-                onPrint={() => onPrintOpenChange(true)}
-                onExportXlsx={() => exportReportXlsx(reportSlipData)}
-                onExportCsv={() => exportReportCsv(reportSlipData)}
-            />
-            {view === "tickets" && (
-                <TicketsPaginationRow
-                    pageIndex={pageIndex}
-                    pageCount={pageCount}
-                    onPageIndexChange={onPageIndexChange}
-                />
-            )}
-        </div>
+        <ReportsBottomBar
+            reportSlipData={reportSlipData}
+            onPrintOpenChange={onPrintOpenChange}
+            view={view}
+            pageIndex={pageIndex}
+            pageCount={pageCount}
+            onPageIndexChange={onPageIndexChange}
+        />
         <ReportPrintModal
             open={printOpen}
             onClose={() => onPrintOpenChange(false)}

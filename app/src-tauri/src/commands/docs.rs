@@ -42,6 +42,23 @@ pub fn allocate_doc_seq(state: State<'_, AppState>, doc_id: String) -> Result<Do
 }
 
 #[tauri::command]
+pub fn save_doc_and_allocate_seq(
+    state: State<'_, AppState>,
+    draft: DocDraft,
+) -> Result<DocRow, AppError> {
+    let mut conn = lock(&state)?;
+    // Same licensing gate as `save_doc` above — this replaces that call (plus
+    // a possible follow-up `allocate_doc_seq`) at every call site that used
+    // to save then number a ticket as two separate IPC round trips.
+    let app_data_dir = state
+        .db_path
+        .parent()
+        .ok_or_else(|| AppError::Message("could not resolve app data dir from db_path".into()))?;
+    licensing::require_licensed(&conn, app_data_dir)?;
+    store::save_doc_and_allocate_seq(&mut conn, &draft)
+}
+
+#[tauri::command]
 pub fn reset_doc_series(
     state: State<'_, AppState>,
     doc_kind: String,

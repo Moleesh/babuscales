@@ -37,6 +37,8 @@ export interface DataPort {
     saveDoc(draft: DocDraft): Promise<DocRow>;
     /** Assigns the next `doc_seq` in (DocKind, ProfileId, current SeriesEpoch). Idempotent — a doc that already has a number is returned unchanged. Called at close, never at draft. */
     allocateDocSeq(docId: string): Promise<DocRow>;
+    /** `saveDoc` immediately followed by `allocateDocSeq` (only if the saved row still has no number), as one atomic step instead of two separate calls — use this at close so a crash between the two can't leave a doc permanently un-numbered. */
+    saveDocAndAllocateSeq(draft: DocDraft): Promise<DocRow>;
     /** Bumps the numbering epoch so the next allocation restarts from `startSeq` (default 1). Manual by default (PLAN round 4B) — nothing calls this on a schedule unless configured to. */
     resetDocSeries(docKind: DocKind, profileId: string, startSeq?: number): Promise<{ Epoch: number }>;
 

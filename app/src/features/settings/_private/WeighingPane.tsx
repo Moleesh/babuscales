@@ -27,16 +27,23 @@ export interface WeighingPaneProps {
     onResetTicketSeries: (startSeq: number) => Promise<{ Epoch: number }>;
 }
 
-export const WeighingPane = ({ onResetTicketSeries }: WeighingPaneProps) => {
-    const { settings, unlocked, save } = useSettings();
+interface IndicatorColumnProps {
+    settings: ReturnType<typeof useSettings>["settings"];
+    unlocked: boolean;
+    onSave: (next: ReturnType<typeof useSettings>["settings"]) => void;
+    onSetStability: (next: ReturnType<typeof useSettings>["settings"]["Stability"]) => void;
+}
+
+// Column 1 — the weight indicator (by request — 3-column layout:
+// indicator / ticket+date / rules). Pulled out of WeighingPane purely to
+// stay under the file's own line budget.
+const IndicatorColumn = ({ settings, unlocked, onSave, onSetStability }: IndicatorColumnProps) => {
     const { t } = useTranslation();
     const indicator = useIndicator();
     const reading = useIndicatorReading();
     const serial = isSerialIndicatorSource(indicator) ? indicator : null;
     const [ports, setPorts] = useState<string[]>([]);
     const [refreshing, setRefreshing] = useState(false);
-
-    const conn = settings.Connections;
 
     const rescan = (): void => {
         if (!serial) return;
@@ -49,6 +56,33 @@ export const WeighingPane = ({ onResetTicketSeries }: WeighingPaneProps) => {
 
     useEffect(rescan, [serial]);
 
+    return serial ? (
+        <IndicatorCard
+            settings={settings}
+            conn={settings.Connections}
+            unlocked={unlocked}
+            onSave={onSave}
+            ports={ports}
+            refreshing={refreshing}
+            onRescan={rescan}
+            error={serial.getConnectionError()}
+            reading={reading}
+            onSetStability={onSetStability}
+        />
+    ) : (
+        // Demo/web build has no serial port to configure, so no
+        // IndicatorCard — but the stability gate still applies to
+        // the simulated indicator, so it gets its own small card
+        // instead of disappearing.
+        <Card title={<span className="lbl">{t("settings.indicator.title")}</span>}>
+            <StabilityGateFields stability={settings.Stability} unlocked={unlocked} onChange={onSetStability} />
+        </Card>
+    );
+};
+
+export const WeighingPane = ({ onResetTicketSeries }: WeighingPaneProps) => {
+    const { settings, unlocked, save } = useSettings();
+
     const setRule = (key: keyof WeighingRules, checked: boolean): void => {
         void save({ ...settings, Rules: { ...settings.Rules, [key]: checked } });
     };
@@ -59,35 +93,13 @@ export const WeighingPane = ({ onResetTicketSeries }: WeighingPaneProps) => {
 
     return (
         <div className={styles.grid}>
-            {/* Column 1 — the weight indicator (by request — 3-column layout:
-                indicator / ticket+date / rules). */}
             <div className={styles.col}>
-                {serial ? (
-                    <IndicatorCard
-                        settings={settings}
-                        conn={conn}
-                        unlocked={unlocked}
-                        onSave={(next) => void save(next)}
-                        ports={ports}
-                        refreshing={refreshing}
-                        onRescan={rescan}
-                        error={serial.getConnectionError()}
-                        reading={reading}
-                        onSetStability={setStability}
-                    />
-                ) : (
-                    // Demo/web build has no serial port to configure, so no
-                    // IndicatorCard — but the stability gate still applies to
-                    // the simulated indicator, so it gets its own small card
-                    // instead of disappearing.
-                    <Card title={<span className="lbl">{t("settings.indicator.title")}</span>}>
-                        <StabilityGateFields
-                            stability={settings.Stability}
-                            unlocked={unlocked}
-                            onChange={setStability}
-                        />
-                    </Card>
-                )}
+                <IndicatorColumn
+                    settings={settings}
+                    unlocked={unlocked}
+                    onSave={(next) => void save(next)}
+                    onSetStability={setStability}
+                />
             </div>
             {/* Column 2 — ticket numbering and date & time merged into one
                 card (by request), instead of two separate cards stacked. */}

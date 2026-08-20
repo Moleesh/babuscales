@@ -62,16 +62,144 @@ const todayIso = (): string => {
     return toIsoDate(now.getFullYear(), now.getMonth(), now.getDate());
 };
 
-// A plain `<input type="date">`'s own popup is drawn by the OS/webview, not
-// this page — same problem Select.tsx already solved for `<select>`: none
-// of the app's CSS can theme it, and the custom cursor follower can't reach
-// it either — hovering it would show the legacy native OS pointer instead
-// of the app's custom cursor. This renders the whole calendar as ordinary
-// DOM buttons instead, styled and cursor-tracked like the rest of the app.
-export const DatePicker = ({ id, value, onChange, disabled, dateFmt, ...rest }: DatePickerProps) => {
-    const { t, lang } = useTranslation();
-    const [open, setOpen] = useState(false);
-    const ref = useCloseOnOutsideClick(open, () => setOpen(false));
+interface DatePickerTriggerProps {
+    id?: string;
+    label: string;
+    value: string;
+    disabled?: boolean;
+    open: boolean;
+    ariaLabel: string;
+    onToggle: () => void;
+}
+
+// The closed-state trigger button — pulled out of DatePicker purely to stay
+// under the file's own line budget.
+const DatePickerTrigger = ({ id, label, value, disabled, open, ariaLabel, onToggle }: DatePickerTriggerProps) => (
+    <button
+        id={id}
+        type="button"
+        className={`${styles.trigger} ${open ? styles.triggerOpen : ""} ${value ? "" : styles.placeholder}`}
+        disabled={disabled}
+        // The default 38px hover ring dwarfs a single-row trigger
+        // this compact (task screenshot: "remove the focus here its
+        // look too odd") — same smaller ring the calendar's own
+        // day/nav buttons already use below, and the same reasoning
+        // as Select's option rows (CustomCursor.module.css's
+        // `.hoverCompact`).
+        data-cursor="compact"
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        aria-label={ariaLabel}
+        onClick={onToggle}
+    >
+        <span className={styles.label}>{label}</span>
+        <svg className={styles.icon} viewBox="0 0 16 16" aria-hidden="true">
+            <rect x="1.5" y="2.5" width="13" height="12" rx="2" fill="none" stroke="currentColor" strokeWidth="1.3" />
+            <line x1="1.5" y1="6" x2="14.5" y2="6" stroke="currentColor" strokeWidth="1.3" />
+            <line x1="4.5" y1="1" x2="4.5" y2="3.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+            <line x1="11.5" y1="1" x2="11.5" y2="3.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+        </svg>
+    </button>
+);
+
+interface DatePickerCalendarProps {
+    value: string;
+    today: string;
+    monthLabel: string;
+    grid: ReturnType<typeof buildMonthGrid>;
+    dialogLabel: string;
+    onChangeMonth: (delta: 1 | -1) => void;
+    onPick: (iso: string) => void;
+    labels: { prevMonth: string; nextMonth: string; today: string; clear: string };
+}
+
+interface DatePickerGridProps {
+    value: string;
+    today: string;
+    grid: ReturnType<typeof buildMonthGrid>;
+    onPick: (iso: string) => void;
+}
+
+// The 42-cell day grid + its weekday header row — pulled out of
+// DatePickerCalendar purely to stay under the file's own line budget.
+const DatePickerGrid = ({ value, today, grid, onPick }: DatePickerGridProps) => (
+    <>
+        <div className={styles.weekdays}>
+            {WEEKDAY_LABELS.map((weekday, index) => (
+                // Fixed 7-item constant — index is a stable identity here (no react/no-array-index-key plugin registered in eslint.config.js to suppress).
+                <span key={index}>{weekday}</span>
+            ))}
+        </div>
+        <div className={styles.grid}>
+            {grid.map((cell, index) =>
+                cell ? (
+                    <button
+                        key={cell.iso}
+                        type="button"
+                        data-cursor="compact"
+                        className={`${styles.day} ${cell.iso === value ? styles.active : ""} ${cell.iso === today ? styles.today : ""}`}
+                        onClick={() => onPick(cell.iso)}
+                    >
+                        {cell.day}
+                    </button>
+                ) : (
+                    // Fixed 42-cell layout grid — blanks have no identity of their own, index is fine here.
+                    <span key={index} className={styles.blank} />
+                ),
+            )}
+        </div>
+    </>
+);
+
+// The open popover's whole calendar — pulled out of DatePicker purely to
+// stay under the file's own line budget.
+const DatePickerCalendar = ({
+    value,
+    today,
+    monthLabel,
+    grid,
+    dialogLabel,
+    onChangeMonth,
+    onPick,
+    labels,
+}: DatePickerCalendarProps) => (
+    <div className={styles.pop} role="dialog" aria-label={dialogLabel}>
+        <div className={styles.nav}>
+            <button
+                type="button"
+                className={styles.navBtn}
+                data-cursor="compact"
+                aria-label={labels.prevMonth}
+                onClick={() => onChangeMonth(-1)}
+            >
+                ‹
+            </button>
+            <span className={styles.navLabel}>{monthLabel}</span>
+            <button
+                type="button"
+                className={styles.navBtn}
+                data-cursor="compact"
+                aria-label={labels.nextMonth}
+                onClick={() => onChangeMonth(1)}
+            >
+                ›
+            </button>
+        </div>
+        <DatePickerGrid value={value} today={today} grid={grid} onPick={onPick} />
+        <div className={styles.actions}>
+            <button type="button" className={styles.actionBtn} onClick={() => onPick(today)}>
+                {labels.today}
+            </button>
+            <button type="button" className={styles.actionBtn} onClick={() => onPick("")}>
+                {labels.clear}
+            </button>
+        </div>
+    </div>
+);
+
+// The visible month/grid/label state — pulled out of DatePicker purely to
+// stay under the file's own line budget.
+const useCalendarView = (value: string, dateFmt: string | undefined, lang: string) => {
     const today = todayIso();
     const parsed = parseIsoDate(value) ?? parseIsoDate(today)!;
     // The visible month starts on the picked date if there is one,
@@ -79,10 +207,6 @@ export const DatePicker = ({ id, value, onChange, disabled, dateFmt, ...rest }: 
     // default, which would make opening an empty field a chore to page
     // back from.
     const [view, setView] = useState(() => ({ year: parsed.year, month: parsed.month }));
-
-    useLayoutEffect(() => {
-        if (disabled) setOpen(false);
-    }, [disabled]);
 
     const fmt = dateFmt ?? "dd-MM-yyyy";
     const label = value ? formatDateInFmt(value, lang, fmt) : fmt.toLowerCase();
@@ -96,6 +220,25 @@ export const DatePicker = ({ id, value, onChange, disabled, dateFmt, ...rest }: 
         });
     };
 
+    return { today, label, monthLabel, grid, changeMonth };
+};
+
+// A plain `<input type="date">`'s own popup is drawn by the OS/webview, not
+// this page — same problem Select.tsx already solved for `<select>`: none
+// of the app's CSS can theme it, and the custom cursor follower can't reach
+// it either — hovering it would show the legacy native OS pointer instead
+// of the app's custom cursor. This renders the whole calendar as ordinary
+// DOM buttons instead, styled and cursor-tracked like the rest of the app.
+export const DatePicker = ({ id, value, onChange, disabled, dateFmt, ...rest }: DatePickerProps) => {
+    const { t, lang } = useTranslation();
+    const [open, setOpen] = useState(false);
+    const ref = useCloseOnOutsideClick(open, () => setOpen(false));
+    const { today, label, monthLabel, grid, changeMonth } = useCalendarView(value, dateFmt, lang);
+
+    useLayoutEffect(() => {
+        if (disabled) setOpen(false);
+    }, [disabled]);
+
     const pick = (iso: string) => {
         onChange(iso);
         setOpen(false);
@@ -103,87 +246,31 @@ export const DatePicker = ({ id, value, onChange, disabled, dateFmt, ...rest }: 
 
     return (
         <div className={styles.wrap} ref={ref}>
-            <button
+            <DatePickerTrigger
                 id={id}
-                type="button"
-                className={`${styles.trigger} ${open ? styles.triggerOpen : ""} ${value ? "" : styles.placeholder}`}
+                label={label}
+                value={value}
                 disabled={disabled}
-                // The default 38px hover ring dwarfs a single-row trigger
-                // this compact (task screenshot: "remove the focus here its
-                // look too odd") — same smaller ring the calendar's own
-                // day/nav buttons already use below, and the same reasoning
-                // as Select's option rows (CustomCursor.module.css's
-                // `.hoverCompact`).
-                data-cursor="compact"
-                aria-haspopup="dialog"
-                aria-expanded={open}
-                aria-label={rest["aria-label"] ?? t("datePicker.openLabel")}
-                onClick={() => setOpen((v) => !v)}
-            >
-                <span className={styles.label}>{label}</span>
-                <svg className={styles.icon} viewBox="0 0 16 16" aria-hidden="true">
-                    <rect x="1.5" y="2.5" width="13" height="12" rx="2" fill="none" stroke="currentColor" strokeWidth="1.3" />
-                    <line x1="1.5" y1="6" x2="14.5" y2="6" stroke="currentColor" strokeWidth="1.3" />
-                    <line x1="4.5" y1="1" x2="4.5" y2="3.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
-                    <line x1="11.5" y1="1" x2="11.5" y2="3.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
-                </svg>
-            </button>
+                open={open}
+                ariaLabel={rest["aria-label"] ?? t("datePicker.openLabel")}
+                onToggle={() => setOpen((v) => !v)}
+            />
             {open && (
-                <div className={styles.pop} role="dialog" aria-label={t("datePicker.openLabel")}>
-                    <div className={styles.nav}>
-                        <button
-                            type="button"
-                            className={styles.navBtn}
-                            data-cursor="compact"
-                            aria-label={t("datePicker.prevMonth")}
-                            onClick={() => changeMonth(-1)}
-                        >
-                            ‹
-                        </button>
-                        <span className={styles.navLabel}>{monthLabel}</span>
-                        <button
-                            type="button"
-                            className={styles.navBtn}
-                            data-cursor="compact"
-                            aria-label={t("datePicker.nextMonth")}
-                            onClick={() => changeMonth(1)}
-                        >
-                            ›
-                        </button>
-                    </div>
-                    <div className={styles.weekdays}>
-                        {WEEKDAY_LABELS.map((weekday, index) => (
-                            // Fixed 7-item constant — index is a stable identity here (no react/no-array-index-key plugin registered in eslint.config.js to suppress).
-                            <span key={index}>{weekday}</span>
-                        ))}
-                    </div>
-                    <div className={styles.grid}>
-                        {grid.map((cell, index) =>
-                            cell ? (
-                                <button
-                                    key={cell.iso}
-                                    type="button"
-                                    data-cursor="compact"
-                                    className={`${styles.day} ${cell.iso === value ? styles.active : ""} ${cell.iso === today ? styles.today : ""}`}
-                                    onClick={() => pick(cell.iso)}
-                                >
-                                    {cell.day}
-                                </button>
-                            ) : (
-                                // Fixed 42-cell layout grid — blanks have no identity of their own, index is fine here.
-                                <span key={index} className={styles.blank} />
-                            ),
-                        )}
-                    </div>
-                    <div className={styles.actions}>
-                        <button type="button" className={styles.actionBtn} onClick={() => pick(todayIso())}>
-                            {t("datePicker.today")}
-                        </button>
-                        <button type="button" className={styles.actionBtn} onClick={() => pick("")}>
-                            {t("datePicker.clear")}
-                        </button>
-                    </div>
-                </div>
+                <DatePickerCalendar
+                    value={value}
+                    today={today}
+                    monthLabel={monthLabel}
+                    grid={grid}
+                    dialogLabel={t("datePicker.openLabel")}
+                    onChangeMonth={changeMonth}
+                    onPick={pick}
+                    labels={{
+                        prevMonth: t("datePicker.prevMonth"),
+                        nextMonth: t("datePicker.nextMonth"),
+                        today: t("datePicker.today"),
+                        clear: t("datePicker.clear"),
+                    }}
+                />
             )}
         </div>
     );

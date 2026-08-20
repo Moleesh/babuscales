@@ -156,6 +156,20 @@ pub fn save_doc(conn: &Connection, draft: &DocDraft) -> Result<DocRow, AppError>
 /// same next number.
 pub fn allocate_doc_seq(conn: &mut Connection, doc_id: &str) -> Result<DocRow, AppError> {
     let tx = conn.transaction_with_behavior(rusqlite::TransactionBehavior::Immediate)?;
+    let row = allocate_doc_seq_in_tx(&tx, doc_id)?;
+    tx.commit()?;
+    Ok(row)
+}
+
+/// The actual allocate-a-number logic, factored out of `allocate_doc_seq` so
+/// `save_doc_and_allocate_seq` below can run it inside the *same* `BEGIN
+/// IMMEDIATE` transaction as the save that precedes it, rather than as a
+/// second, separately-committed one — see that function's own comment for
+/// why the two used to be able to drift apart.
+fn allocate_doc_seq_in_tx(
+    tx: &rusqlite::Transaction,
+    doc_id: &str,
+) -> Result<DocRow, AppError> {
     let doc = {
         let sql = format!("{SELECT_DOC} WHERE doc_id = ?1");
         tx.query_row(&sql, params![doc_id], row_to_doc).optional()?
@@ -163,7 +177,6 @@ pub fn allocate_doc_seq(conn: &mut Connection, doc_id: &str) -> Result<DocRow, A
     .ok_or_else(|| AppError::Message(format!("allocateDocSeq: no doc {doc_id}")))?;
 
     if doc.doc_seq.is_some() {
-        tx.commit()?;
         return Ok(doc);
     }
 
@@ -178,13 +191,34 @@ pub fn allocate_doc_seq(conn: &mut Connection, doc_id: &str) -> Result<DocRow, A
         "UPDATE doc SET doc_seq = ?1, updated_at = ?2 WHERE doc_id = ?3",
         params![next_seq, updated_at, doc_id],
     )?;
-    let updated = {
-        let sql = format!("{SELECT_DOC} WHERE doc_id = ?1");
-        tx.query_row(&sql, params![doc_id], row_to_doc).optional()?
-    }
-    .ok_or_else(|| AppError::Message("allocateDocSeq: row vanished mid-transaction".into()))?;
+    let sql = format!("{SELECT_DOC} WHERE doc_id = ?1");
+    tx.query_row(&sql, params![doc_id], row_to_doc)
+        .optional()?
+        .ok_or_else(|| AppError::Message("allocateDocSeq: row vanished mid-transaction".into()))
+}
+
+/// `useWeighingTicket.ts`'s `save()` used to call `saveDoc` then, only if
+/// the row came back with no number yet, `allocateDocSeq` as a *second*,
+/// separately-committed IPC round trip — a crash, power loss, or killed
+/// process between the two left a doc with two Captures already in
+/// (Reports/Weighing's own "is this complete" checks) but permanently
+/// stuck with `doc_seq: NULL`, since nothing ever retries an allocation for
+/// a doc that already has its final captures. One `BEGIN IMMEDIATE`
+/// transaction around both steps closes that window — either both land or
+/// neither does.
+pub fn save_doc_and_allocate_seq(
+    conn: &mut Connection,
+    draft: &DocDraft,
+) -> Result<DocRow, AppError> {
+    let tx = conn.transaction_with_behavior(rusqlite::TransactionBehavior::Immediate)?;
+    let saved = save_doc(&tx, draft)?;
+    let row = if saved.doc_seq.is_none() {
+        allocate_doc_seq_in_tx(&tx, &saved.doc_id)?
+    } else {
+        saved
+    };
     tx.commit()?;
-    Ok(updated)
+    Ok(row)
 }
 
 fn current_series_epoch(

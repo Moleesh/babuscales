@@ -95,15 +95,25 @@ const useReportsScreenFilters = () => {
 // whenever anything that reshuffles or reshortens `visibleRows` changes.
 // Without this, narrowing a search from page 3 of 300 rows down to 4 rows
 // would leave the table stuck on an empty page 3 instead of jumping back.
-const useResetPageOnFilterChange = (
-    setPageIndex: (pageIndex: number) => void,
-    query: string,
-    filter: TicketRowFilter,
-    dateFrom: string,
-    dateTo: string,
-    sortKey: TicketSortKey,
-    sortDir: SortDir,
-): void => {
+interface UseResetPageOnFilterChangeArgs {
+    setPageIndex: (pageIndex: number) => void;
+    query: string;
+    filter: TicketRowFilter;
+    dateFrom: string;
+    dateTo: string;
+    sortKey: TicketSortKey;
+    sortDir: SortDir;
+}
+
+const useResetPageOnFilterChange = ({
+    setPageIndex,
+    query,
+    filter,
+    dateFrom,
+    dateTo,
+    sortKey,
+    sortDir,
+}: UseResetPageOnFilterChangeArgs): void => {
     useEffect(() => {
         setPageIndex(0);
     }, [setPageIndex, query, filter, dateFrom, dateTo, sortKey, sortDir]);
@@ -128,44 +138,17 @@ const useReportsIntentEffect = (
     }, [reportsIntent, setView, setFilter]);
 };
 
-// Split out of ReportsScreen (over the line/complexity budget —
-// docs/CodingStandards.md) — bundles the screen's own local state
-// (view/query/filter/date-range/groupBy/printOpen) together with the two
-// existing derived-data/handler hooks (useSavedReportActions,
-// useReportsScreenData) so ReportsScreen itself only calls one hook.
-export const useReportsScreenController = ({
-    db,
-    docs,
-    onOpenTicket,
-    amountDp,
-    weightUnit,
-    dateFmt,
-    timeFmt,
-    currentEpoch,
-    styles,
-    t,
-    lang,
-    reportsIntent,
-}: UseReportsScreenControllerArgs) => {
-    const filters = useReportsScreenFilters();
-    const {
-        view,
-        groupBy,
-        filter,
-        setView,
-        setGroupBy,
-        setFilter,
-        dateFrom,
-        dateTo,
-        setDateFrom,
-        setDateTo,
-        visibleColumnKeys,
-        setVisibleColumnKeys,
-        query,
-        sortKey,
-        sortDir,
-        setPageIndex,
-    } = filters;
+// Split out of useReportsScreenController (over the line/complexity budget —
+// docs/CodingStandards.md) — wires the two existing derived-data/handler
+// hooks (useSavedReportActions, useReportsScreenData) off the shared filter
+// state, so the controller itself only assembles the pieces.
+const useReportsScreenDerivedData = (
+    filters: ReturnType<typeof useReportsScreenFilters>,
+    args: Omit<UseReportsScreenControllerArgs, "reportsIntent">,
+) => {
+    const { db, docs, onOpenTicket, amountDp, weightUnit, dateFmt, timeFmt, currentEpoch, styles, t, lang } = args;
+    const { view, groupBy, filter, setView, setGroupBy, setFilter, dateFrom, dateTo, setDateFrom, setDateTo, visibleColumnKeys, setVisibleColumnKeys } =
+        filters;
 
     const savedReportActions = useSavedReportActions({
         db,
@@ -196,13 +179,27 @@ export const useReportsScreenController = ({
         lang,
     });
 
+    return { savedReportActions, screenData };
+};
+
+// Split out of ReportsScreen (over the line/complexity budget —
+// docs/CodingStandards.md) — bundles the screen's own local state
+// (view/query/filter/date-range/groupBy/printOpen) together with the two
+// existing derived-data/handler hooks (useSavedReportActions,
+// useReportsScreenData) so ReportsScreen itself only calls one hook.
+export const useReportsScreenController = (args: UseReportsScreenControllerArgs) => {
+    const { dateFmt, reportsIntent } = args;
+    const filters = useReportsScreenFilters();
+    const { setView, setFilter, query, filter, dateFrom, dateTo, sortKey, sortDir, setPageIndex } = filters;
+    const { savedReportActions, screenData } = useReportsScreenDerivedData(filters, args);
+
     const showWaiting = (): void => {
         setView("tickets");
         setFilter("half");
     };
 
     useReportsIntentEffect(reportsIntent, setView, setFilter);
-    useResetPageOnFilterChange(setPageIndex, query, filter, dateFrom, dateTo, sortKey, sortDir);
+    useResetPageOnFilterChange({ setPageIndex, query, filter, dateFrom, dateTo, sortKey, sortDir });
 
     return { ...filters, savedReportActions, showWaiting, dateFmt, ...screenData };
 };

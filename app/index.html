@@ -18,21 +18,17 @@
         -->
         <div id="app-splash" role="status" aria-live="polite">
             <!--
-              Pin/close, wired by ./src/splashWindowControls.ts (a plain-DOM
-              side-effect module, same shape as ./src/disableNumberInputScroll.ts) —
-              the window fills the screen and pins itself the moment this
-              splash shows, so these need to be usable immediately too,
-              not only once Shell (AppShell.tsx's own pin/close pair) has
-              mounted. `aria-pressed` on the pin button is also how
-              App.tsx's `usePinToggle` reads the hand-off state once React
-              takes over — see its own comment.
+              Minimize/close, wired by ./src/splashWindowControls.ts (a
+              plain-DOM side-effect module, same shape as
+              ./src/disableNumberInputScroll.ts) — the window opens at its
+              normal configured size and position (no fill-to-monitor here
+              any more), so these need to be usable immediately too, not
+              only once Shell (AppShell.tsx's own minimize/close pair) has
+              mounted. Same glyph ("─") as AppShell's own minimize button,
+              for the same control before React ever takes over.
             -->
             <div id="app-splash-controls">
-                <button id="app-splash-pin" type="button" class="iconbtn" aria-pressed="true" aria-label="Pin on top">
-                    <svg id="app-splash-pin-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" aria-hidden="true">
-                        <path d="M6 1.5h4l-.5 4 2.5 2.5v1H9v4.5L8 15l-1-1.5V9H3.5v-1L6 5.5z" />
-                    </svg>
-                </button>
+                <button id="app-splash-minimize" type="button" class="iconbtn" aria-label="Minimize">─</button>
                 <button id="app-splash-close" type="button" class="iconbtn" aria-label="Close">✕</button>
             </div>
             <svg viewBox="0 0 38 32" width="66" height="56" aria-hidden="true">

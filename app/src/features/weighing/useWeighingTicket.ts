@@ -334,6 +334,97 @@ interface TicketPersistenceDeps {
     indicator: ReturnType<typeof useIndicator>;
 }
 
+// The actual persistence work behind `save` below — pulled out of
+// useTicketPersistenceActions purely to stay under the file's own line
+// budget; behaviour (including every bug-fix comment it carries) is
+// unchanged, just no longer inlined in the `useCallback` body.
+const saveTicket = async ({
+    docId,
+    captures,
+    fields,
+    customFields,
+    printCount,
+    sameTicketNo,
+    db,
+    dispatch,
+    indicator,
+}: TicketPersistenceDeps): Promise<void> => {
+    // Task: `docId` only exists here already if an earlier save
+    // persisted this same ticket with fewer captures in it (a
+    // parked/resumed single-weight ticket). With SameTicketNo off,
+    // the weight that completes the pair is deliberately NOT folded
+    // into that earlier doc — it's saved as a fresh doc (DocId
+    // undefined) with its own new number, and the original
+    // single-weight doc is left exactly as it already was in the
+    // DB: a standalone, permanent record under its own number. Both
+    // weights being captured before the very first save (docId
+    // still null) has nothing to split from, so it always behaves
+    // like SameTicketNo on regardless of the setting.
+    const splitIntoNewDoc = !sameTicketNo && docId !== null && captures.length >= 2;
+    // One atomic call (was `saveDoc` then a conditional `allocateDocSeq`
+    // as two separate IPC round trips) — a crash between the two used
+    // to be able to leave a doc with both captures in but no number,
+    // with nothing left to retry the allocation. See
+    // `save_doc_and_allocate_seq`'s own doc comment in docs.rs.
+    const row = await db.saveDocAndAllocateSeq({
+        DocId: splitIntoNewDoc ? undefined : (docId ?? undefined),
+        DocKind: "Ticket",
+        Body: buildTicketBody(fields, captures, printCount, customFields),
+    });
+    dispatch({ type: "Saved", docId: row.DocId, docSeq: row.DocSeq });
+    if (captures.length >= 2) {
+        // Bug fix: locking used to skip the indicator entirely, unlike
+        // the reset the single-capture branch below used to always
+        // take — "New ticket" can reach this branch (see startNew's
+        // save() call) while a "Send to lorry" animation for the
+        // last capture is still mid-flight, and that ticker was
+        // never told to stop.
+        dispatch({ type: "Lock" });
+        indicator.reset?.();
+    }
+    // Bug fix: a single-weight save used to always resetToNew()
+    // here — parking the doc in the DB but wiping it off screen
+    // immediately, so there was no way to print the receipt for
+    // that first weight ("print only happens when we have both
+    // Tare and Gross"). Now it just stays on screen — still saved,
+    // still editable for the second capture — and only actually
+    // resets on an explicit "New ticket" click (startNew below).
+};
+
+interface PrintTicketDeps {
+    docId: string;
+    captures: Capture[];
+    fields: TicketFormFields;
+    customFields: Record<string, CustomFieldValue>;
+    printCount: number;
+    db: ReturnType<typeof useDataPort>;
+    dispatch: Dispatch<TicketAction>;
+}
+
+// The actual persistence work behind `print` below — pulled out of
+// useTicketPersistenceActions purely to stay under the file's own line
+// budget; behaviour (including the bug-fix comment it carries) is
+// unchanged, just no longer inlined in the `useCallback` body.
+const printTicket = async ({ docId, captures, fields, customFields, printCount, db, dispatch }: PrintTicketDeps): Promise<void> => {
+    const nextCount = printCount + 1;
+    // Dispatched only after the save actually succeeds — this used
+    // to run before the `await`, so a failed `db.saveDoc` (licence
+    // gate, disk full, corrupt body) still left the in-memory
+    // `printCount` bumped. Since the Print button's own `disabled`
+    // is `!docId || printCount > 0`, that permanently disabled
+    // re-printing for a ticket the DB never actually recorded as
+    // printed.
+    await db.saveDoc({
+        DocId: docId,
+        DocKind: "Ticket",
+        Body: {
+            ...buildTicketBody(fields, captures, printCount, customFields),
+            PrintCount: nextCount,
+        },
+    });
+    dispatch({ type: "Printed" });
+};
+
 const useTicketPersistenceActions = ({
     docId,
     captures,
@@ -360,46 +451,18 @@ const useTicketPersistenceActions = ({
         savingRef.current = true;
         dispatch({ type: "SetSaving", saving: true });
         try {
-            // Task: `docId` only exists here already if an earlier save
-            // persisted this same ticket with fewer captures in it (a
-            // parked/resumed single-weight ticket). With SameTicketNo off,
-            // the weight that completes the pair is deliberately NOT folded
-            // into that earlier doc — it's saved as a fresh doc (DocId
-            // undefined) with its own new number, and the original
-            // single-weight doc is left exactly as it already was in the
-            // DB: a standalone, permanent record under its own number. Both
-            // weights being captured before the very first save (docId
-            // still null) has nothing to split from, so it always behaves
-            // like SameTicketNo on regardless of the setting.
-            const splitIntoNewDoc = !sameTicketNo && docId !== null && captures.length >= 2;
-            const row = await db.saveDoc({
-                DocId: splitIntoNewDoc ? undefined : (docId ?? undefined),
-                DocKind: "Ticket",
-                Body: buildTicketBody(fields, captures, printCount, customFields),
+            await saveTicket({
+                docId,
+                captures,
+                fields,
+                customFields,
+                printCount,
+                isLocked,
+                sameTicketNo,
+                db,
+                dispatch,
+                indicator,
             });
-            let seq = row.DocSeq;
-            if (seq === null) {
-                const numbered = await db.allocateDocSeq(row.DocId);
-                seq = numbered.DocSeq;
-            }
-            dispatch({ type: "Saved", docId: row.DocId, docSeq: seq });
-            if (captures.length >= 2) {
-                // Bug fix: locking used to skip the indicator entirely, unlike
-                // the reset the single-capture branch below used to always
-                // take — "New ticket" can reach this branch (see startNew's
-                // save() call) while a "Send to lorry" animation for the
-                // last capture is still mid-flight, and that ticker was
-                // never told to stop.
-                dispatch({ type: "Lock" });
-                indicator.reset?.();
-            }
-            // Bug fix: a single-weight save used to always resetToNew()
-            // here — parking the doc in the DB but wiping it off screen
-            // immediately, so there was no way to print the receipt for
-            // that first weight ("print only happens when we have both
-            // Tare and Gross"). Now it just stays on screen — still saved,
-            // still editable for the second capture — and only actually
-            // resets on an explicit "New ticket" click (startNew below).
         } finally {
             savingRef.current = false;
             dispatch({ type: "SetSaving", saving: false });
@@ -426,23 +489,7 @@ const useTicketPersistenceActions = ({
         if (!docId) return;
         dispatch({ type: "SetSaving", saving: true });
         try {
-            const nextCount = printCount + 1;
-            // Dispatched only after the save actually succeeds — this used
-            // to run before the `await`, so a failed `db.saveDoc` (licence
-            // gate, disk full, corrupt body) still left the in-memory
-            // `printCount` bumped. Since the Print button's own `disabled`
-            // is `!docId || printCount > 0`, that permanently disabled
-            // re-printing for a ticket the DB never actually recorded as
-            // printed.
-            await db.saveDoc({
-                DocId: docId,
-                DocKind: "Ticket",
-                Body: {
-                    ...buildTicketBody(fields, captures, printCount, customFields),
-                    PrintCount: nextCount,
-                },
-            });
-            dispatch({ type: "Printed" });
+            await printTicket({ docId, captures, fields, customFields, printCount, db, dispatch });
         } finally {
             dispatch({ type: "SetSaving", saving: false });
         }

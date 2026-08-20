@@ -11,13 +11,21 @@ import { useTranslation } from "@i18n/useTranslation";
 
 const RECENT_COUNT = 6;
 
-const buildRecentColumns = (
-    t: (key: string) => string,
-    lang: string,
-    weightUnit: WeightUnit,
-    dateFmt: string,
-    timeFmt: "24" | "12",
-): DataTableColumn<TicketRow>[] => [
+interface BuildRecentColumnsArgs {
+    t: (key: string) => string;
+    lang: string;
+    weightUnit: WeightUnit;
+    dateFmt: string;
+    timeFmt: "24" | "12";
+}
+
+const buildRecentColumns = ({
+    t,
+    lang,
+    weightUnit,
+    dateFmt,
+    timeFmt,
+}: BuildRecentColumnsArgs): DataTableColumn<TicketRow>[] => [
     {
         key: "no",
         header: t("dashboard.recent.col.ticket"),
@@ -54,7 +62,7 @@ export interface RecentTicketsCardProps {
 export const RecentTicketsCard = ({ rows, weightUnit, dateFmt, timeFmt }: RecentTicketsCardProps) => {
     const { t, lang } = useTranslation();
     const columns = useMemo(
-        () => buildRecentColumns(t, lang, weightUnit, dateFmt, timeFmt),
+        () => buildRecentColumns({ t, lang, weightUnit, dateFmt, timeFmt }),
         [t, lang, weightUnit, dateFmt, timeFmt],
     );
 

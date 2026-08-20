@@ -13,24 +13,15 @@ import { useMastersScreenState } from "./_private/useMastersScreenState";
 import styles from "./_styles/MastersScreen.module.css";
 import { buildKindOptions, visibleMasterKinds } from "./masterKindMeta";
 
-// One screen for everything saved: Parties, Materials,
-// Vehicles, Vehicle Types, Transporters, Places, Operators, Stored Tares.
-// FTS5 search and row virtualisation are still not built (app/README.md
-// known gap); keyset pagination for the visible list is (useMasterListPage,
-// "Load more"). Record selection/editing and every SearchableDropdown
-// elsewhere still go through useMasterCache's "load once, filter every
-// keystroke locally" cache, untouched — see useMasterCache.ts.
-// Split into masterColumns/masterFormBody/masterFormState (data shaping),
-// MastersListCard/MastersFormCard (the two Card blocks),
-// useMastersScreenState (data wiring) and
-// StoredTareFormFields/MasterFormFields/MasterFormActions/
-// useMasterFormActions (form JSX + handlers) — see _private/ for each.
-export const MastersScreen = () => {
-    const { lang, t } = useTranslation();
-    const { settings } = useSettings();
-    const { ticketSchema } = useSchema();
+// The kind/columns/options derivation Screen needs before it can render —
+// pulled out purely to stay under the file's own line budget.
+const useMastersScreenSetup = (
+    ticketSchema: ReturnType<typeof useSchema>["ticketSchema"],
+    settings: ReturnType<typeof useSettings>["settings"],
+    lang: string,
+    t: (key: string) => string,
+) => {
     const [activeKind, setActiveKind] = useState<MasterKind>("Party");
-    const [query, setQuery] = useState("");
     const kinds = useMemo(() => visibleMasterKinds(ticketSchema), [ticketSchema]);
     // The active kind can go stale when the schema changes out from under it
     // (an upload drops the kind currently open, or "Party" — the initial
@@ -49,12 +40,6 @@ export const MastersScreen = () => {
         () => ticketSchema.Masters?.find((entry) => entry.Kind === activeKind)?.Columns ?? [],
         [ticketSchema.Masters, activeKind],
     );
-    const { totalCount, reload, list, form } = useMastersScreenState(activeKind, masterColumns, query);
-
-    useEffect(() => {
-        setQuery("");
-    }, [activeKind]);
-
     // i18n keys keep the kind's own camelCase ("masters.vehicleType.label",
     // "masters.storedTare.label") — lowercasing the whole kind broke the
     // multi-word ones (masterKindMeta.ts's buildKindOptions had the same bug).
@@ -74,6 +59,34 @@ export const MastersScreen = () => {
         [activeKind, masterColumns, t, lang, settings.Formats.WeightUnit, settings.Formats.DateFmt, settings.Formats.TimeFmt],
     );
     const kindOptions = useMemo(() => buildKindOptions(lang, t, kinds), [lang, t, kinds]);
+
+    return { activeKind, setActiveKind, kinds, masterColumns, kindLower, columns, kindOptions };
+};
+
+// One screen for everything saved: Parties, Materials,
+// Vehicles, Vehicle Types, Transporters, Places, Operators, Stored Tares.
+// FTS5 search and row virtualisation are still not built (app/README.md
+// known gap); keyset pagination for the visible list is (useMasterListPage,
+// "Load more"). Record selection/editing and every SearchableDropdown
+// elsewhere still go through useMasterCache's "load once, filter every
+// keystroke locally" cache, untouched — see useMasterCache.ts.
+// Split into masterColumns/masterFormBody/masterFormState (data shaping),
+// MastersListCard/MastersFormCard (the two Card blocks),
+// useMastersScreenState (data wiring) and
+// StoredTareFormFields/MasterFormFields/MasterFormActions/
+// useMasterFormActions (form JSX + handlers) — see _private/ for each.
+export const MastersScreen = () => {
+    const { lang, t } = useTranslation();
+    const { settings } = useSettings();
+    const { ticketSchema } = useSchema();
+    const [query, setQuery] = useState("");
+    const { activeKind, setActiveKind, kinds, masterColumns, kindLower, columns, kindOptions } =
+        useMastersScreenSetup(ticketSchema, settings, lang, t);
+    const { totalCount, reload, list, form } = useMastersScreenState(activeKind, masterColumns, query);
+
+    useEffect(() => {
+        setQuery("");
+    }, [activeKind]);
 
     if (kinds.length === 0) {
         return (

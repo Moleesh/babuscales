@@ -67,13 +67,25 @@ export interface UseReportsScreenData {
     summaryColumns: DataTableColumn<SummaryRow>[];
 }
 
-// Split out of ReportsScreen (over the line/complexity budget —
-// docs/CodingStandards.md) — the docs -> rows -> {filtered rows, grouped
-// summary, print/export slip data, table columns} derivation chain,
-// unchanged from the inline version it replaces.
-export const useReportsScreenData = ({
+interface UseFilteredTicketRowsArgs {
+    docs: DocRow[];
+    query: string;
+    filter: TicketRowFilter;
+    dateFrom: string;
+    dateTo: string;
+    currentEpoch: number;
+    includeBacked: boolean;
+    groupBy: GroupKey;
+    sortKey: TicketSortKey;
+    sortDir: SortDir;
+    pageIndex: number;
+}
+
+// The docs -> rows -> {filtered rows, grouped summary} half of the
+// derivation chain — pulled out of useReportsScreenData purely to stay
+// under the file's own line budget.
+const useFilteredTicketRows = ({
     docs,
-    view,
     query,
     filter,
     dateFrom,
@@ -84,16 +96,7 @@ export const useReportsScreenData = ({
     sortKey,
     sortDir,
     pageIndex,
-    visibleColumnKeys,
-    onOpenTicket,
-    amountDp,
-    weightUnit,
-    dateFmt,
-    timeFmt,
-    styles,
-    t,
-    lang,
-}: UseReportsScreenDataArgs): UseReportsScreenData => {
+}: UseFilteredTicketRowsArgs) => {
     const rows = useMemo(() => buildTicketRows(docs), [docs]);
     // The open-ticket strip is a global "what's waiting right
     // now" indicator, not scoped to whatever date range Reports happens to
@@ -113,29 +116,39 @@ export const useReportsScreenData = ({
         [dateFilteredRows, query, filter, sortKey, sortDir],
     );
     const pageCount = useMemo(() => ticketPageCount(visibleRows.length), [visibleRows]);
-    const pagedRows = useMemo(
-        () => paginateTicketRows(visibleRows, pageIndex),
-        [visibleRows, pageIndex],
-    );
-    const summaryRows = useMemo(
-        () => summarizeTicketRows(dateFilteredRows, groupBy),
-        [dateFilteredRows, groupBy],
-    );
-    const reportSlipData = useMemo(
-        () =>
-            buildReportsScreenSlipData({
-                view,
-                summaryRows,
-                rows: dateFilteredRows,
-                visibleRows,
-                amountDp,
-                lang,
-                weightUnit,
-                dateFmt,
-                timeFmt,
-            }),
-        [view, summaryRows, dateFilteredRows, visibleRows, amountDp, lang, weightUnit, dateFmt, timeFmt],
-    );
+    const pagedRows = useMemo(() => paginateTicketRows(visibleRows, pageIndex), [visibleRows, pageIndex]);
+    const summaryRows = useMemo(() => summarizeTicketRows(dateFilteredRows, groupBy), [dateFilteredRows, groupBy]);
+
+    return { waitingCount, dateFilteredRows, visibleRows, pageCount, pagedRows, summaryRows };
+};
+
+interface UseReportsTableColumnsArgs {
+    onOpenTicket: (doc: DocRow) => void;
+    amountDp: 0 | 2;
+    weightUnit: WeightUnit;
+    styles: CSSModuleClasses;
+    t: Translate;
+    lang: string;
+    dateFmt: string;
+    timeFmt: "24" | "12";
+    visibleColumnKeys: TicketColumnKey[] | null;
+    groupBy: GroupKey;
+}
+
+// The ticket/summary DataTable column builders — pulled out of
+// useReportsScreenData purely to stay under the file's own line budget.
+const useReportsTableColumns = ({
+    onOpenTicket,
+    amountDp,
+    weightUnit,
+    styles,
+    t,
+    lang,
+    dateFmt,
+    timeFmt,
+    visibleColumnKeys,
+    groupBy,
+}: UseReportsTableColumnsArgs) => {
     const ticketColumns = useMemo(
         () =>
             buildTicketColumns({
@@ -151,10 +164,35 @@ export const useReportsScreenData = ({
             }),
         [onOpenTicket, amountDp, weightUnit, styles, t, lang, dateFmt, timeFmt, visibleColumnKeys],
     );
-    const summaryColumns = useMemo(
-        () => buildSummaryColumns({ groupBy, amountDp, t }),
-        [groupBy, amountDp, t],
+    const summaryColumns = useMemo(() => buildSummaryColumns({ groupBy, amountDp, t }), [groupBy, amountDp, t]);
+
+    return { ticketColumns, summaryColumns };
+};
+
+// Split out of ReportsScreen (over the line/complexity budget —
+// docs/CodingStandards.md) — the docs -> rows -> {filtered rows, grouped
+// summary, print/export slip data, table columns} derivation chain,
+// unchanged from the inline version it replaces.
+export const useReportsScreenData = (args: UseReportsScreenDataArgs): UseReportsScreenData => {
+    const { view, amountDp, lang, weightUnit, dateFmt, timeFmt } = args;
+    const { waitingCount, dateFilteredRows, visibleRows, pageCount, pagedRows, summaryRows } =
+        useFilteredTicketRows(args);
+    const reportSlipData = useMemo(
+        () =>
+            buildReportsScreenSlipData({
+                view,
+                summaryRows,
+                rows: dateFilteredRows,
+                visibleRows,
+                amountDp,
+                lang,
+                weightUnit,
+                dateFmt,
+                timeFmt,
+            }),
+        [view, summaryRows, dateFilteredRows, visibleRows, amountDp, lang, weightUnit, dateFmt, timeFmt],
     );
+    const { ticketColumns, summaryColumns } = useReportsTableColumns(args);
 
     return {
         waitingCount,
