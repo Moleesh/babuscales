@@ -33,6 +33,7 @@ export const ReportsScreenCard = ({ s, loading }: ReportsScreenCardProps) => {
         >
             <ReportsCardBody
                 loading={loading}
+                reportApplied={s.reportApplied}
                 savedReportActions={s.savedReportActions}
                 view={s.view}
                 query={s.query}

@@ -105,6 +105,11 @@ export interface TicketsViewProps {
     columns: DataTableColumn<TicketRow>[];
     rows: TicketRow[];
     loading: boolean;
+    /** Reports rework, item 3 — `false` until the operator explicitly asks
+     * for a report (see useReportsScreenController.ts's own comment);
+     * swaps the empty message to a "pick a saved view / build a report"
+     * prompt instead of "nothing matches that filter". */
+    reportApplied: boolean;
 }
 
 // Split out of ReportsScreen (over the line/complexity budget —
@@ -119,7 +124,7 @@ export interface TicketsViewProps {
 // `--datatable-max-height`) — task: "double scroll bar" — a paginated
 // 50-row page rarely fills that inner scroll region anyway, so `.main` is
 // now the only scroll container here.
-export const TicketsView = ({ columns, rows, loading }: TicketsViewProps) => {
+export const TicketsView = ({ columns, rows, loading, reportApplied }: TicketsViewProps) => {
     const { t } = useTranslation();
     return (
         <div className={styles.ticketsTable}>
@@ -132,6 +137,8 @@ export const TicketsView = ({ columns, rows, loading }: TicketsViewProps) => {
                         <span className={styles.loadingRow}>
                             <Spinner size="sm" label={t("reports.loading")} /> {t("reports.loading")}
                         </span>
+                    ) : !reportApplied ? (
+                        t("reports.selectReportEmpty")
                     ) : (
                         t("reports.ticketsEmpty")
                     )

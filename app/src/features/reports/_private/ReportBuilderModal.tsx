@@ -13,7 +13,7 @@ import { ReportBuilderReview } from "./ReportBuilderReview";
 import { ReportBuilderSaveRow } from "./ReportBuilderSaveRow";
 import { ReportsDateRangeRow } from "./ReportsDateRangeRow";
 import { groupOptions, filterOptions, viewOptions } from "../reportRows";
-import type { GroupKey, ReportView, TicketColumnKey, TicketRowFilter } from "../reportRows";
+import type { GroupKey, ReportView, TicketRowFilter } from "../reportRows";
 
 /** The full set of picks the builder saves/applies in one shot — same
  * fields the wizard's three steps used to split across screens, now one
@@ -25,7 +25,7 @@ export interface ReportBuilderDraft {
     filter: TicketRowFilter;
     dateFrom: string;
     dateTo: string;
-    visibleColumnKeys: TicketColumnKey[] | null;
+    visibleColumnKeys: string[] | null;
 }
 
 export interface ReportBuilderModalProps {
@@ -38,7 +38,7 @@ export interface ReportBuilderModalProps {
     initialFilter: TicketRowFilter;
     initialDateFrom: string;
     initialDateTo: string;
-    initialVisibleColumnKeys: TicketColumnKey[] | null;
+    initialVisibleColumnKeys: string[] | null;
     /** Persists the named report and applies it as the screen's active
      * view. The modal closes itself right after calling this — it does not
      * wait on the (async) save to finish. */

@@ -365,6 +365,7 @@ export const TA_PACK: LanguagePack = {
         "reports.page.ariaLabel": "பக்க வழிசெலுத்தல்",
         "reports.summaryEmpty": "இந்தக் குழுவில் இன்னும் முடிக்கப்பட்ட டிக்கெட்டுகள் இல்லை",
         "reports.ticketsEmpty": "அந்த வடிகட்டிக்கு பொருந்துவது எதுவும் இல்லை",
+        "reports.selectReportEmpty": "தரவைக் காண ஒரு சேமித்த காட்சியைத் தேர்ந்தெடுக்கவும் அல்லது அறிக்கை ஒன்றை உருவாக்கவும்",
         "reports.savedReportsDeletePrefix": "சேமித்த அறிக்கையை நீக்கு",
         "reports.savedReportsEditPrefix": "சேமித்த அறிக்கையை மறுபெயரிடு",
         "reports.savedReportsPlaceholder": "தற்போதைய காட்சியை சேமி…",

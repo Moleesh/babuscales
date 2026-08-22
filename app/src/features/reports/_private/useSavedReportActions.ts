@@ -4,8 +4,8 @@ import type { DataPort } from "@db/DataPort";
 import { addReportDef, deleteReportDef, loadReportDefs, renameReportDef } from "@db/reportDefs";
 import type { ReportDefinition } from "@db/reportDefs";
 
-import { GROUP_KEY_VALUES, TICKET_COLUMN_KEYS, TICKET_ROW_FILTER_VALUES } from "../reportRows";
-import type { GroupKey, ReportView, TicketColumnKey, TicketRowFilter } from "../reportRows";
+import { GROUP_KEY_VALUES, TICKET_ROW_FILTER_VALUES } from "../reportRows";
+import type { GroupKey, ReportView, TicketRowFilter } from "../reportRows";
 
 export interface UseSavedReportActionsArgs {
     db: DataPort;
@@ -17,13 +17,19 @@ export interface UseSavedReportActionsArgs {
      * date range and column selection. */
     dateFrom: string;
     dateTo: string;
-    visibleColumnKeys: TicketColumnKey[] | null;
+    visibleColumnKeys: string[] | null;
     setView: (view: ReportView) => void;
     setGroupBy: (groupBy: GroupKey) => void;
     setFilter: (filter: TicketRowFilter) => void;
     setDateFrom: (date: string) => void;
     setDateTo: (date: string) => void;
-    setVisibleColumnKeys: (keys: TicketColumnKey[] | null) => void;
+    setVisibleColumnKeys: (keys: string[] | null) => void;
+    /** Reports rework, item 3 — called once on a recall or a save-and-apply,
+     * so the controller can flip the screen out of its "no report selected"
+     * empty state. Never called for a rename/delete (those don't change
+     * what's applied) or for the invalidation effect below (that's the
+     * opposite direction). */
+    onApplied: () => void;
 }
 
 /** The report-builder modal's draft shape — duplicated here (rather than
@@ -36,18 +42,16 @@ export interface ReportBuilderSaveDraft {
     filter: TicketRowFilter;
     dateFrom: string;
     dateTo: string;
-    visibleColumnKeys: TicketColumnKey[] | null;
+    visibleColumnKeys: string[] | null;
 }
 
 export interface UseSavedReportActions {
     savedReports: ReportDefinition[];
-    newReportName: string;
-    setNewReportName: (name: string) => void;
-    handleSaveReport: () => void;
     /** Report-builder modal's Save — persists `draft` under `name` *and*
      * applies it as the screen's active view in the same action (item 3:
-     * close on save + auto-apply), instead of relying on the screen's own
-     * live state the way `handleSaveReport` above does. */
+     * close on save + auto-apply). The only save entry point now — the
+     * screen's own inline "Save current view as…" input/button was removed
+     * (Reports rework: "remove save view as and save view"). */
     handleSaveReportDraft: (draft: ReportBuilderSaveDraft, name: string) => void;
     handleRecallReport: (def: ReportDefinition) => void;
     handleDeleteReport: (id: string) => void;
@@ -64,8 +68,8 @@ export interface UseSavedReportActions {
 
 /** Split out of useSavedReportActions (over the line/complexity budget —
  * docs/CodingStandards.md) — `def.Columns`'s comma-joined string back to a
- * validated `TicketColumnKey[] | null` (an empty/all-invalid list means
- * "no restriction", the same as it never having been saved). */
+ * `string[] | null` (an empty list means "no restriction", the same as it
+ * never having been saved). */
 const buildSaveArgs = (
     args: Pick<UseSavedReportActionsArgs, "view" | "groupBy" | "filter" | "dateFrom" | "dateTo" | "visibleColumnKeys">,
     name: string,
@@ -79,11 +83,17 @@ const buildSaveArgs = (
     Columns: args.visibleColumnKeys?.join(",") ?? undefined,
 });
 
-const parseSavedColumns = (columns: string | undefined): TicketColumnKey[] | null => {
+/** Reports rework, item 5 — used to validate each token against the fixed
+ * `TICKET_COLUMN_KEYS` list and drop anything else, which silently dropped
+ * every custom-field column (`fieldColumnKey(FieldId)`, reportRows.ts) a
+ * saved report had picked — the very bug this item fixes. No validation
+ * needed here any more: `buildTicketColumns`' own filter (reportColumns.tsx)
+ * already drops any key with no matching column (built-in *or* field, e.g.
+ * one whose Field was since deleted from the schema) instead of erroring,
+ * so this just has to get the tokens back off the wire. */
+const parseSavedColumns = (columns: string | undefined): string[] | null => {
     if (!columns) return null;
-    const keys = columns
-        .split(",")
-        .filter((key): key is TicketColumnKey => TICKET_COLUMN_KEYS.includes(key as TicketColumnKey));
+    const keys = columns.split(",").filter(Boolean);
     return keys.length > 0 ? keys : null;
 };
 
@@ -132,12 +142,6 @@ interface SaveHandlerDeps
     extends Pick<
         UseSavedReportActionsArgs,
         | "db"
-        | "view"
-        | "groupBy"
-        | "filter"
-        | "dateFrom"
-        | "dateTo"
-        | "visibleColumnKeys"
         | "setView"
         | "setGroupBy"
         | "setFilter"
@@ -145,28 +149,19 @@ interface SaveHandlerDeps
         | "setDateTo"
         | "setVisibleColumnKeys"
     > {
-    newReportName: string;
     setSavedReports: (defs: ReportDefinition[]) => void;
-    setNewReportName: (name: string) => void;
 }
 
 /** Split out of useSavedReportActions (over the line/complexity budget —
- * docs/CodingStandards.md) — the two Save handlers (screen's own "Save
- * current view as…" input, and the report-builder modal's Save), unchanged
- * from the inline version it replaces. */
+ * docs/CodingStandards.md) — the report-builder modal's Save handler.
+ * Reports rework: "remove save view as and save view" — the screen's own
+ * inline "Save current view as…" input/button (SavedReportsRow.tsx's old
+ * `NewViewInput`) is gone, so this used to be a pair (`handleSaveReport` +
+ * `handleSaveReportDraft`) and is now just the one save entry point the
+ * report-builder wizard already owns. */
 const buildSaveHandlers = (
     deps: SaveHandlerDeps,
-): Pick<UseSavedReportActions, "handleSaveReport" | "handleSaveReportDraft"> => ({
-    handleSaveReport: (): void => {
-        const name = deps.newReportName.trim();
-        if (!name) return;
-        void addReportDef(deps.db, buildSaveArgs(deps, name))
-            .then(() => loadReportDefs(deps.db))
-            .then((defs) => {
-                deps.setSavedReports(defs);
-                deps.setNewReportName("");
-            });
-    },
+): Pick<UseSavedReportActions, "handleSaveReportDraft"> => ({
     handleSaveReportDraft: (draft: ReportBuilderSaveDraft, name: string): void => {
         const trimmed = name.trim();
         if (!trimmed) return;
@@ -189,10 +184,9 @@ const buildSaveHandlers = (
 // save/recall/delete handlers, unchanged from the inline version it
 // replaces.
 export const useSavedReportActions = (args: UseSavedReportActionsArgs): UseSavedReportActions => {
-    const { db, view, groupBy, filter, dateFrom, dateTo, visibleColumnKeys } = args;
+    const { db, view, groupBy, filter, dateFrom, dateTo, visibleColumnKeys, onApplied } = args;
     const { setView, setGroupBy, setFilter, setDateFrom, setDateTo, setVisibleColumnKeys } = args;
     const [savedReports, setSavedReports] = useLoadedReportDefs(db);
-    const [newReportName, setNewReportName] = useState("");
     // No saved view is applied on landing — the operator must explicitly
     // pick one from the dropdown (Reports rework: "no report selected by
     // default"). Recall (and the builder's Save-and-apply) sets this;
@@ -208,22 +202,19 @@ export const useSavedReportActions = (args: UseSavedReportActionsArgs): UseSaved
     // filter by hand" and skip clearing `selectedId` in the former case.
     const justAppliedRef = useRef(false);
 
-    const { handleSaveReport, handleSaveReportDraft: applyDraft } = buildSaveHandlers({
-        ...args,
-        newReportName,
-        setSavedReports,
-        setNewReportName,
-    });
+    const { handleSaveReportDraft: applyDraft } = buildSaveHandlers({ ...args, setSavedReports });
 
     const handleSaveReportDraft = (draft: ReportBuilderSaveDraft, name: string): void => {
         justAppliedRef.current = true;
         applyDraft(draft, name);
+        onApplied();
     };
 
     const handleRecallReport = (def: ReportDefinition): void => {
         justAppliedRef.current = true;
         applyRecalledReport(def, { setView, setGroupBy, setFilter, setDateFrom, setDateTo, setVisibleColumnKeys });
         setSelectedId(def.Id);
+        onApplied();
     };
 
     useEffect(() => {
@@ -251,9 +242,6 @@ export const useSavedReportActions = (args: UseSavedReportActionsArgs): UseSaved
 
     return {
         savedReports,
-        newReportName,
-        setNewReportName,
-        handleSaveReport,
         handleSaveReportDraft,
         handleRecallReport,
         handleDeleteReport,

@@ -23,6 +23,10 @@ import type {
 export interface ReportsCardBodyProps {
     /** True until the ticket docs behind Tickets/Summary have loaded once. */
     loading: boolean;
+    /** Reports rework, item 3 — `false` until the operator explicitly asks
+     * for a report; drives the "select a saved view or build a report"
+     * empty state below instead of the usual "nothing matches" one. */
+    reportApplied: boolean;
     savedReportActions: UseSavedReportActions;
     view: ReportView;
     query: string;
@@ -55,6 +59,7 @@ export interface ReportsCardBodyProps {
 type ReportsActiveViewProps = Pick<
     ReportsCardBodyProps,
     | "loading"
+    | "reportApplied"
     | "view"
     | "groupBy"
     | "onGroupByChange"
@@ -70,6 +75,7 @@ type ReportsActiveViewProps = Pick<
 // sticky wrapper above (ReportsCardBody's own `.sticky-filters`).
 const ReportsActiveView = ({
     loading,
+    reportApplied,
     view,
     groupBy,
     onGroupByChange,
@@ -79,7 +85,7 @@ const ReportsActiveView = ({
     summaryRows,
 }: ReportsActiveViewProps) =>
     view === "tickets" ? (
-        <TicketsView columns={ticketColumns} rows={pagedRows} loading={loading} />
+        <TicketsView columns={ticketColumns} rows={pagedRows} loading={loading} reportApplied={reportApplied} />
     ) : (
         <SummaryView
             groupBy={groupBy}
@@ -87,6 +93,7 @@ const ReportsActiveView = ({
             columns={summaryColumns}
             rows={summaryRows}
             loading={loading}
+            reportApplied={reportApplied}
         />
     );
 
@@ -149,9 +156,6 @@ export const ReportsCardBody = ({
                 <SavedReportsRow
                     savedReports={savedReportActions.savedReports}
                     selectedId={savedReportActions.selectedId}
-                    newName={savedReportActions.newReportName}
-                    onNewNameChange={savedReportActions.setNewReportName}
-                    onSave={savedReportActions.handleSaveReport}
                     onRecall={savedReportActions.handleRecallReport}
                     onDelete={savedReportActions.handleDeleteReport}
                     onRename={savedReportActions.handleRenameReport}

@@ -113,16 +113,24 @@
 }
 
 /* Task: Reports rework, item 3 originally made this `position: sticky;
-   bottom: 0` so Print/Export stayed reachable without scrolling back up.
-   Task: "when the data is limited can we move footer to end" — `.main`
-   (AppShell.module.css) is always stretched to fill the full viewport pane
-   regardless of how much content is actually in it, so a sticky bottom bar
-   still had room to float all the way down to the pane's true bottom edge
-   even on a short page (e.g. a last, partly-empty ticket page), leaving a
-   large gap of bare background above it. Plain static flow instead — the
-   bar now always sits directly after the Card, never floating away from
-   its content, and simply scrolls off with everything else on a long page. */
+   bottom: 0`. A later pass ("when the data is limited can we move footer to
+   end") switched it to plain static flow instead, since `.main`
+   (AppShell.module.css) always stretches to fill the full viewport pane
+   regardless of content, so the sticky bar could float down and leave a
+   gap above it on a short page. That traded one complaint for another —
+   fresh user feedback: "footer is missing" (reported alongside "header is
+   not looking good when scrolling") — on any page tall enough to scroll
+   (a full 50-row Tickets page, the common case now that item 3 gates the
+   empty state, so most visits that *do* show rows show a full page),
+   static flow means Print/Export/pagination are only reachable by
+   scrolling all the way past every row, which reads as "the footer is
+   gone" while mid-scroll. Back to sticky-bottom (same `z-index: 5` as
+   before, matching AppShell's own top-bar tier) — the short-page gap is
+   the smaller, purely-cosmetic regression of the two. */
 .bottom-bar {
+    position: sticky;
+    bottom: 0;
+    z-index: 5;
     background: var(--panel);
     border: 1px solid var(--line);
     border-radius: var(--radius);

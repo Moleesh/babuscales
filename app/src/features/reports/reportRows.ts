@@ -266,6 +266,28 @@ export const ticketColumnOptions = (t: Translate): { value: TicketColumnKey; lab
     { value: "status", label: t("reports.col.status") },
 ];
 
+// Reports rework, item 5 — "i have godown fields selected by the report not
+// showing them". `visibleColumnKeys` used to be typed `TicketColumnKey[] |
+// null`, a fixed built-in key set with no way to name a schema-driven custom
+// Field (e.g. a Godown schema's DriverMobile/NoOfBags) at all — the wizard's
+// column picker, and the saved report definition it produces, had no key
+// space for anything but the 10 fixed columns above, so a picked custom
+// field could never round-trip into the rendered table no matter what.
+// `visibleColumnKeys` is now `string[] | null` everywhere it flows
+// (ReportBuilderModal/useSavedReportActions/reportColumns.tsx/
+// useReportsScreenData.ts) — a `TicketColumnKey` is one of the fixed values
+// above, and a custom field's column is this prefix + its FieldId, so the
+// two key spaces can never collide (no built-in key starts with "field:").
+export const FIELD_COLUMN_PREFIX = "field:";
+
+export const fieldColumnKey = (fieldId: string): string => `${FIELD_COLUMN_PREFIX}${fieldId}`;
+
+export const isFieldColumnKey = (key: string): boolean => key.startsWith(FIELD_COLUMN_PREFIX);
+
+/** `null` if `key` isn't a custom-field column at all (one of the fixed `TicketColumnKey`s, or "action"). */
+export const fieldIdFromColumnKey = (key: string): string | null =>
+    isFieldColumnKey(key) ? key.slice(FIELD_COLUMN_PREFIX.length) : null;
+
 export type GroupKey = "material" | "party" | "vehicleNo" | "transporter";
 
 export const GROUP_KEY_VALUES: GroupKey[] = ["material", "party", "vehicleNo", "transporter"];

@@ -11,7 +11,12 @@
 
 /* Trigger — same look as components/Select's own `.trigger` (Select.module.css)
    so this "little customized" dropdown still reads as the same control
-   family, just narrower to leave room for the date pickers beside it. */
+   family, just narrower to leave room for the date pickers beside it. A
+   fixed `width` (not `min-width`/`max-width`) — user feedback: the trigger
+   used to grow/shrink with the recalled view's name, so the whole filter
+   line reflowed every time a different saved view was picked. Constant
+   width now, same as every other trigger-style control on this row
+   (ReportsDateRangeRow's DatePicker/Select triggers). */
 .trigger {
     display: flex;
     align-items: center;
@@ -24,8 +29,7 @@
     color: var(--text);
     font: inherit;
     font-size: 0.8125rem;
-    max-width: 180px;
-    min-width: 130px;
+    width: 180px;
 }
 .trigger:hover:not(:disabled),
 .trigger:active:not(:disabled) {
@@ -139,39 +143,4 @@
 }
 .rename-input:focus {
     outline: none;
-}
-
-.input {
-    padding: 8px 10px;
-    border-radius: 8px;
-    border: 1px solid var(--line);
-    background: var(--panel-2);
-    color: var(--text);
-    font: inherit;
-    font-size: 0.75rem;
-    min-width: 160px;
-}
-.input:focus {
-    border-color: var(--led);
-    outline: none;
-}
-
-.mini {
-    padding: 8px 12px;
-    border-radius: 8px;
-    border: 1px solid var(--line);
-    background: var(--panel-2);
-    color: var(--text);
-    font: inherit;
-    font-size: 0.75rem;
-    cursor: pointer;
-    white-space: nowrap;
-}
-.mini:hover:not(:disabled) {
-    border-color: var(--led-dim);
-    color: var(--led);
-}
-.mini:disabled {
-    opacity: 0.35;
-    cursor: not-allowed;
 }

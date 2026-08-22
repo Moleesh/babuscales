@@ -3,6 +3,7 @@ import { useMemo } from "react";
 import type { DataTableColumn } from "@components/DataTable";
 import type { WeightUnit } from "@constants/numberFormat";
 import type { DocRow } from "@db/types";
+import type { FieldBase } from "@engines/schemaEngine";
 
 import { buildSummaryColumns, buildTicketColumns } from "./reportColumns";
 import { buildReportsScreenSlipData } from "./reportSlipData";
@@ -23,7 +24,6 @@ import type {
     SeriesEpochOption,
     SortDir,
     SummaryRow,
-    TicketColumnKey,
     TicketRow,
     TicketRowFilter,
     TicketSortKey,
@@ -46,7 +46,19 @@ export interface UseReportsScreenDataArgs {
     sortDir: SortDir;
     /** Tickets view's current page (0-based) — see reportRows.ts's `paginateTicketRows`. */
     pageIndex: number;
-    visibleColumnKeys: TicketColumnKey[] | null;
+    visibleColumnKeys: string[] | null;
+    /** Reports rework, item 5 — the ticket schema's own reportable custom
+     * fields (reportColumns.tsx's `reportableSchemaFields`), threaded down
+     * so a selected field's report column can actually render — see
+     * useReportsScreenController.ts's own comment on where this is
+     * computed. */
+    schemaFields: FieldBase[];
+    /** Reports rework, item 3 — `false` until the operator explicitly asks
+     * for a report (recall/build/waiting-chip — see
+     * useReportsScreenController.ts's own comment on this same flag). While
+     * `false`, every derived row list here is forced empty so landing on
+     * Reports never shows data nobody asked for yet. */
+    reportApplied: boolean;
     onOpenTicket: (doc: DocRow) => void;
     amountDp: 0 | 2;
     weightUnit: WeightUnit;
@@ -83,6 +95,7 @@ interface UseFilteredTicketRowsArgs {
     sortKey: TicketSortKey;
     sortDir: SortDir;
     pageIndex: number;
+    reportApplied: boolean;
 }
 
 // The docs -> rows -> {filtered rows, grouped summary} half of the
@@ -100,6 +113,7 @@ const useFilteredTicketRows = ({
     sortKey,
     sortDir,
     pageIndex,
+    reportApplied,
 }: UseFilteredTicketRowsArgs) => {
     const rows = useMemo(() => buildTicketRows(docs), [docs]);
     // The open-ticket strip is a global "what's waiting right
@@ -116,13 +130,21 @@ const useFilteredTicketRows = ({
         () => filterRowsByDateRange(seriesFilteredRows, dateFrom, dateTo),
         [seriesFilteredRows, dateFrom, dateTo],
     );
+    // Reports rework, item 3 — "there should not be any record without a
+    // report being selected". Everything above still runs on the full
+    // (unfiltered) `rows`/`waitingCount` — the header's own waiting-count
+    // chip is a global indicator, not gated by this — only the two rendered
+    // row lists (Tickets/Summary) and their pagination are forced empty.
     const visibleRows = useMemo(
-        () => sortTicketRows(filterTicketRows(dateFilteredRows, query, filter), sortKey, sortDir),
-        [dateFilteredRows, query, filter, sortKey, sortDir],
+        () => (reportApplied ? sortTicketRows(filterTicketRows(dateFilteredRows, query, filter), sortKey, sortDir) : []),
+        [reportApplied, dateFilteredRows, query, filter, sortKey, sortDir],
     );
     const pageCount = useMemo(() => ticketPageCount(visibleRows.length), [visibleRows]);
     const pagedRows = useMemo(() => paginateTicketRows(visibleRows, pageIndex), [visibleRows, pageIndex]);
-    const summaryRows = useMemo(() => summarizeTicketRows(dateFilteredRows, groupBy), [dateFilteredRows, groupBy]);
+    const summaryRows = useMemo(
+        () => (reportApplied ? summarizeTicketRows(dateFilteredRows, groupBy) : []),
+        [reportApplied, dateFilteredRows, groupBy],
+    );
 
     return { waitingCount, rows, dateFilteredRows, visibleRows, pageCount, pagedRows, summaryRows };
 };
@@ -136,7 +158,8 @@ interface UseReportsTableColumnsArgs {
     lang: string;
     dateFmt: string;
     timeFmt: "24" | "12";
-    visibleColumnKeys: TicketColumnKey[] | null;
+    visibleColumnKeys: string[] | null;
+    schemaFields: FieldBase[];
     groupBy: GroupKey;
 }
 
@@ -152,6 +175,7 @@ const useReportsTableColumns = ({
     dateFmt,
     timeFmt,
     visibleColumnKeys,
+    schemaFields,
     groupBy,
 }: UseReportsTableColumnsArgs) => {
     const ticketColumns = useMemo(
@@ -166,8 +190,9 @@ const useReportsTableColumns = ({
                 dateFmt,
                 timeFmt,
                 visibleColumnKeys,
+                schemaFields,
             }),
-        [onOpenTicket, amountDp, weightUnit, styles, t, lang, dateFmt, timeFmt, visibleColumnKeys],
+        [onOpenTicket, amountDp, weightUnit, styles, t, lang, dateFmt, timeFmt, visibleColumnKeys, schemaFields],
     );
     const summaryColumns = useMemo(() => buildSummaryColumns({ groupBy, amountDp, t }), [groupBy, amountDp, t]);
 

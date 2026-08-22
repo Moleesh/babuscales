@@ -1,7 +1,7 @@
 import { useTranslation } from "@i18n/useTranslation";
 
 import { filterOptions, ticketColumnOptions, viewOptions } from "../reportRows";
-import type { ReportView, TicketColumnKey, TicketRowFilter } from "../reportRows";
+import type { ReportView, TicketRowFilter } from "../reportRows";
 import styles from "./_styles/ReportBuilderModal.module.css";
 
 export interface ReportBuilderReviewProps {
@@ -9,7 +9,7 @@ export interface ReportBuilderReviewProps {
     filter: TicketRowFilter;
     dateFrom: string;
     dateTo: string;
-    visibleColumnKeys: TicketColumnKey[] | null;
+    visibleColumnKeys: string[] | null;
 }
 
 /** Split out of ReportBuilderModal's step 3 (over the line/complexity

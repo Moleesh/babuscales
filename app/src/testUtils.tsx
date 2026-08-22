@@ -2,6 +2,7 @@ import { render } from "@testing-library/react";
 import type { RenderResult } from "@testing-library/react";
 import type { ReactElement } from "react";
 
+import { DEFAULT_TICKET_SCHEMA, SchemaProvider } from "@engines/schemaEngine";
 import { I18nProvider } from "@i18n/I18nProvider";
 
 // Shared test helper — most components read the active
@@ -15,6 +16,30 @@ import { I18nProvider } from "@i18n/I18nProvider";
 // eligible for `react-refresh/only-export-components` alongside `cssClass`.
 export const renderWithI18n = (ui: ReactElement): RenderResult =>
     render(ui, { wrapper: ({ children }) => <I18nProvider packs={[]}>{children}</I18nProvider> });
+
+// Reports rework, item 5 — ReportBuilderColumns (nested under
+// ReportBuilderModal) now calls useSchema() to list the active schema's
+// custom fields as extra column checkboxes, so any test rendering that tree
+// needs a SchemaProvider in scope too, not just I18nProvider. Seeded with
+// DEFAULT_TICKET_SCHEMA (schemaEngine's own built-in fallback, same one
+// App.tsx falls back to before a site has saved its own) — no test in this
+// suite depends on custom fields actually existing, only on the provider
+// being present so useSchema() doesn't throw.
+export const renderWithI18nAndSchema = (ui: ReactElement): RenderResult =>
+    render(ui, {
+        wrapper: ({ children }) => (
+            <I18nProvider packs={[]}>
+                <SchemaProvider
+                    ticketSchema={DEFAULT_TICKET_SCHEMA}
+                    schemas={[DEFAULT_TICKET_SCHEMA]}
+                    onSetTicketSchema={async () => {}}
+                    onSetActiveSchemaId={async () => {}}
+                >
+                    {children}
+                </SchemaProvider>
+            </I18nProvider>
+        ),
+    });
 
 // CSSModuleClasses (vite/client.d.ts) is an index signature, and this repo's
 // tsconfig turns on `noUncheckedIndexedAccess`, so `styles.someClass` types

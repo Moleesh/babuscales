@@ -15,13 +15,18 @@ export interface SummaryViewProps {
     columns: DataTableColumn<SummaryRow>[];
     rows: SummaryRow[];
     loading: boolean;
+    /** Reports rework, item 3 — `false` until the operator explicitly asks
+     * for a report; swaps the empty message to a "pick a saved view / build
+     * a report" prompt instead of "nothing in this group yet", since there
+     * genuinely is data, it just hasn't been asked for. */
+    reportApplied: boolean;
 }
 
 // Split out of ReportsScreen (over the line/complexity budget —
 // docs/CodingStandards.md) — the Summary-view group-by select + table,
 // unchanged from the inline version it replaces except for the added
 // loading spinner.
-export const SummaryView = ({ groupBy, onGroupByChange, columns, rows, loading }: SummaryViewProps) => {
+export const SummaryView = ({ groupBy, onGroupByChange, columns, rows, loading, reportApplied }: SummaryViewProps) => {
     const { t } = useTranslation();
     return (
         <>
@@ -39,6 +44,8 @@ export const SummaryView = ({ groupBy, onGroupByChange, columns, rows, loading }
                         <span className={styles.loadingRow}>
                             <Spinner size="sm" label={t("reports.loading")} /> {t("reports.loading")}
                         </span>
+                    ) : !reportApplied ? (
+                        t("reports.selectReportEmpty")
                     ) : (
                         t("reports.summaryEmpty")
                     )

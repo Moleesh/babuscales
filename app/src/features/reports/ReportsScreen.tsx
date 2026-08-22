@@ -1,8 +1,12 @@
+import { useMemo } from "react";
+
 import type { DocRow } from "@db/types";
 import { useDataPort } from "@db/useDataPort";
+import { useSchema } from "@engines/schemaEngine";
 import { useSettings } from "@features/settings";
 import { useTranslation } from "@i18n/useTranslation";
 
+import { reportableSchemaFields } from "./_private/reportColumns";
 import { ReportsScreenCard } from "./_private/ReportsScreenCard";
 import { ReportsScreenOverlays } from "./_private/ReportsScreenOverlays";
 import { useReportDocs } from "./_private/useReportDocs";
@@ -48,6 +52,12 @@ export const ReportsScreen = ({ onOpenTicket, reportsIntent = null }: ReportsScr
     const amountDp = settings.Formats.AmountDp;
     const currentEpoch = settings.Numbering.CurrentEpoch;
     const { docs, loading } = useReportDocs(db);
+    const { ticketSchema } = useSchema();
+    // Reports rework, item 5 — the one place the active schema is actually
+    // available (useSchema() needs SchemaContext, which the controller/data
+    // hooks below don't have access to on their own — see their own comments
+    // on why `schemaFields` is threaded in as a plain arg instead).
+    const schemaFields = useMemo(() => reportableSchemaFields(ticketSchema), [ticketSchema]);
     const s = useReportsScreenController({
         db,
         docs,
@@ -61,6 +71,7 @@ export const ReportsScreen = ({ onOpenTicket, reportsIntent = null }: ReportsScr
         t,
         lang,
         reportsIntent,
+        schemaFields,
     });
     return (
         <div className={styles.screen}>

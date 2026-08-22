@@ -7,7 +7,7 @@ import { ReportsActionsRow } from "./ReportsActionsRow";
 import { TicketsPaginationRow } from "./TicketsView";
 import type { UseSavedReportActions } from "./useSavedReportActions";
 import styles from "../_styles/ReportsScreen.module.css";
-import type { GroupKey, ReportView, TicketColumnKey, TicketRowFilter } from "../reportRows";
+import type { GroupKey, ReportView, TicketRowFilter } from "../reportRows";
 
 export interface ReportsScreenOverlaysProps {
     reportSlipData: ReportSlipData;
@@ -24,7 +24,7 @@ export interface ReportsScreenOverlaysProps {
     filter: TicketRowFilter;
     dateFrom: string;
     dateTo: string;
-    visibleColumnKeys: TicketColumnKey[] | null;
+    visibleColumnKeys: string[] | null;
     savedReportActions: UseSavedReportActions;
 }
 

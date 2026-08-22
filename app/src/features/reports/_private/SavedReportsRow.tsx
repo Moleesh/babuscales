@@ -10,9 +10,6 @@ export interface SavedReportsRowProps {
     /** `def.Id` of whichever saved view is currently applied, or `null` —
      * `null` on landing (Reports rework: "no report selected by default"). */
     selectedId: string | null;
-    newName: string;
-    onNewNameChange: (name: string) => void;
-    onSave: () => void;
     onRecall: (def: ReportDefinition) => void;
     onDelete: (id: string) => void;
     onRename: (id: string, name: string) => void;
@@ -166,40 +163,18 @@ const SavedViewsList = ({
     );
 };
 
-interface NewViewInputProps {
-    newName: string;
-    onNewNameChange: (name: string) => void;
-    onSave: () => void;
-}
-
-// The "Save current view as…" input + Save button — split out of
-// SavedReportsRow purely to keep it under the file's own line budget
-// (docs/CodingStandards.md).
-const NewViewInput = ({ newName, onNewNameChange, onSave }: NewViewInputProps) => {
-    const { t } = useTranslation();
-    return (
-        <>
-            <input
-                className={styles.input}
-                value={newName}
-                onChange={(event) => onNewNameChange(event.target.value)}
-                placeholder={t("reports.savedReportsPlaceholder")}
-                aria-label={t("reports.savedReportsNewAriaLabel")}
-                autoComplete="off"
-            />
-            <button type="button" className={styles.mini} disabled={!newName.trim()} onClick={onSave}>
-                {t("reports.savedReportsSave")}
-            </button>
-        </>
-    );
-};
+// The inline "Save current view as…" input + "Save view" button used to
+// live here (`NewViewInput`) — removed per user feedback: "remove save view
+// as and save view". Saving a named view now only happens through the
+// report-builder wizard's own save row (ReportBuilderSaveRow.tsx, wired via
+// ReportBuilderModal's `onSaveReport` -> useSavedReportActions'
+// `handleSaveReportDraft`), which already saves *and* applies a report in
+// one action — this row now only recalls/renames/deletes what's already
+// saved.
 
 export const SavedReportsRow = ({
     savedReports,
     selectedId,
-    newName,
-    onNewNameChange,
-    onSave,
     onRecall,
     onDelete,
     onRename,
@@ -251,7 +226,6 @@ export const SavedReportsRow = ({
                     onDelete={onDelete}
                 />
             )}
-            <NewViewInput newName={newName} onNewNameChange={onNewNameChange} onSave={onSave} />
         </div>
     );
 };
