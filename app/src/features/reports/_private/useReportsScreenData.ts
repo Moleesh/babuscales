@@ -11,6 +11,7 @@ import {
     filterRowsByDateRange,
     filterRowsBySeries,
     filterTicketRows,
+    listSeriesEpochOptions,
     paginateTicketRows,
     sortTicketRows,
     summarizeTicketRows,
@@ -19,6 +20,7 @@ import {
 import type {
     GroupKey,
     ReportView,
+    SeriesEpochOption,
     SortDir,
     SummaryRow,
     TicketColumnKey,
@@ -35,10 +37,10 @@ export interface UseReportsScreenDataArgs {
     filter: TicketRowFilter;
     dateFrom: string;
     dateTo: string;
-    /** `Numbering.CurrentEpoch` — the epoch `filterRowsBySeries` treats as "current". */
+    /** `Numbering.CurrentEpoch` — what `seriesEpoch === "current"` resolves to. */
     currentEpoch: number;
-    /** Reports' own "include tickets from before the last reset" toggle — true is a no-op (filterRowsBySeries). */
-    includeBacked: boolean;
+    /** Reports' own "include tickets from before the last reset" dropdown — `"current"` or a specific prior `SeriesEpoch` (reportRows.ts's `filterRowsBySeries`, scoped to exactly that one series). */
+    seriesEpoch: number | "current";
     groupBy: GroupKey;
     sortKey: TicketSortKey;
     sortDir: SortDir;
@@ -65,6 +67,8 @@ export interface UseReportsScreenData {
     reportSlipData: ReturnType<typeof buildReportsScreenSlipData>;
     ticketColumns: DataTableColumn<TicketRow>[];
     summaryColumns: DataTableColumn<SummaryRow>[];
+    /** Options for the "include tickets from before the last reset" dropdown — see reportRows.ts's `listSeriesEpochOptions`. */
+    seriesEpochOptions: SeriesEpochOption[];
 }
 
 interface UseFilteredTicketRowsArgs {
@@ -74,7 +78,7 @@ interface UseFilteredTicketRowsArgs {
     dateFrom: string;
     dateTo: string;
     currentEpoch: number;
-    includeBacked: boolean;
+    seriesEpoch: number | "current";
     groupBy: GroupKey;
     sortKey: TicketSortKey;
     sortDir: SortDir;
@@ -91,7 +95,7 @@ const useFilteredTicketRows = ({
     dateFrom,
     dateTo,
     currentEpoch,
-    includeBacked,
+    seriesEpoch,
     groupBy,
     sortKey,
     sortDir,
@@ -103,9 +107,10 @@ const useFilteredTicketRows = ({
     // have selected, so this reads the full unfiltered `rows`, not
     // `dateFilteredRows` below.
     const waitingCount = useMemo(() => rows.filter((row) => row.isOpen).length, [rows]);
+    const resolvedEpoch = seriesEpoch === "current" ? currentEpoch : seriesEpoch;
     const seriesFilteredRows = useMemo(
-        () => filterRowsBySeries(rows, currentEpoch, includeBacked),
-        [rows, currentEpoch, includeBacked],
+        () => filterRowsBySeries(rows, resolvedEpoch),
+        [rows, resolvedEpoch],
     );
     const dateFilteredRows = useMemo(
         () => filterRowsByDateRange(seriesFilteredRows, dateFrom, dateTo),
@@ -119,7 +124,7 @@ const useFilteredTicketRows = ({
     const pagedRows = useMemo(() => paginateTicketRows(visibleRows, pageIndex), [visibleRows, pageIndex]);
     const summaryRows = useMemo(() => summarizeTicketRows(dateFilteredRows, groupBy), [dateFilteredRows, groupBy]);
 
-    return { waitingCount, dateFilteredRows, visibleRows, pageCount, pagedRows, summaryRows };
+    return { waitingCount, rows, dateFilteredRows, visibleRows, pageCount, pagedRows, summaryRows };
 };
 
 interface UseReportsTableColumnsArgs {
@@ -174,9 +179,18 @@ const useReportsTableColumns = ({
 // summary, print/export slip data, table columns} derivation chain,
 // unchanged from the inline version it replaces.
 export const useReportsScreenData = (args: UseReportsScreenDataArgs): UseReportsScreenData => {
-    const { view, amountDp, lang, weightUnit, dateFmt, timeFmt } = args;
-    const { waitingCount, dateFilteredRows, visibleRows, pageCount, pagedRows, summaryRows } =
+    const { view, amountDp, lang, weightUnit, dateFmt, timeFmt, currentEpoch, t } = args;
+    const { waitingCount, rows, dateFilteredRows, visibleRows, pageCount, pagedRows, summaryRows } =
         useFilteredTicketRows(args);
+    // Every numbering series actually present on the (unfiltered) docs —
+    // feeds the "include tickets from before the last reset" dropdown
+    // (ReportsDateRangeRow.tsx). Reads `rows`, not `dateFilteredRows`, so
+    // switching series is never itself constrained by whatever series is
+    // currently selected.
+    const seriesEpochOptions = useMemo(
+        () => listSeriesEpochOptions(rows, currentEpoch, t),
+        [rows, currentEpoch, t],
+    );
     const reportSlipData = useMemo(
         () =>
             buildReportsScreenSlipData({
@@ -203,5 +217,6 @@ export const useReportsScreenData = (args: UseReportsScreenDataArgs): UseReports
         reportSlipData,
         ticketColumns,
         summaryColumns,
+        seriesEpochOptions,
     };
 };

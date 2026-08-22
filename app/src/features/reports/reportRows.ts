@@ -108,23 +108,56 @@ export const filterRowsByDateRange = (rows: TicketRow[], from: string, to: strin
 };
 
 /**
- * By default only "current series" tickets show — `row.seriesEpoch`
- * matching `Numbering.CurrentEpoch` (settingsSchema.ts, bumped whenever
- * "Reset the counter now" runs). Older tickets from before a reset are
- * kept forever, never dropped at the query layer (useReportDocs.ts still
+ * Reports always scopes to exactly one numbering series at a time —
+ * `row.seriesEpoch` matching the caller's chosen `epoch` (either
+ * `Numbering.CurrentEpoch`, settingsSchema.ts, or a prior series picked
+ * from the "include tickets from before the last reset" dropdown,
+ * ReportsDateRangeRow.tsx). Older tickets from before a reset are kept
+ * forever, never dropped at the query layer (useReportDocs.ts still
  * fetches every doc) — this is a pure display filter, same shape as
  * `filterRowsByDateRange` above, so a reset can never produce two tickets
- * that look identical (same formatted number) in the same default view.
- * `includeBacked` is the opt-in escape hatch (Reports' own toggle) — true
- * is a no-op, same "no bounds set" convention as the date-range filter.
+ * that look identical (same formatted number) in the same view. Scoping to
+ * exactly one series (never a merge across series) is deliberate — a
+ * vehicle/ticket-no search across two series could otherwise collide on
+ * the same displayed number.
  */
-export const filterRowsBySeries = (
+export const filterRowsBySeries = (rows: TicketRow[], epoch: number): TicketRow[] =>
+    rows.filter((row) => row.seriesEpoch === epoch);
+
+/** One entry per numbering series a ticket actually exists in, "Current"
+ * first — feeds the "include tickets from before the last reset" dropdown
+ * (ReportsDateRangeRow.tsx). There is no dedicated epoch registry
+ * (grepped the Rust backend/IPC layer — `reset_doc_series` just bumps a
+ * counter, DataPort.ts's own comment on `resetDocSeries`), so this derives
+ * the list from whatever `SeriesEpoch` values are actually present on the
+ * already-loaded docs, labeling each prior one by its earliest ticket's
+ * date so an operator can tell series apart without needing reset
+ * timestamps the backend never recorded. */
+export interface SeriesEpochOption {
+    epoch: number;
+    label: string;
+}
+
+export const listSeriesEpochOptions = (
     rows: TicketRow[],
     currentEpoch: number,
-    includeBacked: boolean,
-): TicketRow[] => {
-    if (includeBacked) return rows;
-    return rows.filter((row) => row.seriesEpoch === currentEpoch);
+    t: Translate,
+): SeriesEpochOption[] => {
+    const earliestByEpoch = new Map<number, string>();
+    for (const row of rows) {
+        const existing = earliestByEpoch.get(row.seriesEpoch);
+        if (!existing || row.at < existing) earliestByEpoch.set(row.seriesEpoch, row.at);
+    }
+    const priorEpochs = Array.from(earliestByEpoch.keys())
+        .filter((epoch) => epoch !== currentEpoch)
+        .sort((a, b) => b - a);
+    return [
+        { epoch: currentEpoch, label: t("reports.series.current") },
+        ...priorEpochs.map((epoch) => ({
+            epoch,
+            label: `${t("reports.series.priorPrefix")} ${earliestByEpoch.get(epoch)?.slice(0, 10) ?? ""}`,
+        })),
+    ];
 };
 
 export const filterOptions = (t: Translate): { value: TicketRowFilter; label: string }[] => [

@@ -66,6 +66,8 @@ export interface UseWeighingTicket {
     startNew: () => void;
     resume: (doc: DocRow) => void;
     print: () => Promise<void>;
+    /** Same "Lock" transition `save()` already applies unconditionally on every save — exposed directly so Reprint (ReprintLookupModal → WeighingScreen) can lock a resumed ticket's fields even when it only carries a single capture (`resume`'s own `isLocked` only locks a *complete*, 2-capture ticket, matching normal open-strip resume behaviour). */
+    lock: () => void;
 }
 
 // --- State + reducer -------------------------------------------------------
@@ -154,6 +156,46 @@ type TicketAction =
     | { type: "Resumed"; doc: DocRow }
     | { type: "Printed" };
 
+// Pulled out of the "Resumed" case below purely to keep ticketReducer
+// itself under the file's own 60-line function budget — same fields,
+// same reasoning, just its own named function.
+const resumedState = (doc: DocRow): TicketState => {
+    const body = parseTicketBody(doc.Body);
+    return {
+        docId: doc.DocId,
+        docSeq: doc.DocSeq,
+        fields: fieldsFromBody(body),
+        recalledFields: new Set(),
+        customFields: body.CustomFields ?? {},
+        // `captures` carries whichever single weight the parked ticket
+        // already has straight into Captured & Calculated (CalcCard
+        // reads off `ticket.captures`/`ticket.weights`, no separate
+        // "resumed weight" plumbing needed) — resuming a Tare-only
+        // ticket shows that Tare immediately, no re-weighing it.
+        // `defaultCaptureKind` then reads that same array and returns
+        // whichever of Tare/Gross is still missing, so the Tare/Gross
+        // toggle (ActionsCard's SegmentedControl, bound to
+        // `ticket.kind`) auto-flips to the correct side on its own —
+        // resume a Tare-only ticket and it's already armed for Gross,
+        // resume a Gross-only one (a loaded lorry weighed in first)
+        // and it's already armed for Tare. No manual toggle needed
+        // either way.
+        captures: body.Captures,
+        kind: defaultCaptureKind(body.Captures),
+        awaitingSave: false,
+        // Mirrors save()'s own rule: two captures in means the
+        // ticket is already finalised — `save()` is the only path
+        // that ever locks a ticket, so anything resumed at that
+        // length was already locked when it was saved. Only PLAN
+        // §7.5's open (one-weight) tickets should come back
+        // editable — a completed ticket resumed from Reports must
+        // stay locked, not reopen for editing.
+        isLocked: body.Captures.length >= 2,
+        printCount: body.PrintCount ?? 0,
+        saving: false,
+    };
+};
+
 // Exported (alongside `initialTicketState` below) purely so the unit test
 // can drive it directly — the doc comment above this reducer already
 // promises "a plain function to unit-test without touching React at all",
@@ -203,42 +245,8 @@ export const ticketReducer = (state: TicketState, action: TicketAction): TicketS
             };
         case "Lock":
             return { ...state, isLocked: true };
-        case "Resumed": {
-            const body = parseTicketBody(action.doc.Body);
-            return {
-                docId: action.doc.DocId,
-                docSeq: action.doc.DocSeq,
-                fields: fieldsFromBody(body),
-                recalledFields: new Set(),
-                customFields: body.CustomFields ?? {},
-                // `captures` carries whichever single weight the parked ticket
-                // already has straight into Captured & Calculated (CalcCard
-                // reads off `ticket.captures`/`ticket.weights`, no separate
-                // "resumed weight" plumbing needed) — resuming a Tare-only
-                // ticket shows that Tare immediately, no re-weighing it.
-                // `defaultCaptureKind` then reads that same array and returns
-                // whichever of Tare/Gross is still missing, so the Tare/Gross
-                // toggle (ActionsCard's SegmentedControl, bound to
-                // `ticket.kind`) auto-flips to the correct side on its own —
-                // resume a Tare-only ticket and it's already armed for Gross,
-                // resume a Gross-only one (a loaded lorry weighed in first)
-                // and it's already armed for Tare. No manual toggle needed
-                // either way.
-                captures: body.Captures,
-                kind: defaultCaptureKind(body.Captures),
-                awaitingSave: false,
-                // Mirrors save()'s own rule: two captures in means the
-                // ticket is already finalised — `save()` is the only path
-                // that ever locks a ticket, so anything resumed at that
-                // length was already locked when it was saved. Only PLAN
-                // §7.5's open (one-weight) tickets should come back
-                // editable — a completed ticket resumed from Reports must
-                // stay locked, not reopen for editing.
-                isLocked: body.Captures.length >= 2,
-                printCount: body.PrintCount ?? 0,
-                saving: false,
-            };
-        }
+        case "Resumed":
+            return resumedState(action.doc);
         case "Printed":
             return { ...state, printCount: state.printCount + 1 };
         default: {
@@ -560,7 +568,10 @@ const useTicketLifecycleActions = ({
         [dispatch, indicator],
     );
 
-    return { startNew, resume };
+    // Reprint's own lock — see UseWeighingTicket.lock's own doc comment.
+    const lock = useCallback(() => dispatch({ type: "Lock" }), [dispatch]);
+
+    return { startNew, resume, lock };
 };
 
 // The reducer itself plus the one derived effect that keeps `kind` in sync
@@ -640,6 +651,7 @@ const assembleTicket = ({
     startNew: lifecycleActions.startNew,
     resume: lifecycleActions.resume,
     print: persistenceActions.print,
+    lock: lifecycleActions.lock,
 });
 
 // `operatorName` is the mock's own "Operator on duty" (Settings' Appearance

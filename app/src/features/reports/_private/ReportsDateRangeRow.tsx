@@ -1,16 +1,30 @@
 import { DatePicker } from "@components/DatePicker";
+import { Select } from "@components/Select";
 import { useTranslation } from "@i18n/useTranslation";
 
 import styles from "../_styles/ReportsScreen.module.css";
+import type { SeriesEpochOption } from "../reportRows";
+
+/** `Select` needs a string-valued option list — `"current"` or the epoch
+ * itself, stringified (numbers round-trip cleanly through `Number(...)`,
+ * `SeriesEpoch` is always a small non-negative integer). */
+const CURRENT_EPOCH_VALUE = "current";
 
 export interface ReportsDateRangeRowProps {
     dateFrom: string;
     onDateFromChange: (date: string) => void;
     dateTo: string;
     onDateToChange: (date: string) => void;
-    /** Reports' "include tickets from before the last reset" toggle — off by default (reportRows.ts's filterRowsBySeries). Omitted by the report-builder wizard's step 1 (ReportBuilderStep1.tsx), which only scopes the date range itself, not this screen-level series toggle — the checkbox is hidden whenever this is left out. */
-    includeBacked?: boolean;
-    onIncludeBackedChange?: (includeBacked: boolean) => void;
+    /** Reports' "include tickets from before the last reset" dropdown —
+     * "Current" plus one entry per prior numbering series a ticket actually
+     * exists in (reportRows.ts's `listSeriesEpochOptions`). Picking a prior
+     * series scopes the whole screen to *only* that series, never a merge
+     * across series. Omitted by the report-builder modal (ReportBuilderModal.tsx),
+     * which only scopes the date range itself, not this screen-level series
+     * filter — the dropdown is hidden whenever these are left out. */
+    seriesEpoch?: number | "current";
+    onSeriesEpochChange?: (epoch: number | "current") => void;
+    seriesEpochOptions?: SeriesEpochOption[];
     /** Settings' `Formats.DateFmt` — passed straight through to `DatePicker`
      * so the two trigger buttons read a date in the same pattern as every
      * other date on this screen (reportColumns.tsx's own `formatDateInFmt`
@@ -32,8 +46,9 @@ export const ReportsDateRangeRow = ({
     onDateFromChange,
     dateTo,
     onDateToChange,
-    includeBacked,
-    onIncludeBackedChange,
+    seriesEpoch,
+    onSeriesEpochChange,
+    seriesEpochOptions,
     dateFmt,
 }: ReportsDateRangeRowProps) => {
     const { t } = useTranslation();
@@ -56,15 +71,22 @@ export const ReportsDateRangeRow = ({
                 dateFmt={dateFmt}
                 aria-label={t("reports.dateToAriaLabel")}
             />
-            {onIncludeBackedChange ? (
-                <label className={styles.ck}>
-                    <input
-                        type="checkbox"
-                        checked={includeBacked ?? false}
-                        onChange={(event) => onIncludeBackedChange(event.target.checked)}
-                    />
-                    <span>{t("reports.includeBacked")}</span>
-                </label>
+            {onSeriesEpochChange && seriesEpochOptions ? (
+                <Select
+                    id="reportsSeriesEpoch"
+                    value={seriesEpoch === "current" || seriesEpoch === undefined ? CURRENT_EPOCH_VALUE : String(seriesEpoch)}
+                    options={seriesEpochOptions.map((option, index) => ({
+                        // `listSeriesEpochOptions` always puts "Current" first
+                        // (reportRows.ts) — that one entry gets the sentinel
+                        // value so it matches `seriesEpoch === "current"`
+                        // regardless of what `Numbering.CurrentEpoch` actually is.
+                        value: index === 0 ? CURRENT_EPOCH_VALUE : String(option.epoch),
+                        label: option.label,
+                    }))}
+                    onChange={(value) =>
+                        onSeriesEpochChange(value === CURRENT_EPOCH_VALUE ? "current" : Number(value))
+                    }
+                />
             ) : null}
         </div>
     );

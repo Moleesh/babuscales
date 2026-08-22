@@ -11,8 +11,12 @@ import {
     DEMO_VEHICLES,
 } from "./demoTicketFixtures";
 
-// Dev-only demo-data seeder for the Reports screen. Never called on app start — only from the explicit,
-// dev-gated "Add sample tickets" control in ReportsHeaderActions. Writes
+// Dev-only demo-data seeder, feeding the Reports screen (Tickets/Summary/
+// Dashboard all just read more `Ticket` docs). Never called on app start —
+// only from the explicit, dev-gated "Add sample tickets" control in
+// TicketAndDateTimeCard (Settings → Weighing → ticket numbering — moved
+// there from Reports by request, to sit next to the other ticket-series
+// control). Writes
 // through the same `DataPort.saveDoc`/`allocateDocSeq` every real ticket
 // uses (useWeighingTicket.ts's own `save()`), so seeded tickets are
 // indistinguishable from real ones to every other screen — Tickets,

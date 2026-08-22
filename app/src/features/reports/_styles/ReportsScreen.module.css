@@ -75,6 +75,20 @@
     flex-wrap: wrap;
 }
 
+/* Reports rework, item 1 — the saved-views dropdown + "Save current view
+   as…" input now share this one line with ReportsDateRangeRow's date
+   pickers + series dropdown (ReportsCardBody.tsx), instead of the saved
+   views getting their own crowded row above it. Same flex-wrap shape as
+   `.date-range` — a plain wrapper, kept as its own class rather than reusing
+   `.date-range` so ReportsDateRangeRow's own top-level element (rendered
+   nested inside this one) isn't visually confused with its parent. */
+.filter-bar {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    flex-wrap: wrap;
+}
+
 /* `.date-input` (the old `<input type="date">` styling) removed — the
    fields in this row are `DatePicker` now (components/DatePicker), which
    carries its own trigger styling. */

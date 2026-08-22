@@ -6,14 +6,16 @@ import type { WeightUnit } from "@constants/numberFormat";
 import type { Capture, CaptureType } from "@db/ticketBody";
 import type { DerivedWeights } from "@db/ticketBody";
 import { hasCapture } from "@db/ticketBody";
+import type { FormulaContext, FormulaValue } from "@engines/formulaEngine";
+import { fromInt } from "@engines/formulaEngine/Decimal";
 import { resolveFieldIdLabel } from "@engines/schemaEngine";
 import type { Field } from "@engines/schemaEngine";
 import { resolveLocalized } from "@i18n/types";
 import { useTranslation } from "@i18n/useTranslation";
 
-import { CalcFormula } from "./CalcFormula";
 import type { CalcFieldResults } from "./calcSegments";
 import { getCalcItemsForFields } from "./calcSegments";
+import { describeFormulaSubstitution } from "./formulaBreakdown";
 import { ManualCalcBox } from "./ManualCalcBox";
 import { evaluateFieldVisible } from "./schemaFieldValidation";
 import { resolveFieldLabel } from "./ticketFieldIds";
@@ -209,6 +211,29 @@ const TareGrossBoxes = ({
     );
 };
 
+// Net is always `Gross - Tare` (buildTicketFormulaContext.ts's own rule) —
+// the one fixed-box formula CalcCard owns outright rather than reading off
+// a schema `Formula` field. A minimal, local `FormulaContext` exposing just
+// those two variables is enough to reuse `describeFormulaSubstitution`
+// (formulaBreakdown.ts) instead of duplicating its substitution walk here,
+// same "Label = formula = substituted = result" line CalcSegmentRows already
+// renders per schema-driven calc field (task: "show this per calculated
+// field box", not just once at the bottom — see CalcCard's own removed
+// `showSummary`/CalcFormula usage).
+const netFormulaBreakdown = (weights: DerivedWeights): string | undefined => {
+    if (weights.netKg === null || weights.grossKg === null || weights.tareKg === null) return undefined;
+    const grossKg = weights.grossKg;
+    const tareKg = weights.tareKg;
+    const ctx: FormulaContext = {
+        getVariable: (name: string): FormulaValue => {
+            if (name === "Gross") return fromInt(grossKg);
+            if (name === "Tare") return fromInt(tareKg);
+            throw new Error(`unknown variable ${name}`);
+        },
+    };
+    return describeFormulaSubstitution("Gross - Tare", ctx) ?? undefined;
+};
+
 interface NetChargeBoxesProps {
     weights: DerivedWeights;
     weightUnit: WeightUnit;
@@ -222,7 +247,9 @@ interface NetChargeBoxesProps {
 }
 
 // Pulled out of CalcCard's own body (over the line budget —
-// docs/CodingStandards.md) — the Net/Charge half of the four-box grid.
+// docs/CodingStandards.md) — the Net/Charge half of the four-box grid, plus
+// Net's own substituted-formula line right under its box (Charge has no
+// formula — it's a plain editable field, same as Challan No).
 const NetChargeBoxes = ({
     weights,
     weightUnit,
@@ -233,20 +260,32 @@ const NetChargeBoxes = ({
     chargeValue,
     onChargeChange,
     isLocked,
-}: NetChargeBoxesProps) => (
-    <>
-        {showNet && (
-            <CalcBox
-                label={netLabel}
-                value={weights.netKg !== null ? formatWeightIn(weights.netKg, weightUnit) : "—"}
-                lead={weights.netKg !== null}
-            />
-        )}
-        {showCharge && (
-            <ChargeBox label={chargeLabel} value={chargeValue} onChange={onChargeChange} readOnly={isLocked} />
-        )}
-    </>
-);
+}: NetChargeBoxesProps) => {
+    const netBreakdown = showNet ? netFormulaBreakdown(weights) : undefined;
+    return (
+        <>
+            {showNet && (
+                <div className={styles.calcBoxWithFormula}>
+                    <CalcBox
+                        label={netLabel}
+                        value={weights.netKg !== null ? formatWeightIn(weights.netKg, weightUnit) : "—"}
+                        lead={weights.netKg !== null}
+                    />
+                    {netBreakdown && weights.netKg !== null && (
+                        <div className={styles.formula}>
+                            <span>
+                                {netLabel} = {netBreakdown} = <em>{formatPlainNumber(weights.netKg)}</em>
+                            </span>
+                        </div>
+                    )}
+                </div>
+            )}
+            {showCharge && (
+                <ChargeBox label={chargeLabel} value={chargeValue} onChange={onChargeChange} readOnly={isLocked} />
+            )}
+        </>
+    );
+};
 
 // Manual entry mode replaces a not-yet-captured Tare/Gross box with an
 // editable input. Gated on whether that type has been captured yet, not
@@ -286,9 +325,6 @@ export interface CalcCardProps {
     /** Operator-entered, same field as challanNo — no auto-calc. */
     chargeValue: string;
     onChargeChange: (value: string) => void;
-    materialRate: number | null;
-    value: number | null;
-    amountDp: 0 | 2;
     /** Settings → Weighing → Rules.ManualEntry — off leaves Tare/Gross exactly the read-only boxes they've always been. */
     manualEntry: boolean;
     /** `ticket.kind` — which of the two boxes (if either) is the one still waiting on a weight; still gates the physical capture button, but no longer alone gates manual entry (see `manualTare`/`manualGross` below). */
@@ -303,22 +339,18 @@ export interface CalcCardProps {
     timeFmt: "24" | "12";
     /** `useComputedCalcFields` (WeighingScreen.tsx) — the whole schema's values/breakdowns; this card picks its own segment's slice out via `getCalcItemsForFields`. Empty for a schema with none, same as `DEFAULT_TICKET_SCHEMA`'s today. */
     calcValues: CalcFieldResults;
-    /** The formula derivation (CalcFormula) only makes sense once per ticket
-     * — WeighingLeftColumn sets this only on the last `"Calculated"`
-     * segment's card (the one holding the settled totals), not every one.
-     * The Tare/Gross/Net status pill used to render here too; it now lives
-     * in ActionsCard, under the capture button (task: "move the tare
-     * gross,net below the capture"). */
-    showSummary?: boolean;
 }
 
 // Split out of WeighingScreen (over the 300-line budget — docs/CodingStandards.md)
 // — one "Calculated" segment's card: the fixed 4-box grid (Tare/Gross/Net/
-// Charge, only for whichever of those this segment's own `fields` declare),
-// this segment's own calc-chain rows, and — only on the summary card — the
-// formula derivation (CalcFormula) and the one-line status pill.
-// Self-contained by design: only `ticket.weights`/`captures`, `charge`/
-// `materialRate`/`value` and `Formats.AmountDp` — no master-cache or
+// Charge, only for whichever of those this segment's own `fields` declare)
+// plus this segment's own calc-chain rows. Every calculated box — the fixed
+// Net box included (NetChargeBoxes' own `netFormulaBreakdown`) and each of
+// this segment's schema-driven `Formula` fields (CalcSegmentRows) — shows
+// its own substituted formula line right under it now; there is no longer a
+// single once-per-ticket summary line (former `showSummary`/CalcFormula.tsx,
+// removed — task: "show this per calculated field box"). Self-contained by
+// design: only `ticket.weights`/`captures`/`charge` — no master-cache or
 // DataPort deps.
 interface CalcBoxGridProps {
     fields: Field[];
@@ -400,9 +432,6 @@ export const CalcCard = ({
     captures,
     chargeValue,
     onChargeChange,
-    materialRate,
-    value,
-    amountDp,
     manualEntry,
     isLocked,
     onManualCapture,
@@ -410,7 +439,6 @@ export const CalcCard = ({
     dateFmt,
     timeFmt,
     calcValues,
-    showSummary,
 }: CalcCardProps) => {
     const { t, lang } = useTranslation();
     const boxLabel = (fieldId: string) => resolveFieldLabel(fields, fieldId, lang, t);
@@ -438,18 +466,6 @@ export const CalcCard = ({
                 boxLabel={boxLabel}
             />
             <CalcSegmentRows items={calcItems} lang={lang} t={t} />
-            {showSummary && (
-                <CalcFormula
-                    tareKg={weights.tareKg}
-                    grossKg={weights.grossKg}
-                    netKg={weights.netKg}
-                    materialRate={materialRate}
-                    value={value}
-                    amountDp={amountDp}
-                    grossWeightsKg={grossCaptures.map((c) => c.WeightKg)}
-                    weightUnit={weightUnit}
-                />
-            )}
         </Card>
     );
 };

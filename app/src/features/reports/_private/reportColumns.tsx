@@ -40,11 +40,12 @@ const renderStatusCell = (row: TicketRow, styles: CSSModuleClasses, t: Translate
         t("reports.status.complete")
     );
 
+// Reports rework, item 5 — "Reprint" removed from every ticket row here;
+// reprinting now only lives on the Weighing screen. Resume (for a still-open
+// ticket) is kept — it's a different action, not a reprint.
 const renderActionCell = (row: TicketRow, onOpenTicket: (doc: DocRow) => void, t: Translate) =>
-    row.isCancelled ? null : (
-        <Button onClick={() => onOpenTicket(row.doc)}>
-            {row.isOpen ? t("reports.action.resume") : t("reports.action.reprint")}
-        </Button>
+    row.isCancelled || !row.isOpen ? null : (
+        <Button onClick={() => onOpenTicket(row.doc)}>{t("reports.action.resume")}</Button>
     );
 
 // Split out of buildTicketColumns (over the line/complexity budget —
@@ -110,6 +111,23 @@ const buildAllTicketColumns = ({
 // `visibleColumnKeys` (set by the report-builder
 // wizard) filters the list down; `null` (the default) keeps every column,
 // same as before the wizard existed.
+// Reports rework, item 6 — Tickets' columns here are a fixed built-in set
+// (TICKET_COLUMN_KEYS/reportRows.ts: no/veh/party/mat/tare/gross/net/
+// charge/at/status/action), not one column per dynamic schema Field, so a
+// Field's Hide/Show toggle in Settings (FieldSchemaCard.tsx) has nothing to
+// retroactively break here — a saved report's `visibleColumnKeys` always
+// refers to one of these constant keys, never a schema Field id, so it can
+// never go stale the way a schema-Field-keyed column list could. The
+// `keys.includes(column.key)` filter below is already the "gracefully drop
+// anything no longer recognized" behaviour the task asked for: any key that
+// stops existing in `all` (e.g. a future column removed from the fixed set)
+// just silently disappears from the table instead of erroring or rendering
+// missing data. If Reports later grows per-schema-Field columns, the
+// analogous fix there is: default a new column-picker checkbox from the
+// field's live Hide/Show state (don't let the saved report's old value
+// override it), and filter the rendered columns down to
+// `schemaFields.map(f => f.Id)` so a field removed from the schema entirely
+// just drops its column instead of crashing on missing data.
 export const buildTicketColumns = (args: BuildTicketColumnsArgs): DataTableColumn<TicketRow>[] => {
     const all = buildAllTicketColumns(args);
     const { visibleColumnKeys = null } = args;

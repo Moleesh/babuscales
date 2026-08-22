@@ -47,12 +47,15 @@ const useReportsScreenFilters = () => {
     const [filter, setFilter] = useState<TicketRowFilter>("all");
     const [dateFrom, setDateFrom] = useState("");
     const [dateTo, setDateTo] = useState("");
-    // Reports' own "include tickets from before the last reset" toggle —
-    // plain local state, not persisted, same as every other filter here
-    // (dateFrom/dateTo aren't persisted either, only saved-report
-    // definitions are — useSavedReportActions.ts). Off by default so a
-    // "Reset the counter now" reads as a genuine fresh start.
-    const [includeBacked, setIncludeBacked] = useState(false);
+    // Reports' own "include tickets from before the last reset" control —
+    // now a dropdown over the numbering series a ticket can belong to
+    // (reportRows.ts's `SeriesEpochOption`), not a checkbox. `"current"` is
+    // the default so a "Reset the counter now" reads as a genuine fresh
+    // start; picking a specific prior series scopes the whole screen to
+    // *only* that series, never a merge across series (reportRows.ts's
+    // `filterRowsBySeries` doc comment). Plain local state, not persisted,
+    // same as every other filter here.
+    const [seriesEpoch, setSeriesEpoch] = useState<number | "current">("current");
     const [groupBy, setGroupBy] = useState<GroupKey>("material");
     const [printOpen, setPrintOpen] = useState(false);
     const [builderOpen, setBuilderOpen] = useState(false);
@@ -71,8 +74,8 @@ const useReportsScreenFilters = () => {
         setDateFrom,
         dateTo,
         setDateTo,
-        includeBacked,
-        setIncludeBacked,
+        seriesEpoch,
+        setSeriesEpoch,
         groupBy,
         setGroupBy,
         printOpen,

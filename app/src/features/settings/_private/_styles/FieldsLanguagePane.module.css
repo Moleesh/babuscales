@@ -17,6 +17,14 @@
     line-height: 1.6;
 }
 
+/* A Formula field's own expression, shown under its label in the field-schema table's Label column. */
+.formula {
+    font-size: 0.625rem;
+    color: var(--dim);
+    font-family: monospace;
+    margin-top: 2px;
+}
+
 /* Ported from the mock's own `.drop` — a dashed drop zone that doubles as a file-picker label. */
 .drop {
     display: grid;

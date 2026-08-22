@@ -1,39 +1,154 @@
-.row {
+/* The saved-views dropdown + "Save current view as…" input, sharing one
+   inline flex flow with ReportsDateRangeRow's date pickers (both live inside
+   ReportsCardBody's own `.date-range` row — ReportsScreen.module.css) so
+   they all read as one sticky filter line instead of two crowded rows. */
+.wrap {
+    position: relative;
     display: flex;
     align-items: center;
     gap: 7px;
-    flex-wrap: wrap;
 }
 
-.chip {
-    display: inline-flex;
+/* Trigger — same look as components/Select's own `.trigger` (Select.module.css)
+   so this "little customized" dropdown still reads as the same control
+   family, just narrower to leave room for the date pickers beside it. */
+.trigger {
+    display: flex;
     align-items: center;
-    gap: 3px;
+    justify-content: space-between;
+    gap: 8px;
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 8px 10px;
+    color: var(--text);
+    font: inherit;
+    font-size: 0.8125rem;
+    max-width: 180px;
+    min-width: 130px;
+}
+.trigger:hover:not(:disabled),
+.trigger:active:not(:disabled) {
+    transform: none;
+    box-shadow: none;
+}
+.triggerOpen {
+    border-radius: 8px 8px 0 0;
+    border-color: var(--led);
+    border-bottom-color: transparent;
+}
+.label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.chevron {
+    flex: none;
+    color: var(--dim);
+    font-size: 0.6875rem;
 }
 
-.delete {
-    padding: 0 5px;
-    border: 1px solid var(--line);
-    border-radius: 999px;
+.list {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    min-width: 220px;
+    z-index: 30;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    padding: 4px;
+    background: var(--panel);
+    border: 1px solid var(--led);
+    border-top: none;
+    border-radius: 0 0 10px 10px;
+    max-height: 280px;
+    overflow-y: auto;
+}
+
+.empty {
+    padding: 7px 9px;
+    color: var(--dim);
+    font-size: 0.75rem;
+}
+
+/* One row: the recall button flexes to fill, edit/delete are fixed-width
+   icon buttons beside it — same "affordance on the row, not just on hover"
+   choice as the rest of this app's touch-target rules (docs/CodingStandards.md §10). */
+.option-row {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    border-radius: 6px;
+}
+.option-row:hover {
     background: var(--panel-2);
+}
+.option-row-active {
+    background: var(--led-ghost);
+}
+
+.option {
+    flex: 1 1 auto;
+    text-align: left;
+    padding: 7px 9px;
+    border-radius: 6px;
+    border: none;
+    background: none;
+    color: var(--text);
+    font: inherit;
+    font-size: 0.8125rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.option:hover:not(:disabled),
+.option:active:not(:disabled) {
+    transform: none;
+    box-shadow: none;
+}
+
+.icon-btn {
+    flex: none;
+    padding: 4px 7px;
+    border: none;
+    background: none;
     color: var(--dim);
     font: inherit;
-    line-height: 1.6;
+    font-size: 0.75rem;
+    border-radius: 6px;
     cursor: pointer;
 }
-.delete:hover {
-    color: var(--alert);
-    border-color: var(--alert);
+.icon-btn:hover {
+    color: var(--led);
+    background: var(--panel);
+    transform: none;
+    box-shadow: none;
+}
+
+.rename-input {
+    flex: 1 1 auto;
+    margin: 3px;
+    padding: 5px 8px;
+    border-radius: 6px;
+    border: 1px solid var(--led);
+    background: var(--panel-2);
+    color: var(--text);
+    font: inherit;
+    font-size: 0.8125rem;
+}
+.rename-input:focus {
+    outline: none;
 }
 
 .input {
-    padding: 4px 9px;
-    border-radius: 999px;
+    padding: 8px 10px;
+    border-radius: 8px;
     border: 1px solid var(--line);
     background: var(--panel-2);
     color: var(--text);
     font: inherit;
-    font-size: 0.6875rem;
+    font-size: 0.75rem;
     min-width: 160px;
 }
 .input:focus {
@@ -42,13 +157,13 @@
 }
 
 .mini {
-    padding: 3px 9px;
-    border-radius: 7px;
+    padding: 8px 12px;
+    border-radius: 8px;
     border: 1px solid var(--line);
     background: var(--panel-2);
     color: var(--text);
     font: inherit;
-    font-size: 0.6875rem;
+    font-size: 0.75rem;
     cursor: pointer;
     white-space: nowrap;
 }

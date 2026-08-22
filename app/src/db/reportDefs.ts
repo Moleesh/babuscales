@@ -93,3 +93,17 @@ export const deleteReportDef = async (db: DataPort, id: string): Promise<void> =
         existing.filter((def) => def.Id !== id),
     );
 };
+
+/** Renames a saved report definition in place — everything else about it
+ * (View/GroupBy/Filter/dates/columns) is untouched. The saved-views dropdown's
+ * own edit (pencil) action, so an operator can fix a typo'd name without
+ * deleting and re-saving the whole definition. */
+export const renameReportDef = async (db: DataPort, id: string, name: string): Promise<void> => {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    const existing = await loadReportDefs(db);
+    await saveAll(
+        db,
+        existing.map((def) => (def.Id === id ? { ...def, Name: trimmed } : def)),
+    );
+};

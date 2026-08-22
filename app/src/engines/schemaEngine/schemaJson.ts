@@ -72,6 +72,10 @@ const masterColumnSchema = z.discriminatedUnion("Kind", [
 const masterSchemaSchema = z.object({
     Kind: z.enum(MASTER_KINDS),
     Columns: z.array(masterColumnSchema),
+    // Both additive/optional — an older saved schema with neither key keeps
+    // today's behavior exactly (see types.ts's MasterSchema doc comment).
+    AutoSaveOnUse: z.boolean().optional(),
+    HideAutoSavedFromList: z.boolean().optional(),
 });
 
 const fieldSegmentSchema = z.object({

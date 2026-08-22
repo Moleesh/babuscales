@@ -1,4 +1,5 @@
 import { Card } from "@components/Card";
+import { useDataPort } from "@db/useDataPort";
 import { useTranslation } from "@i18n/useTranslation";
 
 import type { SettingsBody, TicketNumbering } from "../settingsSchema";
@@ -6,6 +7,7 @@ import styles from "./_styles/SystemPane.module.css";
 import { DateTimeFormatFields } from "./DateTimeFormatFields";
 import { NumberingPrefixFields } from "./NumberingPrefixFields";
 import { NumberingResetRow } from "./NumberingResetRow";
+import { seedDemoTickets } from "./seedDemoTickets";
 
 export interface TicketAndDateTimeCardProps {
     settings: SettingsBody;
@@ -27,7 +29,13 @@ export const TicketAndDateTimeCard = ({
     onResetTicketSeries,
 }: TicketAndDateTimeCardProps) => {
     const { t } = useTranslation();
+    const db = useDataPort();
     const numbering = settings.Numbering;
+    // Dev-only "Add sample tickets" control — undefined (so the button never
+    // renders) outside a dev build. See seedDemoTickets.ts's own doc
+    // comment; lives here (next to the ticket-numbering reset) rather than
+    // on Reports by request.
+    const onSeedDemoTickets = import.meta.env.DEV ? () => void seedDemoTickets(db) : undefined;
     const setNumbering = (next: TicketNumbering): void => onSave({ ...settings, Numbering: next });
 
     // Bumping the counter's epoch is only half of "reset" — the other half
@@ -50,6 +58,11 @@ export const TicketAndDateTimeCard = ({
             <div className={styles.body}>
                 <NumberingPrefixFields numbering={numbering} unlocked={unlocked} onChange={setNumbering} />
                 <NumberingResetRow unlocked={unlocked} onResetTicketSeries={handleResetTicketSeries} />
+                {onSeedDemoTickets && (
+                    <button type="button" className={styles.mini} onClick={onSeedDemoTickets}>
+                        {t("reports.seedDemoTickets")}
+                    </button>
+                )}
             </div>
             <div className={styles.divider} />
             <div className={styles.body}>

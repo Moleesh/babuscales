@@ -188,6 +188,29 @@ export interface MasterColumn {
 export interface MasterSchema {
     Kind: MasterKind;
     Columns: MasterColumn[];
+    /**
+     * Task: "when a ticket is saved and a field tied to a Master has a value
+     * that doesn't yet exist in that Master's data, automatically save it as
+     * a new entry" — scoped to the Master itself (not the field schema),
+     * because the same Master can be reached from several fields/screens.
+     * Omitted/`undefined` means "on", matching this app's pre-existing
+     * behavior (`upsertTypedMasters.ts` has always auto-saved a typed
+     * Vehicle/Party/Material/Transporter unconditionally); set `false` to
+     * turn that off for just this Master.
+     */
+    AutoSaveOnUse?: boolean;
+    /**
+     * Only meaningful when `AutoSaveOnUse` isn't `false`. When on, a
+     * ticket-save-triggered auto-save is marked (`MasterRow.Body.AutoSaved`)
+     * and left out of the Masters admin screen's own browse/search list
+     * (`useMasterListPage.ts`) — still a real row, still an exact-name match
+     * for autofill/dedup (`upsertTypedMasters.ts`'s own `cache.rows` check,
+     * `useMasterCache` search) — until an admin opens it directly and saves
+     * it again, which clears the marker (`useMasterFormActions.ts`).
+     * Defaults to off (unset), so an existing Master's list keeps showing
+     * every row exactly as it does today.
+     */
+    HideAutoSavedFromList?: boolean;
 }
 
 // One named group of fields — WeighingLeftColumn.tsx renders one card per

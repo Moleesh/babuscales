@@ -13,6 +13,18 @@ export interface UseMasterListPage {
     loadMore: () => void;
 }
 
+// Task: a Master's own `HideAutoSavedFromList` (schemaEngine's
+// `MasterSchema`) keeps an auto-saved-on-ticket-save row (`Body.AutoSaved`,
+// set by `upsertTypedMasters.ts`) out of "the manual 'add new' list/search
+// results a user sees when browsing/picking from that Master" — this admin
+// screen's own list is that surface. Filtered client-side, after the page
+// loads, rather than as a DataPort query param: the flag is a display
+// concern of this one screen, not a storage-layer one, and every other
+// consumer (useMasterCache.ts's own rows/search — Weighing's typeahead,
+// this feature's own upsert-dedup check) is deliberately left untouched, so
+// an auto-saved row still autofills/dedups exactly like a normal one.
+const visibleRows = (page: MasterRow[]): MasterRow[] => page.filter((row) => row.Body.AutoSaved !== true);
+
 // Keyset-paginated list for MastersListCard only ("Load more"). Independent
 // of useMasterCache, which stays the "load
 // everything once, filter every keystroke locally" source of truth for
@@ -33,7 +45,7 @@ export const useMasterListPage = (db: DataPort, kind: MasterKind, query: string)
         setLoading(true);
         void db.listMasters({ MasterKind: kind, Search: query || undefined, Limit: PAGE_SIZE }).then((page) => {
             if (requestId.current !== id) return;
-            setRows(page);
+            setRows(visibleRows(page));
             setHasMore(page.length === PAGE_SIZE);
             setLoading(false);
         });
@@ -53,7 +65,7 @@ export const useMasterListPage = (db: DataPort, kind: MasterKind, query: string)
             })
             .then((page) => {
                 if (requestId.current !== id) return;
-                setRows((prev) => [...prev, ...page]);
+                setRows((prev) => [...prev, ...visibleRows(page)]);
                 setHasMore(page.length === PAGE_SIZE);
                 setLoadingMore(false);
             });

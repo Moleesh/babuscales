@@ -7,6 +7,7 @@ import { Select } from "@components/Select";
 import { getAllFields, resolveFieldIdLabel } from "@engines/schemaEngine";
 import type { Field, Schema } from "@engines/schemaEngine";
 import { resolveLocalized } from "@i18n/types";
+import type { LanguagePack } from "@i18n/types";
 import { useTranslation } from "@i18n/useTranslation";
 
 import styles from "./_styles/FieldsLanguagePane.module.css";
@@ -51,6 +52,7 @@ const VisibilityToggle = ({ field, unlocked, schemaBusy, t, onToggleVisible }: V
 interface FieldColumnsArgs {
     lang: string;
     t: (key: string) => string;
+    labelT: (key: string) => string;
     unlocked: boolean;
     schemaBusy: boolean;
     onToggleVisible: (fieldId: string) => void;
@@ -59,6 +61,7 @@ interface FieldColumnsArgs {
 const fieldColumns = ({
     lang,
     t,
+    labelT,
     unlocked,
     schemaBusy,
     onToggleVisible,
@@ -68,7 +71,16 @@ const fieldColumns = ({
     {
         key: "label",
         header: t("settings.fieldSchema.col.label"),
-        render: (field) => fieldLabel(field, lang, t),
+        // A Formula field's own expression shown under its label — the
+        // table has no separate "Formula" column, so this stays the
+        // least-disruptive spot for it (task: "show a field's Formula
+        // string in the Fields & language table when Kind is Formula").
+        render: (field) => (
+            <>
+                {fieldLabel(field, lang, labelT)}
+                {field.Kind === "Formula" && <div className={styles.formula}>{field.Formula}</div>}
+            </>
+        ),
     },
     {
         key: "visible",
@@ -89,7 +101,13 @@ export interface FieldSchemaCardProps {
     ticketSchema: Schema;
     /** Every saved schema (built-in default + every upload) — lets you keep multiple uploads and pick from a dropdown. */
     schemas: Schema[];
+    /** The pack code the Label column resolves against — the caller's own `previewLang`, not necessarily the app's active runtime language. */
     lang: string;
+    /** Resolves a `weighing.label.<FieldId>` (or built-in) key against `lang` specifically — a pack-scoped `t`, distinct from the ambient `useTranslation().t` used everywhere else in this card, so the table can preview a language without switching the whole app over. */
+    labelT: (key: string) => string;
+    /** Every installed pack (English + every upload), for the preview-language picker below the schema picker. */
+    previewPacks: LanguagePack[];
+    onSelectPreviewLang: (lang: string) => void;
     unlocked: boolean;
     schemaBusy: boolean;
     schemaMessage: { text: string; bad: boolean } | null;
@@ -328,12 +346,93 @@ const ActiveSchemaSelect = ({
     </div>
 );
 
+// The Label column's preview-language picker — separate from the app's own
+// header language toggle, so an admin can see e.g. Tamil labels here
+// without switching the whole running app. Always shown (even with just
+// English + one pack) since it's also how you get back to English after
+// picking a preview language.
+const PreviewLangSelect = ({
+    lang,
+    previewPacks,
+    unlocked,
+    onSelectPreviewLang,
+    t,
+}: {
+    lang: string;
+    previewPacks: LanguagePack[];
+    unlocked: boolean;
+    onSelectPreviewLang: (lang: string) => void;
+    t: (key: string) => string;
+}) => (
+    <div className={styles.activeSchemaRow}>
+        <span className="lbl">{t("settings.fieldSchema.previewLangLabel")}</span>
+        <Select
+            value={lang}
+            options={previewPacks.map((pack) => ({ value: pack.Code, label: pack.Name }))}
+            disabled={!unlocked}
+            onChange={onSelectPreviewLang}
+        />
+    </div>
+);
+
+interface PickerRowsProps {
+    ticketSchema: Schema;
+    schemas: Schema[];
+    lang: string;
+    previewPacks: LanguagePack[];
+    unlocked: boolean;
+    schemaBusy: boolean;
+    onSelectActiveSchema: (schemaId: string) => void;
+    onSelectPreviewLang: (lang: string) => void;
+    t: (key: string) => string;
+}
+
+// The two dropdown rows above the drop-zone — split out of
+// FieldSchemaCardBody purely to stay under the per-function line budget
+// (docs/CodingStandards.md), no behavior split.
+const PickerRows = ({
+    ticketSchema,
+    schemas,
+    lang,
+    previewPacks,
+    unlocked,
+    schemaBusy,
+    onSelectActiveSchema,
+    onSelectPreviewLang,
+    t,
+}: PickerRowsProps) => (
+    <>
+        {schemas.length > 1 && (
+            <ActiveSchemaSelect
+                ticketSchema={ticketSchema}
+                schemas={schemas}
+                unlocked={unlocked}
+                schemaBusy={schemaBusy}
+                onSelectActiveSchema={onSelectActiveSchema}
+                t={t}
+            />
+        )}
+        {previewPacks.length > 1 && (
+            <PreviewLangSelect
+                lang={lang}
+                previewPacks={previewPacks}
+                unlocked={unlocked}
+                onSelectPreviewLang={onSelectPreviewLang}
+                t={t}
+            />
+        )}
+    </>
+);
+
 // The card's own body — split out of FieldSchemaCard purely to stay under
 // the per-function line budget (docs/CodingStandards.md), no behavior split.
 const FieldSchemaCardBody = ({
     ticketSchema,
     schemas,
     lang,
+    labelT,
+    previewPacks,
+    onSelectPreviewLang,
     unlocked,
     schemaBusy,
     schemaMessage,
@@ -347,16 +446,17 @@ const FieldSchemaCardBody = ({
     return (
         <div className={styles.body}>
             <p className={styles.hint}>{t("settings.fieldSchema.hint")}</p>
-            {schemas.length > 1 && (
-                <ActiveSchemaSelect
-                    ticketSchema={ticketSchema}
-                    schemas={schemas}
-                    unlocked={unlocked}
-                    schemaBusy={schemaBusy}
-                    onSelectActiveSchema={onSelectActiveSchema}
-                    t={t}
-                />
-            )}
+            <PickerRows
+                ticketSchema={ticketSchema}
+                schemas={schemas}
+                lang={lang}
+                previewPacks={previewPacks}
+                unlocked={unlocked}
+                schemaBusy={schemaBusy}
+                onSelectActiveSchema={onSelectActiveSchema}
+                onSelectPreviewLang={onSelectPreviewLang}
+                t={t}
+            />
             <SchemaDropZone unlocked={unlocked} schemaBusy={schemaBusy} onSchemaFile={onSchemaFile} t={t} />
             <SchemaPasteBox unlocked={unlocked} schemaBusy={schemaBusy} onSchemaText={onSchemaText} t={t} />
             {unlocked && (
@@ -368,7 +468,14 @@ const FieldSchemaCardBody = ({
                 <p className={schemaMessage.bad ? styles.bad : styles.applied}>{schemaMessage.text}</p>
             )}
             <DataTable
-                columns={fieldColumns({ lang, t, unlocked, schemaBusy, onToggleVisible: onToggleFieldVisible })}
+                columns={fieldColumns({
+                    lang,
+                    t,
+                    labelT,
+                    unlocked,
+                    schemaBusy,
+                    onToggleVisible: onToggleFieldVisible,
+                })}
                 rows={getAllFields(ticketSchema)}
                 getRowId={(field) => field.FieldId}
                 emptyMessage={t("settings.fieldSchema.empty")}

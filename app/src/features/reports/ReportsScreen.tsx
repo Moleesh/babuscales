@@ -5,7 +5,6 @@ import { useTranslation } from "@i18n/useTranslation";
 
 import { ReportsScreenCard } from "./_private/ReportsScreenCard";
 import { ReportsScreenOverlays } from "./_private/ReportsScreenOverlays";
-import { seedDemoTickets } from "./_private/seedDemoTickets";
 import { useReportDocs } from "./_private/useReportDocs";
 import { useReportsScreenController } from "./_private/useReportsScreenController";
 import styles from "./_styles/ReportsScreen.module.css";
@@ -63,13 +62,9 @@ export const ReportsScreen = ({ onOpenTicket, reportsIntent = null }: ReportsScr
         lang,
         reportsIntent,
     });
-    // Dev-only "Add sample tickets" control — undefined (so the button never
-    // renders) outside a dev build. See seedDemoTickets.ts's own doc comment.
-    const onSeedDemoTickets = import.meta.env.DEV ? () => void seedDemoTickets(db) : undefined;
-
     return (
         <div className={styles.screen}>
-            <ReportsScreenCard s={s} loading={loading} onSeedDemoTickets={onSeedDemoTickets} />
+            <ReportsScreenCard s={s} loading={loading} />
             <ReportsScreenOverlays
                 reportSlipData={s.reportSlipData}
                 printOpen={s.printOpen}
@@ -77,17 +72,11 @@ export const ReportsScreen = ({ onOpenTicket, reportsIntent = null }: ReportsScr
                 builderOpen={s.builderOpen}
                 onBuilderOpenChange={s.setBuilderOpen}
                 view={s.view}
-                onViewChange={s.setView}
                 groupBy={s.groupBy}
-                onGroupByChange={s.setGroupBy}
                 filter={s.filter}
-                onFilterChange={s.setFilter}
                 dateFrom={s.dateFrom}
-                onDateFromChange={s.setDateFrom}
                 dateTo={s.dateTo}
-                onDateToChange={s.setDateTo}
                 visibleColumnKeys={s.visibleColumnKeys}
-                onVisibleColumnKeysChange={s.setVisibleColumnKeys}
                 savedReportActions={s.savedReportActions}
                 pageIndex={s.pageIndex}
                 pageCount={s.pageCount}

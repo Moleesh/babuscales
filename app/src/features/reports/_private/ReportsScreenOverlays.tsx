@@ -16,21 +16,15 @@ export interface ReportsScreenOverlaysProps {
     builderOpen: boolean;
     onBuilderOpenChange: (open: boolean) => void;
     view: ReportView;
-    onViewChange: (view: ReportView) => void;
     /** Tickets pagination — only rendered in the bottom bar when `view === "tickets"`. See reportRows.ts's `paginateTicketRows`. */
     pageIndex: number;
     pageCount: number;
     onPageIndexChange: (pageIndex: number) => void;
     groupBy: GroupKey;
-    onGroupByChange: (groupBy: GroupKey) => void;
     filter: TicketRowFilter;
-    onFilterChange: (filter: TicketRowFilter) => void;
     dateFrom: string;
-    onDateFromChange: (date: string) => void;
     dateTo: string;
-    onDateToChange: (date: string) => void;
     visibleColumnKeys: TicketColumnKey[] | null;
-    onVisibleColumnKeysChange: (keys: TicketColumnKey[] | null) => void;
     savedReportActions: UseSavedReportActions;
 }
 
@@ -83,17 +77,11 @@ export const ReportsScreenOverlays = ({
     builderOpen,
     onBuilderOpenChange,
     view,
-    onViewChange,
     groupBy,
-    onGroupByChange,
     filter,
-    onFilterChange,
     dateFrom,
-    onDateFromChange,
     dateTo,
-    onDateToChange,
     visibleColumnKeys,
-    onVisibleColumnKeysChange,
     savedReportActions,
     pageIndex,
     pageCount,
@@ -116,21 +104,13 @@ export const ReportsScreenOverlays = ({
         <ReportBuilderModal
             open={builderOpen}
             onClose={() => onBuilderOpenChange(false)}
-            view={view}
-            onViewChange={onViewChange}
-            groupBy={groupBy}
-            onGroupByChange={onGroupByChange}
-            filter={filter}
-            onFilterChange={onFilterChange}
-            dateFrom={dateFrom}
-            onDateFromChange={onDateFromChange}
-            dateTo={dateTo}
-            onDateToChange={onDateToChange}
-            visibleColumnKeys={visibleColumnKeys}
-            onVisibleColumnKeysChange={onVisibleColumnKeysChange}
-            newReportName={savedReportActions.newReportName}
-            onNewReportNameChange={savedReportActions.setNewReportName}
-            onSaveReport={savedReportActions.handleSaveReport}
+            initialView={view}
+            initialGroupBy={groupBy}
+            initialFilter={filter}
+            initialDateFrom={dateFrom}
+            initialDateTo={dateTo}
+            initialVisibleColumnKeys={visibleColumnKeys}
+            onSaveReport={savedReportActions.handleSaveReportDraft}
         />
     </>
 );

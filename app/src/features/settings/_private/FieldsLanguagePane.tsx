@@ -1,6 +1,9 @@
+import { useState } from "react";
+
 import { useToast } from "@components/Toast";
 import { useSchema } from "@engines/schemaEngine";
 import type { Schema } from "@engines/schemaEngine";
+import { EN_STRINGS } from "@i18n/strings";
 import type { LanguagePack } from "@i18n/types";
 import { useTranslation } from "@i18n/useTranslation";
 
@@ -47,6 +50,19 @@ export const FieldsLanguagePane = ({ onAddLanguagePack }: FieldsLanguagePaneProp
     const { message, busy, handleFile } = useLanguagePackUpload(onAddLanguagePack);
     const { showToast } = useToast();
 
+    // Which pack's strings the field-schema table's Label column resolves
+    // against — starts at the app's own active runtime language, but is its
+    // own selection (not tied to the header language toggle), so an admin
+    // can preview e.g. Tamil field labels here without switching the whole
+    // running app over. A pack-specific `t`, independent of the ambient one
+    // above — the fix for the table always rendering English regardless of
+    // this pick: it used to run every label through the ambient `t`, which
+    // only reflects the header toggle, and there was no way to see a pack's
+    // labels without flipping that global switch.
+    const [previewLang, setPreviewLang] = useState(lang);
+    const previewT = (key: string): string =>
+        packs.find((pack) => pack.Code === previewLang)?.Strings[key] ?? EN_STRINGS[key] ?? key;
+
     const toggleFieldVisible = (fieldId: string): void => {
         const updated: Schema = {
             ...ticketSchema,
@@ -65,7 +81,9 @@ export const FieldsLanguagePane = ({ onAddLanguagePack }: FieldsLanguagePaneProp
             <FieldSchemaCard
                 ticketSchema={ticketSchema}
                 schemas={schemas}
-                lang={lang}
+                lang={previewLang}
+                labelT={previewT}
+                previewPacks={packs}
                 unlocked={unlocked}
                 schemaBusy={schemaBusy}
                 schemaMessage={schemaMessage}
@@ -74,6 +92,7 @@ export const FieldsLanguagePane = ({ onAddLanguagePack }: FieldsLanguagePaneProp
                 onReset={() => void resetSchema()}
                 onSelectActiveSchema={(schemaId) => void setActiveSchemaId(schemaId)}
                 onToggleFieldVisible={toggleFieldVisible}
+                onSelectPreviewLang={setPreviewLang}
             />
             <LanguagePacksCard
                 packs={packs}

@@ -5,79 +5,80 @@ import { renderWithI18n } from "../../../../testUtils";
 import { ReportBuilderModal } from "../ReportBuilderModal";
 import type { ReportBuilderModalProps } from "../ReportBuilderModal";
 
-// Report-builder wizard — "guided wizard, not a flat
-// page". Covers the shape that matters: one step's controls visible at a
-// time, Back/Next moving between them, and every field's onChange wired to
-// the right prop regardless of which step it lives on.
+// Report-builder modal — single-page form (collapsed from the old 3-step
+// wizard). Covers: every field is visible at once, edits stay local to the
+// modal's own draft (draft isolation — item 1) until Save, and Save both
+// commits the draft + name (item 3: auto-apply) and closes the modal.
 const baseProps = (): ReportBuilderModalProps => ({
     open: true,
     onClose: vi.fn(),
-    view: "tickets",
-    onViewChange: vi.fn(),
-    groupBy: "material",
-    onGroupByChange: vi.fn(),
-    filter: "all",
-    onFilterChange: vi.fn(),
-    dateFrom: "",
-    onDateFromChange: vi.fn(),
-    dateTo: "",
-    onDateToChange: vi.fn(),
-    visibleColumnKeys: null,
-    onVisibleColumnKeysChange: vi.fn(),
-    newReportName: "",
-    onNewReportNameChange: vi.fn(),
+    initialView: "tickets",
+    initialGroupBy: "material",
+    initialFilter: "all",
+    initialDateFrom: "",
+    initialDateTo: "",
+    initialVisibleColumnKeys: null,
     onSaveReport: vi.fn(),
 });
 
-describe("ReportBuilderModal — step navigation", () => {
-    it("opens on step 1 and hides the later steps' controls", () => {
+describe("ReportBuilderModal — single-page draft", () => {
+    it("shows every field on one screen, no step navigation", () => {
         renderWithI18n(<ReportBuilderModal {...baseProps()} />);
-        expect(screen.getByText("Date range & view")).toBeInTheDocument();
-        expect(screen.queryByText("Columns")).not.toBeInTheDocument();
-        expect(screen.getByRole("button", { name: "Back" })).toBeDisabled();
+        expect(screen.getByRole("button", { name: "Waiting for the second weight" })).toBeInTheDocument();
+        // Appears twice — the Columns section heading and the Review recap's
+        // own "Columns" row — so this just asserts it's present at all.
+        expect(screen.getAllByText("Columns").length).toBeGreaterThan(0);
+        expect(screen.getByText("Review")).toBeInTheDocument();
+        expect(screen.queryByRole("button", { name: "Next" })).not.toBeInTheDocument();
+        expect(screen.queryByRole("button", { name: "Back" })).not.toBeInTheDocument();
     });
 
-    it("Next advances through steps 2 and 3, Back returns", () => {
+    it("editing fields does not call any live onChange prop — only the local draft moves", () => {
         renderWithI18n(<ReportBuilderModal {...baseProps()} />);
-        fireEvent.click(screen.getByRole("button", { name: "Next" }));
-        expect(screen.getAllByText("Filter").length).toBeGreaterThan(0);
-
-        fireEvent.click(screen.getByRole("button", { name: "Next" }));
-        expect(screen.getByText("Columns & review")).toBeInTheDocument();
-        expect(screen.getByRole("button", { name: "Done" })).toBeInTheDocument();
-
-        fireEvent.click(screen.getByRole("button", { name: "Back" }));
-        expect(screen.getAllByText("Filter").length).toBeGreaterThan(0);
+        fireEvent.click(screen.getByRole("button", { name: "Waiting for the second weight" }));
+        // Review recap reflects the draft edit immediately.
+        const review = screen.getByText("Review").closest("div");
+        expect(review).not.toBeNull();
+        expect(within(review as HTMLElement).getByText("Waiting for the second weight")).toBeInTheDocument();
     });
 
-    it("Done on the last step calls onClose", () => {
+    it("Save is disabled until a name is entered, then commits the draft and closes", () => {
         const props = baseProps();
         renderWithI18n(<ReportBuilderModal {...props} />);
-        fireEvent.click(screen.getByRole("button", { name: "Next" }));
-        fireEvent.click(screen.getByRole("button", { name: "Next" }));
-        fireEvent.click(screen.getByRole("button", { name: "Done" }));
+        const saveButton = screen.getByRole("button", { name: "Save view" });
+        expect(saveButton).toBeDisabled();
+
+        fireEvent.change(screen.getByPlaceholderText("Save current view as…"), {
+            target: { value: "My report" },
+        });
+        expect(saveButton).not.toBeDisabled();
+        fireEvent.click(saveButton);
+
+        expect(props.onSaveReport).toHaveBeenCalledTimes(1);
+        expect(props.onSaveReport).toHaveBeenCalledWith(
+            {
+                view: "tickets",
+                groupBy: "material",
+                filter: "all",
+                dateFrom: "",
+                dateTo: "",
+                visibleColumnKeys: null,
+            },
+            "My report",
+        );
         expect(props.onClose).toHaveBeenCalledTimes(1);
     });
 
-    it("reopening resets to step 1", () => {
+    it("reopening resets the draft to the current screen config", () => {
         const props = baseProps();
         const { rerender } = renderWithI18n(<ReportBuilderModal {...props} />);
-        fireEvent.click(screen.getByRole("button", { name: "Next" }));
-        expect(screen.getAllByText("Filter").length).toBeGreaterThan(0);
+        fireEvent.click(screen.getByRole("button", { name: "Waiting for the second weight" }));
+        const reviewBefore = screen.getByText("Review").closest("div");
+        expect(within(reviewBefore as HTMLElement).getByText("Waiting for the second weight")).toBeInTheDocument();
 
         rerender(<ReportBuilderModal {...props} open={false} />);
         rerender(<ReportBuilderModal {...props} open />);
-        expect(screen.getByText("Date range & view")).toBeInTheDocument();
-    });
-
-    it("step 3 shows a review recapping the earlier picks", () => {
-        const props = baseProps();
-        renderWithI18n(<ReportBuilderModal {...props} />);
-        fireEvent.click(screen.getByRole("button", { name: "Next" }));
-        fireEvent.click(screen.getByRole("button", { name: "Next" }));
-        const review = screen.getByText("Review").closest("div");
-        expect(review).not.toBeNull();
-        expect(within(review as HTMLElement).getByText("All")).toBeInTheDocument();
-        expect(within(review as HTMLElement).getByText("All dates")).toBeInTheDocument();
+        const reviewAfter = screen.getByText("Review").closest("div");
+        expect(within(reviewAfter as HTMLElement).getByText("All")).toBeInTheDocument();
     });
 });

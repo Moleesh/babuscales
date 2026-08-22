@@ -5,6 +5,7 @@ import {
     filterRowsBySeries,
     groupLabel,
     groupOptions,
+    listSeriesEpochOptions,
     viewOptions,
     GROUP_KEY_VALUES,
     TICKET_ROW_FILTER_VALUES,
@@ -69,15 +70,43 @@ describe("filterRowsBySeries", () => {
         ({ seriesEpoch }) as TicketRow;
     const rows = [rowAt(1), rowAt(2), rowAt(2)];
 
-    it("keeps only rows matching the current epoch by default", () => {
-        expect(filterRowsBySeries(rows, 2, false)).toEqual([rowAt(2), rowAt(2)]);
+    it("keeps only rows matching the given epoch", () => {
+        expect(filterRowsBySeries(rows, 2)).toEqual([rowAt(2), rowAt(2)]);
     });
 
-    it("returns every row unchanged when includeBacked is true", () => {
-        expect(filterRowsBySeries(rows, 2, true)).toEqual(rows);
+    it("scopes to a single prior epoch, never merging across series", () => {
+        expect(filterRowsBySeries(rows, 1)).toEqual([rowAt(1)]);
     });
 
-    it("returns an empty array when nothing matches the current epoch", () => {
-        expect(filterRowsBySeries(rows, 99, false)).toEqual([]);
+    it("returns an empty array when nothing matches the given epoch", () => {
+        expect(filterRowsBySeries(rows, 99)).toEqual([]);
+    });
+});
+
+describe("listSeriesEpochOptions", () => {
+    const rowAt = (seriesEpoch: number, at: string): TicketRow => ({ seriesEpoch, at }) as TicketRow;
+    const fakeT2 = (key: string): string => `[${key}]`;
+
+    it("always lists the current epoch first", () => {
+        const rows = [rowAt(1, "2024-01-01T00:00:00"), rowAt(2, "2024-02-01T00:00:00")];
+        const options = listSeriesEpochOptions(rows, 2, fakeT2);
+        expect(options[0]).toEqual({ epoch: 2, label: "[reports.series.current]" });
+    });
+
+    it("lists prior epochs newest-first, labelled with their earliest ticket date", () => {
+        const rows = [
+            rowAt(1, "2024-01-01T00:00:00"),
+            rowAt(2, "2024-02-01T00:00:00"),
+            rowAt(3, "2024-03-01T00:00:00"),
+        ];
+        const options = listSeriesEpochOptions(rows, 3, fakeT2);
+        expect(options.map((o) => o.epoch)).toEqual([3, 2, 1]);
+        expect(options[1]?.label).toBe("[reports.series.priorPrefix] 2024-02-01");
+    });
+
+    it("omits epochs with no rows", () => {
+        const rows = [rowAt(2, "2024-02-01T00:00:00")];
+        const options = listSeriesEpochOptions(rows, 2, fakeT2);
+        expect(options).toEqual([{ epoch: 2, label: "[reports.series.current]" }]);
     });
 });

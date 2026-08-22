@@ -4,6 +4,7 @@ import { useToast } from "@components/Toast";
 import type { DocRow } from "@db/types";
 import { useMasterCache } from "@db/useMasterCache";
 import type { UseMasterCache } from "@db/useMasterCache";
+import { useSchema } from "@engines/schemaEngine";
 import { useTranslation } from "@i18n/useTranslation";
 
 import { listOpenTickets } from "../recall";
@@ -42,6 +43,7 @@ export const useWeighingScreenTickets = (ticket: UseWeighingTicket): UseWeighing
     const { allTicketDocs, loading: ticketsLoading, bumpRefresh } = useTicketDocs();
     const { showToast } = useToast();
     const { t } = useTranslation();
+    const { ticketSchema } = useSchema();
 
     const caches: WeighingCaches = {
         vehicle: useMasterCache("Vehicle"),
@@ -66,7 +68,7 @@ export const useWeighingScreenTickets = (ticket: UseWeighingTicket): UseWeighing
         // itself — no more inline "＋ Add" button in TicketFieldsCard.tsx,
         // this is where that used to happen instead.
         try {
-            await upsertTypedMasters(caches, ticket.fields);
+            await upsertTypedMasters(caches, ticket.fields, ticketSchema.Masters);
             await ticket.save();
             bumpRefresh();
         } catch (err) {

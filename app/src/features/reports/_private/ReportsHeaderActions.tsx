@@ -11,23 +11,21 @@ export interface ReportsHeaderActionsProps {
     waitingCount: number;
     onShowWaiting: () => void;
     onOpenBuilder: () => void;
-    /** Dev-only "Add sample tickets" control — undefined outside a dev
-     * build (see ReportsScreen's own `import.meta.env.DEV` gate), so the
-     * button itself never renders for a real site. */
-    onSeedDemoTickets: (() => void) | undefined;
 }
 
 // Split out of ReportsScreen (over the line/complexity budget —
 // docs/CodingStandards.md) — the view switcher + "N waiting" chip + the
 // report-builder wizard trigger in the
 // Card's headerRight.
+// The dev-only "Add sample tickets" control used to live here too — moved to
+// Settings → Weighing → ticket numbering (TicketAndDateTimeCard) by request,
+// so it sits next to the other ticket-series control instead of Reports.
 export const ReportsHeaderActions = ({
     view,
     onViewChange,
     waitingCount,
     onShowWaiting,
     onOpenBuilder,
-    onSeedDemoTickets,
 }: ReportsHeaderActionsProps) => {
     const { t } = useTranslation();
     return (
@@ -45,11 +43,6 @@ export const ReportsHeaderActions = ({
             <button type="button" className="chip act" onClick={onOpenBuilder}>
                 {t("reports.builder.trigger")}
             </button>
-            {onSeedDemoTickets && (
-                <button type="button" className="chip act" onClick={onSeedDemoTickets}>
-                    {t("reports.seedDemoTickets")}
-                </button>
-            )}
         </div>
     );
 };

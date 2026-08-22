@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import type { RefObject } from "react";
 
 import { formatDateTimeInFmt } from "@constants/numberFormat";
+import type { DocRow } from "@db/types";
 import { useIndicator, useIndicatorReading } from "@engines/indicator";
 import { getAllFields, getCalculatedFieldIds, useSchema } from "@engines/schemaEngine";
 import { useSettings } from "@features/settings";
@@ -260,11 +261,37 @@ const usePrintModals = () => {
     return { printModalOpen, setPrintModalOpen, reprintLookupOpen, setReprintLookupOpen };
 };
 
+// Reprint no longer opens PrintPreviewModal at all — it populates the deck
+// (`ticket.resume`), locks every field exactly like a Save (`ticket.lock`),
+// and prints straight away via the same `handlePrint` PrintPreviewModal's
+// own "Send to printer" already calls (task: "reprint ... skip print
+// preview, print directly"). `resume`'s own dispatch is async (a plain
+// useReducer), so `handlePrint` — which reads `ticket` fresh off this same
+// render's closure — can't fire in the same handler as `resume`: it would
+// still see the *previous* ticket's fields/DocId. This tracks which DocId
+// is still waiting on its resume to land, and the effect below fires the
+// actual print only once `ticket.docId` catches up to it.
+const useReprintFlow = (ticket: UseWeighingTicket, handlePrint: () => Promise<void>) => {
+    const [pendingDocId, setPendingDocId] = useState<string | null>(null);
+    useEffect(() => {
+        if (pendingDocId === null || ticket.docId !== pendingDocId) return;
+        setPendingDocId(null);
+        void handlePrint();
+    }, [pendingDocId, ticket.docId, handlePrint]);
+    const reprint = (doc: DocRow): void => {
+        ticket.resume(doc);
+        ticket.lock();
+        setPendingDocId(doc.DocId);
+    };
+    return reprint;
+};
+
 export const WeighingScreen = ({ ticket, licenseGated, onNavigateToCameras }: WeighingScreenProps) => {
     const { printModalOpen, setPrintModalOpen, reprintLookupOpen, setReprintLookupOpen } = usePrintModals();
     const screenRef = useRef<HTMLDivElement>(null);
     const stripRef = useRef<HTMLDivElement>(null);
     const state = useWeighingScreenState(ticket, licenseGated);
+    const reprint = useReprintFlow(ticket, state.handlePrint);
     // Mirrors OpenTicketStrip's own early-return condition (tickets.length === 0 && !loading).
     useStickyStripHeight(screenRef, stripRef, state.openTickets.length > 0 || state.ticketsLoading);
 
@@ -299,10 +326,7 @@ export const WeighingScreen = ({ ticket, licenseGated, onNavigateToCameras }: We
                 open={reprintLookupOpen}
                 onClose={() => setReprintLookupOpen(false)}
                 allTicketDocs={state.allTicketDocs}
-                onFound={(doc) => {
-                    ticket.resume(doc);
-                    setPrintModalOpen(true);
-                }}
+                onFound={reprint}
             />
         </div>
     );

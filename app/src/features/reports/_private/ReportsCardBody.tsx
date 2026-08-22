@@ -12,6 +12,7 @@ import styles from "../_styles/ReportsScreen.module.css";
 import type {
     GroupKey,
     ReportView,
+    SeriesEpochOption,
     SortDir,
     SummaryRow,
     TicketRow,
@@ -36,9 +37,10 @@ export interface ReportsCardBodyProps {
     onDateFromChange: (date: string) => void;
     dateTo: string;
     onDateToChange: (date: string) => void;
-    /** Reports' "include tickets from before the last reset" toggle — off by default (reportRows.ts's filterRowsBySeries). */
-    includeBacked: boolean;
-    onIncludeBackedChange: (includeBacked: boolean) => void;
+    /** Reports' "include tickets from before the last reset" dropdown — see reportRows.ts's `filterRowsBySeries`/`listSeriesEpochOptions`. */
+    seriesEpoch: number | "current";
+    onSeriesEpochChange: (epoch: number | "current") => void;
+    seriesEpochOptions: SeriesEpochOption[];
     /** Settings' `Formats.DateFmt`, passed straight through to ReportsDateRangeRow's DatePicker pair. */
     dateFmt: string;
     groupBy: GroupKey;
@@ -122,8 +124,9 @@ export const ReportsCardBody = ({
     onDateFromChange,
     dateTo,
     onDateToChange,
-    includeBacked,
-    onIncludeBackedChange,
+    seriesEpoch,
+    onSeriesEpochChange,
+    seriesEpochOptions,
     dateFmt,
     savedReportActions,
     ...view
@@ -133,29 +136,37 @@ export const ReportsCardBody = ({
     useStickyFiltersHeight(bodyRef, filtersRef);
     return (
         <div className={styles.body} ref={bodyRef}>
-        {/* Saved reports + date range + (for Tickets) the search/filter/sort
-            row all stick together as one compact block under the Card's own
-            sticky title header (Card.tsx's `sticky` prop) instead of the
-            title scrolling off while just the filters stayed pinned below it
-            (task: "make it sticky including the title"). */}
+        {/* Saved-views dropdown + date range + series filter + (for Tickets)
+            the search/filter/sort row all stick together as one compact
+            block under the Card's own sticky title header (Card.tsx's
+            `sticky` prop) instead of the title scrolling off while just the
+            filters stayed pinned below it (task: "make it sticky including
+            the title"). The saved-views dropdown and date pickers now share
+            one line (Reports rework, item 1) instead of each getting its
+            own crowded row. */}
         <div className={styles.stickyFilters} ref={filtersRef}>
-            <SavedReportsRow
-                savedReports={savedReportActions.savedReports}
-                newName={savedReportActions.newReportName}
-                onNewNameChange={savedReportActions.setNewReportName}
-                onSave={savedReportActions.handleSaveReport}
-                onRecall={savedReportActions.handleRecallReport}
-                onDelete={savedReportActions.handleDeleteReport}
-            />
-            <ReportsDateRangeRow
-                dateFrom={dateFrom}
-                onDateFromChange={onDateFromChange}
-                dateTo={dateTo}
-                onDateToChange={onDateToChange}
-                includeBacked={includeBacked}
-                onIncludeBackedChange={onIncludeBackedChange}
-                dateFmt={dateFmt}
-            />
+            <div className={styles.filterBar}>
+                <SavedReportsRow
+                    savedReports={savedReportActions.savedReports}
+                    selectedId={savedReportActions.selectedId}
+                    newName={savedReportActions.newReportName}
+                    onNewNameChange={savedReportActions.setNewReportName}
+                    onSave={savedReportActions.handleSaveReport}
+                    onRecall={savedReportActions.handleRecallReport}
+                    onDelete={savedReportActions.handleDeleteReport}
+                    onRename={savedReportActions.handleRenameReport}
+                />
+                <ReportsDateRangeRow
+                    dateFrom={dateFrom}
+                    onDateFromChange={onDateFromChange}
+                    dateTo={dateTo}
+                    onDateToChange={onDateToChange}
+                    seriesEpoch={seriesEpoch}
+                    onSeriesEpochChange={onSeriesEpochChange}
+                    seriesEpochOptions={seriesEpochOptions}
+                    dateFmt={dateFmt}
+                />
+            </div>
             {view.view === "tickets" && (
                 <TicketsFilterRow
                     query={view.query}

@@ -6,9 +6,8 @@ import { useTranslation } from "@i18n/useTranslation";
 
 import type { RecallOffer } from "../RecallBanner";
 import type { UseWeighingTicket } from "../useWeighingTicket";
-import type { CalcFieldResults } from "./calcSegments";
 import { CalcCard } from "./CalcCard";
-import type { TicketBilling } from "./ticketBilling";
+import type { CalcFieldResults } from "./calcSegments";
 import { TicketFieldsCard } from "./TicketFieldsCard";
 import type { WeighingCaches } from "./useWeighingScreenTickets";
 
@@ -17,10 +16,8 @@ export interface WeighingLeftColumnProps {
     ticketDate: string;
     recallOffers: RecallOffer[];
     caches: WeighingCaches;
-    billing: TicketBilling;
     /** The active Schema — one card renders per `Segments` entry, in order (task: Godown's 2 enterable "top" cards + 2 calculated "bottom" cards). */
     ticketSchema: Schema;
-    amountDp: 0 | 2;
     /** Settings → Weighing → Rules.ManualEntry — threaded to every "Calculated" segment's Tare/Gross boxes. */
     manualEntry: boolean;
     /** Settings' `Formats.WeightUnit` — threaded to every "Calculated" segment's boxes/formula/status pill. */
@@ -36,18 +33,16 @@ export interface WeighingLeftColumnProps {
 // — the left `.col`: one card per `ticketSchema.Segments` entry, in schema
 // order. `"Enterable"` segments render as a TicketFieldsCard (the first one
 // carries the ticket-number chip and recall banner — see TicketFieldsCard's
-// own `primary` prop); `"Calculated"` segments render as a CalcCard (the
-// last one carries the formula derivation and status pill — see CalcCard's
-// own `showSummary` prop). Purely layout — everything it renders comes
-// straight from props.
+// own `primary` prop); `"Calculated"` segments render as a CalcCard, each of
+// which now shows its own calculated fields' formulas per-box rather than
+// one summary line on a single designated card. Purely layout — everything
+// it renders comes straight from props.
 export const WeighingLeftColumn = ({
     ticket,
     ticketDate,
     recallOffers,
     caches,
-    billing,
     ticketSchema,
-    amountDp,
     manualEntry,
     weightUnit,
     dateFmt,
@@ -57,7 +52,6 @@ export const WeighingLeftColumn = ({
     const { lang } = useTranslation();
     const segments = ticketSchema.Segments;
     const firstEnterableIndex = segments.findIndex((seg) => resolveSegmentKind(seg) === "Enterable");
-    const lastCalculatedIndex = segments.map((seg) => resolveSegmentKind(seg)).lastIndexOf("Calculated");
 
     return (
         <>
@@ -90,9 +84,6 @@ export const WeighingLeftColumn = ({
                         captures={ticket.captures}
                         chargeValue={ticket.fields.charge}
                         onChargeChange={(value) => ticket.setField("charge", value)}
-                        materialRate={billing.materialRate}
-                        value={billing.value}
-                        amountDp={amountDp}
                         manualEntry={manualEntry}
                         kind={ticket.kind}
                         isLocked={ticket.isLocked}
@@ -101,7 +92,6 @@ export const WeighingLeftColumn = ({
                         dateFmt={dateFmt}
                         timeFmt={timeFmt}
                         calcValues={calcValues}
-                        showSummary={index === lastCalculatedIndex}
                     />
                 );
             })}

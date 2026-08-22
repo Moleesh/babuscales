@@ -245,9 +245,22 @@
     line-height: 1.5;
 }
 
+/* Wraps the Net `.calc-box` together with its own substituted-formula line
+   (CalcCard.tsx's `NetChargeBoxes`) so the pair still occupies exactly one
+   `.calc` grid cell — same per-field "Label = formula = substituted =
+   result" line CalcSegmentRows already shows for a schema's own calc-chain
+   fields (task: "show this per calculated field box", not just once at the
+   bottom). */
+.calc-box-with-formula {
+    display: grid;
+    gap: 6px;
+    min-width: 0;
+}
+
 /* Ported from the mock's own ".formula"/".formula em" — the derivation
    text under the calc grid (Net/Charge/Value), demo/BabuScales-demo.html's
-   `renderCalc()`. */
+   `renderCalc()`. Reused per-box now (CalcSegmentRows, NetChargeBoxes) as
+   well as its original spot under the whole grid. */
 .formula {
     margin-top: 10px;
     display: grid;

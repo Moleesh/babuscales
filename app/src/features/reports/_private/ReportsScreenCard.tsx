@@ -7,8 +7,6 @@ import type { UseReportsScreenController } from "./useReportsScreenController";
 
 export interface ReportsScreenCardProps {
     s: UseReportsScreenController;
-    /** Dev-only "Add sample tickets" control — see ReportsHeaderActions' own doc comment. */
-    onSeedDemoTickets: (() => void) | undefined;
     /** True until the ticket docs behind every view/table below have loaded once — see ReportsScreen's own useReportDocs() call. */
     loading: boolean;
 }
@@ -17,7 +15,7 @@ export interface ReportsScreenCardProps {
 // docs/CodingStandards.md) — the Card itself (header actions + body),
 // taking the whole controller return value the same way ReportsCardBody's
 // props already mirror it, just one level up.
-export const ReportsScreenCard = ({ s, onSeedDemoTickets, loading }: ReportsScreenCardProps) => {
+export const ReportsScreenCard = ({ s, loading }: ReportsScreenCardProps) => {
     const { t } = useTranslation();
     return (
         <Card
@@ -30,7 +28,6 @@ export const ReportsScreenCard = ({ s, onSeedDemoTickets, loading }: ReportsScre
                     waitingCount={s.waitingCount}
                     onShowWaiting={s.showWaiting}
                     onOpenBuilder={() => s.setBuilderOpen(true)}
-                    onSeedDemoTickets={onSeedDemoTickets}
                 />
             }
         >
@@ -50,8 +47,9 @@ export const ReportsScreenCard = ({ s, onSeedDemoTickets, loading }: ReportsScre
                 onDateFromChange={s.setDateFrom}
                 dateTo={s.dateTo}
                 onDateToChange={s.setDateTo}
-                includeBacked={s.includeBacked}
-                onIncludeBackedChange={s.setIncludeBacked}
+                seriesEpoch={s.seriesEpoch}
+                onSeriesEpochChange={s.setSeriesEpoch}
+                seriesEpochOptions={s.seriesEpochOptions}
                 dateFmt={s.dateFmt}
                 groupBy={s.groupBy}
                 onGroupByChange={s.setGroupBy}

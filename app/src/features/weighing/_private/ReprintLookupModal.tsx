@@ -24,7 +24,9 @@ export interface ReprintLookupModalProps {
     open: boolean;
     onClose: () => void;
     allTicketDocs: DocRow[];
-    /** Loads the matched ticket into the deck and opens the print preview. */
+    /** Loads the matched ticket into the deck, locks every field the same
+     * way a Save does, and prints it straight away — no print-preview step
+     * (WeighingScreen's own `useReprintFlow`). */
     onFound: (doc: DocRow) => void;
 }
 

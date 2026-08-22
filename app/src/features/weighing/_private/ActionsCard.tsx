@@ -165,6 +165,11 @@ export interface ActionsCardProps {
     weightUnit: WeightUnit;
 }
 
+// "0 prints" read as unclear (task #18) — an unprinted ticket now says so
+// plainly instead of a bare zero-count chip.
+const printCountLabel = (printCount: number, t: (key: string) => string): string =>
+    printCount > 0 ? `${printCount} ${t("weigh.printsSuffix")}` : t("weigh.notPrintedYet");
+
 // Split out of WeighingScreen (over the 300-line budget — docs/CodingStandards.md)
 // — the mock's own `.actions` button stack: capture-as toggle, the big
 // capture button, Save/Print, Reprint/New ticket, Clear/Send a lorry, and
@@ -184,15 +189,9 @@ export const ActionsCard = ({
     weightUnit,
 }: ActionsCardProps) => {
     const { t } = useTranslation();
+    const headerRight = <span className="chip num">{printCountLabel(ticket.printCount, t)}</span>;
     return (
-        <Card
-            title={<span className="lbl">{t("weigh.actions")}</span>}
-            headerRight={
-                <span className="chip num">
-                    {ticket.printCount} {t("weigh.printsSuffix")}
-                </span>
-            }
-        >
+        <Card title={<span className="lbl">{t("weigh.actions")}</span>} headerRight={headerRight}>
             <div style={{ display: "grid", gap: 9 }}>
                 <SegmentedControl
                     options={kindOptions(t).map((option) => ({
@@ -229,9 +228,7 @@ export const ActionsCard = ({
                 />
                 <ReprintRow ticket={ticket} onOpenReprintLookup={onOpenReprintLookup} />
                 <SendLorryRow ticket={ticket} loadLorry={loadLorry} />
-                <p className={styles.hint}>
-                    {actionsHint({ ticket, reading, armed, gated, t })}
-                </p>
+                <p className={styles.hint}>{actionsHint({ ticket, reading, armed, gated, t })}</p>
             </div>
         </Card>
     );
