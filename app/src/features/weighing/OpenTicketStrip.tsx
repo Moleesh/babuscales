@@ -1,3 +1,5 @@
+import type { RefObject } from "react";
+
 import { Spinner } from "@components/Spinner";
 import { formatWeightIn } from "@constants/numberFormat";
 import type { WeightUnit } from "@constants/numberFormat";
@@ -14,17 +16,26 @@ export interface OpenTicketStripProps {
     onResume: (ticket: OpenTicketSummary) => void;
     /** Settings' `Formats.WeightUnit`. */
     weightUnit: WeightUnit;
+    /** WeighingScreen's `useStickyStripHeight` measures this element's real
+     * rendered height directly — this used to be a wrapper `<div>` around
+     * `OpenTicketStrip`, but that put `.strip`'s (sticky) actual containing
+     * block one level too deep (the wrapper's own tightly-fit box, not
+     * `.screen`), capping its stick range at almost nothing. Passing the
+     * ref straight onto `.strip` itself makes it a direct flex item of
+     * `.screen` — same shape as AppShell's `.header-sticky`, which sticks
+     * correctly for exactly this reason. */
+    containerRef?: RefObject<HTMLDivElement | null>;
 }
 
 // "Many lorries in flight": every parked, one-weight ticket, always visible
 // so the operator can pick the lorry back up the moment it returns to the
 // deck, without hunting through Reports for it.
-export const OpenTicketStrip = ({ tickets, loading, onResume, weightUnit }: OpenTicketStripProps) => {
+export const OpenTicketStrip = ({ tickets, loading, onResume, weightUnit, containerRef }: OpenTicketStripProps) => {
     const { t } = useTranslation();
     if (tickets.length === 0 && !loading) return null;
 
     return (
-        <div className={styles.strip}>
+        <div className={styles.strip} ref={containerRef}>
             <span className="lbl">{t("weigh.open")}</span>
             {loading && tickets.length === 0 ? (
                 <span className={styles.loading}>

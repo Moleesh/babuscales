@@ -23,6 +23,11 @@ export interface StatusPillProps {
     netKg?: number | null;
     /** Struck through, faded — a cancellation is a flag, not a status. */
     cancelled?: boolean;
+    /** Drops the NET segment — ActionsCard's 330px column only has room for
+     * Tare/Gross side by side (task: "we need only tare and gross , remove
+     * the net that will fix it", after wrapping NET to its own row turned
+     * out to be the wrong fix for the same overflow). */
+    hideNet?: boolean;
     labels?: StatusPillLabels;
     /** Settings' `Formats.WeightUnit` — defaults to "kg" so a caller that predates this
      * setting (or doesn't have it in reach) keeps the pill's original look. */
@@ -59,6 +64,7 @@ export const StatusPill = ({
     grossKg,
     netKg,
     cancelled,
+    hideNet,
     labels = DEFAULT_LABELS,
     weightUnit = "kg",
 }: StatusPillProps) => {
@@ -73,9 +79,9 @@ export const StatusPill = ({
 
     return (
         <span className={`${styles.pill} ${cancelled ? styles.cancelled : ""}`}>
-            <Segment label={labels.tare} kg={tare} weightUnit={weightUnit} />
             <Segment label={labels.gross} kg={gross} weightUnit={weightUnit} />
-            <Segment label={labels.net} kg={net} net weightUnit={weightUnit} />
+            <Segment label={labels.tare} kg={tare} weightUnit={weightUnit} />
+            {!hideNet && <Segment label={labels.net} kg={net} net weightUnit={weightUnit} />}
         </span>
     );
 };

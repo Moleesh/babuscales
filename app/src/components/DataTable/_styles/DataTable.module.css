@@ -4,8 +4,25 @@
    `wrapper.clientHeight` would equal the full (unbounded) content height and
    every row would count as "visible" anyway. */
 .wrapper {
-    overflow-x: auto;
-    overflow-y: auto;
+    /* Both axes overridable — `--datatable-overflow-x`/`-y` (default `auto`
+       each). Reports' own `.tickets-table` (ReportsScreen.module.css) sets
+       BOTH to `visible` alongside `--datatable-max-height: none`: any
+       non-`visible` overflow on either axis makes an element the sticky
+       containing block for descendants per spec, whether or not it actually
+       scrolls, so leaving just one axis at `auto` would still have captured
+       `.table th`'s sticky positioning here. With height unbounded, `.wrapper`
+       itself never scrolls, so the header's sticky `top` (which composes in
+       `--datatable-header-top`, `.main`'s own sticky offsets) was being
+       measured against `.wrapper`'s own (static) box instead of `.main`'s
+       real scroll position, shoving the header row down over a data row by
+       that whole offset instead of tracking scroll (reported: sticky column
+       header rendering overlapped on top of a data row). `.main` itself is
+       `overflow: auto` (AppShell.module.css), so a wide tickets table still
+       scrolls horizontally there instead of being clipped. Plain `auto`/
+       `auto` for every other caller (Masters/Settings/Dashboard), which
+       still want `.wrapper` itself as the scrolling+sticky context. */
+    overflow-x: var(--datatable-overflow-x, auto);
+    overflow-y: var(--datatable-overflow-y, auto);
     /* Overridable per-caller via the `--datatable-max-height` custom
        property (inherits through from an ancestor, e.g. Reports' own
        `.tickets-table` — ReportsScreen.module.css) — task: "double scroll
@@ -38,8 +55,16 @@
        actually does, not `.main`'s. Without this, the column header row
        scrolls away with the body rows once there are enough to overflow
        `.wrapper`'s `max-height`, leaving rows with no labels above them. */
+    /* `--datatable-header-top` (default 0): overridable per-caller, same
+       pattern as `.wrapper`'s own `--datatable-max-height` above — Reports'
+       `.tickets-table` (ReportsScreen.module.css) sets this to clear its
+       own sticky filter row (task: "the highlighted section has to be
+       sticky") once `--datatable-max-height: none` there hands this
+       table's own scrolling up to `.main`, the same sticky context the
+       filter row already sticks in. Other callers (Masters, Settings,
+       Dashboard) keep scrolling inside `.wrapper` itself, unaffected. */
     position: sticky;
-    top: 0;
+    top: var(--datatable-header-top, 0);
     z-index: 1;
     background: var(--panel);
 }

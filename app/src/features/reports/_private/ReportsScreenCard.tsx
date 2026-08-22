@@ -21,6 +21,7 @@ export const ReportsScreenCard = ({ s, onSeedDemoTickets, loading }: ReportsScre
     const { t } = useTranslation();
     return (
         <Card
+            sticky
             title={<span className="lbl">{t("reports.title")}</span>}
             headerRight={
                 <ReportsHeaderActions

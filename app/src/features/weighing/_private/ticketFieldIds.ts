@@ -1,8 +1,6 @@
-import { FIELD_LABEL_KEYS } from "@engines/schemaEngine";
+import { resolveFieldIdLabel } from "@engines/schemaEngine";
 import type { Field } from "@engines/schemaEngine";
 import { resolveLocalized } from "@i18n/types";
-
-export { FIELD_LABEL_KEYS };
 
 // The 5 fixed ticket fields rendered by their own dedicated controls in
 // TicketFieldsCard.tsx (still the hardware-shaped master-search/plain-text
@@ -14,11 +12,22 @@ export { FIELD_LABEL_KEYS };
 // doesn't trip react-refresh's "only export components" rule.
 export const FIXED_FIELD_IDS = ["VehicleNo", "Party", "Material", "Transporter", "ChallanNo"];
 
-/** A `Calculated` field (`Field.Calculated`, e.g. the default schema's Gross/Tare/Net/Charge) belongs in CalcCard's "Captured & calculated" card, not the generic Ticket field loop — capture/formula logic stays exactly as-is, the schema entry only supplies that box's *label*. No fixed FieldId list: any field an admin flags `Calculated: true` routes here, so a custom calculated field works the same way without a code change. */
-export const isCalculatedField = (field: Field): boolean => field.Calculated === true;
+/** A field belonging to a `"Calculated"` segment (e.g. the default schema's Gross/Tare/Net/Charge) belongs in CalcCard's "Captured & calculated" card, not the generic Ticket field loop — capture/formula logic stays exactly as-is, the schema entry only supplies that box's *label*. `calculatedIds` comes from `getCalculatedFieldIds(schema)` (schemaEngine/types.ts) — a field's own segment Kind is now the sole authority, no per-field flag. */
+export const isCalculatedField = (field: Field, calculatedIds: Set<string>): boolean => calculatedIds.has(field.FieldId);
 
-/** Looks up `fieldId`'s Label in the active Schema, falling back to `fallback` (usually a plain i18n string, e.g. `t(FIELD_LABEL_KEYS[fieldId])`) when the schema has no such field or that field carries no `Label` of its own — shared by TicketFieldsCard's fixed rows and CalcCard's capture boxes. */
-export const resolveFieldLabel = (fields: Field[], fieldId: string, lang: string, fallback: string): string => {
+/** Looks up `fieldId`'s Label in the active Schema, falling back to the
+ * shared `weighing.label.<FieldId>` i18n convention (`resolveFieldIdLabel`)
+ * when the schema has no such field or that field carries no `Label` of its
+ * own — shared by TicketFieldsCard's fixed rows and CalcCard's capture
+ * boxes. Schema JSON no longer needs a `Label` per field at all (task:
+ * "labels in the json we dont need it"). */
+export const resolveFieldLabel = (
+    fields: Field[],
+    fieldId: string,
+    lang: string,
+    t: (key: string) => string,
+): string => {
     const field = fields.find((candidate) => candidate.FieldId === fieldId);
-    return field?.Label ? resolveLocalized(field.Label, lang) : fallback;
+    if (field?.Label) return resolveLocalized(field.Label, lang);
+    return resolveFieldIdLabel(fieldId, t);
 };

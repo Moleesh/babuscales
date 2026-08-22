@@ -1,9 +1,11 @@
 import { Card } from "@components/Card";
+import type { WeightUnit } from "@constants/numberFormat";
 import type { CaptureType } from "@db/ticketBody";
 import type { IndicatorReading } from "@engines/indicator";
 import { CAMERA_FEATURE_ENABLED, computeCameraBurnIn, CAMERA_SLOTS, CameraGrid } from "@features/cameras";
 import { useTranslation } from "@i18n/useTranslation";
 
+import styles from "../_styles/WeighingScreen.module.css";
 import type { UseWeighingTicket } from "../useWeighingTicket";
 import { ActionsCard } from "./ActionsCard";
 import { captureHint, captureLabel } from "./captureStatus";
@@ -18,9 +20,13 @@ export interface WeighingRightColumnProps {
     hasBlockingCustomFieldError: boolean;
     onSave: () => void;
     onOpenPrintModal: () => void;
+    /** Opens ReprintLookupModal's "enter a ticket no" prompt. */
+    onOpenReprintLookup: () => void;
     /** Jumps to the Cameras tab (App.tsx's `setActiveTab`) — a shortcut out
      * of this decorative sidebar to the real Cameras screen. */
     onNavigateToCameras: () => void;
+    /** Settings' `Formats.WeightUnit` — passed straight through to ActionsCard's status pill. */
+    weightUnit: WeightUnit;
 }
 
 // Split out of WeighingScreen (over the line budget — docs/CodingStandards.md)
@@ -36,7 +42,9 @@ export const WeighingRightColumn = ({
     hasBlockingCustomFieldError,
     onSave,
     onOpenPrintModal,
+    onOpenReprintLookup,
     onNavigateToCameras,
+    weightUnit,
 }: WeighingRightColumnProps) => {
     const { t } = useTranslation();
     const cameraBurnIn = computeCameraBurnIn(ticket.docSeq, ticket.captures);
@@ -44,18 +52,22 @@ export const WeighingRightColumn = ({
 
     return (
         <>
-            <ActionsCard
-                ticket={ticket}
-                reading={reading}
-                loadLorry={loadLorry}
-                armed={armed}
-                gated={gated}
-                hasBlockingCustomFieldError={hasBlockingCustomFieldError}
-                captureLabel={captureLabel(ticket, t)}
-                captureHint={captureHint(ticket, armed, t)}
-                onSave={onSave}
-                onOpenPrintModal={onOpenPrintModal}
-            />
+            <div className={styles.actionsSticky}>
+                <ActionsCard
+                    ticket={ticket}
+                    reading={reading}
+                    loadLorry={loadLorry}
+                    armed={armed}
+                    gated={gated}
+                    hasBlockingCustomFieldError={hasBlockingCustomFieldError}
+                    captureLabel={captureLabel(ticket, t)}
+                    captureHint={captureHint(ticket, armed, t)}
+                    onSave={onSave}
+                    onOpenPrintModal={onOpenPrintModal}
+                    onOpenReprintLookup={onOpenReprintLookup}
+                    weightUnit={weightUnit}
+                />
+            </div>
 
             {CAMERA_FEATURE_ENABLED && (
                 <Card

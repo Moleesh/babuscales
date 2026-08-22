@@ -29,10 +29,13 @@ const fieldBaseShape = {
     Validate: z.array(validationRuleSchema).optional(),
     Calculated: z.boolean().optional(),
     Captured: z.enum(["Gross", "Tare"]).optional(),
+    Manual: z.boolean().optional(),
     Group: z.enum(["Intermediate", "Final"]).optional(),
 };
 
 const selectOptionSchema = z.object({ Value: z.string().min(1), Label: localizedSchema });
+
+const autofillLinkSchema = z.object({ Field: z.string().min(1), Column: z.string().min(1) });
 
 const fieldSchema = z.discriminatedUnion("Kind", [
     z.object({ ...fieldBaseShape, Kind: z.literal("Text"), Upper: z.boolean().optional(), MaxLength: z.number().int().positive().optional() }),
@@ -41,8 +44,9 @@ const fieldSchema = z.discriminatedUnion("Kind", [
     z.object({ ...fieldBaseShape, Kind: z.literal("Money") }),
     z.object({ ...fieldBaseShape, Kind: z.literal("Date") }),
     z.object({ ...fieldBaseShape, Kind: z.literal("DateTime") }),
+    z.object({ ...fieldBaseShape, Kind: z.literal("TicketDate") }),
     z.object({ ...fieldBaseShape, Kind: z.literal("Boolean") }),
-    z.object({ ...fieldBaseShape, Kind: z.literal("Search"), Master: z.enum(MASTER_KINDS) }),
+    z.object({ ...fieldBaseShape, Kind: z.literal("Search"), Master: z.enum(MASTER_KINDS), Autofills: z.array(autofillLinkSchema).optional() }),
     z.object({ ...fieldBaseShape, Kind: z.literal("Select"), Options: z.array(selectOptionSchema).min(1) }),
     z.object({ ...fieldBaseShape, Kind: z.literal("Formula"), Formula: z.string().min(1) }),
     z.object({ ...fieldBaseShape, Kind: z.literal("Sequence"), ResetPolicy: z.enum(["Manual", "Yearly"]) }),
@@ -73,6 +77,7 @@ const masterSchemaSchema = z.object({
 const fieldSegmentSchema = z.object({
     Segment: z.string().min(1),
     Label: localizedSchema.optional(),
+    Kind: z.enum(["Enterable", "Calculated"]).optional(),
     Fields: z.array(fieldSchema).min(1),
 });
 

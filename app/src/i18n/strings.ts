@@ -21,6 +21,25 @@ export const EN_STRINGS: Record<string, string> = {
     "weigh.party": "Party",
     "weigh.material": "Material",
     "weigh.transporter": "Transporter",
+
+    // The Godown example schema's own custom FieldIds (resources/schemas/
+    // godown-ticket-schema.json) — that JSON carries no `Label` on any of
+    // these now (task: "labels in the json we dont need it"), so this is
+    // the only place their display text comes from; a FieldId with no entry
+    // here just shows its own raw text instead (`resolveFieldIdLabel`,
+    // schemaEngine/fieldLabelKeys.ts).
+    "weighing.label.DriverMobile": "Driver, Mobile",
+    "weighing.label.NoOfBags": "No of Bags",
+    "weighing.label.BagWeight": "Bag Weight",
+    "weighing.label.FullBagWeight": "Full Bag Weight",
+    "weighing.label.Adjust": "Adjust",
+    "weighing.label.NetAfterBags": "Net After Bags",
+    "weighing.label.EstimatedWeight": "Estimated Weight",
+    "weighing.label.ExcessShortage": "Excess / Shortage",
+    "weighing.label.TotalAdjustment": "Total Adjustment",
+    "weighing.label.GodownGross": "Godown Gross",
+    "weighing.label.GodownNet": "Godown Net",
+
     stable: "Stable",
     motion: "Motion",
     ind: "Indicator",
@@ -45,9 +64,12 @@ export const EN_STRINGS: Record<string, string> = {
     "weigh.actions": "Actions",
     "weigh.printsSuffix": "prints",
     "weigh.save": "Save",
-    "weigh.saveAndPark": "Save & park",
     "weigh.print": "Print",
     "weigh.reprint": "Reprint",
+    "weigh.reprintLookup.title": "Find ticket to reprint",
+    "weigh.reprintLookup.placeholder": "e.g. TKT-0042",
+    "weigh.reprintLookup.find": "Find",
+    "weigh.reprintLookup.notFound": "No ticket found with that number.",
     "weigh.newTicket": "New ticket",
     "weigh.clear": "Clear",
     "weigh.sendLorry": "Send a lorry",

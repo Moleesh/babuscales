@@ -1,16 +1,19 @@
 export { DEFAULT_TICKET_SCHEMA } from "./defaultTicketSchema";
 export { evaluateGate } from "./evaluateFieldFormulas";
-export { FIELD_LABEL_KEYS } from "./fieldLabelKeys";
+export { FIELD_LABEL_KEYS, resolveFieldIdLabel, resolvePlaceholder } from "./fieldLabelKeys";
 export { parseTicketSchema, ticketSchemaSchema } from "./schemaJson";
 export { SchemaProvider } from "./SchemaProvider";
 export type { SchemaProviderProps } from "./SchemaProvider";
 export { useSchema } from "./useSchema";
 export {
     getAllFields,
+    getCalculatedFieldIds,
+    resolveSegmentKind,
     SEGMENT_CAPTURED_CALCULATED,
     SEGMENT_CURRENT_TICKET,
 } from "./types";
 export type {
+    AutofillLink,
     Field,
     FieldBase,
     FieldKind,
@@ -22,6 +25,7 @@ export type {
     SearchField,
     SelectField,
     SelectOption,
+    TicketDateField,
     ValidationRule,
     ValidationSeverity,
 } from "./types";

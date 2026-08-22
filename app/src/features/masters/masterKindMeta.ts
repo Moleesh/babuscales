@@ -2,6 +2,7 @@ import type { SegmentedOption } from "@components/SegmentedControl";
 import { MASTER_KINDS } from "@db/types";
 import type { MasterKind } from "@db/types";
 import type { MasterColumn, Schema } from "@engines/schemaEngine";
+import { resolveFieldIdLabel } from "@engines/schemaEngine";
 import { resolveLocalized } from "@i18n/types";
 import type { Localized } from "@i18n/types";
 
@@ -101,11 +102,14 @@ export const buildKindOptions = (
     }));
 
 // The built-in `Masters` columns (defaultTicketSchema.ts's Rate/Email/Phone/
-// Notes) carry no `Label` of their own — same "resolve from this app's own
-// i18n strings by FieldId" shape as schemaEngine's `FIELD_LABEL_KEYS`, kept
-// here instead since only the Masters screen needs it. A genuinely custom
-// column an admin adds via schema upload supplies its own `Label` and never
-// hits this fallback.
+// Notes) carry no `Label` of their own — resolved from this app's own i18n
+// strings by FieldId, kept here instead since only the Masters screen needs
+// these particular keys. Any other column FieldId (a genuinely custom one,
+// or the Godown example schema's own `FullBagWeight`) falls through to the
+// same `weighing.label.<FieldId>` convention schemaEngine's
+// `resolveFieldIdLabel` already applies to ticket fields — no column needs a
+// schema `Label` of its own either now (task: "labels in the json we dont
+// need it ... see if we can remove anything else").
 const MASTER_COLUMN_LABEL_KEYS: Partial<Record<string, string>> = {
     Rate: "masters.field.rate",
     Email: "masters.field.email",
@@ -113,5 +117,8 @@ const MASTER_COLUMN_LABEL_KEYS: Partial<Record<string, string>> = {
     Notes: "masters.field.notes",
 };
 
-export const masterColumnLabel = (column: MasterColumn, lang: string, t: Translate): string =>
-    column.Label ? resolveLocalized(column.Label, lang) : t(MASTER_COLUMN_LABEL_KEYS[column.FieldId] ?? column.FieldId);
+export const masterColumnLabel = (column: MasterColumn, lang: string, t: Translate): string => {
+    if (column.Label) return resolveLocalized(column.Label, lang);
+    const builtinKey = MASTER_COLUMN_LABEL_KEYS[column.FieldId];
+    return builtinKey ? t(builtinKey) : resolveFieldIdLabel(column.FieldId, t);
+};

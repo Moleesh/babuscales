@@ -1,31 +1,35 @@
+import type { ReactNode } from "react";
+
 import { Card } from "@components/Card";
-import { StatusPill } from "@components/StatusPill";
 import { formatDateTimeInFmt, formatPlainNumber, formatWeightIn } from "@constants/numberFormat";
 import type { WeightUnit } from "@constants/numberFormat";
 import type { Capture, CaptureType } from "@db/ticketBody";
 import type { DerivedWeights } from "@db/ticketBody";
 import { hasCapture } from "@db/ticketBody";
-import { getAllFields } from "@engines/schemaEngine";
-import type { Schema } from "@engines/schemaEngine";
+import { resolveFieldIdLabel } from "@engines/schemaEngine";
+import type { Field } from "@engines/schemaEngine";
 import { resolveLocalized } from "@i18n/types";
 import { useTranslation } from "@i18n/useTranslation";
 
 import { CalcFormula } from "./CalcFormula";
-import type { CalcSegment } from "./calcSegments";
+import type { CalcFieldResults } from "./calcSegments";
+import { getCalcItemsForFields } from "./calcSegments";
 import { ManualCalcBox } from "./ManualCalcBox";
 import { evaluateFieldVisible } from "./schemaFieldValidation";
 import { resolveFieldLabel } from "./ticketFieldIds";
 import styles from "../_styles/WeighingScreen.module.css";
 
 // Every box in this card — Gross/Tare included — only renders when its
-// FieldId is actually present in the active schema; a schema that omits
-// Gross/Tare entirely (e.g. a minimal ticket type with no scale capture)
+// FieldId is actually present in *this segment's own* `fields` (WeighingLeftColumn
+// passes each `"Calculated"` segment's own `Fields` here); a segment that
+// omits Gross/Tare entirely (e.g. a minimal ticket type with no scale
+// capture, or a second calc segment that only holds derived totals)
 // genuinely has no such box, same as any other field a schema doesn't
 // declare. `Visible: false` on a field that *is* present still just hides
 // it (evaluateFieldVisible, same helper TicketFieldsCard/SchemaFieldRow
 // use) rather than dropping it from the schema outright.
-const isBoxVisible = (ticketSchema: Schema, fieldId: string): boolean => {
-    const field = getAllFields(ticketSchema).find((candidate) => candidate.FieldId === fieldId);
+const isBoxVisible = (fields: Field[], fieldId: string): boolean => {
+    const field = fields.find((candidate) => candidate.FieldId === fieldId);
     return !!field && evaluateFieldVisible(field);
 };
 
@@ -84,36 +88,49 @@ const ChargeBox = ({ label, value, onChange, readOnly }: ChargeBoxProps) => (
     </div>
 );
 
-const SEGMENT_HEADING_KEYS: Record<CalcSegment["segment"], string> = {
-    Intermediate: "weigh.calcSegment.intermediate",
-    Final: "weigh.calcSegment.final",
-};
-
-// One `CalcSegment` group (useComputedCalcFields.ts) — a labeled heading
-// ("Intermediate results"/"Final results") over its own row of read-only
-// boxes, same visual language as the fixed 4-box grid above it just without
-// the stamp/lead/pending states those 4 have (a schema-driven `Formula`
-// field has none of those concepts). A field whose formula threw (an input
-// the operator hasn't filled in yet) shows "—", same as an unresolved
-// Gross/Tare box.
-const CalcSegmentRows = ({ segments, lang, t }: { segments: CalcSegment[]; lang: string; t: (key: string) => string }) => (
-    <>
-        {segments.map(({ segment, items }) => (
-            <div key={segment} className={styles.calcSegment}>
-                <span className={styles.calcSegmentHeading}>{t(SEGMENT_HEADING_KEYS[segment])}</span>
-                <div className={styles.calcSegmentGrid}>
-                    {items.map(({ fieldId, field, value }) => (
-                        <CalcBox
-                            key={fieldId}
-                            label={field.Label ? resolveLocalized(field.Label, lang) : fieldId}
-                            value={value !== undefined ? formatPlainNumber(value) : "—"}
-                        />
-                    ))}
-                </div>
+// This segment's own non-fixed calc-chain fields (getCalcItemsForFields,
+// calcSegments.ts) — a plain row of read-only boxes under the fixed 4-box
+// grid above, same visual language just without the stamp/lead/pending
+// states those 4 have (a schema-driven `Formula` field has none of those
+// concepts). A field whose formula threw (an input the operator hasn't
+// filled in yet) shows "—", same as an unresolved Gross/Tare box. Renders
+// nothing when this segment has no such fields (a `"Calculated"` segment
+// that's only the fixed 4 boxes, e.g. the default schema's own
+// `CapturedCalculated`).
+const CalcSegmentRows = ({
+    items,
+    lang,
+    t,
+}: {
+    items: ReturnType<typeof getCalcItemsForFields>;
+    lang: string;
+    t: (key: string) => string;
+}) => {
+    if (items.length === 0) return null;
+    return (
+        <div className={styles.calcSegment}>
+            <div className={styles.calcSegmentGrid}>
+                {items.map(({ fieldId, field, value }) => (
+                    <CalcBox
+                        key={fieldId}
+                        label={field.Label ? resolveLocalized(field.Label, lang) : resolveFieldIdLabel(fieldId, t)}
+                        value={value !== undefined ? formatPlainNumber(value) : "—"}
+                    />
+                ))}
             </div>
-        ))}
-    </>
-);
+            {items.map(({ fieldId, field, value, breakdown }) =>
+                breakdown && value !== undefined ? (
+                    <div key={fieldId} className={styles.formula}>
+                        <span>
+                            {field.Label ? resolveLocalized(field.Label, lang) : resolveFieldIdLabel(fieldId, t)} ={" "}
+                            {breakdown} = <em>{formatPlainNumber(value)}</em>
+                        </span>
+                    </div>
+                ) : null,
+            )}
+        </div>
+    );
+};
 
 interface TareGrossBoxesProps {
     weights: DerivedWeights;
@@ -238,20 +255,32 @@ const NetChargeBoxes = ({
 // Tare and Gross without an intervening Save, so each box only needs to
 // know whether *it specifically* still needs a weight. Pulled out of
 // CalcCard purely to stay under the file's own line budget.
-const useCalcCardVisibility = (ticketSchema: Schema, captures: Capture[], manualEntry: boolean, isLocked: boolean) => {
-    const manualTare = manualEntry && !isLocked && !hasCapture(captures, "Tare");
-    const manualGross = manualEntry && !isLocked && !hasCapture(captures, "Gross");
-    const showGross = isBoxVisible(ticketSchema, "Gross");
-    const showTare = isBoxVisible(ticketSchema, "Tare");
-    const showNet = isBoxVisible(ticketSchema, "Net");
-    const showCharge = isBoxVisible(ticketSchema, "Charge");
+const isFieldManual = (fields: Field[], fieldId: string): boolean =>
+    fields.find((candidate) => candidate.FieldId === fieldId)?.Manual === true;
+
+const useCalcCardVisibility = (fields: Field[], captures: Capture[], manualEntry: boolean, isLocked: boolean) => {
+    const manualTare = (manualEntry || isFieldManual(fields, "Tare")) && !isLocked && !hasCapture(captures, "Tare");
+    const manualGross = (manualEntry || isFieldManual(fields, "Gross")) && !isLocked && !hasCapture(captures, "Gross");
+    const showGross = isBoxVisible(fields, "Gross");
+    const showTare = isBoxVisible(fields, "Tare");
+    const showNet = isBoxVisible(fields, "Net");
+    const showCharge = isBoxVisible(fields, "Charge");
     const noBoxes = !showGross && !showTare && !showNet && !showCharge;
     return { manualTare, manualGross, showGross, showTare, showNet, showCharge, noBoxes };
 };
 
 export interface CalcCardProps {
-    /** The active Schema — Gross/Tare/Net/Charge box labels resolve against it (falling back to the current i18n defaults) rather than being hardcoded. */
-    ticketSchema: Schema;
+    /** This card's own title — one `FieldSegment`'s resolved Label (or its
+     * i18n fallback), not a fixed "Captured & calculated" string, now that
+     * WeighingLeftColumn renders one CalcCard per `"Calculated"` segment
+     * (task: Godown's 2 bottom calculated cards). */
+    title: ReactNode;
+    /** One `FieldSegment.Fields` slice — just this card's own fields
+     * (WeighingLeftColumn passes each `"Calculated"` segment's own `Fields`
+     * here). Gross/Tare/Net/Charge box labels resolve against it, falling
+     * back to the current i18n defaults; each of those 4 boxes only renders
+     * when its FieldId is actually present here (`isBoxVisible`). */
+    fields: Field[];
     weights: DerivedWeights;
     captures: Capture[];
     /** Operator-entered, same field as challanNo — no auto-calc. */
@@ -272,19 +301,27 @@ export interface CalcCardProps {
     /** Settings' `Formats.DateFmt`/`TimeFmt` — the Tare/Gross capture stamps display in these. */
     dateFmt: string;
     timeFmt: "24" | "12";
-    /** `useComputedCalcFields` (WeighingScreen.tsx) — every non-fixed `Calculated` `Formula` field the active schema declares (e.g. a Godown schema's calc chain), already evaluated and grouped by `Segment`. Empty for a schema with none, same as `DEFAULT_TICKET_SCHEMA`'s today. */
-    calcSegments: CalcSegment[];
+    /** `useComputedCalcFields` (WeighingScreen.tsx) — the whole schema's values/breakdowns; this card picks its own segment's slice out via `getCalcItemsForFields`. Empty for a schema with none, same as `DEFAULT_TICKET_SCHEMA`'s today. */
+    calcValues: CalcFieldResults;
+    /** The formula derivation (CalcFormula) only makes sense once per ticket
+     * — WeighingLeftColumn sets this only on the last `"Calculated"`
+     * segment's card (the one holding the settled totals), not every one.
+     * The Tare/Gross/Net status pill used to render here too; it now lives
+     * in ActionsCard, under the capture button (task: "move the tare
+     * gross,net below the capture"). */
+    showSummary?: boolean;
 }
 
 // Split out of WeighingScreen (over the 300-line budget — docs/CodingStandards.md)
-// — the "Captured & calculated" card: the mock's own `.calc` four-box grid
-// (Tare/Gross/Net/Charge), the formula derivation underneath (CalcFormula),
-// and the one-line status pill. Self-contained by design (the task that
-// tracked this split named it "the cleanest candidate" for exactly that
-// reason): only `ticket.weights`/`captures`, `charge`/`materialRate`/
-// `value` and `Formats.AmountDp` — no master-cache or DataPort deps.
+// — one "Calculated" segment's card: the fixed 4-box grid (Tare/Gross/Net/
+// Charge, only for whichever of those this segment's own `fields` declare),
+// this segment's own calc-chain rows, and — only on the summary card — the
+// formula derivation (CalcFormula) and the one-line status pill.
+// Self-contained by design: only `ticket.weights`/`captures`, `charge`/
+// `materialRate`/`value` and `Formats.AmountDp` — no master-cache or
+// DataPort deps.
 interface CalcBoxGridProps {
-    ticketSchema: Schema;
+    fields: Field[];
     weights: DerivedWeights;
     captures: Capture[];
     grossCaptures: Capture[];
@@ -296,14 +333,13 @@ interface CalcBoxGridProps {
     weightUnit: WeightUnit;
     dateFmt: string;
     timeFmt: "24" | "12";
-    boxLabel: (fieldId: string, fallback: string) => string;
-    t: ReturnType<typeof useTranslation>["t"];
+    boxLabel: (fieldId: string) => string;
 }
 
 // The `.calc` four-box grid plus its "nothing to show" fallback message —
 // pulled out of CalcCard purely to stay under the file's own line budget.
 const CalcBoxGrid = ({
-    ticketSchema,
+    fields,
     weights,
     captures,
     grossCaptures,
@@ -316,17 +352,15 @@ const CalcBoxGrid = ({
     dateFmt,
     timeFmt,
     boxLabel,
-    t,
 }: CalcBoxGridProps) => {
-    const { manualTare, manualGross, showGross, showTare, showNet, showCharge, noBoxes } = useCalcCardVisibility(
-        ticketSchema,
+    const { manualTare, manualGross, showGross, showTare, showNet, showCharge } = useCalcCardVisibility(
+        fields,
         captures,
         manualEntry,
         isLocked,
     );
     return (
         <>
-            {noBoxes && <p className={styles.emptySchema}>{t("weigh.capturedAndCalculated.empty")}</p>}
             <div className={styles.calc}>
                 <TareGrossBoxes
                     weights={weights}
@@ -338,8 +372,8 @@ const CalcBoxGrid = ({
                     weightUnit={weightUnit}
                     dateFmt={dateFmt}
                     timeFmt={timeFmt}
-                    grossLabel={boxLabel("Gross", t("weigh.gross"))}
-                    tareLabel={boxLabel("Tare", t("weigh.tare"))}
+                    grossLabel={boxLabel("Gross")}
+                    tareLabel={boxLabel("Tare")}
                     showGross={showGross}
                     showTare={showTare}
                 />
@@ -348,8 +382,8 @@ const CalcBoxGrid = ({
                     weightUnit={weightUnit}
                     showNet={showNet}
                     showCharge={showCharge}
-                    netLabel={boxLabel("Net", t("weigh.net"))}
-                    chargeLabel={boxLabel("Charge", t("weigh.charge"))}
+                    netLabel={boxLabel("Net")}
+                    chargeLabel={boxLabel("Charge")}
                     chargeValue={chargeValue}
                     onChargeChange={onChargeChange}
                     isLocked={isLocked}
@@ -360,7 +394,8 @@ const CalcBoxGrid = ({
 };
 
 export const CalcCard = ({
-    ticketSchema,
+    title,
+    fields,
     weights,
     captures,
     chargeValue,
@@ -374,18 +409,21 @@ export const CalcCard = ({
     weightUnit,
     dateFmt,
     timeFmt,
-    calcSegments,
+    calcValues,
+    showSummary,
 }: CalcCardProps) => {
     const { t, lang } = useTranslation();
-    const allFields = getAllFields(ticketSchema);
-    const boxLabel = (fieldId: string, fallback: string) => resolveFieldLabel(allFields, fieldId, lang, fallback);
+    const boxLabel = (fieldId: string) => resolveFieldLabel(fields, fieldId, lang, t);
     // Task #46 — every Gross capture, in the order they were taken; length 1
     // covers today's single-gross ticket unchanged.
     const grossCaptures = captures.filter((c) => c.Type === "Gross");
+    const calcItems = getCalcItemsForFields(fields, calcValues);
+    const { noBoxes } = useCalcCardVisibility(fields, captures, manualEntry, isLocked);
     return (
-        <Card title={<span className="lbl">{t("weigh.capturedAndCalculated")}</span>}>
+        <Card title={<span className="lbl">{title}</span>}>
+            {noBoxes && calcItems.length === 0 && <p className={styles.emptySchema}>{t("weigh.capturedAndCalculated.empty")}</p>}
             <CalcBoxGrid
-                ticketSchema={ticketSchema}
+                fields={fields}
                 weights={weights}
                 captures={captures}
                 grossCaptures={grossCaptures}
@@ -398,25 +436,20 @@ export const CalcCard = ({
                 dateFmt={dateFmt}
                 timeFmt={timeFmt}
                 boxLabel={boxLabel}
-                t={t}
             />
-            <CalcSegmentRows segments={calcSegments} lang={lang} t={t} />
-            <CalcFormula
-                tareKg={weights.tareKg}
-                grossKg={weights.grossKg}
-                netKg={weights.netKg}
-                materialRate={materialRate}
-                value={value}
-                amountDp={amountDp}
-                grossWeightsKg={grossCaptures.map((c) => c.WeightKg)}
-                weightUnit={weightUnit}
-            />
-            <StatusPill
-                tareKg={weights.tareKg}
-                grossKg={weights.grossKg}
-                netKg={weights.netKg}
-                weightUnit={weightUnit}
-            />
+            <CalcSegmentRows items={calcItems} lang={lang} t={t} />
+            {showSummary && (
+                <CalcFormula
+                    tareKg={weights.tareKg}
+                    grossKg={weights.grossKg}
+                    netKg={weights.netKg}
+                    materialRate={materialRate}
+                    value={value}
+                    amountDp={amountDp}
+                    grossWeightsKg={grossCaptures.map((c) => c.WeightKg)}
+                    weightUnit={weightUnit}
+                />
+            )}
         </Card>
     );
 };

@@ -315,15 +315,31 @@ const buildNavTabs = (t: ReturnType<typeof useTranslation>["t"]): AppShellTab[] 
     PRIMARY_TAB_KEYS.map((key) => ({ key, label: t(`nav.${key}`), icon: TAB_ICONS[key] }));
 
 // Per-session only — nothing here persists, so every relaunch comes back to
-// this same default regardless of how the pin was left last time. Starts
-// pinned to match tauri.conf.json's own `alwaysOnTop: true` (what the
-// window already opens as, before this ever mounts — the splash itself no
-// longer touches the pin state, see splashWindowControls.ts) — this effect
-// then keeps that setting in sync with the toggle from here on.
+// this same default regardless of how the pin was left last time.
+//
+// The window itself opens small and unpinned — tauri.conf.json's own
+// `alwaysOnTop: false` — but src/splashWindowControls.ts already pins and
+// fills the screen the moment the loading screen paints, well before this
+// ever mounts (see that module's own comment on why it's done there and
+// not here). `pinned: true` below just reflects that already-applied
+// state; `justMounted` skips this effect calling `setAlwaysOnTop`/
+// `fillScreen` again on its first run so App.tsx mounting doesn't redo
+// work the splash already did — only a later, real toggle click fires
+// them. Turning the pin back on re-pins and re-fills; turning it off only
+// drops always-on-top — it deliberately does NOT shrink the window back
+// down, so the operator isn't fighting a resize on every toggle. Once
+// full, it stays full until they resize it themselves, same as any other
+// window they've maximized.
 const usePinToggle = (windowPin: WindowPinSource) => {
     const [pinned, setPinned] = useState(true);
+    const justMounted = useRef(true);
     useEffect(() => {
+        if (justMounted.current) {
+            justMounted.current = false;
+            return;
+        }
         void windowPin.setAlwaysOnTop(pinned);
+        if (pinned) void windowPin.fillScreen();
     }, [windowPin, pinned]);
     return { pinned, onToggle: () => setPinned((value) => !value) };
 };

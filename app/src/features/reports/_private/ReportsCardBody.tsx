@@ -1,3 +1,6 @@
+import { useEffect, useRef } from "react";
+import type { RefObject } from "react";
+
 import type { DataTableColumn } from "@components/DataTable";
 
 import { ReportsDateRangeRow } from "./ReportsDateRangeRow";
@@ -85,6 +88,31 @@ const ReportsActiveView = ({
         />
     );
 
+// Exposes `.sticky-filters`' own rendered height as `--reports-filters-h` on
+// `.body` — the Tickets table's column header row (DataTable.module.css's
+// `--datatable-header-top`, via ReportsScreen.module.css's `.tickets-table`)
+// offsets its own sticky `top` by this, on top of the shell's own
+// `--shell-header-h`, so it stacks under both instead of colliding with
+// either at the same `top: 0` slot. Same ResizeObserver shape as
+// AppShell.tsx's own `useStickyHeaderHeight`. Split out purely to stay under
+// the file's own line budget.
+const useStickyFiltersHeight = (
+    bodyRef: RefObject<HTMLDivElement | null>,
+    filtersRef: RefObject<HTMLDivElement | null>,
+): void => {
+    useEffect(() => {
+        const bodyEl = bodyRef.current;
+        const filtersEl = filtersRef.current;
+        if (!bodyEl || !filtersEl) return;
+        const observer = new ResizeObserver(([entry]) => {
+            if (!entry) return;
+            bodyEl.style.setProperty("--reports-filters-h", `${entry.contentRect.height}px`);
+        });
+        observer.observe(filtersEl);
+        return () => observer.disconnect();
+    }, [bodyRef, filtersRef]);
+};
+
 // Split out of ReportsScreen (over the line/complexity budget —
 // docs/CodingStandards.md) — the Card's body: saved-reports row and the
 // active view (Tickets or Summary). The Print/Export button row moved out
@@ -99,21 +127,26 @@ export const ReportsCardBody = ({
     dateFmt,
     savedReportActions,
     ...view
-}: ReportsCardBodyProps) => (
-    <div className={styles.body}>
-        <SavedReportsRow
-            savedReports={savedReportActions.savedReports}
-            newName={savedReportActions.newReportName}
-            onNewNameChange={savedReportActions.setNewReportName}
-            onSave={savedReportActions.handleSaveReport}
-            onRecall={savedReportActions.handleRecallReport}
-            onDelete={savedReportActions.handleDeleteReport}
-        />
-        {/* Date range + (for Tickets) the search/filter/sort row stick together
-            under the shell's own sticky weight header (AppShell.tsx's
-            `--shell-header-h`, same fix as Settings' tab bar) so they stay
-            reachable while the table underneath scrolls. */}
-        <div className={styles.stickyFilters}>
+}: ReportsCardBodyProps) => {
+    const bodyRef = useRef<HTMLDivElement>(null);
+    const filtersRef = useRef<HTMLDivElement>(null);
+    useStickyFiltersHeight(bodyRef, filtersRef);
+    return (
+        <div className={styles.body} ref={bodyRef}>
+        {/* Saved reports + date range + (for Tickets) the search/filter/sort
+            row all stick together as one compact block under the Card's own
+            sticky title header (Card.tsx's `sticky` prop) instead of the
+            title scrolling off while just the filters stayed pinned below it
+            (task: "make it sticky including the title"). */}
+        <div className={styles.stickyFilters} ref={filtersRef}>
+            <SavedReportsRow
+                savedReports={savedReportActions.savedReports}
+                newName={savedReportActions.newReportName}
+                onNewNameChange={savedReportActions.setNewReportName}
+                onSave={savedReportActions.handleSaveReport}
+                onRecall={savedReportActions.handleRecallReport}
+                onDelete={savedReportActions.handleDeleteReport}
+            />
             <ReportsDateRangeRow
                 dateFrom={dateFrom}
                 onDateFromChange={onDateFromChange}
@@ -137,5 +170,6 @@ export const ReportsCardBody = ({
             )}
         </div>
         <ReportsActiveView {...view} />
-    </div>
-);
+        </div>
+    );
+};

@@ -6,7 +6,7 @@ import { Field, FieldGrid } from "@components/Field";
 import { SearchableDropdown } from "@components/SearchableDropdown";
 import type { MasterKind } from "@db/types";
 import type { UseMasterCache } from "@db/useMasterCache";
-import { getAllFields, useSchema } from "@engines/schemaEngine";
+import { resolveFieldIdLabel } from "@engines/schemaEngine";
 import type { Field as SchemaField } from "@engines/schemaEngine";
 import { resolveLocalized } from "@i18n/types";
 import { useTranslation } from "@i18n/useTranslation";
@@ -16,10 +16,11 @@ import { RecallBanner } from "../RecallBanner";
 import type { RecallOffer } from "../RecallBanner";
 import { formatTicketNo } from "../ticketNumber";
 import type { UseWeighingTicket } from "../useWeighingTicket";
+import { applyAutofill } from "./applyAutofill";
 import { buildTicketFormulaContext } from "./buildTicketFormulaContext";
 import { SchemaFieldRow } from "./SchemaFieldRow";
 import { evaluateFieldVisible } from "./schemaFieldValidation";
-import { FIELD_LABEL_KEYS, FIXED_FIELD_IDS, isCalculatedField } from "./ticketFieldIds";
+import { FIXED_FIELD_IDS } from "./ticketFieldIds";
 
 interface MasterDropdownFieldProps {
     id: string;
@@ -77,6 +78,21 @@ interface BuildFixedControlArgs extends FixedFieldCaches {
     label: string;
     t: (key: string) => string;
 }
+
+// Applies a Search field's own `Autofills` (e.g. Material → a Rate field)
+// the instant its master row is picked — same "just for that second, still
+// editable after" contract SchemaFieldRow's SearchInput uses (task: "we
+// won't be disabling it ... it is just autofilled for that particular
+// second"). Looked up by Name, not MasterId: SearchableDropdown's `pick()`
+// (useDropdownState.ts) hands its wrapping `onChange` the picked option's
+// `Label` — the display string, not the underlying master id — so a fixed
+// Search field's `onChange` carries `row.Name`, same as SchemaFieldRow's.
+const applyFixedAutofill = (field: SchemaField, cache: UseMasterCache, ticket: UseWeighingTicket, value: string): void => {
+    if (field.Kind !== "Search" || !field.Autofills?.length) return;
+    const row = cache.rows.find((candidate) => candidate.Name === value);
+    if (!row) return;
+    applyAutofill(field, row, ticket.setCustomField);
+};
 
 // The typed-state binding for each of the 5 fixed FieldIds — necessary
 // wiring (ticket.fields is a typed struct, not the generic customFields bag
@@ -154,7 +170,10 @@ const buildFixedControl = (field: SchemaField, args: BuildFixedControlArgs): Rea
                     searchTitle={accessor.searchTitleKey ? t(accessor.searchTitleKey) : undefined}
                     recalled={accessor.recalledKey ? ticket.recalledFields.has(accessor.recalledKey) : undefined}
                     value={accessor.getValue(ticket)}
-                    onChange={(value) => accessor.setValue(ticket, value)}
+                    onChange={(value) => {
+                        accessor.setValue(ticket, value);
+                        applyFixedAutofill(field, cache, ticket, value);
+                    }}
                     cache={cache}
                     readOnly={ticket.isLocked}
                     spellCheck={accessor.spellCheck}
@@ -182,6 +201,7 @@ const buildFixedControl = (field: SchemaField, args: BuildFixedControlArgs): Rea
         case "Money":
         case "Date":
         case "DateTime":
+        case "TicketDate":
         case "Boolean":
         case "Select":
         case "Formula":
@@ -212,12 +232,10 @@ const buildFixedItems = ({
     controlArgs: args,
 }: BuildFixedItemsArgs): { key: string; node: ReactNode }[] => {
     // Built-in fixed fields ship with no schema `Label` at all (see
-    // defaultTicketSchema.ts's own comment) — fall back to this app's own
-    // i18n string for the FieldId; only a genuinely custom FieldId with no
-    // FIELD_LABEL_KEYS entry falls all the way back to its raw FieldId.
-    const label = field.Label
-        ? resolveLocalized(field.Label, lang)
-        : args.t(FIELD_LABEL_KEYS[field.FieldId] ?? field.FieldId);
+    // defaultTicketSchema.ts's own comment) — fall back to the shared
+    // FieldId → i18n-key convention; only a genuinely custom FieldId with no
+    // entry anywhere falls all the way back to its raw FieldId.
+    const label = field.Label ? resolveLocalized(field.Label, lang) : resolveFieldIdLabel(field.FieldId, args.t);
     const items: { key: string; node: ReactNode }[] = [
         { key: field.FieldId, node: buildFixedControl(field, { ...args, label }) },
     ];
@@ -226,7 +244,9 @@ const buildFixedItems = ({
     // actually declares a "TicketDate" FieldId (defaultTicketSchema.ts) and
     // hasn't hidden it via `Visible: false`, same as any other field.
     if (field.FieldId === "VehicleNo" && ticketDateField && evaluateFieldVisible(ticketDateField)) {
-        const dateLabel = ticketDateField.Label ? resolveLocalized(ticketDateField.Label, lang) : args.t("weigh.ticketDate");
+        const dateLabel = ticketDateField.Label
+            ? resolveLocalized(ticketDateField.Label, lang)
+            : resolveFieldIdLabel("TicketDate", args.t);
         items.push({
             key: "TicketDate",
             node: (
@@ -283,7 +303,10 @@ const buildFieldItems = ({
 
     for (const field of schemaFields) {
         if (field.FieldId === "TicketDate") continue;
-        if (isCalculatedField(field)) continue;
+        // No `isCalculatedField` check needed anymore — this loop only ever
+        // sees an `"Enterable"` segment's own `Fields` (WeighingLeftColumn),
+        // which under the segment-Kind-is-authoritative model can never
+        // contain a calculated field.
         if (!evaluateFieldVisible(field)) continue;
 
         if (FIXED_FIELD_IDS.includes(field.FieldId)) {
@@ -301,6 +324,7 @@ const buildFieldItems = ({
                     ctx={ctx}
                     readOnly={ticket.isLocked}
                     masterCaches={masterCaches}
+                    onAutofill={(row) => applyAutofill(field, row, ticket.setCustomField)}
                 />
             ),
         });
@@ -320,6 +344,20 @@ const chunkPairs = <T,>(items: T[]): T[][] => {
 export interface TicketFieldsCardProps {
     ticket: UseWeighingTicket;
     ticketDate: string;
+    /** This card's own title — one `FieldSegment`'s resolved Label (or its
+     * i18n fallback), not a fixed "Ticket" string, now that WeighingLeftColumn
+     * renders one TicketFieldsCard per `"Enterable"` segment (task: Godown's
+     * 2 top enterable cards). */
+    title: ReactNode;
+    /** One `FieldSegment.Fields` slice — just this card's own fields, not
+     * every field in the schema (WeighingLeftColumn passes each
+     * `"Enterable"` segment's own `Fields` here). */
+    fields: SchemaField[];
+    /** The ticket-number chip in the header, and the recall banner beneath
+     * the grid — both are ticket-identity UI that only makes sense once, so
+     * WeighingLeftColumn only sets this on the first `"Enterable"` segment's
+     * card, not every one. */
+    primary?: boolean;
     recallOffers: RecallOffer[];
     vehicleCache: UseMasterCache;
     partyCache: UseMasterCache;
@@ -328,29 +366,28 @@ export interface TicketFieldsCardProps {
 }
 
 // Split out of WeighingScreen (over the 300-line budget — docs/CodingStandards.md)
-// — the "Ticket" card. Fully schema-driven: every field, fixed or custom, renders in whatever
-// order the active Schema's Segments list them in (flattened via
-// `getAllFields`), using whichever control that FieldId maps to.
-// Self-contained: everything it needs comes in as props, nothing here
-// reaches back into WeighingScreen's own state.
+// — one "Enterable" segment's card. Fully schema-driven: every field, fixed
+// or custom, renders in whatever order this segment's own `Fields` list
+// them in, using whichever control that FieldId maps to. Self-contained:
+// everything it needs comes in as props, nothing here reaches back into
+// WeighingScreen's own state.
 export const TicketFieldsCard = ({
     ticket,
     ticketDate,
+    title,
+    fields,
+    primary,
     recallOffers,
     vehicleCache,
     partyCache,
     materialCache,
     transporterCache,
 }: TicketFieldsCardProps) => {
-    // Reads the live, admin-editable schema (Settings → Fields & language)
-    // rather than a hardcoded field list, resolved through the
-    // active language.
-    const { ticketSchema } = useSchema();
     const { lang, t } = useTranslation();
 
     const items = buildFieldItems({
         ticket,
-        schemaFields: getAllFields(ticketSchema),
+        schemaFields: fields,
         ticketDate,
         lang,
         t,
@@ -362,8 +399,8 @@ export const TicketFieldsCard = ({
 
     return (
         <Card
-            title={<span className="lbl">{t("weigh.ticket")}</span>}
-            headerRight={<span className="chip num">{formatTicketNo(ticket.docSeq)}</span>}
+            title={<span className="lbl">{title}</span>}
+            headerRight={primary ? <span className="chip num">{formatTicketNo(ticket.docSeq)}</span> : undefined}
         >
             {items.length === 0 && <p className={styles.emptySchema}>{t("weigh.ticket.empty")}</p>}
             {chunkPairs(items).map((row) => (
@@ -373,7 +410,7 @@ export const TicketFieldsCard = ({
                     ))}
                 </FieldGrid>
             ))}
-            <RecallBanner offers={recallOffers} />
+            {primary && <RecallBanner offers={recallOffers} />}
         </Card>
     );
 };

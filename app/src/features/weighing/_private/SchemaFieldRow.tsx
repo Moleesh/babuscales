@@ -2,11 +2,12 @@ import { DatePicker } from "@components/DatePicker";
 import { Field } from "@components/Field";
 import { SearchableDropdown } from "@components/SearchableDropdown";
 import { Select } from "@components/Select";
-import type { MasterKind } from "@db/types";
+import type { MasterKind, MasterRow } from "@db/types";
 import type { UseMasterCache } from "@db/useMasterCache";
 import { evaluateFormula } from "@engines/formulaEngine";
 import type { FormulaContext } from "@engines/formulaEngine";
 import { toDecimalString } from "@engines/formulaEngine/Decimal";
+import { resolveFieldIdLabel, resolvePlaceholder } from "@engines/schemaEngine";
 import type { Field as SchemaField } from "@engines/schemaEngine";
 import { resolveLocalized } from "@i18n/types";
 import { useTranslation } from "@i18n/useTranslation";
@@ -23,6 +24,8 @@ export interface SchemaFieldRowProps {
     readOnly: boolean;
     /** Only the master kinds already cached on this screen (Vehicle/Party/Material/Transporter) — see TicketFieldsCard's own comment on why this doesn't grow a new `useMasterCache` call per custom field. */
     masterCaches: Partial<Record<MasterKind, UseMasterCache>>;
+    /** Fires with the newly-picked master row the instant a `Search` field's value changes — TicketFieldsCard wires this to `applyAutofill.ts` so a Search field's own `Autofills` list can copy values into other ticket fields. Optional: only `Search`-kind fields ever call it. */
+    onAutofill?: (row: MasterRow) => void;
 }
 
 interface KindInputProps {
@@ -31,24 +34,27 @@ interface KindInputProps {
     onChange: (value: CustomFieldValue) => void;
     readOnly: boolean;
     lang: string;
+    t: (key: string) => string;
 }
 
-const TextInput = ({ id, field, value, onChange, readOnly }: KindInputProps & { field: Extract<SchemaField, { Kind: "Text" }> }) => (
+const TextInput = ({ id, field, value, onChange, readOnly, t }: KindInputProps & { field: Extract<SchemaField, { Kind: "Text" }> }) => (
     <input
         id={id}
         value={typeof value === "string" ? value : ""}
         maxLength={field.MaxLength}
         readOnly={readOnly}
+        placeholder={resolvePlaceholder(field.FieldId, t)}
         onChange={(e) => onChange(field.Upper ? e.target.value.toUpperCase() : e.target.value)}
     />
 );
 
-const NumberInput = ({ id, value, onChange, readOnly }: KindInputProps) => (
+const NumberInput = ({ id, field, value, onChange, readOnly, t }: KindInputProps & { field: SchemaField }) => (
     <input
         id={id}
         type="number"
         value={typeof value === "number" ? value : ""}
         readOnly={readOnly}
+        placeholder={resolvePlaceholder(field.FieldId, t)}
         onChange={(e) => onChange(e.target.value === "" ? null : Number(e.target.value))}
     />
 );
@@ -126,9 +132,11 @@ const SearchInput = ({
     onChange,
     readOnly,
     masterCaches,
+    onAutofill,
 }: KindInputProps & {
     field: Extract<SchemaField, { Kind: "Search" }>;
     masterCaches: Partial<Record<MasterKind, UseMasterCache>>;
+    onAutofill?: (row: MasterRow) => void;
 }) => {
     const cache = masterCaches[field.Master];
     // Defensive: shouldn't happen given TicketFieldsCard only wires the
@@ -140,7 +148,17 @@ const SearchInput = ({
         <SearchableDropdown
             id={id}
             value={typeof value === "string" ? value : ""}
-            onChange={onChange}
+            onChange={(nextValue) => {
+                onChange(nextValue);
+                if (!field.Autofills?.length) return;
+                // Matched on `Name`, not `MasterId`: SearchableDropdown's
+                // `pick()` (useDropdownState.ts) hands its wrapping
+                // `onChange` the picked option's `Label` — the display
+                // string this SearchInput builds as `row.Name` — not the
+                // underlying master id.
+                const row = cache.rows.find((candidate) => candidate.Name === nextValue);
+                if (row) onAutofill?.(row);
+            }}
             onSearch={(query) =>
                 cache.search(query).map((row) => ({ Value: row.MasterId, Label: row.Name }))
             }
@@ -181,15 +199,17 @@ interface FieldInputProps {
     readOnly: boolean;
     masterCaches: Partial<Record<MasterKind, UseMasterCache>>;
     lang: string;
+    t: (key: string) => string;
+    onAutofill?: (row: MasterRow) => void;
 }
 
 // Dispatches on `field.Kind` to the right native control, delegating each
 // kind's own markup to a small component above — keeps this switch itself
 // short and flat rather than growing one long function's cognitive
 // complexity/line count with every branch's JSX inline.
-const FieldInput = ({ field, value, onChange, ctx, readOnly, masterCaches, lang }: FieldInputProps) => {
+const FieldInput = ({ field, value, onChange, ctx, readOnly, masterCaches, lang, t, onAutofill }: FieldInputProps) => {
     const id = `fCustom_${field.FieldId}`;
-    const common = { id, value, onChange, readOnly, lang };
+    const common = { id, value, onChange, readOnly, lang, t };
 
     switch (field.Kind) {
         case "Text":
@@ -197,17 +217,24 @@ const FieldInput = ({ field, value, onChange, ctx, readOnly, masterCaches, lang 
         case "Number":
         case "Weight":
         case "Money":
-            return <NumberInput {...common} />;
+            return <NumberInput {...common} field={field} />;
         case "Date":
             return <DateInput {...common} />;
         case "DateTime":
             return <DateTimeInput {...common} />;
+        case "TicketDate":
+            // Never actually reached — TicketDate is always spliced in by
+            // TicketFieldsCard's own dedicated read-only control, skipped
+            // before it ever reaches this generic renderer. Only exists so
+            // this switch stays exhaustive now that "TicketDate" is a Field
+            // union member.
+            return null;
         case "Boolean":
             return <BooleanInput {...common} />;
         case "Select":
             return <SelectInput {...common} field={field} />;
         case "Search":
-            return <SearchInput {...common} field={field} masterCaches={masterCaches} />;
+            return <SearchInput {...common} field={field} masterCaches={masterCaches} onAutofill={onAutofill} />;
         case "Formula":
             return <FormulaInput id={id} field={field} ctx={ctx} />;
         case "Sequence":
@@ -253,8 +280,8 @@ const ValidationMessages = ({ rules, lang }: ValidationMessagesProps) => (
 // of the 5 fixed ticket fields — evaluates its gates against
 // `ctx`, renders the right control for its Kind, and surfaces its
 // Validate rules inline. Read TicketFieldsCard.tsx for how this plugs in.
-export const SchemaFieldRow = ({ field, value, onChange, ctx, readOnly, masterCaches }: SchemaFieldRowProps) => {
-    const { lang } = useTranslation();
+export const SchemaFieldRow = ({ field, value, onChange, ctx, readOnly, masterCaches, onAutofill }: SchemaFieldRowProps) => {
+    const { lang, t } = useTranslation();
 
     if (!evaluateFieldVisible(field)) return null;
 
@@ -264,7 +291,7 @@ export const SchemaFieldRow = ({ field, value, onChange, ctx, readOnly, masterCa
     const failing = failingValidationRules(field.Validate, ctx);
 
     return (
-        <Field id={`fCustom_${field.FieldId}`} label={field.Label ?? field.FieldId}>
+        <Field id={`fCustom_${field.FieldId}`} label={field.Label ?? resolveFieldIdLabel(field.FieldId, t)}>
             <FieldInput
                 field={field}
                 value={value}
@@ -273,6 +300,8 @@ export const SchemaFieldRow = ({ field, value, onChange, ctx, readOnly, masterCa
                 readOnly={fieldReadOnly}
                 masterCaches={masterCaches}
                 lang={lang}
+                t={t}
+                onAutofill={onAutofill}
             />
             {required && value === null && <p className={styles.fieldWarn}>Required.</p>}
             <ValidationMessages rules={failing} lang={lang} />

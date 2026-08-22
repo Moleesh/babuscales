@@ -5,16 +5,38 @@
    that overflow undiscoverable. Dropped in favour of base.css's global thin
    themed scrollbar (same one every other scroll region in the app uses),
    so the strip reads as scrollable instead of silently truncated. */
+/* Stays put while the ticket form below scrolls (task: "the highlighted
+   section has to be sticky on the screen", then later "change the position
+   please and pin them there" after a brief detour below WeighingBody) —
+   same pattern as SettingsScreen.module.css's own `.top-row`: `top` offset
+   by the shell's sticky weight-header height (AppShell.tsx's
+   `--shell-header-h`) so this strip stacks under that header instead of
+   disappearing behind its higher z-index at the same `top: 0` slot. Needs
+   its own opaque background since sticky content still sits above whatever
+   scrolls underneath it. */
 .strip {
     display: flex;
     align-items: center;
     gap: 9px;
     padding: 7px 11px 10px;
-    flex: none;
+    /* `flex: 0 1 auto` + `min-width: 0` (not `flex: none`) — `.screen`
+       switched from `display: grid` to a column flex container, where a
+       flex item's default cross-axis minimum is its own content width
+       unless overridden. `flex: none` (flex-shrink: 0) blocked this strip
+       from ever shrinking below that, so it grew to fit every open-ticket
+       chip and dragged the whole screen wider instead of clipping at the
+       container's width and scrolling internally via `overflow-x: auto`
+       below (reported: "WIDTH IS BROKEN"). Grid tracks never had this
+       problem, which is why it only surfaced after the flex switch. */
+    flex: 0 1 auto;
+    min-width: 0;
     border: 1px solid var(--line);
     border-radius: var(--radius);
     background: var(--panel);
     overflow-x: auto;
+    position: sticky;
+    top: var(--shell-header-h, 0px);
+    z-index: 2;
 }
 
 .label {

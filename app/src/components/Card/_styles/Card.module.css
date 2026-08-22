@@ -19,6 +19,18 @@
     margin-left: auto;
 }
 
+/* Opt-in via CardProps.sticky (Reports so far) — pins the header under
+   AppShell's own sticky weight header instead of scrolling away. Needs its
+   own opaque background since sticky content still sits above whatever
+   scrolls underneath it (same reasoning as AppShell.module.css's
+   `.header-sticky`). */
+.headerSticky {
+    position: sticky;
+    top: var(--shell-header-h, 0px);
+    z-index: 3;
+    background: var(--panel);
+}
+
 .body {
     padding: 13px;
 }

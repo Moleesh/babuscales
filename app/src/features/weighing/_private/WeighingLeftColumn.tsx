@@ -1,10 +1,13 @@
 import type { WeightUnit } from "@constants/numberFormat";
+import { resolveSegmentKind } from "@engines/schemaEngine";
 import type { Schema } from "@engines/schemaEngine";
+import { resolveLocalized } from "@i18n/types";
+import { useTranslation } from "@i18n/useTranslation";
 
 import type { RecallOffer } from "../RecallBanner";
 import type { UseWeighingTicket } from "../useWeighingTicket";
+import type { CalcFieldResults } from "./calcSegments";
 import { CalcCard } from "./CalcCard";
-import type { CalcSegment } from "./calcSegments";
 import type { TicketBilling } from "./ticketBilling";
 import { TicketFieldsCard } from "./TicketFieldsCard";
 import type { WeighingCaches } from "./useWeighingScreenTickets";
@@ -15,23 +18,28 @@ export interface WeighingLeftColumnProps {
     recallOffers: RecallOffer[];
     caches: WeighingCaches;
     billing: TicketBilling;
-    /** The active Schema — threaded to CalcCard so its Gross/Tare/Net/Charge box labels can be schema-sourced. */
+    /** The active Schema — one card renders per `Segments` entry, in order (task: Godown's 2 enterable "top" cards + 2 calculated "bottom" cards). */
     ticketSchema: Schema;
     amountDp: 0 | 2;
-    /** Settings → Weighing → Rules.ManualEntry — threaded to CalcCard's Tare/Gross boxes. */
+    /** Settings → Weighing → Rules.ManualEntry — threaded to every "Calculated" segment's Tare/Gross boxes. */
     manualEntry: boolean;
-    /** Settings' `Formats.WeightUnit` — threaded to CalcCard's boxes/formula/status pill. */
+    /** Settings' `Formats.WeightUnit` — threaded to every "Calculated" segment's boxes/formula/status pill. */
     weightUnit: WeightUnit;
-    /** Settings' `Formats.DateFmt`/`TimeFmt` — threaded to CalcCard's Tare/Gross capture stamps. */
+    /** Settings' `Formats.DateFmt`/`TimeFmt` — threaded to every "Calculated" segment's Tare/Gross capture stamps. */
     dateFmt: string;
     timeFmt: "24" | "12";
-    /** `useComputedCalcFields` (WeighingScreen.tsx) — threaded straight to CalcCard's own calc-chain rows. */
-    calcSegments: CalcSegment[];
+    /** `useComputedCalcFields` (WeighingScreen.tsx) — the whole schema's values/breakdowns; each "Calculated" segment's card picks its own slice out. */
+    calcValues: CalcFieldResults;
 }
 
 // Split out of WeighingScreen (over the line budget — docs/CodingStandards.md)
-// — the left `.col`: Ticket fields, then the running Calc card. Purely
-// layout — everything it renders comes straight from props.
+// — the left `.col`: one card per `ticketSchema.Segments` entry, in schema
+// order. `"Enterable"` segments render as a TicketFieldsCard (the first one
+// carries the ticket-number chip and recall banner — see TicketFieldsCard's
+// own `primary` prop); `"Calculated"` segments render as a CalcCard (the
+// last one carries the formula derivation and status pill — see CalcCard's
+// own `showSummary` prop). Purely layout — everything it renders comes
+// straight from props.
 export const WeighingLeftColumn = ({
     ticket,
     ticketDate,
@@ -44,35 +52,59 @@ export const WeighingLeftColumn = ({
     weightUnit,
     dateFmt,
     timeFmt,
-    calcSegments,
-}: WeighingLeftColumnProps) => (
-    <>
-        <TicketFieldsCard
-            ticket={ticket}
-            ticketDate={ticketDate}
-            recallOffers={recallOffers}
-            vehicleCache={caches.vehicle}
-            partyCache={caches.party}
-            materialCache={caches.material}
-            transporterCache={caches.transporter}
-        />
-        <CalcCard
-            ticketSchema={ticketSchema}
-            weights={ticket.weights}
-            captures={ticket.captures}
-            chargeValue={ticket.fields.charge}
-            onChargeChange={(value) => ticket.setField("charge", value)}
-            materialRate={billing.materialRate}
-            value={billing.value}
-            amountDp={amountDp}
-            manualEntry={manualEntry}
-            kind={ticket.kind}
-            isLocked={ticket.isLocked}
-            onManualCapture={ticket.manualCapture}
-            weightUnit={weightUnit}
-            dateFmt={dateFmt}
-            timeFmt={timeFmt}
-            calcSegments={calcSegments}
-        />
-    </>
-);
+    calcValues,
+}: WeighingLeftColumnProps) => {
+    const { lang } = useTranslation();
+    const segments = ticketSchema.Segments;
+    const firstEnterableIndex = segments.findIndex((seg) => resolveSegmentKind(seg) === "Enterable");
+    const lastCalculatedIndex = segments.map((seg) => resolveSegmentKind(seg)).lastIndexOf("Calculated");
+
+    return (
+        <>
+            {segments.map((segment, index) => {
+                const title = segment.Label ? resolveLocalized(segment.Label, lang) : segment.Segment;
+                const kind = resolveSegmentKind(segment);
+                if (kind === "Enterable") {
+                    return (
+                        <TicketFieldsCard
+                            key={segment.Segment}
+                            ticket={ticket}
+                            ticketDate={ticketDate}
+                            title={title}
+                            fields={segment.Fields}
+                            primary={index === firstEnterableIndex}
+                            recallOffers={recallOffers}
+                            vehicleCache={caches.vehicle}
+                            partyCache={caches.party}
+                            materialCache={caches.material}
+                            transporterCache={caches.transporter}
+                        />
+                    );
+                }
+                return (
+                    <CalcCard
+                        key={segment.Segment}
+                        title={title}
+                        fields={segment.Fields}
+                        weights={ticket.weights}
+                        captures={ticket.captures}
+                        chargeValue={ticket.fields.charge}
+                        onChargeChange={(value) => ticket.setField("charge", value)}
+                        materialRate={billing.materialRate}
+                        value={billing.value}
+                        amountDp={amountDp}
+                        manualEntry={manualEntry}
+                        kind={ticket.kind}
+                        isLocked={ticket.isLocked}
+                        onManualCapture={ticket.manualCapture}
+                        weightUnit={weightUnit}
+                        dateFmt={dateFmt}
+                        timeFmt={timeFmt}
+                        calcValues={calcValues}
+                        showSummary={index === lastCalculatedIndex}
+                    />
+                );
+            })}
+        </>
+    );
+};

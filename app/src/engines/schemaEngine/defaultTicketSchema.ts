@@ -14,6 +14,7 @@ export const DEFAULT_TICKET_SCHEMA: Schema = {
     Segments: [
         {
             Segment: "CurrentTicket",
+            Kind: "Enterable",
             Fields: [
                 {
                     FieldId: "VehicleNo",
@@ -28,8 +29,7 @@ export const DEFAULT_TICKET_SCHEMA: Schema = {
                 // `Visible: false` still just hides it, same as any other field.
                 {
                     FieldId: "TicketDate",
-                    Kind: "Date",
-                    ReadOnly: true,
+                    Kind: "TicketDate",
                 },
                 {
                     FieldId: "Party",
@@ -51,35 +51,32 @@ export const DEFAULT_TICKET_SCHEMA: Schema = {
         {
             // Gross/Tare/Net/Charge carry no real Kind-driven control — those 4
             // boxes are CalcCard.tsx's own hardware-shaped capture/edit UI
-            // — the values, not the button. `Calculated: true` is what
-            // routes a field here instead of the generic Ticket field loop
-            // (TicketFieldsCard skips every Calculated field); `Captured`
-            // marks the two that mirror a physical capture rather than a
-            // derived value.
+            // — the values, not the button. This segment's own `Kind:
+            // "Calculated"` is what routes every field here instead of the
+            // generic Ticket field loop (no per-field flag needed anymore —
+            // see types.ts's `getCalculatedFieldIds`); `Captured` marks the
+            // two that mirror a physical capture rather than a derived value.
             Segment: "CapturedCalculated",
+            Kind: "Calculated",
             Fields: [
                 {
                     FieldId: "Gross",
                     Kind: "Number",
                     Captured: "Gross",
-                    Calculated: true,
                 },
                 {
                     FieldId: "Tare",
                     Kind: "Number",
                     Captured: "Tare",
-                    Calculated: true,
                 },
                 {
                     FieldId: "Net",
                     Kind: "Formula",
                     Formula: "Abs(Gross - Tare)",
-                    Calculated: true,
                 },
                 {
                     FieldId: "Charge",
                     Kind: "Money",
-                    Calculated: true,
                 },
             ],
         },

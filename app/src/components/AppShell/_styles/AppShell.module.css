@@ -253,8 +253,29 @@
 }
 
 .screen {
-    padding: 12px;
+    /* Right padding wider than the other three sides (task: "add the
+       margin/padding on the left side to the right side also") —
+       ScrollArea's custom scrollbar track (`.track`/`.thumb`,
+       ScrollArea.module.css: `right: 2px; width: 10px`) is absolutely
+       positioned over `.main`'s own right edge, on top of this padding
+       strip, so a plain symmetric 12px read as flush/clipped on the right
+       in a way it didn't on the left — same reasoning as `.top`'s own
+       asymmetric padding above, just for the scrollbar instead of the
+       window's Close button. Applies to every screen (Weighing, Reports,
+       Masters, Dashboard) since they all share this one class. */
+    padding: 12px 24px 12px 12px;
     display: grid;
+    /* Explicit `minmax(0, 1fr)` (not left as the implicit default auto
+       column) — same fix as WeighingScreen.module.css's `.layout`. An
+       undeclared single grid column sizes to its content's max-content
+       width rather than shrinking to this container's own width, so a wide
+       screen (Weighing's two-column `.layout` nested inside) dragged this
+       whole box wider than the window instead of being clamped to it —
+       everything below rode along, and `.main`'s hidden scrollbar
+       (ScrollArea, vertical-only) made that overflow invisible and
+       unreachable instead of just clipping (reported: "WIDTH IS BROKEN",
+       right sidebar entirely missing). */
+    grid-template-columns: minmax(0, 1fr);
     gap: 12px;
     align-content: start;
 }

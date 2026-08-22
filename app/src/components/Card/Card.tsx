@@ -1,4 +1,5 @@
-import type { ReactNode } from "react";
+import type { ReactNode, RefObject } from "react";
+import { useEffect, useRef } from "react";
 
 import styles from "./_styles/Card.module.css";
 
@@ -7,20 +8,59 @@ export interface CardProps {
     title?: ReactNode;
     /** Rendered on the header's right, pushed there like the mock's `.push`. */
     headerRight?: ReactNode;
+    /** Pins the header (title + headerRight) to the top of the scroll area
+     *  instead of scrolling away, stacked under AppShell's own sticky weight
+     *  header (task: "make it sticky including the title" — the Reports
+     *  title scrolling off while its own filter row stayed stuck below it
+     *  read as broken/disconnected). Off by default — opt-in per caller. */
+    sticky?: boolean;
     children: ReactNode;
 }
+
+// Exposes the sticky header's own rendered height as `--card-header-h` on
+// the card element, so a caller's own sticky content further down (e.g.
+// ReportsCardBody's `.stickyFilters`) can stack its `top` offset beneath
+// this header instead of colliding with it at the same slot — same
+// ResizeObserver shape as AppShell.tsx's `useStickyHeaderHeight` and
+// ReportsCardBody's own `useStickyFiltersHeight`.
+const useStickyCardHeaderHeight = (
+    sticky: boolean | undefined,
+    cardRef: RefObject<HTMLElement | null>,
+    headerRef: RefObject<HTMLElement | null>,
+): void => {
+    useEffect(() => {
+        if (!sticky) return;
+        const cardEl = cardRef.current;
+        const headerEl = headerRef.current;
+        if (!cardEl || !headerEl) return;
+        const observer = new ResizeObserver(([entry]) => {
+            if (!entry) return;
+            cardEl.style.setProperty("--card-header-h", `${entry.contentRect.height}px`);
+        });
+        observer.observe(headerEl);
+        return () => observer.disconnect();
+    }, [sticky, cardRef, headerRef]);
+};
 
 // The one panel every screen is built from — a bordered
 // surface with an optional header strip and a padded body. Ported from the
 // mock's ".card"/".card>header"/".card>.body".
-export const Card = ({ title, headerRight, children }: CardProps) => (
-    <section className={styles.card}>
-        {(title || headerRight) && (
-            <header className={styles.header}>
-                {title}
-                {headerRight && <span className={styles.push}>{headerRight}</span>}
-            </header>
-        )}
-        <div className={styles.body}>{children}</div>
-    </section>
-);
+export const Card = ({ title, headerRight, sticky, children }: CardProps) => {
+    const cardRef = useRef<HTMLElement>(null);
+    const headerRef = useRef<HTMLElement>(null);
+    useStickyCardHeaderHeight(sticky, cardRef, headerRef);
+    return (
+        <section className={styles.card} ref={cardRef}>
+            {(title || headerRight) && (
+                <header
+                    className={sticky ? `${styles.header} ${styles.headerSticky}` : styles.header}
+                    ref={headerRef}
+                >
+                    {title}
+                    {headerRight && <span className={styles.push}>{headerRight}</span>}
+                </header>
+            )}
+            <div className={styles.body}>{children}</div>
+        </section>
+    );
+};

@@ -12,6 +12,7 @@ export type FieldKind =
     | "Money"
     | "Date"
     | "DateTime"
+    | "TicketDate"
     | "Boolean"
     | "Search"
     | "Select"
@@ -41,23 +42,27 @@ export interface FieldBase {
     /** Defaults to editable when omitted. */
     ReadOnly?: boolean;
     Validate?: ValidationRule[];
-    /** Renders in the Weighing screen's "Captured & calculated" card (CalcCard.tsx) instead of as a generic Ticket field row — the field supplies only its Label there; the box's own value/behavior is unchanged (the values, not the button). */
-    Calculated?: boolean;
-    /** Only meaningful when `Calculated` is true and this field mirrors one of CalcCard's two physical-capture boxes rather than a derived one (e.g. Net's Formula) — which capture type it stands for. */
-    Captured?: "Gross" | "Tare";
     /**
-     * Only meaningful when `Calculated` is true and this isn't one of
-     * CalcCard's 4 fixed boxes (Gross/Tare/Net/Charge) — which row of
-     * CalcCard's own calc-chain groups this `Formula` field renders under.
-     * `"Intermediate"` for a step along the way (e.g. a Godown schema's
-     * NetAfterBags/EstimatedWeight/ExcessShortage/TotalAdjustment),
-     * `"Final"` for the number the ticket is actually settled on (e.g.
-     * GodownGross/GodownNet). Omitted defaults to `"Final"` — a schema that
-     * doesn't care to distinguish the two still gets a sensible single
-     * group rather than being silently dropped. Named `Group` (not
-     * `Segment`) to avoid clashing with `FieldSegment.Segment` below — that
-     * one names which *card* a field belongs to, this one only matters
-     * once a field is already inside CapturedCalculated's own calc rows.
+     * @deprecated Unused — a field's own `FieldSegment.Kind` is authoritative
+     * now (task: "we dont need Calculated: true, Kind: Calculated in
+     * segment should do the trick"): every field in a `"Calculated"` segment
+     * renders in CalcCard, every field in an `"Enterable"` one renders as a
+     * generic Ticket field row, no per-field flag needed. Still accepted by
+     * `schemaJson.ts` so an older saved schema round-trips without erroring,
+     * but no longer read anywhere (see `getCalculatedFieldIds` below).
+     */
+    Calculated?: boolean;
+    /** Only meaningful for a field inside a `"Calculated"` segment that mirrors one of CalcCard's two physical-capture boxes rather than a derived one (e.g. Net's Formula) — which capture type it stands for. */
+    Captured?: "Gross" | "Tare";
+    /** Only meaningful on a `Captured` field (Gross/Tare) — lets this specific box accept a typed weight instead of only a physical/indicator capture, independent of the app-wide Settings → Weighing → Rules.ManualEntry toggle (task: "for manual, we will add a manual flag 'Manual': true, this will work for manual entry"). Either the global setting or this flag being on is enough to show the typed-entry box. */
+    Manual?: boolean;
+    /**
+     * @deprecated Unused since `FieldSegment.Kind` — a `Formula` field's own
+     * `FieldSegment` (e.g. a Godown schema's "Weighment Calculations" vs.
+     * "Godown Settlement", two separate `"Calculated"` segments/cards now)
+     * is what used to be expressed here as `"Intermediate"`/`"Final"`.
+     * Still accepted by `schemaJson.ts` so an older saved schema round-trips
+     * without erroring, but no longer read by CalcCard.
      */
     Group?: "Intermediate" | "Final";
 }
@@ -82,12 +87,41 @@ export interface DateField extends FieldBase {
 export interface DateTimeField extends FieldBase {
     Kind: "DateTime";
 }
+/** The one ticket-date stamp — always read-only, always the moment of the
+ * most recent Save (see `useWeighingTicket.ts`'s `saveTicket`), never a live
+ * clock. A dedicated Kind rather than the old `Kind: "Date"` + `ReadOnly:
+ * true` convention (task: "I think the kind for that should be ticket date,
+ * like how we have for tare and gross") — clean break, no back-compat
+ * inference for an older schema still using the old convention. */
+export interface TicketDateField extends FieldBase {
+    Kind: "TicketDate";
+}
 export interface BooleanField extends FieldBase {
     Kind: "Boolean";
+}
+export interface AutofillLink {
+    /** The target FieldId to write into — a `Search` field's own `Autofills`
+     * list, not the target's own schema entry, is what everyone reads
+     * (task: "won't source be better? ... if its target we need to iterate
+     * over all fields to find its parent" — a target-side flag would need
+     * scanning every field to find which Search field feeds it; source-side
+     * means the Search field already knows its own targets). */
+    Field: string;
+    /** Which column of the selected master row's `Body` to copy. */
+    Column: string;
 }
 export interface SearchField extends FieldBase {
     Kind: "Search";
     Master: MasterKind;
+    /**
+     * Fields to copy a value into the instant the operator picks a master
+     * row here — not a lasting link: the target field stays fully editable
+     * afterwards, this only ever fires once, at selection time (task: "we
+     * won't be disabling it ... it is just autofilled for that particular
+     * second"). Can list more than one target (e.g. Material selection
+     * autofilling both a Rate and a per-bag weight).
+     */
+    Autofills?: AutofillLink[];
 }
 export interface SelectOption {
     Value: string;
@@ -119,6 +153,7 @@ export type Field =
     | MoneyField
     | DateField
     | DateTimeField
+    | TicketDateField
     | BooleanField
     | SearchField
     | SelectField
@@ -155,16 +190,24 @@ export interface MasterSchema {
     Columns: MasterColumn[];
 }
 
-// One named group of fields — which *card* they belong to (`"CurrentTicket"`
-// → TicketFieldsCard, `"CapturedCalculated"` → CalcCard are the two keys the
-// app actually renders differently today; any other string is accepted but
-// falls into TicketFieldsCard's generic loop, same as an unrecognized
-// FieldId would). `Label` is optional — both known keys already have their
-// own i18n card title (`weigh.ticket`/`weigh.capturedAndCalculated`); only a
-// site-defined third segment would need to supply one.
+// One named group of fields — WeighingLeftColumn.tsx renders one card per
+// segment, in schema order, so a schema can declare as many titled cards as
+// it wants (task: Godown's 2 enterable "top" cards + 2 calculated "bottom"
+// cards). `Kind` picks which card shape it gets: `"Enterable"` →
+// TicketFieldsCard's generic field-grid loop, `"Calculated"` → CalcCard's
+// box grid + calc-chain rows. Omitted `Kind` infers from content (any field
+// with `Calculated: true` makes it `"Calculated"`, otherwise `"Enterable"`)
+// so an older schema saved before this existed (just `"CurrentTicket"`/
+// `"CapturedCalculated"`) still renders exactly as it did. `Label` is
+// optional — a segment named `"CurrentTicket"`/`"CapturedCalculated"` with
+// no Label still falls back to this app's own `weigh.ticket`/
+// `weigh.capturedAndCalculated` i18n strings; any other Segment name with no
+// Label just displays its raw Segment string as the card title.
 export interface FieldSegment {
     Segment: string;
     Label?: Localized;
+    /** Defaults to inferred from `Fields` (see above) when omitted. */
+    Kind?: "Enterable" | "Calculated";
     Fields: Field[];
 }
 
@@ -184,3 +227,17 @@ export const getAllFields = (schema: Schema): Field[] => schema.Segments.flatMap
 
 export const SEGMENT_CURRENT_TICKET = "CurrentTicket";
 export const SEGMENT_CAPTURED_CALCULATED = "CapturedCalculated";
+
+/** `FieldSegment.Kind`, falling back to inferring it from content for a segment saved before `Kind` existed — see `FieldSegment`'s own comment. */
+export const resolveSegmentKind = (segment: FieldSegment): "Enterable" | "Calculated" =>
+    segment.Kind ?? (segment.Fields.some((field) => field.Calculated === true) ? "Calculated" : "Enterable");
+
+/** Every FieldId belonging to a `"Calculated"` segment, across the whole schema — the schema-wide replacement for the old per-field `Calculated: true` flag (task: "Kind: Calculated, in segment should do the trick"). Only needed by consumers that operate over `getAllFields(schema)` rather than one segment's own `Fields`; a segment-scoped consumer (TicketFieldsCard, CalcCard) can rely on the segment's own Kind instead — an Enterable segment can never contain a calculated field under this model. */
+export const getCalculatedFieldIds = (schema: Schema): Set<string> => {
+    const ids = new Set<string>();
+    for (const segment of schema.Segments) {
+        if (resolveSegmentKind(segment) !== "Calculated") continue;
+        for (const field of segment.Fields) ids.add(field.FieldId);
+    }
+    return ids;
+};

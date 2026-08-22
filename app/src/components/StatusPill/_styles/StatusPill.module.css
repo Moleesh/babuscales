@@ -1,7 +1,14 @@
 /* Ported from demo/BabuScales-demo.html ".wst" rules — PLAN §7.4:
-   "there is only one status, and it is the weights." */
+   "there is only one status, and it is the weights." (ActionsCard's own
+   caller now passes `hideNet` — narrow 330px column, task: "we need only
+   tare and gross , remove the net that will fix it" — so this stays a
+   single row rather than the `flex-wrap` attempt from just before it.)
+   `width: 100%` + each `.segment`'s `flex: 1` (below) split the row evenly
+   between whatever segments are actually rendered — Tare/Gross 50/50 here,
+   task: "make tare and gross take 50% width equally". */
 .pill {
-    display: inline-flex;
+    display: flex;
+    width: 100%;
     border: 1px solid var(--line);
     border-radius: 8px;
     overflow: hidden;
@@ -17,8 +24,10 @@
 }
 
 .segment {
-    display: inline-flex;
+    display: flex;
+    flex: 1;
     align-items: center;
+    justify-content: center;
     gap: 6px;
     padding: 5px 9px;
     font-style: normal;

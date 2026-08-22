@@ -149,7 +149,7 @@ type TicketAction =
     | { type: "AddCapture"; capture: Capture }
     | { type: "ResetToNew" }
     | { type: "SetSaving"; saving: boolean }
-    | { type: "Saved"; docId: string; docSeq: number | null }
+    | { type: "Saved"; docId: string; docSeq: number | null; ticketDateIso: string }
     | { type: "Lock" }
     | { type: "Resumed"; doc: DocRow }
     | { type: "Printed" };
@@ -189,7 +189,18 @@ export const ticketReducer = (state: TicketState, action: TicketAction): TicketS
         case "SetSaving":
             return { ...state, saving: action.saving };
         case "Saved":
-            return { ...state, docId: action.docId, docSeq: action.docSeq, awaitingSave: false };
+            // Task: "TicketDate works like this: as soon as you click Save,
+            // whatever is the date and time, it will go to TicketDate" — the
+            // moment of the most recent successful save, not the first
+            // capture's timestamp and not a live clock. Every save (single-
+            // weight or completing) restamps it.
+            return {
+                ...state,
+                docId: action.docId,
+                docSeq: action.docSeq,
+                awaitingSave: false,
+                customFields: { ...state.customFields, TicketDate: action.ticketDateIso },
+            };
         case "Lock":
             return { ...state, isLocked: true };
         case "Resumed": {
@@ -361,6 +372,11 @@ const saveTicket = async ({
     // still null) has nothing to split from, so it always behaves
     // like SameTicketNo on regardless of the setting.
     const splitIntoNewDoc = !sameTicketNo && docId !== null && captures.length >= 2;
+    // Task: "as soon as you click Save, whatever is the date and time, it
+    // will go to TicketDate" — computed once here so the exact same instant
+    // both persists (in the saved Body) and lands in the on-screen reducer
+    // state (the "Saved" dispatch below).
+    const ticketDateIso = new Date().toISOString();
     // One atomic call (was `saveDoc` then a conditional `allocateDocSeq`
     // as two separate IPC round trips) — a crash between the two used
     // to be able to leave a doc with both captures in but no number,
@@ -369,26 +385,28 @@ const saveTicket = async ({
     const row = await db.saveDocAndAllocateSeq({
         DocId: splitIntoNewDoc ? undefined : (docId ?? undefined),
         DocKind: "Ticket",
-        Body: buildTicketBody(fields, captures, printCount, customFields),
+        Body: buildTicketBody(fields, captures, printCount, { ...customFields, TicketDate: ticketDateIso }),
     });
-    dispatch({ type: "Saved", docId: row.DocId, docSeq: row.DocSeq });
-    if (captures.length >= 2) {
-        // Bug fix: locking used to skip the indicator entirely, unlike
-        // the reset the single-capture branch below used to always
-        // take — "New ticket" can reach this branch (see startNew's
-        // save() call) while a "Send to lorry" animation for the
-        // last capture is still mid-flight, and that ticker was
-        // never told to stop.
-        dispatch({ type: "Lock" });
-        indicator.reset?.();
-    }
-    // Bug fix: a single-weight save used to always resetToNew()
-    // here — parking the doc in the DB but wiping it off screen
-    // immediately, so there was no way to print the receipt for
-    // that first weight ("print only happens when we have both
-    // Tare and Gross"). Now it just stays on screen — still saved,
-    // still editable for the second capture — and only actually
-    // resets on an explicit "New ticket" click (startNew below).
+    dispatch({ type: "Saved", docId: row.DocId, docSeq: row.DocSeq, ticketDateIso });
+    // Task: "click save capture & save and all fields in the screen is
+    // disabled and enables print" — every save locks the screen now, not
+    // just the one that lands the second capture. A single-weight save
+    // (e.g. Tare only) leaves the ticket printable but no longer editable
+    // or re-capturable from this same sitting; the operator reopens it via
+    // the open-ticket strip's "resume" later for the return weighing
+    // ("Resumed" unlocks it again exactly when `Captures.length < 2`, see
+    // that reducer branch). Same indicator-reset bug-fix as before applies
+    // unconditionally now too — "New ticket" can reach this branch (see
+    // startNew's save() call) while a "Send to lorry" animation for the
+    // last capture is still mid-flight, and that ticker was never told to
+    // stop.
+    dispatch({ type: "Lock" });
+    indicator.reset?.();
+    // A single-weight save used to always resetToNew() here — parking the
+    // doc in the DB but wiping it off screen immediately, so there was no
+    // way to print the receipt for that first weight. Now it just stays on
+    // screen — still saved, now locked, still printable — and only
+    // actually resets on an explicit "New ticket" click (startNew below).
 };
 
 interface PrintTicketDeps {

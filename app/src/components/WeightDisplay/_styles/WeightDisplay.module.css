@@ -159,8 +159,11 @@
        cramped against the window edge next to the date). `.head`'s own
        16px padding is eaten by the 220px fixed column's own content
        width, so add a bit more room on this column specifically rather
-       than widening the shared padding for every column. */
-    padding-right: 6px;
+       than widening the shared padding for every column. Bumped from 6px
+       (task: "add some right padding or margin in all indicators" — still
+       read as flush once AppShell's own `.screen` right padding grew to
+       clear the custom scrollbar, AppShell.module.css). */
+    padding-right: 14px;
 }
 
 /* Below this width the 200px/220px fixed side columns (sized for a

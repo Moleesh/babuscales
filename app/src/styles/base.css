@@ -311,6 +311,71 @@ body {
     display: flex;
     gap: 8px;
 }
+/* Splash-only stand-in for CustomCursor (task: "the minimize and close icon
+   on the loading screen is not following the cursor theme") — the real
+   CustomCursor only mounts once React does, so the splash's own minimize/
+   close pair showed the native OS cursor until then. Wired up by
+   splashWindowControls.ts (same rAF-transform approach as CustomCursor.tsx,
+   just plain DOM), styled here since it lives outside any component's CSS
+   module. Native cursor is hidden only over the splash itself, not
+   `body` globally, so this can't bleed into the rest of the app. */
+/* `!important` + `*`: same fix, same reason as CustomCursor.module.css's
+   own `body.custom-cursor-active *` rule just above this file's splash
+   block — `.iconbtn { cursor: pointer }` (this file, below) directly
+   targets the minimize/close buttons themselves, and a rule matching the
+   element directly always wins over an inherited value no matter the
+   ancestor's specificity, so the plain `#app-splash { cursor: none }`
+   alone left the native pointer showing over both icons (task: "the icons
+   in the loading screen show both native and our cursor"). */
+#app-splash,
+#app-splash * {
+    cursor: none !important;
+}
+#app-splash-cursor {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 0;
+    height: 0;
+    pointer-events: none;
+    z-index: 10000;
+    will-change: transform;
+}
+#app-splash-cursor-ring {
+    position: absolute;
+    top: -14px;
+    left: -14px;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 3px solid var(--cursor);
+    filter: drop-shadow(0 0 4px var(--led-ghost));
+    transition:
+        width 0.15s ease,
+        height 0.15s ease,
+        top 0.15s ease,
+        left 0.15s ease;
+}
+#app-splash-cursor-dot {
+    position: absolute;
+    top: -4.5px;
+    left: -4.5px;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--cursor);
+    box-shadow: 0 0 4px var(--led-ghost);
+    transition: transform 0.1s ease;
+}
+#app-splash-cursor.hover #app-splash-cursor-ring {
+    width: 38px;
+    height: 38px;
+    top: -19px;
+    left: -19px;
+}
+#app-splash-cursor.hover #app-splash-cursor-dot {
+    transform: scale(1.3);
+}
 #app-splash > svg {
     animation: app-splash-mark-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
 }

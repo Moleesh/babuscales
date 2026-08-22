@@ -45,6 +45,27 @@
     color: var(--alert);
 }
 
+/* "Both weights captured" state (ActionsCard's capture button once
+   `ticket.isComplete`) — used to reuse `.primary` and rely on `.btn:disabled`'s
+   32% opacity fade to show it's inert, but that muddied the amber `--led`
+   background into low-contrast brown-on-brown text (screenshot: "make this
+   better"). This is an informational end-state, not a greyed-out control, so
+   it keeps full opacity and borrows the readable ghost-panel treatment
+   already used for calc-box highlights (WeighingScreen.module.css's
+   `.calc-lead`) instead of fading like a truly disabled button. */
+.complete {
+    background: var(--led-ghost);
+    border-color: var(--led-dim);
+    color: var(--led);
+    font-weight: 650;
+}
+.complete .caption {
+    color: var(--dim);
+}
+.complete:disabled {
+    opacity: 1;
+}
+
 .large {
     min-height: 64px;
     font-size: 1rem;

@@ -1,0 +1,104 @@
+{
+  "SchemaId": "godown-ticket",
+  "Segments": [
+    {
+      "Segment": "VehicleAndParty",
+      "Kind": "Enterable",
+      "Label": { "en": "Vehicle & Party" },
+      "Fields": [
+        { "FieldId": "VehicleNo", "Kind": "Search", "Master": "Vehicle" },
+        { "FieldId": "TicketDate", "Kind": "TicketDate" },
+        { "FieldId": "Party", "Kind": "Search", "Master": "Party" },
+        {
+          "FieldId": "Material",
+          "Kind": "Search",
+          "Master": "Material",
+          "Autofills": [{ "Field": "FullBagWeight", "Column": "FullBagWeight" }]
+        },
+        { "FieldId": "Transporter", "Kind": "Search", "Master": "Transporter" },
+        { "FieldId": "DriverMobile", "Kind": "Text" }
+      ]
+    },
+    {
+      "Segment": "BagDetails",
+      "Kind": "Enterable",
+      "Label": { "en": "Bag Details" },
+      "Fields": [
+        { "FieldId": "NoOfBags", "Kind": "Number" },
+        { "FieldId": "BagWeight", "Kind": "Number" },
+        { "FieldId": "FullBagWeight", "Kind": "Number" },
+        { "FieldId": "Adjust", "Kind": "Number" }
+      ]
+    },
+    {
+      "Segment": "WeighmentCalculations",
+      "Kind": "Calculated",
+      "Label": { "en": "Weighment Calculations" },
+      "Fields": [
+        { "FieldId": "Gross", "Kind": "Number", "Captured": "Gross" },
+        { "FieldId": "Tare", "Kind": "Number", "Captured": "Tare" },
+        { "FieldId": "Net", "Kind": "Formula", "Formula": "Abs(Gross - Tare)" },
+        {
+          "FieldId": "NetAfterBags",
+          "Kind": "Formula",
+          "Formula": "Round(Net - (NoOfBags * BagWeight))"
+        },
+        {
+          "FieldId": "EstimatedWeight",
+          "Kind": "Formula",
+          "Formula": "Round(FullBagWeight * NoOfBags)"
+        },
+        {
+          "FieldId": "ExcessShortage",
+          "Kind": "Formula",
+          "Formula": "NetAfterBags - EstimatedWeight"
+        },
+        {
+          "FieldId": "TotalAdjustment",
+          "Kind": "Formula",
+          "Formula": "Round(If(ExcessShortage > 0, Adjust - ExcessShortage, 0) / 10, 0) * 10"
+        }
+      ]
+    },
+    {
+      "Segment": "GodownSettlement",
+      "Kind": "Calculated",
+      "Label": { "en": "Godown Settlement" },
+      "Fields": [
+        {
+          "FieldId": "GodownGross",
+          "Kind": "Formula",
+          "Formula": "Gross + TotalAdjustment"
+        },
+        {
+          "FieldId": "GodownNet",
+          "Kind": "Formula",
+          "Formula": "Net + TotalAdjustment"
+        }
+      ]
+    }
+  ],
+  "Masters": [
+    {
+      "Kind": "Party",
+      "Columns": [
+        { "FieldId": "Email", "Kind": "Text" },
+        { "FieldId": "Phone", "Kind": "Text" },
+        { "FieldId": "Notes", "Kind": "Note" }
+      ]
+    },
+    {
+      "Kind": "Material",
+      "Columns": [
+        { "FieldId": "Rate", "Kind": "Money" },
+        { "FieldId": "FullBagWeight", "Kind": "Number" },
+        { "FieldId": "Notes", "Kind": "Note" }
+      ]
+    },
+    { "Kind": "Vehicle", "Columns": [{ "FieldId": "Notes", "Kind": "Note" }] },
+    { "Kind": "VehicleType", "Columns": [{ "FieldId": "Notes", "Kind": "Note" }] },
+    { "Kind": "Transporter", "Columns": [{ "FieldId": "Notes", "Kind": "Note" }] },
+    { "Kind": "Place", "Columns": [{ "FieldId": "Notes", "Kind": "Note" }] },
+    { "Kind": "Operator", "Columns": [{ "FieldId": "Notes", "Kind": "Note" }] }
+  ]
+}

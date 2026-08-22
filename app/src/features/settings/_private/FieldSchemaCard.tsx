@@ -4,7 +4,7 @@ import { Card } from "@components/Card";
 import { DataTable } from "@components/DataTable";
 import type { DataTableColumn } from "@components/DataTable";
 import { Select } from "@components/Select";
-import { FIELD_LABEL_KEYS, getAllFields } from "@engines/schemaEngine";
+import { getAllFields, resolveFieldIdLabel } from "@engines/schemaEngine";
 import type { Field, Schema } from "@engines/schemaEngine";
 import { resolveLocalized } from "@i18n/types";
 import { useTranslation } from "@i18n/useTranslation";
@@ -12,11 +12,12 @@ import { useTranslation } from "@i18n/useTranslation";
 import styles from "./_styles/FieldsLanguagePane.module.css";
 import { repairJson } from "./repairJson";
 
-// The 9 built-in fields carry no `Label` at all (defaultTicketSchema.ts) —
-// same FieldId → i18n-key fallback the Weighing screen itself uses, so
-// this table shows the same text an operator sees rather than a blank cell.
+// No field needs a `Label` at all now (task: "labels in the json we dont
+// need it") — same FieldId → `weighing.label.` i18n-key fallback the
+// Weighing screen itself uses (`resolveFieldIdLabel`), so this table shows
+// the same text an operator sees rather than a blank cell.
 const fieldLabel = (field: Field, lang: string, t: (key: string) => string): string =>
-    field.Label ? resolveLocalized(field.Label, lang) : t(FIELD_LABEL_KEYS[field.FieldId] ?? field.FieldId);
+    field.Label ? resolveLocalized(field.Label, lang) : resolveFieldIdLabel(field.FieldId, t);
 
 interface VisibilityToggleArgs {
     field: Field;
@@ -196,7 +197,7 @@ const PasteBoxFields = ({ text, schemaBusy, unlocked, prettifyFailed, t, onChang
 );
 
 // Reformats whatever's in the box with 2-space indent — the same shape the
-// schemas this app hands out (docs/examples/*.json) already use — so a
+// schemas this app hands out (resources/schemas/*.json) already use — so a
 // minified or inconsistently-indented paste is easy to read/edit before
 // hitting Apply. Tries the text as-is first, then falls back to a repaired
 // version (trailing commas dropped, bare keys quoted) — leaves the text

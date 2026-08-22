@@ -3,6 +3,7 @@
   "Segments": [
     {
       "Segment": "CurrentTicket",
+      "Kind": "Enterable",
       "Fields": [
         {
           "FieldId": "VehicleNo",
@@ -11,8 +12,7 @@
         },
         {
           "FieldId": "TicketDate",
-          "Kind": "Date",
-          "ReadOnly": true
+          "Kind": "TicketDate"
         },
         {
           "FieldId": "Party",
@@ -33,29 +33,26 @@
     },
     {
       "Segment": "CapturedCalculated",
+      "Kind": "Calculated",
       "Fields": [
         {
           "FieldId": "Gross",
           "Kind": "Number",
-          "Captured": "Gross",
-          "Calculated": true
+          "Captured": "Gross"
         },
         {
           "FieldId": "Tare",
           "Kind": "Number",
-          "Captured": "Tare",
-          "Calculated": true
+          "Captured": "Tare"
         },
         {
           "FieldId": "Net",
           "Kind": "Formula",
-          "Formula": "Abs(Gross - Tare)",
-          "Calculated": true
+          "Formula": "Abs(Gross - Tare)"
         },
         {
           "FieldId": "Charge",
-          "Kind": "Money",
-          "Calculated": true
+          "Kind": "Money"
         }
       ]
     }

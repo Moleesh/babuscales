@@ -1,15 +1,32 @@
+/* Flex column, not grid — a `display: grid` container gives each stacked
+   child (the OPEN ticket strip's wrapper, WeighingBody) its own short
+   auto-sized ROW as its sticky containing block, capping OpenTicketStrip's
+   `.strip` (sticky, OpenTicketStrip.module.css) at that ~1-row-tall box
+   and making it unstick almost immediately on scroll instead of riding
+   down the page (reported: "the open ticket row should also be sticky").
+   A flex container's item containing block is the *whole* flex container
+   instead of a per-item cell — same shape as AppShell.module.css's `.main`
+   (flex column), which is why `.header-sticky` sticks correctly across
+   the full scroll range; this gives `.strip` the same full-height room. */
 .screen {
-    display: grid;
+    display: flex;
+    flex-direction: column;
     gap: 12px;
 }
 
 /* Ported from demo/BabuScales-demo.html's ".grid2"/".col" (Weighing's own
-   330px action-column layout — distinct from Field's generic FieldGrid). */
+   330px action-column layout — distinct from Field's generic FieldGrid).
+   No `align-items` override (default `stretch`) — ActionsCard's sticky
+   wrapper (below) needs the right `.col` stretched to match the left
+   column's full height so it has room to stay fixed while that taller
+   column scrolls past beneath it; `align-items: start` here (an earlier
+   attempt at this same task) did the opposite, capping the right column at
+   its own short content height and leaving the sticky wrapper nowhere to
+   "float" — it just scrolled off with everything else. */
 .layout {
     display: grid;
     grid-template-columns: minmax(0, 1fr) 330px;
     gap: 12px;
-    align-items: start;
 }
 @media (max-width: 899px) {
     .layout {
@@ -17,10 +34,47 @@
     }
 }
 
+/* `align-content: start` (not `align-items`) — `.layout`'s stretch (above)
+   makes `.col` itself tall, but its own rows (ActionsCard, and the
+   camera Card below it) should keep their natural height and stack from
+   the top, not stretch to fill that extra room themselves. Without this
+   the right column's stretched height would elongate the Cards inside it. */
 .col {
     display: grid;
+    align-content: start;
     gap: 12px;
     min-width: 0;
+}
+
+/* ActionsCard's wrapper (WeighingRightColumn.tsx) — stays put while the
+   left column's ticket form scrolls (task: "This has to be sticky as
+   well"). `top` stacks under both the shell's sticky weight header
+   (AppShell.tsx's `--shell-header-h`) and the open-ticket strip above it
+   (this file's own `--weigh-strip-h`, set on `.screen` by
+   WeighingScreen.tsx's `useStickyStripHeight`) — same composed-offset
+   pattern as ReportsScreen.module.css's `.tickets-table`. The extra `+12px`
+   is `.screen`'s own flex `gap` between the strip and `WeighingBody` —
+   `--weigh-strip-h` only measures the strip element itself, not the gap
+   below it, so without this the card's sticky slot started 12px short and
+   the strip's bottom edge rode over the ACTIONS header on scroll (task:
+   "pin this little below the top one its overlapping"). `--weigh-strip-h`
+   falls back to `48px` for the first frame too, before the ResizeObserver
+   (mount-only) has measured the real height. */
+.actions-sticky {
+    position: sticky;
+    top: calc(var(--shell-header-h, 0px) + var(--weigh-strip-h, 48px) + 12px);
+    z-index: 1;
+    /* `padding-top` + its own opaque background, not `margin-top` — a
+       margin sits outside this box and paints nothing, so nudging the
+       ActionsCard down that way left a transparent gap above it that
+       whatever scrolled up from the left column showed straight through
+       (task: "when you add margin the bottom goes down but when you
+       scroll the place is filled with other elements unless you have a bg
+       color"). Same reasoning as `.header-sticky` (AppShell.module.css)
+       and `.strip` (OpenTicketStrip.module.css) needing their own opaque
+       background while sticky. */
+    padding-top: 10px;
+    background: var(--void);
 }
 
 .date-field {

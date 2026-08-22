@@ -24,4 +24,20 @@ describe("Card", () => {
         const { container } = render(<Card>Body only</Card>);
         expect(container.querySelector("header")).toBeNull();
     });
+
+    it("does not mark the header sticky unless the sticky prop is set", () => {
+        const { container } = render(<Card title="Reports">Body</Card>);
+        const header = container.querySelector("header");
+        expect(header?.className).not.toMatch(/headerSticky/i);
+    });
+
+    it("marks the header sticky when the sticky prop is set (task: make the Reports title sticky)", () => {
+        const { container } = render(
+            <Card sticky title="Reports">
+                Body
+            </Card>,
+        );
+        const header = container.querySelector("header");
+        expect(header?.className).toMatch(/headerSticky/i);
+    });
 });

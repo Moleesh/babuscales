@@ -2,7 +2,7 @@ import type { ButtonHTMLAttributes, ReactNode } from "react";
 
 import styles from "./_styles/Button.module.css";
 
-export type ButtonVariant = "default" | "primary" | "danger";
+export type ButtonVariant = "default" | "primary" | "danger" | "complete";
 export type ButtonSize = "default" | "large";
 
 export interface ButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, "className"> {
@@ -18,6 +18,7 @@ const VARIANT_CLASS: Record<ButtonVariant, string | undefined> = {
     default: undefined,
     primary: styles.primary,
     danger: styles.danger,
+    complete: styles.complete,
 };
 
 const SIZE_CLASS: Record<ButtonSize, string | undefined> = {

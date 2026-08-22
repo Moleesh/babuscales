@@ -133,6 +133,20 @@ const useStickyHeaderHeight = (
     headerStickyRef: RefObject<HTMLDivElement | null>,
     header: ReactNode,
 ): void => {
+    // Depend on *presence*, not identity — `header` is a freshly-created
+    // element every render of the caller (`<ShellWeightHeader
+    // reading={reading} .../>`, and `reading` ticks on every indicator
+    // poll), so depending on `header` itself tore the ResizeObserver down
+    // and recreated it on nearly every render — often faster than the
+    // browser's next resize-observation opportunity, so it kept getting
+    // disconnected before ever delivering a callback and
+    // `--shell-header-h` never got set at all. That left every sticky
+    // element offsetting by it (OpenTicketStrip's `.strip`,
+    // WeighingScreen's `.actions-sticky`) falling back to `top: 0px` —
+    // the same slot as the header itself — so the strip stacked on top of
+    // and visually hid the header once both stuck (reported: "top bar is
+    // not sticky", header reduced to a sliver under the OPEN strip).
+    const hasHeader = Boolean(header);
     useEffect(() => {
         const headerEl = headerStickyRef.current;
         const mainEl = mainRef.current;
@@ -147,7 +161,7 @@ const useStickyHeaderHeight = (
         });
         observer.observe(headerEl);
         return () => observer.disconnect();
-    }, [header, mainRef, headerStickyRef]);
+    }, [hasHeader, mainRef, headerStickyRef]);
 };
 
 // The five-tab frame every screen lives inside — dashboard,

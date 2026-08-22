@@ -58,7 +58,6 @@ export const TA_PACK: LanguagePack = {
         "weigh.actions": "செயல்கள்",
         "weigh.printsSuffix": "பிரிண்ட்கள்",
         "weigh.save": "சேமி",
-        "weigh.saveAndPark": "சேமித்து நிறுத்து",
         "weigh.print": "அச்சிடு",
         "weigh.reprint": "மீண்டும் அச்சிடு",
         "weigh.newTicket": "புதிய டிக்கெட்",
@@ -517,5 +516,22 @@ export const TA_PACK: LanguagePack = {
             "ஒருங்கிணைப்புகள் → SMS நுழைவாயில் ஆன் செய்யப்பட்டிருக்கும்போது அச்சிடும் நேரத்தில் படிக்கப்படுகிறது: ஒரு டிக்கெட்டின் தரப்பினருக்கு ஒரு உரையைப் பெற மாஸ்டர்களில் (அமைப்புகள் → மாஸ்டர்கள் → தரப்பினர்) சேமிக்கப்பட்ட ஃபோன் தேவை. மோடத்துடன் வெற்று AT கட்டளைகள் (AT+CMGF, AT+CMGS) மூலம் பேசுகிறது — சீரியல்/USB AT இடைமுகத்தை வெளிப்படுத்தும் எந்த GSM மோடமும் அல்லது தொலைபேசியும் வேலை செய்யும், மேகக் SMS-நுழைவாயில் கணக்கு தேவையில்லை.",
 
         "settings.ticketNumbering.title": "டிக்கெட் எண்ணிடல்",
+
+        "weighing.label.DriverMobile": "டிரைவர் மொபைல்",
+        "weighing.label.NoOfBags": "பைகளின் எண்ணிக்கை",
+        "weighing.label.BagWeight": "பை எடை",
+        "weighing.label.FullBagWeight": "முழு பை எடை",
+        "weighing.label.Adjust": "சரிசெய்",
+        "weighing.label.NetAfterBags": "பைகளுக்குப் பின் நிகரம்",
+        "weighing.label.EstimatedWeight": "மதிப்பிடப்பட்ட எடை",
+        "weighing.label.ExcessShortage": "அதிகம்/குறைவு",
+        "weighing.label.TotalAdjustment": "மொத்த சரிசெய்தல்",
+        "weighing.label.GodownGross": "கோடவுன் மொத்த எடை",
+        "weighing.label.GodownNet": "கோடவுன் நிகர எடை",
+
+        "weigh.reprintLookup.title": "டிக்கெட்டைத் தேடி மீண்டும் அச்சிடு",
+        "weigh.reprintLookup.placeholder": "டிக்கெட் எண் அல்லது வாகன எண்…",
+        "weigh.reprintLookup.find": "தேடு",
+        "weigh.reprintLookup.notFound": "அந்த டிக்கெட் கிடைக்கவில்லை",
     },
 };

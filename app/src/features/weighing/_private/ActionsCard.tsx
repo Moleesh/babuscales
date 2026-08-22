@@ -2,6 +2,8 @@ import { Button } from "@components/Button";
 import { Card } from "@components/Card";
 import { SegmentedControl } from "@components/SegmentedControl";
 import type { SegmentedOption } from "@components/SegmentedControl";
+import { StatusPill } from "@components/StatusPill";
+import type { WeightUnit } from "@constants/numberFormat";
 import type { CaptureType } from "@db/ticketBody";
 import type { IndicatorReading } from "@engines/indicator";
 import { useTranslation } from "@i18n/useTranslation";
@@ -68,6 +70,10 @@ const SaveAndPrintRow = ({
     "ticket" | "gated" | "hasBlockingCustomFieldError" | "onSave" | "onOpenPrintModal"
 >) => {
     const { t } = useTranslation();
+    // `docId` rather than `isLocked` — a single-weight save stays on screen
+    // already persisted, and should be printable just like a
+    // complete/locked one.
+    const printEnabled = Boolean(ticket.docId) && ticket.printCount === 0;
     return (
         <div className={styles.actions}>
             <Button
@@ -80,26 +86,29 @@ const SaveAndPrintRow = ({
                 }
                 onClick={onSave}
             >
-                {ticket.isComplete ? t("weigh.save") : t("weigh.saveAndPark")}
+                {t("weigh.save")}
             </Button>
-            {/* `docId` rather than `isLocked` — a single-weight save stays on
-                screen already persisted, and should be printable just like a
-                complete/locked one. */}
-            <Button disabled={!ticket.docId || ticket.printCount > 0} onClick={onOpenPrintModal}>
+            <Button disabled={!printEnabled} onClick={onOpenPrintModal}>
                 {t("weigh.print")}
             </Button>
         </div>
     );
 };
 
+// Reprint used to gate on `printCount > 0` (nothing to reprint yet), but
+// that left it disabled right alongside Print for most of a ticket's life.
+// Task: "reprint should be most avalible unless print is enabled" — it's
+// now open by default and only steps aside for Print's own moment (first
+// print, not yet taken) so the two buttons are never both live at once.
 const ReprintRow = ({
     ticket,
-    onOpenPrintModal,
-}: Pick<ActionsCardProps, "ticket" | "onOpenPrintModal">) => {
+    onOpenReprintLookup,
+}: Pick<ActionsCardProps, "ticket" | "onOpenReprintLookup">) => {
     const { t } = useTranslation();
+    const printEnabled = Boolean(ticket.docId) && ticket.printCount === 0;
     return (
         <div className={styles.actions}>
-            <Button disabled={ticket.printCount === 0} onClick={onOpenPrintModal}>
+            <Button disabled={printEnabled} onClick={onOpenReprintLookup}>
                 {t("weigh.reprint")}
             </Button>
             <Button onClick={ticket.startNew}>{t("weigh.newTicket")}</Button>
@@ -145,6 +154,15 @@ export interface ActionsCardProps {
     captureHint: string;
     onSave: () => void;
     onOpenPrintModal: () => void;
+    /** Opens the "enter a ticket no" prompt (ReprintLookupModal) — Reprint no
+     * longer reprints whatever's currently on the deck, it looks up any
+     * saved ticket by number first (task: "reprint first bring a pop to
+     * enter the ticket no adn tehn fetches it to for print"). */
+    onOpenReprintLookup: () => void;
+    /** Settings' `Formats.WeightUnit` — the Tare/Gross/Net status pill (moved
+     * here from CalcCard, task: "move the tare gross,net below the
+     * capture") renders in it, same as everywhere else weight appears. */
+    weightUnit: WeightUnit;
 }
 
 // Split out of WeighingScreen (over the 300-line budget — docs/CodingStandards.md)
@@ -162,6 +180,8 @@ export const ActionsCard = ({
     captureHint,
     onSave,
     onOpenPrintModal,
+    onOpenReprintLookup,
+    weightUnit,
 }: ActionsCardProps) => {
     const { t } = useTranslation();
     return (
@@ -185,7 +205,7 @@ export const ActionsCard = ({
                     ariaLabel={t("weigh.captureAs")}
                 />
                 <Button
-                    variant="primary"
+                    variant={ticket.isComplete ? "complete" : "primary"}
                     size="large"
                     disabled={!armed}
                     caption={captureHint}
@@ -193,6 +213,13 @@ export const ActionsCard = ({
                 >
                     {captureLabel}
                 </Button>
+                <StatusPill
+                    tareKg={ticket.weights.tareKg}
+                    grossKg={ticket.weights.grossKg}
+                    netKg={ticket.weights.netKg}
+                    hideNet
+                    weightUnit={weightUnit}
+                />
                 <SaveAndPrintRow
                     ticket={ticket}
                     gated={gated}
@@ -200,7 +227,7 @@ export const ActionsCard = ({
                     onSave={onSave}
                     onOpenPrintModal={onOpenPrintModal}
                 />
-                <ReprintRow ticket={ticket} onOpenPrintModal={onOpenPrintModal} />
+                <ReprintRow ticket={ticket} onOpenReprintLookup={onOpenReprintLookup} />
                 <SendLorryRow ticket={ticket} loadLorry={loadLorry} />
                 <p className={styles.hint}>
                     {actionsHint({ ticket, reading, armed, gated, t })}

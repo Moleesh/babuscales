@@ -1,4 +1,4 @@
-use tauri::State;
+use tauri::{Manager, State};
 
 use crate::error::AppError;
 use crate::licensing;
@@ -6,19 +6,46 @@ use crate::state::{lock, AppState};
 use crate::store;
 use crate::store::dto::{DocDraft, DocQuery, DocRow, SeriesEpoch};
 
+// `async fn` + `spawn_blocking` (not the plain sync `fn` these were before)
+// — task: "reports and weighing start to lag, freeze the cursor for secs".
+// `get_doc`/`list_docs` are the two read paths every tab switch triggers
+// (useTicketDocs.ts, useReportDocs.ts, both unbounded `listDocs` fetches),
+// and every other command (save/settings/masters/...) serialises through
+// the same single `AppState.conn` mutex (state.rs's own doc comment) — a
+// slow scan/serialize here held that lock and stalled whatever else needed
+// it next, reading as a whole-app freeze rather than just a slow list. A
+// plain sync command still runs off Tauri's main thread, but it ties up
+// one of its async-runtime worker threads for the whole query; routing the
+// blocking SQLite work through `spawn_blocking` explicitly frees that
+// worker immediately and lets this resolve like any other async IPC call
+// instead of monopolising runtime capacity every navigation. Takes an
+// `AppHandle` instead of `State` so the query can move into the blocking
+// closure — `State`'s borrow doesn't outlive this function's own stack
+// frame, `AppHandle::state()` re-derives the same managed `AppState`
+// inside the closure instead.
 #[tauri::command]
-pub fn get_doc(state: State<'_, AppState>, doc_id: String) -> Result<Option<DocRow>, AppError> {
-    let conn = lock(&state)?;
-    store::get_doc(&conn, &doc_id)
+pub async fn get_doc(app: tauri::AppHandle, doc_id: String) -> Result<Option<DocRow>, AppError> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let state = app.state::<AppState>();
+        let conn = lock(&state)?;
+        store::get_doc(&conn, &doc_id)
+    })
+    .await
+    .map_err(|err| AppError::Message(format!("get_doc task panicked: {err}")))?
 }
 
 #[tauri::command]
-pub fn list_docs(
-    state: State<'_, AppState>,
+pub async fn list_docs(
+    app: tauri::AppHandle,
     query: Option<DocQuery>,
 ) -> Result<Vec<DocRow>, AppError> {
-    let conn = lock(&state)?;
-    store::list_docs(&conn, &query.unwrap_or_default())
+    tauri::async_runtime::spawn_blocking(move || {
+        let state = app.state::<AppState>();
+        let conn = lock(&state)?;
+        store::list_docs(&conn, &query.unwrap_or_default())
+    })
+    .await
+    .map_err(|err| AppError::Message(format!("list_docs task panicked: {err}")))?
 }
 
 #[tauri::command]

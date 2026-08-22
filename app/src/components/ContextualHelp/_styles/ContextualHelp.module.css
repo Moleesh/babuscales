@@ -4,7 +4,7 @@
     top: 0;
     right: 0;
     bottom: 0;
-    width: min(400px, 92vw);
+    width: min(33vw, 92vw);
     background: var(--panel);
     border-left: 1px solid var(--line);
     z-index: 70;

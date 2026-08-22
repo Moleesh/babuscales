@@ -5,7 +5,7 @@
 
 .body {
     display: grid;
-    gap: 11px;
+    gap: 8px;
 }
 
 .loading-row {
@@ -14,19 +14,23 @@
     gap: 8px;
 }
 
-/* Date range + Tickets' search/filter/sort row, stacked and stuck together
-   under the shell's sticky weight header — see ReportsCardBody.tsx's own
-   comment. `top` offsets by `--shell-header-h` (AppShell.tsx), same pattern
-   as SettingsScreen.module.css's `.top-row`, so this sticks below the
-   header instead of disappearing behind it. */
+/* Saved reports + date range + Tickets' search/filter/sort row, stacked
+   tight (task: "compact the report in like 2 or max 3 lines") and stuck
+   together under both the shell's sticky weight header (AppShell.tsx's
+   `--shell-header-h`) and the Card's own sticky title header
+   (Card.tsx's `sticky` prop, `--card-header-h`) — same composed-offset
+   pattern as WeighingScreen.module.css's `.actions-sticky`, just for the
+   title header instead of the open-ticket strip. `background`/`padding`
+   (not `margin`) so scrolled content can't show through the gap above this
+   block — same reasoning as `.actions-sticky`'s own comment. */
 .sticky-filters {
     display: grid;
-    gap: 11px;
+    gap: 6px;
     position: sticky;
-    top: var(--shell-header-h, 0px);
+    top: calc(var(--shell-header-h, 0px) + var(--card-header-h, 0px));
     z-index: 2;
     background: var(--void);
-    padding-block: 4px;
+    padding-block: 4px 6px;
 }
 
 .header-actions {
@@ -156,8 +160,29 @@
    `--datatable-max-height` custom property) so a page's rows just grow the
    card and `.main` is the only scroll container — pagination is what keeps
    row count bounded now, not DataTable's own windowing. */
+/* `--reports-filters-h` is set on `.body` (ReportsCardBody.tsx's own
+   ResizeObserver) to `.sticky-filters`'s actual rendered height — the
+   column header row needs to stick just below that row, not at the same
+   `top: 0` slot it'd otherwise collide with (task: "the highlighted section
+   has to be sticky on the screen", second half — the table's own header
+   row). */
 .tickets-table {
     --datatable-max-height: none;
+    /* `visible`/`visible` alongside the `none` max-height above — both axes,
+       not just `-y`, since either one left non-`visible` still makes
+       `.wrapper` the sticky containing block per spec (see
+       DataTable.module.css's own comment for the full mechanism this fixes:
+       the column header rendering overlapped on top of a data row). */
+    --datatable-overflow-x: visible;
+    --datatable-overflow-y: visible;
+    /* Three stacked sticky layers above this table's own header row now:
+       the shell's weight header, the Card's own sticky title header
+       (`--card-header-h`), then this screen's saved-reports/date/filter
+       block (`--reports-filters-h`) — same composed-offset pattern as
+       `.sticky-filters` above, one layer deeper. */
+    --datatable-header-top: calc(
+        var(--shell-header-h, 0px) + var(--card-header-h, 0px) + var(--reports-filters-h, 0px)
+    );
 }
 
 /* Tickets pagination (TICKET_PAGE_SIZE, reportRows.ts) — now lives in the
