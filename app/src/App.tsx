@@ -325,11 +325,12 @@ const buildNavTabs = (t: ReturnType<typeof useTranslation>["t"]): AppShellTab[] 
 // state; `justMounted` skips this effect calling `setAlwaysOnTop`/
 // `fillScreen` again on its first run so App.tsx mounting doesn't redo
 // work the splash already did — only a later, real toggle click fires
-// them. Turning the pin back on re-pins and re-fills; turning it off only
-// drops always-on-top — it deliberately does NOT shrink the window back
-// down, so the operator isn't fighting a resize on every toggle. Once
-// full, it stays full until they resize it themselves, same as any other
-// window they've maximized.
+// them. Turning the pin back on re-pins and re-fills; turning it off drops
+// always-on-top AND restores the window (task: "when unpining the taskbar
+// flashes and goes behind" — a borderless, full-monitor window left up
+// with no always-on-top fights the taskbar's own z-order, since
+// fillScreen's bounds cover the area the taskbar sits in). Restoring on
+// unpin, not just dropping always-on-top, is what actually fixes that.
 const usePinToggle = (windowPin: WindowPinSource) => {
     const [pinned, setPinned] = useState(true);
     const justMounted = useRef(true);
@@ -340,6 +341,7 @@ const usePinToggle = (windowPin: WindowPinSource) => {
         }
         void windowPin.setAlwaysOnTop(pinned);
         if (pinned) void windowPin.fillScreen();
+        else void windowPin.restoreWindow();
     }, [windowPin, pinned]);
     return { pinned, onToggle: () => setPinned((value) => !value) };
 };

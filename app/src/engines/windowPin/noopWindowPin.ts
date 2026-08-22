@@ -8,4 +8,5 @@ export const createNoopWindowPin = (): WindowPinSource => ({
     minimize: () => Promise.resolve(),
     close: () => Promise.resolve(),
     fillScreen: () => Promise.resolve(),
+    restoreWindow: () => Promise.resolve(),
 });

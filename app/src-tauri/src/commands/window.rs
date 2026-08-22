@@ -17,6 +17,24 @@
 //! since it only runs once content has actually loaded and started this
 //! same fill/pin transition.
 
+// Undoes `fill_screen` — called when the operator unpins (turns off
+// always-on-top). `fill_screen`'s borderless window covers the whole
+// monitor including where the taskbar sits; once always-on-top is gone,
+// that borderless full-monitor window fights the taskbar's own z-order
+// (task: "when unpining the taskbar flashes and goes behind"). Restoring
+// decorations and `tauri.conf.json`'s own configured 1280x800 size, then
+// re-centering, puts the window back to a normal top-level window the OS
+// window manager stacks correctly relative to the taskbar again.
+#[tauri::command]
+pub fn restore_window(window: tauri::WebviewWindow) -> Result<(), String> {
+    window.set_decorations(true).map_err(|err| err.to_string())?;
+    window
+        .set_size(tauri::LogicalSize::new(1280.0, 800.0))
+        .map_err(|err| err.to_string())?;
+    window.center().map_err(|err| err.to_string())?;
+    Ok(())
+}
+
 #[tauri::command]
 pub fn fill_screen(window: tauri::WebviewWindow) -> Result<(), String> {
     // Must happen before the border-measurement below — that logic assumes

@@ -11,4 +11,5 @@ export const createTauriWindowPin = (): WindowPinSource => ({
     // frontend button click.
     close: () => getCurrentWindow().hide(),
     fillScreen: () => invoke("fill_screen"),
+    restoreWindow: () => invoke("restore_window"),
 });

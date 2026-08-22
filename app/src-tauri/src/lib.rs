@@ -237,6 +237,7 @@ pub fn run() -> tauri::Result<()> {
         })
         .invoke_handler(tauri::generate_handler![
             commands::window::fill_screen,
+            commands::window::restore_window,
             commands::docs::get_doc,
             commands::docs::list_docs,
             commands::docs::save_doc,

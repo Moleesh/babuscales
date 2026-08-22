@@ -27,4 +27,12 @@ export interface WindowPinSource {
         `commands::window::fill_screen` — a no-op outside the desktop
         build. */
     fillScreen: () => Promise<void>;
+    /** Undoes `fillScreen`: restores decorations and the configured
+        1280x800 size, then re-centers. Called on unpin — a borderless,
+        full-monitor window left up after always-on-top drops off fights
+        the taskbar's own z-order (task: "when unpining the taskbar
+        flashes and goes behind"). Rust's own
+        `commands::window::restore_window` — a no-op outside the desktop
+        build. */
+    restoreWindow: () => Promise<void>;
 }
