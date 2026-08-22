@@ -142,6 +142,8 @@ export const TA_PACK: LanguagePack = {
         "masters.action.saveChanges": "மாற்றங்களைச் சேமி",
         "masters.action.deactivate": "செயலிழக்கச் செய்",
         "masters.action.activate": "செயல்படுத்து",
+        "masters.action.delete": "நீக்கு",
+        "masters.action.deleteConfirm": "நிரந்தரமாக நீக்கவா",
         "masters.action.new": "புதியது",
         "masters.action.refresh": "புதுப்பி",
         "masters.loading": "ஏற்றுகிறது…",

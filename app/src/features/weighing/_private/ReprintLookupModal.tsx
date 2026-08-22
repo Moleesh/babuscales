@@ -7,7 +7,7 @@ import type { DocRow } from "@db/types";
 import { useTranslation } from "@i18n/useTranslation";
 
 import styles from "../_styles/WeighingScreen.module.css";
-import { formatTicketNo } from "../ticketNumber";
+import { formatTicketNo, getTicketNumberPrefix } from "../ticketNumber";
 
 // Matches the operator's typed input against a doc's own printed ticket
 // number — case/whitespace-insensitive, and also accepts the bare sequence
@@ -39,11 +39,14 @@ export interface ReprintLookupModalProps {
 // slip-building pipeline as any other print.
 export const ReprintLookupModal = ({ open, onClose, allTicketDocs, onFound }: ReprintLookupModalProps) => {
     const { t } = useTranslation();
-    const [ticketNo, setTicketNo] = useState("");
+    // Pre-filled with the site's configured prefix (task: "auto populate the
+    // prefix in the reprint pop") — the operator only has to type the
+    // numeric part instead of the whole ticket number.
+    const [ticketNo, setTicketNo] = useState(getTicketNumberPrefix);
     const [error, setError] = useState(false);
 
     const close = (): void => {
-        setTicketNo("");
+        setTicketNo(getTicketNumberPrefix());
         setError(false);
         onClose();
     };
@@ -71,6 +74,12 @@ export const ReprintLookupModal = ({ open, onClose, allTicketDocs, onFound }: Re
                         onChange={(event) => {
                             setTicketNo(event.target.value);
                             setError(false);
+                        }}
+                        // Cursor lands after the pre-filled prefix, not at
+                        // its start, so typing the numeric part just works.
+                        onFocus={(event) => {
+                            const end = event.target.value.length;
+                            event.target.setSelectionRange(end, end);
                         }}
                         onKeyDown={(event) => {
                             if (event.key === "Enter") find();

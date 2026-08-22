@@ -5,7 +5,7 @@ import { newId } from "../../id";
 import { masterDraftSchema } from "../../schemas";
 import type { MasterDraft, MasterQuery, MasterRow } from "../../types";
 
-type MasterMethods = Pick<DataPort, "getMaster" | "listMasters" | "saveMaster">;
+type MasterMethods = Pick<DataPort, "getMaster" | "listMasters" | "saveMaster" | "deleteMaster">;
 
 const matches = (row: MasterRow, query: MasterQuery): boolean => {
     if (query.MasterKind && row.MasterKind !== query.MasterKind) return false;
@@ -50,5 +50,10 @@ export const createMasterMethods = (state: MemoryState): MasterMethods => ({
         };
         state.masters.set(row.MasterId, row);
         return Promise.resolve(row);
+    },
+
+    deleteMaster: (masterId: string) => {
+        state.masters.delete(masterId);
+        return Promise.resolve();
     },
 });

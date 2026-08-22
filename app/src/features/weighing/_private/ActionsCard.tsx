@@ -218,6 +218,7 @@ export const ActionsCard = ({
                     netKg={ticket.weights.netKg}
                     hideNet
                     weightUnit={weightUnit}
+                    labels={{ tare: t("weigh.tare"), gross: t("weigh.gross"), net: t("weigh.net") }}
                 />
                 <SaveAndPrintRow
                     ticket={ticket}

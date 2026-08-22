@@ -15,8 +15,8 @@ import type { WeighingCaches } from "./useWeighingScreenTickets";
 // alone — this only ever adds masters, it never edits one that already
 // exists under that name.
 //
-// Both are now gated per-Master (schemaEngine's `MasterSchema.AutoSaveOnUse`/
-// `HideAutoSavedFromList` — task: "this should be part of master not
+// Both are now gated per-Master (schemaEngine's `MasterSchema.AutoAddOnUse`/
+// `HideAutoAddedFromList` — task: "this should be part of master not
 // fields"). `masterSchema` is the active ticket schema's own config entry
 // for this kind, or `undefined` for a kind the schema doesn't declare at all
 // (masterKindMeta.ts's `visibleMasterKinds`) — either way, an absent config
@@ -28,18 +28,18 @@ const upsertOne = async (
     value: string,
     masterSchema: MasterSchema | undefined,
 ): Promise<void> => {
-    if (masterSchema?.AutoSaveOnUse === false) return;
+    if (masterSchema?.AutoAddOnUse === false) return;
     const trimmed = value.trim();
     if (!trimmed) return;
     const exists = cache.rows.some((row) => row.Name.trim().toLowerCase() === trimmed.toLowerCase());
     if (exists) return;
-    // `AutoSaved` only ever gets set here, never read back by this cache —
+    // `AutoAdded` only ever gets set here, never read back by this cache —
     // it's the marker `useMasterListPage.ts` filters the admin browse list
     // on. Manually editing this exact row later (`useMasterFormActions.ts`'s
     // `handleSave`) rebuilds `Body` from the edit form's own columns, which
     // drops this key — that's the "admin manually promotes it" path, no
     // separate un-hide action needed.
-    const body = masterSchema?.HideAutoSavedFromList ? { AutoSaved: true } : {};
+    const body = masterSchema?.HideAutoAddedFromList ? { AutoAdded: true } : {};
     await cache.save({ MasterKind: kind, Name: trimmed, Body: body });
 };
 

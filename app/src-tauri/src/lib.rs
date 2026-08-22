@@ -250,6 +250,7 @@ pub fn run() -> tauri::Result<()> {
             commands::masters::get_master,
             commands::masters::list_masters,
             commands::masters::save_master,
+            commands::masters::delete_master,
             commands::configs::get_config,
             commands::configs::list_config,
             commands::configs::save_config,

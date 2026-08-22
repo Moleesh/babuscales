@@ -3,7 +3,7 @@ import type { DataPort } from "../../DataPort";
 import { masterDraftSchema } from "../../schemas";
 import type { MasterDraft, MasterRow } from "../../types";
 
-type MasterMethods = Pick<DataPort, "getMaster" | "listMasters" | "saveMaster">;
+type MasterMethods = Pick<DataPort, "getMaster" | "listMasters" | "saveMaster" | "deleteMaster">;
 
 // Zod at every boundary (docs/CodingStandards.md) — see configs.ts's own
 // comment on this same pattern.
@@ -14,4 +14,6 @@ export const createMasterMethods = (): MasterMethods => ({
 
     saveMaster: (draft: MasterDraft) =>
         invoke<MasterRow>("save_master", { draft: masterDraftSchema.parse(draft) }),
+
+    deleteMaster: (masterId) => invoke<void>("delete_master", { masterId }),
 });

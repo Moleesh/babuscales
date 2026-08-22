@@ -100,9 +100,14 @@ export const SearchableDropdown = ({
                 className={open ? styles.inputOpen : undefined}
                 value={value}
                 onChange={(e) => handleInputChange(e.target.value)}
-                onFocus={() => setOpen(true)}
+                // Task: "when fields are disable ... dropdown still able to
+                // enter open the dropdown" — a plain `readOnly` input still
+                // fires focus/keydown, so without this guard a disabled
+                // Search field's popover opened and could still be typed
+                // into on click even though nothing could actually be saved.
+                onFocus={() => !inputProps.readOnly && setOpen(true)}
                 onBlur={() => setOpen(false)}
-                onKeyDown={handleKeyDown}
+                onKeyDown={(e) => !inputProps.readOnly && handleKeyDown(e)}
                 role="combobox"
                 aria-expanded={open}
             />

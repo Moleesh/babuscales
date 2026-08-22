@@ -197,11 +197,16 @@ export interface MasterSchema {
      * behavior (`upsertTypedMasters.ts` has always auto-saved a typed
      * Vehicle/Party/Material/Transporter unconditionally); set `false` to
      * turn that off for just this Master.
+     *
+     * Named `AutoAddOnUse`, not `AutoSaveOnUse` (task: "AutoSaveOnUse/
+     * HideAutoSavedFromList key is badly named") — this creates a brand-new
+     * row the first time a value is used, it doesn't "save" anything that
+     * already exists; "Add" is what actually happens.
      */
-    AutoSaveOnUse?: boolean;
+    AutoAddOnUse?: boolean;
     /**
-     * Only meaningful when `AutoSaveOnUse` isn't `false`. When on, a
-     * ticket-save-triggered auto-save is marked (`MasterRow.Body.AutoSaved`)
+     * Only meaningful when `AutoAddOnUse` isn't `false`. When on, a
+     * ticket-save-triggered auto-add is marked (`MasterRow.Body.AutoAdded`)
      * and left out of the Masters admin screen's own browse/search list
      * (`useMasterListPage.ts`) — still a real row, still an exact-name match
      * for autofill/dedup (`upsertTypedMasters.ts`'s own `cache.rows` check,
@@ -209,8 +214,11 @@ export interface MasterSchema {
      * it again, which clears the marker (`useMasterFormActions.ts`).
      * Defaults to off (unset), so an existing Master's list keeps showing
      * every row exactly as it does today.
+     *
+     * Named `HideAutoAddedFromList`, not `HideAutoSavedFromList` — same
+     * rename reasoning as `AutoAddOnUse` above.
      */
-    HideAutoSavedFromList?: boolean;
+    HideAutoAddedFromList?: boolean;
 }
 
 // One named group of fields — WeighingLeftColumn.tsx renders one card per

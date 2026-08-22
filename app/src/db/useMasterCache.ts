@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import type { MutableRefObject } from "react";
 
 import type { MasterDraft, MasterKind, MasterRow } from "./types";
 import { useDataPort } from "./useDataPort";
@@ -9,6 +10,8 @@ export interface UseMasterCache {
     /** Client-side substring match against the loaded rows — instant, no round-trip per keystroke. Once a kind is confirmed larger than one cache page this also kicks off a background DataPort search for novel terms and merges it in, so the *next* call (next keystroke/render) can find rows this call couldn't yet see — see the module comment below. */
     search: (query: string) => MasterRow[];
     save: (draft: MasterDraft) => Promise<MasterRow>;
+    /** Hard delete (task: "we need an option to remove the rows in master") — reloads the cache afterward the same way `save` does. */
+    remove: (masterId: string) => Promise<void>;
     reload: () => void;
 }
 
@@ -32,17 +35,28 @@ const CACHE_LIMIT = 2000;
 const SEARCH_LIMIT = 200;
 const MAX_ROWS = 5000;
 
-export const useMasterCache = (kind: MasterKind): UseMasterCache => {
-    const db = useDataPort();
-    const [rows, setRows] = useState<MasterRow[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [reloadToken, setReloadToken] = useState(0);
-    // Plain refs, not state: they gate whether `search` fires a background
-    // fetch, and reading a stale value for one call just means "try again
-    // next keystroke" — not worth the extra re-renders that state would add.
-    const cappedRef = useRef(false);
-    const searchedRef = useRef<Set<string>>(new Set());
+// The first-page load effect — pulled out of `useMasterCache` purely to
+// keep that hook itself under the file's own line budget
+// (docs/CodingStandards.md), now that `remove` has grown it past 60 lines.
+interface MasterCacheLoadArgs {
+    db: ReturnType<typeof useDataPort>;
+    kind: MasterKind;
+    reloadToken: number;
+    setRows: (rows: MasterRow[]) => void;
+    setLoading: (loading: boolean) => void;
+    cappedRef: MutableRefObject<boolean>;
+    searchedRef: MutableRefObject<Set<string>>;
+}
 
+const useMasterCacheLoad = ({
+    db,
+    kind,
+    reloadToken,
+    setRows,
+    setLoading,
+    cappedRef,
+    searchedRef,
+}: MasterCacheLoadArgs): void => {
     useEffect(() => {
         let cancelled = false;
         setLoading(true);
@@ -57,7 +71,21 @@ export const useMasterCache = (kind: MasterKind): UseMasterCache => {
         return () => {
             cancelled = true;
         };
-    }, [db, kind, reloadToken]);
+    }, [db, kind, reloadToken, setRows, setLoading, cappedRef, searchedRef]);
+};
+
+export const useMasterCache = (kind: MasterKind): UseMasterCache => {
+    const db = useDataPort();
+    const [rows, setRows] = useState<MasterRow[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [reloadToken, setReloadToken] = useState(0);
+    // Plain refs, not state: they gate whether `search` fires a background
+    // fetch, and reading a stale value for one call just means "try again
+    // next keystroke" — not worth the extra re-renders that state would add.
+    const cappedRef = useRef(false);
+    const searchedRef = useRef<Set<string>>(new Set());
+
+    useMasterCacheLoad({ db, kind, reloadToken, setRows, setLoading, cappedRef, searchedRef });
 
     // Fire-and-forget merge target for the background search below — kept
     // separate so `search` can stay a plain synchronous function.
@@ -100,7 +128,15 @@ export const useMasterCache = (kind: MasterKind): UseMasterCache => {
         [db],
     );
 
+    const remove = useCallback(
+        async (masterId: string) => {
+            await db.deleteMaster(masterId);
+            setReloadToken((t) => t + 1);
+        },
+        [db],
+    );
+
     const reload = useCallback(() => setReloadToken((t) => t + 1), []);
 
-    return { rows, loading, search, save, reload };
+    return { rows, loading, search, save, remove, reload };
 };

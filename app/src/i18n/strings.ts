@@ -152,6 +152,8 @@ export const EN_STRINGS: Record<string, string> = {
     "masters.action.saveChanges": "Save changes",
     "masters.action.deactivate": "Deactivate",
     "masters.action.activate": "Activate",
+    "masters.action.delete": "Delete",
+    "masters.action.deleteConfirm": "Permanently delete",
     "masters.action.new": "New",
     "masters.action.refresh": "Refresh",
     "masters.loading": "Loading…",
@@ -372,6 +374,10 @@ export const EN_STRINGS: Record<string, string> = {
     "reports.page.ariaLabel": "Page navigation",
     "reports.summaryEmpty": "No completed tickets in this group yet",
     "reports.ticketsEmpty": "Nothing matches that filter",
+    /** Reports rework, item 3 — shown instead of the two messages above
+     * until the operator explicitly picks a saved view, builds a report, or
+     * clicks the "waiting" chip; there is no default query anymore. */
+    "reports.selectReportEmpty": "Select a saved view or build a report to see data",
     "reports.savedReportsDeletePrefix": "Delete saved report",
     "reports.savedReportsEditPrefix": "Rename saved report",
     "reports.savedReportsPlaceholder": "Save current view as…",

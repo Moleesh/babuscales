@@ -16,7 +16,7 @@ import { useMasterListPage } from "./useMasterListPage";
 // (docs/CodingStandards.md).
 export const useMastersScreenState = (activeKind: MasterKind, columns: MasterColumn[], query: string) => {
     const db = useDataPort();
-    const { rows, save, reload } = useMasterCache(activeKind);
+    const { rows, save, remove, reload } = useMasterCache(activeKind);
     const [selectedId, setSelectedId] = useState<string | null>(null);
     const [form, setForm] = useState(emptyForm());
     // `rows` (useMasterCache) holds the whole kind for any shop small enough
@@ -29,7 +29,16 @@ export const useMastersScreenState = (activeKind: MasterKind, columns: MasterCol
     const selected: MasterRow | null = selectedId
         ? (rows.find((row) => row.MasterId === selectedId) ?? null)
         : null;
-    const formActions = useMasterFormActions({ activeKind, columns, selected, form, setForm, setSelectedId, save });
+    const formActions = useMasterFormActions({
+        activeKind,
+        columns,
+        selected,
+        form,
+        setForm,
+        setSelectedId,
+        save,
+        remove,
+    });
     const { rows: pageRows, loading, hasMore, loadingMore, loadMore } = useMasterListPage(db, activeKind, query);
 
     useEffect(() => {
@@ -48,6 +57,7 @@ export const useMastersScreenState = (activeKind: MasterKind, columns: MasterCol
             saving: formActions.saving,
             onSave: () => void formActions.handleSave(),
             onToggleActive: () => void formActions.toggleActive(),
+            onDelete: () => void formActions.handleDelete(),
             onStartNew: formActions.startNew,
         },
     };

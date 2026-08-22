@@ -69,14 +69,28 @@ const masterColumnSchema = z.discriminatedUnion("Kind", [
     z.object({ ...masterColumnBaseShape, Kind: z.literal("Note") }),
 ]);
 
-const masterSchemaSchema = z.object({
-    Kind: z.enum(MASTER_KINDS),
-    Columns: z.array(masterColumnSchema),
-    // Both additive/optional — an older saved schema with neither key keeps
-    // today's behavior exactly (see types.ts's MasterSchema doc comment).
-    AutoSaveOnUse: z.boolean().optional(),
-    HideAutoSavedFromList: z.boolean().optional(),
-});
+// `AutoAddOnUse`/`HideAutoAddedFromList` were named `AutoSaveOnUse`/
+// `HideAutoSavedFromList` before the rename (task: "AutoSaveOnUse/
+// HideAutoSavedFromList key is badly named") — a schema saved under the old
+// names, on disk or in the DB already, still has to parse the same way it
+// always did, so the old keys are accepted here as a fallback and mapped
+// onto the new ones rather than silently dropped as unknown keys.
+const masterSchemaSchema = z
+    .object({
+        Kind: z.enum(MASTER_KINDS),
+        Columns: z.array(masterColumnSchema),
+        // Both additive/optional — an older saved schema with neither key keeps
+        // today's behavior exactly (see types.ts's MasterSchema doc comment).
+        AutoAddOnUse: z.boolean().optional(),
+        HideAutoAddedFromList: z.boolean().optional(),
+        AutoSaveOnUse: z.boolean().optional(),
+        HideAutoSavedFromList: z.boolean().optional(),
+    })
+    .transform(({ AutoSaveOnUse, HideAutoSavedFromList, ...rest }) => ({
+        ...rest,
+        AutoAddOnUse: rest.AutoAddOnUse ?? AutoSaveOnUse,
+        HideAutoAddedFromList: rest.HideAutoAddedFromList ?? HideAutoSavedFromList,
+    }));
 
 const fieldSegmentSchema = z.object({
     Segment: z.string().min(1),

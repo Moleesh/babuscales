@@ -19,6 +19,7 @@ export interface MastersFormCardProps {
     saving: boolean;
     onSave: () => void;
     onToggleActive: () => void;
+    onDelete: () => void;
     onStartNew: () => void;
     onReload: () => void;
     t: (key: string) => string;
@@ -38,6 +39,7 @@ export const MastersFormCard = ({
     saving,
     onSave,
     onToggleActive,
+    onDelete,
     onStartNew,
     onReload,
     t,
@@ -60,6 +62,7 @@ export const MastersFormCard = ({
                 addNewLabel={addNewLabel}
                 onSave={onSave}
                 onToggleActive={onToggleActive}
+                onDelete={onDelete}
                 onStartNew={onStartNew}
                 onReload={onReload}
             />

@@ -29,7 +29,7 @@ pub use docs::{
     allocate_doc_seq, get_doc, list_docs, reset_doc_series, save_doc, save_doc_and_allocate_seq,
 };
 pub use hash::body_matches_hash;
-pub use masters::{get_master, list_masters, save_master};
+pub use masters::{delete_master, get_master, list_masters, save_master};
 pub use outbox::{enqueue_outbox, list_outbox, update_outbox};
 
 const SCHEMA_SQL: &str = include_str!("schema.sql");

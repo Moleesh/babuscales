@@ -13,8 +13,8 @@ export interface UseMasterListPage {
     loadMore: () => void;
 }
 
-// Task: a Master's own `HideAutoSavedFromList` (schemaEngine's
-// `MasterSchema`) keeps an auto-saved-on-ticket-save row (`Body.AutoSaved`,
+// Task: a Master's own `HideAutoAddedFromList` (schemaEngine's
+// `MasterSchema`) keeps an auto-saved-on-ticket-save row (`Body.AutoAdded`,
 // set by `upsertTypedMasters.ts`) out of "the manual 'add new' list/search
 // results a user sees when browsing/picking from that Master" — this admin
 // screen's own list is that surface. Filtered client-side, after the page
@@ -23,7 +23,7 @@ export interface UseMasterListPage {
 // consumer (useMasterCache.ts's own rows/search — Weighing's typeahead,
 // this feature's own upsert-dedup check) is deliberately left untouched, so
 // an auto-saved row still autofills/dedups exactly like a normal one.
-const visibleRows = (page: MasterRow[]): MasterRow[] => page.filter((row) => row.Body.AutoSaved !== true);
+const visibleRows = (page: MasterRow[]): MasterRow[] => page.filter((row) => row.Body.AutoAdded !== true);
 
 // Keyset-paginated list for MastersListCard only ("Load more"). Independent
 // of useMasterCache, which stays the "load

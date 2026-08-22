@@ -47,6 +47,8 @@ export interface DataPort {
     /** Sorted `name COLLATE NOCASE ASC`. Pass `query.After` (the last row's `Name`+`MasterId` from a previous call) to keyset-paginate past it instead of always returning page 1 — `MastersScreen`'s "Load more" is the one caller today; every other consumer (`useMasterCache`) omits it and gets the same full, unpaginated result as before. */
     listMasters(query?: MasterQuery): Promise<MasterRow[]>;
     saveMaster(draft: MasterDraft): Promise<MasterRow>;
+    /** Hard delete — task: "we need an option to remove the rows in master", on top of the already-existing Activate/Deactivate toggle (`saveMaster`'s `IsActive`), which only ever hides a row, never removes it. Masters have no FK from a ticket (a captured Vehicle/Party/etc. is stored as a plain name string, matched by name — `upsertTypedMasters.ts`), so nothing else needs to change when a row goes away. */
+    deleteMaster(masterId: string): Promise<void>;
 
     // config — schemas, layouts, templates, settings, formats, presets
     getConfig(configId: string): Promise<ConfigRow | null>;

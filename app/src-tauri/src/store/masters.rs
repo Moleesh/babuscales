@@ -100,6 +100,19 @@ pub fn list_masters(conn: &Connection, query: &MasterQuery) -> Result<Vec<Master
     Ok(rows)
 }
 
+// Hard delete, not another `is_active` flip — task: "we need an option to
+// remove the rows in master", on top of the already-existing
+// Activate/Deactivate toggle (`save_master`'s `is_active`), which only ever
+// hides a row from the picker, never actually gets rid of it. Masters have
+// no FK from `ticket`/`ticket_body` (a captured Vehicle/Party/etc. is stored
+// as a plain name string, matched by name at save time —
+// `upsertTypedMasters.ts`), so a row can be removed outright with nothing
+// left dangling.
+pub fn delete_master(conn: &Connection, master_id: &str) -> Result<(), AppError> {
+    conn.execute("DELETE FROM master WHERE master_id = ?1", params![master_id])?;
+    Ok(())
+}
+
 pub fn save_master(conn: &Connection, draft: &MasterDraft) -> Result<MasterRow, AppError> {
     let existing = match &draft.master_id {
         Some(id) => get_master(conn, id)?,

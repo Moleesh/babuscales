@@ -29,6 +29,11 @@ export const setTicketNumberDraftLabel = (label: string): void => {
     activeDraftLabel = label;
 };
 
+// Exposed for ReprintLookupModal to pre-fill its ticket-number field with
+// the site's own configured prefix (task: "auto populate the prefix in the
+// reprint pop") — the operator only has to type the numeric part.
+export const getTicketNumberPrefix = (): string => activeFormat.prefix;
+
 export const formatTicketNo = (docSeq: number | null): string =>
     docSeq === null
         ? activeDraftLabel

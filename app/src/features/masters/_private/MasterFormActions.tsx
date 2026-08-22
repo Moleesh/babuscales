@@ -11,6 +11,8 @@ export interface MasterFormActionsProps {
     addNewLabel: string;
     onSave: () => void;
     onToggleActive: () => void;
+    /** Hard delete (task: "we need an option to remove the rows in master") — distinct from `onToggleActive`, which only ever hides a row from the picker. Confirmed inline below before firing, since this can't be undone the way Deactivate can. */
+    onDelete: () => void;
     onStartNew: () => void;
     onReload: () => void;
 }
@@ -25,6 +27,7 @@ export const MasterFormActions = ({
     addNewLabel,
     onSave,
     onToggleActive,
+    onDelete,
     onStartNew,
     onReload,
 }: MasterFormActionsProps) => {
@@ -37,6 +40,23 @@ export const MasterFormActions = ({
             {selected && (
                 <Button variant={selected.IsActive ? "danger" : "default"} disabled={saving} onClick={onToggleActive}>
                     {selected.IsActive ? t("masters.action.deactivate") : t("masters.action.activate")}
+                </Button>
+            )}
+            {selected && (
+                <Button
+                    variant="danger"
+                    disabled={saving}
+                    onClick={() => {
+                        // `confirm()`, not a custom modal — no confirm dialog
+                        // exists anywhere else in this app yet to reuse, and
+                        // a hard delete is exactly the kind of irreversible
+                        // click this app doesn't otherwise have.
+                        if (window.confirm(`${t("masters.action.deleteConfirm")} "${selected.Name}"?`)) {
+                            onDelete();
+                        }
+                    }}
+                >
+                    {t("masters.action.delete")}
                 </Button>
             )}
             {selected && (
