@@ -97,9 +97,9 @@ const buildHandleDelete = (
 // captures match masters "by name" — a duplicate Name within a Kind creates
 // ambiguity about which record a capture should resolve to. Checked
 // client-side against the already-loaded cache (`cacheRows`, useMasterCache's
-// "load once" rows for this kind) rather than a new backend query — only
-// applies when creating a *new* master (`selectedId` undefined); renaming an
-// existing one to match itself isn't a collision.
+// "load once" rows for this kind) rather than a new backend query — checked
+// on both create and rename (`selectedId` passed through so a record
+// matching itself, i.e. an unchanged rename, isn't flagged as a collision).
 const findDuplicateName = (
     cacheRows: MasterRow[],
     name: string,
@@ -148,7 +148,7 @@ const buildHandleSave = ({
             setError(numberError);
             return;
         }
-        if (!selected && findDuplicateName(cacheRows, name, undefined)) {
+        if (findDuplicateName(cacheRows, name, selected?.MasterId)) {
             setError("masters.error.duplicateName");
             return;
         }
