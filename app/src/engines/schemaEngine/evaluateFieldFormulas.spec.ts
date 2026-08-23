@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { MockInstance } from "vitest";
 
 import type { FormulaContext } from "@engines/formulaEngine";
 import { fromInt } from "@engines/formulaEngine/Decimal";
@@ -10,7 +11,7 @@ describe("evaluateGate", () => {
         getVariable: vi.fn(() => fromInt(100)),
     };
 
-    let warnSpy: ReturnType<typeof vi.spyOn<typeof console, "warn">>;
+    let warnSpy: MockInstance<typeof console.warn>;
     beforeEach(() => {
         warnSpy = vi.spyOn(console, "warn").mockImplementation(() => undefined);
     });

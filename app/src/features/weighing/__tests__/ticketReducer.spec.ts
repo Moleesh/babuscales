@@ -52,7 +52,12 @@ describe("ticketReducer", () => {
             type: "AddCapture",
             capture: makeCapture(),
         });
-        const saved = ticketReducer(afterCapture, { type: "Saved", docId: "doc-1", docSeq: 7 });
+        const saved = ticketReducer(afterCapture, {
+            type: "Saved",
+            docId: "doc-1",
+            docSeq: 7,
+            ticketDateIso: "2024-01-01T00:00:00.000Z",
+        });
 
         expect(saved.awaitingSave).toBe(false);
         expect(saved.docId).toBe("doc-1");
