@@ -43,8 +43,19 @@ export const useEnterAsTab = (): void => {
             );
             if (!list.length) return;
 
+            // `list.indexOf` returns -1 when nothing in the walk is focused
+            // (e.g. focus is on <body>). Forward Enter from -1 already lands
+            // correctly on index 0 via `(-1 + 1 + length) % length`. But
+            // Shift+Enter needs a different effective starting point to land
+            // on the true last element the same way: `(-1 - 1 + length) %
+            // length` = `length - 2`, one short. Treating "nothing focused"
+            // as "just past the last index" (i.e. `current = length`) only
+            // for the backward case makes `length - 1 + length) % length` =
+            // `length - 1`, the actual last element — while leaving the
+            // forward case's already-correct `-1` alone.
             const current = list.indexOf(document.activeElement as HTMLElement);
-            const nextIndex = (current + (event.shiftKey ? -1 : 1) + list.length) % list.length;
+            const base = current === -1 && event.shiftKey ? list.length : current;
+            const nextIndex = (base + (event.shiftKey ? -1 : 1) + list.length) % list.length;
             const next = list[nextIndex];
             if (!next) return;
 

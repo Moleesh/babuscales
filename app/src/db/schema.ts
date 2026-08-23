@@ -40,7 +40,24 @@ export const loadTicketSchema = async (db: DataPort): Promise<Schema> => {
     return parsed.success ? parsed.data : DEFAULT_TICKET_SCHEMA;
 };
 
-/** Saves (or overwrites, same SchemaId) an uploaded/edited schema and makes it the active one — the single call both a fresh upload and a field-visibility toggle (re-saving the active schema with one field patched) go through. */
+/**
+ * Saves (or overwrites, same SchemaId) an uploaded/edited schema and makes it the active one — the single call both a fresh upload and a field-visibility toggle (re-saving the active schema with one field patched) go through.
+ *
+ * NOT ATOMIC across its two `saveConfig` calls — neither `DataPort` (see
+ * `DataPort.ts`) nor the Tauri backend (`src-tauri/src/store/*.rs`) exposes
+ * a multi-write transaction primitive for config rows; the only
+ * `conn.transaction_with_behavior` usages in the Rust store are internal to
+ * single commands (`store/audit.rs`, `store/docs.rs`), not something
+ * `saveConfig` can join from here. So this deliberately writes the schema
+ * body FIRST and the active-pointer LAST: if the app crashes/loses power
+ * between the two awaits, the schema row is already durably saved but the
+ * active pointer is left untouched (still pointing at whatever was active
+ * before, or the built-in default). That is the recoverable failure mode —
+ * `loadTicketSchema` keeps serving the previous schema rather than a
+ * half-written or dangling one, and re-running this save (e.g. re-upload)
+ * repairs it. The unrecoverable order (pointer first) is avoided on
+ * purpose.
+ */
 export const saveTicketSchema = async (db: DataPort, schema: Schema): Promise<void> => {
     await db.saveConfig({
         ConfigId: ticketSchemaConfigId(schema.SchemaId),

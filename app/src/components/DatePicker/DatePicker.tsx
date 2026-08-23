@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import { formatDate, formatDateInFmt } from "@constants/numberFormat";
 import { useTranslation } from "@i18n/useTranslation";
@@ -199,7 +199,7 @@ const DatePickerCalendar = ({
 
 // The visible month/grid/label state — pulled out of DatePicker purely to
 // stay under the file's own line budget.
-const useCalendarView = (value: string, dateFmt: string | undefined, lang: string) => {
+const useCalendarView = (value: string, dateFmt: string | undefined, lang: string, open: boolean) => {
     const today = todayIso();
     const parsed = parseIsoDate(value) ?? parseIsoDate(today)!;
     // The visible month starts on the picked date if there is one,
@@ -207,6 +207,18 @@ const useCalendarView = (value: string, dateFmt: string | undefined, lang: strin
     // default, which would make opening an empty field a chore to page
     // back from.
     const [view, setView] = useState(() => ({ year: parsed.year, month: parsed.month }));
+
+    // Resyncs the visible month to a `value` that changed while the picker
+    // was closed (e.g. a report's date field reset from elsewhere) — but
+    // only while closed, so this never yanks the calendar out from under a
+    // user who's mid-navigation in an open popover.
+    useEffect(() => {
+        if (open) return;
+        setView({ year: parsed.year, month: parsed.month });
+        // Depends on `open` too (not just parsed.year/month): a `value`
+        // change that arrives *while* the picker is open must still resync
+        // once it closes, not only on the next `value` change after that.
+    }, [parsed.year, parsed.month, open]);
 
     const fmt = dateFmt ?? "dd-MM-yyyy";
     const label = value ? formatDateInFmt(value, lang, fmt) : fmt.toLowerCase();
@@ -233,7 +245,7 @@ export const DatePicker = ({ id, value, onChange, disabled, dateFmt, ...rest }: 
     const { t, lang } = useTranslation();
     const [open, setOpen] = useState(false);
     const ref = useCloseOnOutsideClick(open, () => setOpen(false));
-    const { today, label, monthLabel, grid, changeMonth } = useCalendarView(value, dateFmt, lang);
+    const { today, label, monthLabel, grid, changeMonth } = useCalendarView(value, dateFmt, lang, open);
 
     useLayoutEffect(() => {
         if (disabled) setOpen(false);

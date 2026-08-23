@@ -72,24 +72,38 @@ const DashboardLoaded = ({
     </>
 );
 
+// Same 60s period as App.tsx's own DailySummarySync check — a reasonable
+// "still fresh enough" tick for a screen an operator might just leave open,
+// not a real-time feed.
+const REFRESH_MS = 60_000;
+
 // Split out of DashboardScreen (over the line/complexity budget —
 // docs/CodingStandards.md) — the docs load effect plus every period-derived
 // figure, unchanged from the inline version it replaces.
 const useDashboardData = (db: ReturnType<typeof useDataPort>, period: DashboardPeriod) => {
     const [docs, setDocs] = useState<DocRow[]>([]);
     const [loading, setLoading] = useState(true);
-    const referenceIso = useMemo(() => new Date().toISOString(), []);
+    // Re-derived every `REFRESH_MS` (not just at mount) so "today"'s
+    // bucketing and the KPIs don't quietly go stale for an operator who
+    // leaves the Dashboard tab open across midnight, or across a shift.
+    const [referenceIso, setReferenceIso] = useState(() => new Date().toISOString());
 
     useEffect(() => {
         let cancelled = false;
-        void db.listDocs({ DocKind: "Ticket" }).then((loaded) => {
-            if (!cancelled) {
-                setDocs(loaded);
-                setLoading(false);
-            }
-        });
+        const load = (): void => {
+            void db.listDocs({ DocKind: "Ticket" }).then((loaded) => {
+                if (!cancelled) {
+                    setDocs(loaded);
+                    setLoading(false);
+                }
+            });
+            setReferenceIso(new Date().toISOString());
+        };
+        load();
+        const timer = setInterval(load, REFRESH_MS);
         return () => {
             cancelled = true;
+            clearInterval(timer);
         };
     }, [db]);
 

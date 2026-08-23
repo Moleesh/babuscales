@@ -1,6 +1,12 @@
 export type DatePresetKey = "today" | "month" | "year" | "all";
 
-const toDateOnly = (date: Date): string => date.toISOString().slice(0, 10);
+// Local calendar date, not UTC — `date` here is always already a local
+// `Date` (either `new Date()` or `new Date(year, month, day)`), so reading
+// it back with `.toISOString()` would re-express it in UTC and could shift
+// the day for any positive UTC offset (e.g. IST, UTC+5:30). Use the local
+// getters instead, matching reportRows.ts's `toLocalDateOnly`.
+const toDateOnly = (date: Date): string =>
+    `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 
 /**
  * Report-builder wizard MVP quick presets —

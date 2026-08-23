@@ -90,7 +90,25 @@ export const filterTicketRows = (
 };
 
 /**
- * Date-range filter over a row's `at` timestamp, by date-only prefix
+ * `row.at` is a UTC ISO timestamp (`new Date().toISOString()`), but "which
+ * business day" a ticket belongs to is always a LOCAL-calendar-day
+ * question — a ticket weighed at 1am IST is still UTC-previous-day.
+ * Truncating the raw ISO string (`.slice(0, 10)`) silently uses the UTC
+ * date instead, which is wrong for any positive UTC offset. Every place in
+ * this feature that turns a timestamp into a "which day" bucket goes
+ * through this instead — reportDatePresets.ts's own `toDateOnly` builds the
+ * `from`/`to` bounds the same way, so both sides of the comparison agree.
+ */
+export const toLocalDateOnly = (iso: string): string => {
+    const date = new Date(iso);
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, "0");
+    const d = String(date.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+};
+
+/**
+ * Date-range filter over a row's `at` timestamp, by local date-only prefix
  * (`yyyy-MM-dd`) against `from`/`to` (also `yyyy-MM-dd`, from a native
  * `<input type="date">`). Both bounds inclusive; an empty bound means "no
  * limit on that side". Empty `from` and empty `to` together is a true
@@ -100,7 +118,7 @@ export const filterTicketRows = (
 export const filterRowsByDateRange = (rows: TicketRow[], from: string, to: string): TicketRow[] => {
     if (!from && !to) return rows;
     return rows.filter((row) => {
-        const date = row.at.slice(0, 10);
+        const date = toLocalDateOnly(row.at);
         if (from && date < from) return false;
         if (to && date > to) return false;
         return true;
@@ -155,7 +173,10 @@ export const listSeriesEpochOptions = (
         { epoch: currentEpoch, label: t("reports.series.current") },
         ...priorEpochs.map((epoch) => ({
             epoch,
-            label: `${t("reports.series.priorPrefix")} ${earliestByEpoch.get(epoch)?.slice(0, 10) ?? ""}`,
+            label: `${t("reports.series.priorPrefix")} ${(() => {
+                const at = earliestByEpoch.get(epoch);
+                return at ? toLocalDateOnly(at) : "";
+            })()}`,
         })),
     ];
 };
@@ -190,24 +211,33 @@ export const sortOptions = (t: Translate): { value: TicketSortKey; label: string
     { value: "charge", label: t("reports.sort.charge") },
 ];
 
-/** Nulls always sort last regardless of direction — a missing weight/charge is "unknown", not "zero". */
-const compareTicketRows = (a: TicketRow, b: TicketRow, sortKey: TicketSortKey): number => {
+/**
+ * Nulls always sort last regardless of direction — a missing weight/charge
+ * is "unknown", not "zero". `sortDir` is threaded into the comparator
+ * itself (rather than sorting ascending once and `.reverse()`-ing the
+ * whole array for desc) precisely so this null-last placement survives
+ * both directions — a plain reverse would also flip nulls to the front.
+ */
+const compareTicketRows = (
+    a: TicketRow,
+    b: TicketRow,
+    sortKey: TicketSortKey,
+    sortDir: SortDir,
+): number => {
     const av = a[sortKey];
     const bv = b[sortKey];
     if (av === null) return bv === null ? 0 : 1;
     if (bv === null) return -1;
-    if (typeof av === "number" && typeof bv === "number") return av - bv;
-    return String(av).localeCompare(String(bv));
+    const dir = sortDir === "asc" ? 1 : -1;
+    if (typeof av === "number" && typeof bv === "number") return (av - bv) * dir;
+    return String(av).localeCompare(String(bv)) * dir;
 };
 
 export const sortTicketRows = (
     rows: TicketRow[],
     sortKey: TicketSortKey,
     sortDir: SortDir,
-): TicketRow[] => {
-    const sorted = [...rows].sort((a, b) => compareTicketRows(a, b, sortKey));
-    return sortDir === "asc" ? sorted : sorted.reverse();
-};
+): TicketRow[] => [...rows].sort((a, b) => compareTicketRows(a, b, sortKey, sortDir));
 
 // Task: "if I have like more than 100 it will kill the flow" — DataTable
 // already windows its own DOM rows, but the Tickets view still handed it

@@ -18,11 +18,33 @@ export interface ContextMenuProps {
 // Tauri's CSP/webview already grants this origin.
 const runCut = () => document.execCommand("cut");
 const runCopy = () => document.execCommand("copy");
+
+// `.selectionStart`/`.selectionEnd` throw `InvalidStateError` in Chromium
+// for input types that don't support a text selection range (number, email,
+// date, color, etc. — see the WHATWG "does not apply" list) — only
+// text-like input types and `<textarea>` (always) support it. Guard every
+// read behind this so right-clicking a number/email field doesn't crash
+// the whole context menu.
+const TEXT_LIKE_INPUT_TYPES = new Set(["text", "search", "tel", "url", "password"]);
+const supportsSelectionRange = (field: HTMLInputElement | HTMLTextAreaElement): boolean =>
+    field instanceof window.HTMLTextAreaElement || TEXT_LIKE_INPUT_TYPES.has(field.type);
+
+// For an unsupported input type there's no real selection to speak of —
+// treated as "nothing selected", which disables Cut/Copy (there'd be
+// nothing to act on) and makes Paste replace the whole value, the same
+// full-value-select fallback a native number/email field's own Paste does.
+const getSelection = (field: HTMLInputElement | HTMLTextAreaElement): { start: number; end: number } => {
+    if (!supportsSelectionRange(field)) return { start: 0, end: field.value.length };
+    return {
+        start: field.selectionStart ?? field.value.length,
+        end: field.selectionEnd ?? field.value.length,
+    };
+};
+
 const runPaste = async (target: HTMLInputElement | HTMLTextAreaElement) => {
     try {
         const text = await navigator.clipboard.readText();
-        const start = target.selectionStart ?? target.value.length;
-        const end = target.selectionEnd ?? target.value.length;
+        const { start, end } = getSelection(target);
         const next = target.value.slice(0, start) + text + target.value.slice(end);
         // Native setter, not `target.value =` directly — React's own value
         // setter is patched over the native one, so a plain assignment here
@@ -35,7 +57,7 @@ const runPaste = async (target: HTMLInputElement | HTMLTextAreaElement) => {
         const setter = Object.getOwnPropertyDescriptor(proto.prototype, "value")?.set;
         setter?.call(target, next);
         target.dispatchEvent(new Event("input", { bubbles: true }));
-        target.setSelectionRange(start + text.length, start + text.length);
+        if (supportsSelectionRange(target)) target.setSelectionRange(start + text.length, start + text.length);
     } catch {
         // Clipboard read denied/empty — nothing to paste, fail silently
         // rather than surfacing a dialog for what's a minor, retryable slip.
@@ -52,7 +74,14 @@ const runPaste = async (target: HTMLInputElement | HTMLTextAreaElement) => {
 export const ContextMenu = ({ menu, onClose }: ContextMenuProps) => {
     const { t } = useTranslation();
     const field = menu.target as HTMLInputElement | HTMLTextAreaElement;
-    const hasSelection = field.selectionStart !== field.selectionEnd;
+    const selection = getSelection(field);
+    // Unsupported types (number/email/...) report a fake "whole value
+    // selected" range from getSelection so Paste can replace-all, but there
+    // is no real browser text-selection for Cut/Copy to act on there —
+    // execCommand("cut"/"copy") would silently no-op. Gate on
+    // supportsSelectionRange too so those buttons render disabled instead of
+    // looking clickable and doing nothing.
+    const hasSelection = supportsSelectionRange(field) && selection.start !== selection.end;
 
     const act = (run: () => void) => {
         run();

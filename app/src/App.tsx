@@ -979,7 +979,18 @@ const useAppTicketSchema = (db: ReturnType<typeof useDataPort>) => {
         setTicketSchemaState(schema);
     };
 
-    return { ticketSchema, schemas, setTicketSchema, setActiveSchemaId };
+    // Settings' Backup/Restore card's own reload path (`importBackup`
+    // replaces the whole backing store): re-runs the same load this hook
+    // does at startup, so the schema state doesn't keep pointing at
+    // whatever was active before the restore — and can't get persisted
+    // straight back over the just-restored DB on the next schema save.
+    const reloadTicketSchema = async (): Promise<void> => {
+        const { active, list } = await loadAppTicketSchemaState(db);
+        setTicketSchemaState(active);
+        setSchemas(list);
+    };
+
+    return { ticketSchema, schemas, setTicketSchema, setActiveSchemaId, reloadTicketSchema };
 };
 
 // index.html's #app-splash covers the gap before Settings (the last thing
@@ -1015,7 +1026,8 @@ export const App = () => {
     const [scheduler] = useState(() => createSchedulerSource());
     const [windowPin] = useState(() => createWindowPinSource());
     const { packs, addLanguagePack } = useAppLanguagePacks(db);
-    const { ticketSchema, schemas, setTicketSchema, setActiveSchemaId } = useAppTicketSchema(db);
+    const { ticketSchema, schemas, setTicketSchema, setActiveSchemaId, reloadTicketSchema } =
+        useAppTicketSchema(db);
 
     return (
         <I18nProvider packs={packs}>
@@ -1032,6 +1044,7 @@ export const App = () => {
                                             schemas={schemas}
                                             onSetTicketSchema={setTicketSchema}
                                             onSetActiveSchemaId={setActiveSchemaId}
+                                            onReloadTicketSchema={reloadTicketSchema}
                                         >
                                             <StabilityGateSync indicator={indicator} />
                                             <SerialConnectionSync indicator={indicator} />

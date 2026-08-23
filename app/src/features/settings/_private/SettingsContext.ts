@@ -20,6 +20,8 @@ export interface SettingsContextValue {
     setTextScale: (scale: TextScale) => Promise<void>;
     /** Task #45 — records that today's scheduled summary went out (sent or failed, one attempt either way), so `DailySummarySync`/`DailySummaryCard` don't re-send it. Bookkeeping, not admin configuration — deliberately NOT gated by `unlocked`, same reasoning as `setOperatorName`: this can fire while Settings sits locked, same as any other automatic background behaviour in this app. */
     recordDailySummarySent: (dateIso: string) => Promise<void>;
+    /** Re-reads the settings row from the DB, replacing in-memory state — used after `importBackup` swaps the whole backing store out from under whatever Settings had loaded before the restore. */
+    reload: () => Promise<void>;
 }
 
 export const SettingsContext = createContext<SettingsContextValue | null>(null);

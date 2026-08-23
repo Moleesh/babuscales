@@ -15,6 +15,14 @@ export interface BuildReportsScreenSlipDataArgs {
     weightUnit: WeightUnit;
     dateFmt: string;
     timeFmt: "24" | "12";
+    /** Reports rework, item 3 — `summaryRows`/`visibleRows` are already
+     * forced empty while `false` (useReportsScreenData.ts), but `rows`
+     * (ungated `dateFilteredRows`) is not — without this, the Summary
+     * branch's `rowTimestamps`, and hence the printed slip's date-range
+     * header, could still reflect real ungated data while the rows it's
+     * printed alongside are empty. Gate `rows` here too so the whole slip
+     * — header included — reflects emptiness consistently. */
+    reportApplied: boolean;
 }
 
 // Split out of ReportsScreen (over the line/complexity budget —
@@ -34,10 +42,11 @@ export const buildReportsScreenSlipData = ({
     weightUnit,
     dateFmt,
     timeFmt,
+    reportApplied,
 }: BuildReportsScreenSlipDataArgs): ReportSlipData => {
     if (view === "summary") {
         const { head, rows: printRows } = buildSummaryPrintRows(summaryRows, amountDp);
-        const timestamps = rows
+        const timestamps = (reportApplied ? rows : [])
             .filter((row) => !row.isCancelled && row.netKg !== null)
             .map((row) => row.at);
         return buildReportSlipData({

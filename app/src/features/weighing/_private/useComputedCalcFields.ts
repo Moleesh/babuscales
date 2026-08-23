@@ -43,7 +43,16 @@ export const useComputedCalcFields = (ticket: UseWeighingTicket, ticketSchema: S
     useEffect(() => {
         if (ticket.isLocked) return;
         for (const [fieldId, value] of results.values) {
-            if (value === undefined) continue;
+            if (value === undefined) {
+                // The formula stopped evaluating (e.g. an upstream field was
+                // cleared) — drop the stale prior result instead of leaving
+                // it sitting in customFields to be saved/printed as if it
+                // were still current.
+                if (ticket.customFields[fieldId] !== undefined) {
+                    ticket.setCustomField(fieldId, undefined);
+                }
+                continue;
+            }
             if (ticket.customFields[fieldId] === value) continue;
             ticket.setCustomField(fieldId, value);
         }

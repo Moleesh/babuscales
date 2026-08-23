@@ -27,7 +27,14 @@ export const useTicketDocs = (): UseTicketDocs => {
         // spinner — a save/print refresh underneath an already-populated
         // strip shouldn't flash it away and back.
         setLoading(true);
-        void db.listDocs({ DocKind: "Ticket" }).then((rows) => {
+        // `Limit` bounds this to the most recent slice (server orders
+        // `created_at DESC` — see store/docs.rs) instead of scanning every
+        // ticket doc ever created on every mount and every save/print
+        // refresh. 5000 is generous for realistic history depths recall
+        // needs to look back through (open-ticket resume, stored-tare/fill
+        // lookups in recall.ts); a proper server-side "find by vehicle"
+        // query would be the real long-term fix but is out of scope here.
+        void db.listDocs({ DocKind: "Ticket", Limit: 5000 }).then((rows) => {
             if (cancelled) return;
             setAllTicketDocs(rows);
             setLoading(false);

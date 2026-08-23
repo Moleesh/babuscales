@@ -15,10 +15,10 @@ export interface SettingsProviderProps {
 
 export const SettingsProvider = ({ children }: SettingsProviderProps) => {
     const db = useDataPort();
-    const { settings, loading, persist } = useSettingsRecord(db);
+    const { settings, loading, persist, persistPatch, reload } = useSettingsRecord(db);
     const { unlocked, lock, unlock } = useAdminLock(settings);
     const { save, changeAdminPassword, setOperatorName, setSkin, setTextScale, recordDailySummarySent } =
-        useSettingsActions({ settings, unlocked, persist });
+        useSettingsActions({ settings, unlocked, persist, persistPatch });
 
     const value = useMemo<SettingsContextValue>(
         () => ({
@@ -33,6 +33,7 @@ export const SettingsProvider = ({ children }: SettingsProviderProps) => {
             setSkin,
             setTextScale,
             recordDailySummarySent,
+            reload,
         }),
         [
             settings,
@@ -46,6 +47,7 @@ export const SettingsProvider = ({ children }: SettingsProviderProps) => {
             setSkin,
             setTextScale,
             recordDailySummarySent,
+            reload,
         ],
     );
 

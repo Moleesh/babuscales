@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 
 import styles from "./_styles/Toast.module.css";
@@ -28,13 +28,27 @@ export interface ToastProviderProps {
 export const ToastProvider = ({ children }: ToastProviderProps) => {
     const [toasts, setToasts] = useState<ToastEntry[]>([]);
     const nextId = useRef(0);
+    // Every pending auto-dismiss timer, keyed by toast id, so an unmount
+    // (or an early dismiss) can clear it instead of letting a stray
+    // `setTimeout` fire a `setState` on a provider that's already gone.
+    const timers = useRef(new Map<number, ReturnType<typeof setTimeout>>());
+
+    useEffect(
+        () => () => {
+            timers.current.forEach((timer) => clearTimeout(timer));
+            timers.current.clear();
+        },
+        [],
+    );
 
     const showToast = (text: string): void => {
         const id = nextId.current++;
         setToasts((prev) => [...prev, { id, text }]);
-        setTimeout(() => {
+        const timer = setTimeout(() => {
+            timers.current.delete(id);
             setToasts((prev) => prev.filter((toast) => toast.id !== id));
         }, TOAST_MS);
+        timers.current.set(id, timer);
     };
 
     const value = useMemo<ToastContextValue>(() => ({ showToast }), []);

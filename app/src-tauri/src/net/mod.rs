@@ -229,6 +229,21 @@ fn asset_response(
     let Ok(Some(bytes)) = store::get_asset_bytes(&conn, asset_id) else {
         return html_response(StatusCode(404), error_page("Not found", "No such photo."));
     };
+    // This LAN handler shares `AppState.conn`'s single mutex with every
+    // desktop IPC command, including ticket-save/allocate-seq mid-weighing —
+    // a burst of QR/photo requests holding it could stall the UI. A fully
+    // separate connection/pool for LAN reads was considered (WAL mode is
+    // already on, see store::apply_pragmas, so concurrent readers would be
+    // fine in principle) but rejected here: `import_backup` requires *no*
+    // open connection at all to `db_path` while it restores (store/backup.rs
+    // doc comment) and swaps `*conn` to an in-memory placeholder to release
+    // Windows' file lock for that — a second long-lived connection held by
+    // this server would keep that file locked and break restores on
+    // Windows. So the smaller, safe mitigation instead: drop the guard the
+    // instant the last DB read is in hand, before building the HTTP
+    // response, so the lock is held only for the reads themselves and never
+    // across response construction.
+    drop(conn);
 
     let response = Response::from_data(bytes);
     // Same "degrade, don't panic" reasoning as html_response's own
@@ -299,6 +314,10 @@ fn verification_page(app: &AppHandle, doc_id: &str) -> Response<std::io::Cursor<
     });
     let body_intact = store::body_matches_hash(&doc.body, &doc.body_hash);
     let verified = chain.intact && body_intact;
+    // Same reasoning as `asset_response` above — release the shared lock as
+    // soon as the DB reads it needs are done, before the (lock-free)
+    // HTML rendering below.
+    drop(conn);
 
     html_response(StatusCode(200), render_ticket(&doc, verified, &chain))
 }

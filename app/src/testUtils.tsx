@@ -34,6 +34,7 @@ export const renderWithI18nAndSchema = (ui: ReactElement): RenderResult =>
                     schemas={[DEFAULT_TICKET_SCHEMA]}
                     onSetTicketSchema={async () => {}}
                     onSetActiveSchemaId={async () => {}}
+                    onReloadTicketSchema={async () => {}}
                 >
                     {children}
                 </SchemaProvider>

@@ -10,14 +10,29 @@ import type { FormulaContext } from "@engines/formulaEngine";
 const describeResult = (v: unknown): string =>
     JSON.stringify(v, (_key, val: unknown) => (typeof val === "bigint" ? val.toString() : val));
 
-/** Used for `Validate` rule formulas — no formula means the gate is always open. */
+/**
+ * Used for `Validate` rule formulas — no formula means the gate is always open.
+ *
+ * A schema-authored formula is untrusted input (typo'd field ref, wrong
+ * operator, a non-boolean result) — one bad admin edit must never hard-crash
+ * ticket save for every operator on site. On any failure to evaluate to a
+ * clean boolean, this fails SAFE by returning `true` (the gate's own "open,
+ * not blocking" value — see the `!formula` short-circuit above), and logs a
+ * `console.warn` with the formula and error so an admin debugging a broken
+ * schema can still find it in devtools.
+ */
 export const evaluateGate = (formula: string | undefined, ctx: FormulaContext): boolean => {
     if (!formula) return true;
-    const result = evaluateFormula(formula, ctx);
-    if (typeof result !== "boolean") {
-        throw new Error(
-            `Formula "${formula}" must evaluate to a boolean, got ${describeResult(result)}`,
-        );
+    try {
+        const result = evaluateFormula(formula, ctx);
+        if (typeof result !== "boolean") {
+            throw new Error(
+                `Formula "${formula}" must evaluate to a boolean, got ${describeResult(result)}`,
+            );
+        }
+        return result;
+    } catch (err) {
+        console.warn(`evaluateGate: formula "${formula}" failed to evaluate safely`, err);
+        return true;
     }
-    return result;
 };

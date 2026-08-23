@@ -3,6 +3,7 @@ import { useCallback, useLayoutEffect, useRef, useState } from "react";
 
 import { EmptyState } from "@components/EmptyState";
 import { ScrollArea } from "@components/ScrollArea";
+import { useTranslation } from "@i18n/useTranslation";
 
 import styles from "./_styles/DataTable.module.css";
 
@@ -140,10 +141,11 @@ export const DataTable = <Row,>({
     onRowClick,
     emptyMessage,
 }: DataTableProps<Row>) => {
+    const { t } = useTranslation();
     const { wrapperRef, rowHeightRef, range, recompute } = useVirtualizedRowRange(rows.length);
 
     if (rows.length === 0) {
-        return <EmptyState title={emptyMessage ?? "Nothing here yet"} />;
+        return <EmptyState title={emptyMessage ?? t("dataTable.emptyDefault")} />;
     }
 
     const rowHeight = rowHeightRef.current;

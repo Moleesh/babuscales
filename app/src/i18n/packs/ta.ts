@@ -151,6 +151,9 @@ export const TA_PACK: LanguagePack = {
         "masters.emptyPrefix": "இதுவரை",
         "masters.emptySuffix": "இல்லை",
         "masters.editPrefix": "திருத்து —",
+        "masters.error.invalidWeight": "எடைக்கு சரியான எண்ணை உள்ளிடவும், அல்லது காலியாக விடவும்.",
+        "masters.error.invalidNumber": "புலங்களில் ஒன்றுக்கு சரியான எண் தேவை.",
+        "masters.error.duplicateName": "இந்தப் பெயருடன் ஏற்கனவே ஒரு பதிவு உள்ளது.",
 
         "masters.party.label": "தரப்பினர்",
         "masters.party.search": "தரப்பினரைத் தேடு…",
@@ -351,6 +354,9 @@ export const TA_PACK: LanguagePack = {
         "datePicker.nextMonth": "அடுத்த மாதம்",
         "datePicker.today": "இன்று",
         "datePicker.clear": "அழி",
+
+        "help.noTopicsForTab": "இந்த தாவலுக்கு இன்னும் உதவி எழுதப்படவில்லை.",
+        "dataTable.emptyDefault": "இங்கு இன்னும் எதுவும் இல்லை",
 
         "contextMenu.label": "திருத்த விருப்பங்கள்",
         "contextMenu.cut": "வெட்டு",

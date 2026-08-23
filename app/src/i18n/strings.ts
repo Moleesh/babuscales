@@ -161,6 +161,9 @@ export const EN_STRINGS: Record<string, string> = {
     "masters.emptyPrefix": "No",
     "masters.emptySuffix": "yet",
     "masters.editPrefix": "Edit —",
+    "masters.error.invalidWeight": "Enter a valid number for weight, or leave it blank.",
+    "masters.error.invalidNumber": "One of the fields needs a valid number.",
+    "masters.error.duplicateName": "A record with this name already exists.",
 
     "masters.party.label": "Parties",
     "masters.party.search": "Search parties…",
@@ -360,6 +363,9 @@ export const EN_STRINGS: Record<string, string> = {
     "datePicker.nextMonth": "Next month",
     "datePicker.today": "Today",
     "datePicker.clear": "Clear",
+
+    "help.noTopicsForTab": "No help written for this tab yet.",
+    "dataTable.emptyDefault": "Nothing here yet",
 
     "contextMenu.label": "Edit options",
     "contextMenu.cut": "Cut",

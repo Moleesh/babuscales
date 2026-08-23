@@ -13,6 +13,8 @@ export interface UseMasterCache {
     /** Hard delete (task: "we need an option to remove the rows in master") — reloads the cache afterward the same way `save` does. */
     remove: (masterId: string) => Promise<void>;
     reload: () => void;
+    /** Bumped by `save`/`remove`/`reload` — a stable dependency other hooks (e.g. `useMasterListPage`) can watch to refetch their own data in lockstep with this cache. */
+    reloadToken: number;
 }
 
 // A kind can run into the tens/hundreds of thousands of rows (vehicles,
@@ -138,5 +140,5 @@ export const useMasterCache = (kind: MasterKind): UseMasterCache => {
 
     const reload = useCallback(() => setReloadToken((t) => t + 1), []);
 
-    return { rows, loading, search, save, remove, reload };
+    return { rows, loading, search, save, remove, reload, reloadToken };
 };

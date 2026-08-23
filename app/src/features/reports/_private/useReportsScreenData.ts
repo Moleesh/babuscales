@@ -204,7 +204,7 @@ const useReportsTableColumns = ({
 // summary, print/export slip data, table columns} derivation chain,
 // unchanged from the inline version it replaces.
 export const useReportsScreenData = (args: UseReportsScreenDataArgs): UseReportsScreenData => {
-    const { view, amountDp, lang, weightUnit, dateFmt, timeFmt, currentEpoch, t } = args;
+    const { view, amountDp, lang, weightUnit, dateFmt, timeFmt, currentEpoch, t, reportApplied } = args;
     const { waitingCount, rows, dateFilteredRows, visibleRows, pageCount, pagedRows, summaryRows } =
         useFilteredTicketRows(args);
     // Every numbering series actually present on the (unfiltered) docs —
@@ -228,8 +228,20 @@ export const useReportsScreenData = (args: UseReportsScreenDataArgs): UseReports
                 weightUnit,
                 dateFmt,
                 timeFmt,
+                reportApplied,
             }),
-        [view, summaryRows, dateFilteredRows, visibleRows, amountDp, lang, weightUnit, dateFmt, timeFmt],
+        [
+            view,
+            summaryRows,
+            dateFilteredRows,
+            visibleRows,
+            amountDp,
+            lang,
+            weightUnit,
+            dateFmt,
+            timeFmt,
+            reportApplied,
+        ],
     );
     const { ticketColumns, summaryColumns } = useReportsTableColumns(args);
 

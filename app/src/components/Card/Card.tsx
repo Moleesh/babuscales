@@ -1,5 +1,5 @@
 import type { ReactNode, RefObject } from "react";
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import styles from "./_styles/Card.module.css";
 
@@ -27,6 +27,14 @@ const useStickyCardHeaderHeight = (
     sticky: boolean | undefined,
     cardRef: RefObject<HTMLElement | null>,
     headerRef: RefObject<HTMLElement | null>,
+    // Whether a header element currently exists in the DOM — a plain ref
+    // object's *identity* never changes even when the node it points to
+    // does (e.g. the header only starts rendering once `title` goes from
+    // empty to non-empty after data loads), so that alone can't be a
+    // dependency here. This flips (and re-renders) via the header's own
+    // callback ref below whenever the node actually appears/disappears,
+    // which is what lets the effect re-attach at the right time.
+    hasHeader: boolean,
 ): void => {
     useEffect(() => {
         if (!sticky) return;
@@ -39,7 +47,7 @@ const useStickyCardHeaderHeight = (
         });
         observer.observe(headerEl);
         return () => observer.disconnect();
-    }, [sticky, cardRef, headerRef]);
+    }, [sticky, cardRef, headerRef, hasHeader]);
 };
 
 // The one panel every screen is built from — a bordered
@@ -48,13 +56,22 @@ const useStickyCardHeaderHeight = (
 export const Card = ({ title, headerRight, sticky, children }: CardProps) => {
     const cardRef = useRef<HTMLElement>(null);
     const headerRef = useRef<HTMLElement>(null);
-    useStickyCardHeaderHeight(sticky, cardRef, headerRef);
+    const [hasHeader, setHasHeader] = useState(false);
+    // Callback ref (not just the plain object ref, kept alongside it for
+    // `useStickyCardHeaderHeight`'s own `.current` reads): this is what
+    // actually notifies us when the header node appears/disappears, since a
+    // plain ref's identity is stable even as `.current` changes underneath it.
+    const setHeaderRef = useCallback((node: HTMLElement | null) => {
+        headerRef.current = node;
+        setHasHeader(node !== null);
+    }, []);
+    useStickyCardHeaderHeight(sticky, cardRef, headerRef, hasHeader);
     return (
         <section className={styles.card} ref={cardRef}>
             {(title || headerRight) && (
                 <header
                     className={sticky ? `${styles.header} ${styles.headerSticky}` : styles.header}
-                    ref={headerRef}
+                    ref={setHeaderRef}
                 >
                     {title}
                     {headerRight && <span className={styles.push}>{headerRight}</span>}

@@ -28,6 +28,12 @@
     color: var(--warn);
 }
 
+.form-error {
+    color: var(--warn);
+    font-size: 0.8125rem;
+    margin: 0;
+}
+
 .form-actions {
     display: flex;
     gap: 9px;

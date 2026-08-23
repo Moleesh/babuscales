@@ -33,12 +33,56 @@ pub fn import_backup(state: State<'_, AppState>, bytes: Vec<u8>) -> Result<(), A
     let restore_result = store::restore_database(&state.db_path, &tmp_path);
     let _ = std::fs::remove_file(&tmp_path);
 
-    // Reopen `db_path` regardless of whether the restore above succeeded —
-    // if it failed, the file at `db_path` is unchanged, so this just puts
-    // the live connection back the way it was rather than leaving the app
-    // running against the throwaway in-memory database until restart.
-    let reopened = store::open(&state.db_path);
-    restore_result?;
-    *conn = reopened?;
-    Ok(())
+    // `*conn` must never be left pointed at the throwaway in-memory database
+    // once this function returns, Ok or Err — that would silently strand the
+    // live app on a database nothing gets saved to until restart. The old
+    // version here computed `reopened` and then did `restore_result?`
+    // *before* assigning `reopened` to `*conn` — if `restore_result` was an
+    // `Err`, that `?` returned early with `*conn` never reassigned, leaving
+    // it stuck on the in-memory placeholder. Every path below re-derives a
+    // real connection to `db_path` and assigns it to `*conn` before
+    // returning, whether that return is `Ok` or `Err`:
+    match restore_result {
+        Ok(()) => match store::open(&state.db_path) {
+            Ok(reopened) => {
+                *conn = reopened;
+                Ok(())
+            }
+            Err(first_err) => {
+                // Restore itself succeeded, so `db_path` on disk is the
+                // freshly restored database — a failure to reopen it is
+                // most likely transient (disk hiccup, AV scan holding a
+                // handle, ...), so one retry before giving up is worth it.
+                match store::open(&state.db_path) {
+                    Ok(reopened) => {
+                        *conn = reopened;
+                        Ok(())
+                    }
+                    Err(_) => {
+                        // Both attempts failed even though the restore
+                        // wrote successfully. There is no real connection
+                        // left to fall back to here — `db_path` itself
+                        // appears unreadable right now — so `*conn` stays
+                        // on the in-memory placeholder as the least-bad
+                        // remaining option. Surfacing the error is the best
+                        // this function can do; the app needs a restart
+                        // (retried the next time it opens `db_path` fresh)
+                        // to recover.
+                        Err(first_err)
+                    }
+                }
+            }
+        },
+        Err(restore_err) => {
+            // Restore failed, so `db_path` on disk is unchanged. Put the
+            // live connection back on it (best-effort — if even this
+            // fails, `*conn` is still in-memory, but that's now a
+            // secondary failure layered on the original one rather than a
+            // silent one this function created).
+            if let Ok(reopened) = store::open(&state.db_path) {
+                *conn = reopened;
+            }
+            Err(restore_err)
+        }
+    }
 }

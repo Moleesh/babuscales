@@ -1,7 +1,7 @@
 import { formatMoney } from "@constants/numberFormat";
 import type { DocRow } from "@db/types";
 
-import { buildTicketRows, summarizeTicketRows } from "./reportRows";
+import { buildTicketRows, summarizeTicketRows, toLocalDateOnly } from "./reportRows";
 
 // The "scheduled daily summary" bullet, ported as one
 // plain-text e-mail rather than a PDF/report attachment: no PDF export
@@ -68,7 +68,7 @@ export const buildDailySummaryEmail = (
     dateIso: string,
     amountDp: 0 | 2,
 ): DailySummaryEmail => {
-    const today = buildTicketRows(docs).filter((row) => row.at.slice(0, 10) === dateIso);
+    const today = buildTicketRows(docs).filter((row) => toLocalDateOnly(row.at) === dateIso);
     const active = today.filter((row) => !row.isCancelled);
     const completed = active.filter((row) => row.netKg !== null);
     const netTonnes = completed.reduce((sum, row) => sum + (row.netKg ?? 0), 0) / 1000;

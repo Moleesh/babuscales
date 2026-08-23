@@ -2,8 +2,12 @@ import { deriveWeights, isOpenTicket, parseTicketBody } from "@db/ticketBody";
 import type { TicketBody } from "@db/ticketBody";
 import type { DocRow } from "@db/types";
 
-const sameVehicle = (a: string, b: string): boolean =>
-    a.trim().toLowerCase() === b.trim().toLowerCase();
+// Collapses internal whitespace too (not just leading/trailing) — an
+// operator retyping "MH 12 AB 1234" as "MH 12  AB 1234" (or with a tab) is
+// still the same vehicle number and should still match.
+const normalizeVehicleNo = (v: string): string => v.trim().toLowerCase().replace(/\s+/g, " ");
+
+const sameVehicle = (a: string, b: string): boolean => normalizeVehicleNo(a) === normalizeVehicleNo(b);
 
 export interface OpenTicketSummary {
     doc: DocRow;

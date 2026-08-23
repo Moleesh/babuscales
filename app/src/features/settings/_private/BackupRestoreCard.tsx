@@ -1,5 +1,6 @@
 import { Card } from "@components/Card";
 import { useDataPort } from "@db/useDataPort";
+import { useSchema } from "@engines/schemaEngine";
 import { useTranslation } from "@i18n/useTranslation";
 
 import { useSettings } from "../useSettings";
@@ -25,7 +26,8 @@ import { useBackupRestoreActions } from "./useBackupRestoreActions";
 // a neutral `.bak` extension rather than claiming to be a `.db`.
 export const BackupRestoreCard = () => {
     const db = useDataPort();
-    const { unlocked } = useSettings();
+    const { unlocked, reload: reloadSettings } = useSettings();
+    const { reloadTicketSchema } = useSchema();
     const { t } = useTranslation();
     const {
         message,
@@ -36,7 +38,7 @@ export const BackupRestoreCard = () => {
         selectFile,
         handleRestore,
         cancelRestore,
-    } = useBackupRestoreActions(db);
+    } = useBackupRestoreActions(db, { settings: reloadSettings, ticketSchema: reloadTicketSchema });
 
     return (
         <Card title={<span className="lbl">{t("settings.backup.cardTitle")}</span>}>

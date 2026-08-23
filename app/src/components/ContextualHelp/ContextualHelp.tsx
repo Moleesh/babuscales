@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 
 import type { HelpTopic } from "@i18n/helpTopics";
 import { resolveLocalized } from "@i18n/types";
+import { useTranslation } from "@i18n/useTranslation";
 
 import styles from "./_styles/ContextualHelp.module.css";
 
@@ -32,6 +33,7 @@ export const ContextualHelp = ({
     labels = DEFAULT_LABELS,
 }: ContextualHelpProps) => {
     const drawerRef = useRef<HTMLElement>(null);
+    const { t } = useTranslation();
 
     // Not a backdrop-modal (aria-modal="false" — the mock never blocked the
     // screen behind it), so "close on outside click" has to be a document
@@ -79,7 +81,7 @@ export const ContextualHelp = ({
                         <p className={styles.tip}>{resolveLocalized(topic.Tip, lang)}</p>
                     </>
                 ) : (
-                    <p className={styles.lead}>No help written for this tab yet.</p>
+                    <p className={styles.lead}>{t("help.noTopicsForTab")}</p>
                 )}
             </div>
         </aside>

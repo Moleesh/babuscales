@@ -17,6 +17,7 @@ export interface MastersFormCardProps {
     form: MasterFormState;
     onChange: (next: MasterFormState) => void;
     saving: boolean;
+    error: string | null;
     onSave: () => void;
     onToggleActive: () => void;
     onDelete: () => void;
@@ -37,6 +38,7 @@ export const MastersFormCard = ({
     form,
     onChange,
     saving,
+    error,
     onSave,
     onToggleActive,
     onDelete,
@@ -54,6 +56,11 @@ export const MastersFormCard = ({
                 <StoredTareFormFields form={form} onChange={onChange} />
             ) : (
                 <MasterFormFields columns={columns} lang={lang} form={form} onChange={onChange} />
+            )}
+            {error && (
+                <p className={styles.formError} role="alert">
+                    {t(error)}
+                </p>
             )}
             <MasterFormActions
                 selected={selected}

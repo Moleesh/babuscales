@@ -75,35 +75,57 @@ const saveAll = (db: DataPort, definitions: ReportDefinition[]): Promise<void> =
         })
         .then(() => undefined);
 
-/** Appends a new named definition and persists the whole list — returns the new row's `Id` so the caller can select it immediately without a second read. */
-export const addReportDef = async (
-    db: DataPort,
-    def: Omit<ReportDefinition, "Id">,
-): Promise<string> => {
-    const existing = await loadReportDefs(db);
-    const id = newId();
-    await saveAll(db, [...existing, { ...def, Id: id }]);
-    return id;
+// add/delete/rename are all read-all -> mutate -> write-all against the
+// *same* single row (REPORT_DEFS_CONFIG_ID), so two overlapping calls (e.g.
+// a delete and a rename fired back to back from the UI) can otherwise
+// interleave their reads and have the second write silently clobber the
+// first. This module-level chain serializes every call through this file
+// so each one's `loadReportDefs` read only ever starts after the previous
+// call's `saveAll` has finished — one queue, not a real DB lock, but
+// sufficient since this whole adapter is single-process/single-tab.
+let pending: Promise<unknown> = Promise.resolve();
+const withLock = <T>(fn: () => Promise<T>): Promise<T> => {
+    const next = pending.then(fn, fn);
+    // Swallow so one failed call doesn't poison the queue for later,
+    // unrelated calls — each call's own rejection still propagates to its
+    // caller via `next`.
+    pending = next.catch(() => undefined);
+    return next;
 };
 
-export const deleteReportDef = async (db: DataPort, id: string): Promise<void> => {
-    const existing = await loadReportDefs(db);
-    await saveAll(
-        db,
-        existing.filter((def) => def.Id !== id),
-    );
-};
+/** Appends a new named definition and persists the whole list — returns the new row's `Id` so the caller can select it immediately without a second read. */
+export const addReportDef = (
+    db: DataPort,
+    def: Omit<ReportDefinition, "Id">,
+): Promise<string> =>
+    withLock(async () => {
+        const existing = await loadReportDefs(db);
+        const id = newId();
+        await saveAll(db, [...existing, { ...def, Id: id }]);
+        return id;
+    });
+
+export const deleteReportDef = (db: DataPort, id: string): Promise<void> =>
+    withLock(async () => {
+        const existing = await loadReportDefs(db);
+        await saveAll(
+            db,
+            existing.filter((def) => def.Id !== id),
+        );
+    });
 
 /** Renames a saved report definition in place — everything else about it
  * (View/GroupBy/Filter/dates/columns) is untouched. The saved-views dropdown's
  * own edit (pencil) action, so an operator can fix a typo'd name without
  * deleting and re-saving the whole definition. */
-export const renameReportDef = async (db: DataPort, id: string, name: string): Promise<void> => {
+export const renameReportDef = (db: DataPort, id: string, name: string): Promise<void> => {
     const trimmed = name.trim();
-    if (!trimmed) return;
-    const existing = await loadReportDefs(db);
-    await saveAll(
-        db,
-        existing.map((def) => (def.Id === id ? { ...def, Name: trimmed } : def)),
-    );
+    if (!trimmed) return Promise.resolve();
+    return withLock(async () => {
+        const existing = await loadReportDefs(db);
+        await saveAll(
+            db,
+            existing.map((def) => (def.Id === id ? { ...def, Name: trimmed } : def)),
+        );
+    });
 };

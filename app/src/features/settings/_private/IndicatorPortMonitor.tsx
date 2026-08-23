@@ -1,3 +1,4 @@
+import { useIndicator } from "@engines/indicator";
 import { useTranslation } from "@i18n/useTranslation";
 
 import type { ConnectionsConfig } from "../settingsSchema";
@@ -23,7 +24,8 @@ export interface IndicatorPortMonitorProps {
 // open/listen/close plumbing itself lives in useIndicatorPortMonitor.ts.
 export const IndicatorPortMonitor = ({ conn, unlocked }: IndicatorPortMonitorProps) => {
     const { t } = useTranslation();
-    const { listening, lines, error, logRef, toggle } = useIndicatorPortMonitor(conn);
+    const indicator = useIndicator();
+    const { listening, lines, error, logRef, toggle } = useIndicatorPortMonitor(conn, indicator);
 
     return (
         <div className={styles.monitor}>

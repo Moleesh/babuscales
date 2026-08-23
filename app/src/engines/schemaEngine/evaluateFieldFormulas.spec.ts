@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { FormulaContext } from "@engines/formulaEngine";
 import { fromInt } from "@engines/formulaEngine/Decimal";
@@ -9,6 +9,14 @@ describe("evaluateGate", () => {
     const mockContext: FormulaContext = {
         getVariable: vi.fn(() => fromInt(100)),
     };
+
+    let warnSpy: ReturnType<typeof vi.spyOn<typeof console, "warn">>;
+    beforeEach(() => {
+        warnSpy = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    });
+    afterEach(() => {
+        warnSpy.mockRestore();
+    });
 
     it("returns true when formula is undefined", () => {
         const result = evaluateGate(undefined, mockContext);
@@ -36,24 +44,33 @@ describe("evaluateGate", () => {
         expect(result).toBe(false);
     });
 
-    it("throws an error when formula evaluates to a non-boolean result", () => {
+    it("fails safe (returns true) when formula evaluates to a non-boolean result", () => {
         const ctx: FormulaContext = {
             getVariable: vi.fn(() => fromInt(100)),
         };
-        expect(() => evaluateGate("Gross", ctx)).toThrow(
-            /must evaluate to a boolean/,
-        );
+        const result = evaluateGate("Gross", ctx);
+        expect(result).toBe(true);
+        expect(warnSpy).toHaveBeenCalled();
     });
 
-    it("throws an error when formula evaluates to a string", () => {
+    it("fails safe (returns true) when formula evaluates to a string", () => {
         const ctx: FormulaContext = {
             getVariable: () => "text",
         };
-        expect(() => evaluateGate('"hello"', ctx)).toThrow(
-            /must evaluate to a boolean/,
-        );
+        const result = evaluateGate('"hello"', ctx);
+        expect(result).toBe(true);
     });
 
+    it("fails safe (returns true) when formula is syntactically invalid", () => {
+        const ctx: FormulaContext = {
+            getVariable: vi.fn(() => fromInt(100)),
+        };
+        const result = evaluateGate("Gross >", ctx);
+        expect(result).toBe(true);
+    });
+});
+
+describe("evaluateGate — nested If()", () => {
     // The formula language (@engines/formulaEngine/tokenize.ts) has no `&&`/
     // `||` operators — boolean composition only happens via nested `If()`
     // calls, so that's what "complex" means for this grammar.
@@ -67,12 +84,5 @@ describe("evaluateGate", () => {
         };
         const result = evaluateGate("If(Gross > 50, Tare > 5, Tare > 100)", ctx);
         expect(result).toBe(true);
-    });
-
-    it("throws an error when formula is syntactically invalid", () => {
-        const ctx: FormulaContext = {
-            getVariable: vi.fn(() => fromInt(100)),
-        };
-        expect(() => evaluateGate("Gross >", ctx)).toThrow();
     });
 });

@@ -11,6 +11,7 @@ export interface UseSettingsActionsArgs {
     settings: SettingsBody;
     unlocked: boolean;
     persist: (next: SettingsBody) => Promise<void>;
+    persistPatch: (mutator: (current: SettingsBody) => SettingsBody) => Promise<void>;
 }
 
 export interface UseSettingsActions {
@@ -32,6 +33,7 @@ export const useSettingsActions = ({
     settings,
     unlocked,
     persist,
+    persistPatch,
 }: UseSettingsActionsArgs): UseSettingsActions => {
     const { showToast } = useToast();
     const { t } = useTranslation();
@@ -65,15 +67,21 @@ export const useSettingsActions = ({
 
     const { setOperatorName, setSkin, setTextScale } = useOperatorComfortActions(settings, persistWithToast);
 
+    // Read-latest-then-patch (useSettingsRecord's `persistPatch`), not
+    // `persist` off the `settings` this hook closed over: `DailySummarySync`
+    // (App.tsx) can call this minutes after its own effect last re-ran, from
+    // the far side of an SMTP send that can itself take seconds — writing a
+    // whole stale `settings` snapshot at that point would silently discard
+    // any unrelated admin edit that landed in between. Patching just this
+    // one field on top of a fresh DB read can't clobber it.
     const recordDailySummarySent = useCallback(
         async (dateIso: string): Promise<void> => {
-            if (dateIso === settings.DailySummary.LastSentDate) return;
-            await persist({
-                ...settings,
-                DailySummary: { ...settings.DailySummary, LastSentDate: dateIso },
+            await persistPatch((current) => {
+                if (dateIso === current.DailySummary.LastSentDate) return current;
+                return { ...current, DailySummary: { ...current.DailySummary, LastSentDate: dateIso } };
             });
         },
-        [settings, persist],
+        [persistPatch],
     );
 
     return {

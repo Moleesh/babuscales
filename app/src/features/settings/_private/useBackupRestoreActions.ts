@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { timestampForFilename } from "@constants/timestampForFilename";
 import type { DataPort } from "@db/DataPort";
@@ -28,6 +28,45 @@ const downloadBackupBlob = (bytes: Uint8Array): number => {
     return bytes.byteLength / 1024;
 };
 
+// The export side of handleExport, pulled out for the same line-budget
+// reason as `restoreFromFile` below — unchanged from the inline version it
+// replaces.
+const runExport = async (
+    db: DataPort,
+    setBusy: (busy: boolean) => void,
+    showFlash: (text: string, bad?: boolean) => void,
+): Promise<void> => {
+    setBusy(true);
+    try {
+        const bytes = await db.exportBackup();
+        const kb = downloadBackupBlob(bytes);
+        showFlash(`Backup saved · ${kb.toFixed(0)} KB`);
+    } catch (err) {
+        showFlash(`Backup failed — ${err instanceof Error ? err.message : String(err)}`, true);
+    } finally {
+        setBusy(false);
+    }
+};
+
+// The restore side of handleRestore, pulled out purely to keep
+// useBackupRestoreActions under its own line budget — imports the file,
+// swaps the whole backing store, then reloads every bit of in-memory state
+// this app knows was cached from the DB (see UseBackupRestoreActionsReload's
+// own doc comment on why: without it, stale state would silently overwrite
+// the just-restored DB on the next save). Best-effort on the reload —
+// a reload failure still leaves the restore itself successful.
+const restoreFromFile = async (
+    db: DataPort,
+    file: File,
+    reload: UseBackupRestoreActionsReload,
+): Promise<void> => {
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    await db.importBackup(bytes);
+    await Promise.all([reload.settings(), reload.ticketSchema()]).catch((err: unknown) => {
+        console.error("Post-restore reload failed", err);
+    });
+};
+
 export interface UseBackupRestoreActions {
     message: FlashMessage | null;
     busy: boolean;
@@ -43,12 +82,32 @@ export interface UseBackupRestoreActions {
 // — every stateful piece (the flash message, the busy flag, the pending
 // restore file, and the export/restore handlers themselves), unchanged from
 // the inline versions they replace.
-export const useBackupRestoreActions = (db: DataPort): UseBackupRestoreActions => {
+export interface UseBackupRestoreActionsReload {
+    /** `useSettings().reload` — re-reads the settings row after `importBackup` replaces the whole backing store. */
+    settings: () => Promise<void>;
+    /** `useSchema().reloadTicketSchema` — same, for the active ticket schema + saved-schema list. */
+    ticketSchema: () => Promise<void>;
+}
+
+export const useBackupRestoreActions = (
+    db: DataPort,
+    reload: UseBackupRestoreActionsReload,
+): UseBackupRestoreActions => {
     const [message, setMessage] = useState<FlashMessage | null>(null);
     const [busy, setBusy] = useState(false);
     const [confirmingRestore, setConfirmingRestore] = useState(false);
     const pendingFile = useRef<File | null>(null);
     const flashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    // Otherwise a restore (or export) flash that's still pending when the
+    // Settings screen (or admin lock) unmounts this card fires `setMessage`
+    // on an unmounted component — harmless today (React just warns) but a
+    // leaked timer all the same.
+    useEffect(() => {
+        return () => {
+            if (flashTimer.current) clearTimeout(flashTimer.current);
+        };
+    }, []);
 
     const showFlash = (text: string, bad = false): void => {
         if (flashTimer.current) clearTimeout(flashTimer.current);
@@ -56,18 +115,7 @@ export const useBackupRestoreActions = (db: DataPort): UseBackupRestoreActions =
         flashTimer.current = setTimeout(() => setMessage(null), FLASH_MS);
     };
 
-    const handleExport = async (): Promise<void> => {
-        setBusy(true);
-        try {
-            const bytes = await db.exportBackup();
-            const kb = downloadBackupBlob(bytes);
-            showFlash(`Backup saved · ${kb.toFixed(0)} KB`);
-        } catch (err) {
-            showFlash(`Backup failed — ${err instanceof Error ? err.message : String(err)}`, true);
-        } finally {
-            setBusy(false);
-        }
-    };
+    const handleExport = (): Promise<void> => runExport(db, setBusy, showFlash);
 
     const selectFile = (file: File): void => {
         pendingFile.current = file;
@@ -85,8 +133,7 @@ export const useBackupRestoreActions = (db: DataPort): UseBackupRestoreActions =
         setConfirmingRestore(false);
         setBusy(true);
         try {
-            const bytes = new Uint8Array(await file.arrayBuffer());
-            await db.importBackup(bytes);
+            await restoreFromFile(db, file, reload);
             showFlash("Restored — this file's data replaced everything that was here.");
         } catch (err) {
             showFlash(`Restore failed — ${err instanceof Error ? err.message : String(err)}`, true);

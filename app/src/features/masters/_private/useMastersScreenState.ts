@@ -16,8 +16,14 @@ import { useMasterListPage } from "./useMasterListPage";
 // (docs/CodingStandards.md).
 export const useMastersScreenState = (activeKind: MasterKind, columns: MasterColumn[], query: string) => {
     const db = useDataPort();
-    const { rows, save, remove, reload } = useMasterCache(activeKind);
-    const [selectedId, setSelectedId] = useState<string | null>(null);
+    const { rows, save, remove, reload, reloadToken } = useMasterCache(activeKind);
+    // The selected row is stored directly — from whatever the user actually
+    // clicked in the paginated list, or from what `save`/toggle-active just
+    // wrote back — rather than re-looked-up by id in `rows` (useMasterCache's
+    // separate, differently-paginated cache). A lookup there can miss the row
+    // entirely (large kinds only carry a partial cache) or resolve to a
+    // stale copy, so toggle/save would silently act on outdated data.
+    const [selected, setSelected] = useState<MasterRow | null>(null);
     const [form, setForm] = useState(emptyForm());
     // `rows` (useMasterCache) holds the whole kind for any shop small enough
     // that it fits in one cache page (useMasterCache.ts) — the
@@ -26,23 +32,31 @@ export const useMastersScreenState = (activeKind: MasterKind, columns: MasterCol
     // becomes a lower bound rather than the true count; a real count query
     // would need its own DataPort method, deferred until a kind that large
     // is an actual reported problem rather than a hypothetical one.
-    const selected: MasterRow | null = selectedId
-        ? (rows.find((row) => row.MasterId === selectedId) ?? null)
-        : null;
     const formActions = useMasterFormActions({
         activeKind,
         columns,
         selected,
         form,
         setForm,
-        setSelectedId,
+        setSelected,
         save,
         remove,
+        cacheRows: rows,
     });
-    const { rows: pageRows, loading, hasMore, loadingMore, loadMore } = useMasterListPage(db, activeKind, query);
+    // `reloadToken` bumps on every cache save/remove/reload — passed through
+    // as this page's own refresh dependency so the visible (paginated) list
+    // refetches its current page whenever the cache mutates, not just on
+    // [db, kind, query] changes. Without this, Save/Delete/Toggle-Active/
+    // Refresh all left the on-screen DataTable showing stale data.
+    const { rows: pageRows, loading, hasMore, loadingMore, loadMore } = useMasterListPage(
+        db,
+        activeKind,
+        query,
+        reloadToken,
+    );
 
     useEffect(() => {
-        setSelectedId(null);
+        setSelected(null);
         setForm(emptyForm());
     }, [activeKind]);
 
@@ -55,6 +69,7 @@ export const useMastersScreenState = (activeKind: MasterKind, columns: MasterCol
             form,
             onChange: setForm,
             saving: formActions.saving,
+            error: formActions.error,
             onSave: () => void formActions.handleSave(),
             onToggleActive: () => void formActions.toggleActive(),
             onDelete: () => void formActions.handleDelete(),

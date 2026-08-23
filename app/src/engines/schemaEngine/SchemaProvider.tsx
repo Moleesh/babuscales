@@ -11,6 +11,8 @@ export interface SchemaProviderProps {
     schemas: Schema[];
     onSetTicketSchema: (schema: Schema) => Promise<void>;
     onSetActiveSchemaId: (schemaId: string) => Promise<void>;
+    /** See `SchemaContextValue.reloadTicketSchema`. */
+    onReloadTicketSchema: () => Promise<void>;
     children: ReactNode;
 }
 
@@ -25,6 +27,7 @@ export const SchemaProvider = ({
     schemas,
     onSetTicketSchema,
     onSetActiveSchemaId,
+    onReloadTicketSchema,
     children,
 }: SchemaProviderProps) => {
     const value = useMemo(
@@ -33,8 +36,9 @@ export const SchemaProvider = ({
             schemas,
             setTicketSchema: onSetTicketSchema,
             setActiveSchemaId: onSetActiveSchemaId,
+            reloadTicketSchema: onReloadTicketSchema,
         }),
-        [ticketSchema, schemas, onSetTicketSchema, onSetActiveSchemaId],
+        [ticketSchema, schemas, onSetTicketSchema, onSetActiveSchemaId, onReloadTicketSchema],
     );
     return <SchemaContext.Provider value={value}>{children}</SchemaContext.Provider>;
 };

@@ -29,6 +29,9 @@ export type RecalledField = "party" | "material" | "transporter";
 /** A schema-driven custom field's value — keyed by `FieldId`, same value shape as `TicketBody.CustomFields`. */
 export type CustomFieldValue = string | number | boolean | null;
 
+/** `setCustomField`'s value parameter — `undefined` means "remove this field entirely" (e.g. a Calculated field whose formula stopped evaluating), distinct from `null`/`""` which are still explicit stored values. */
+export type CustomFieldInput = CustomFieldValue | undefined;
+
 const emptyFields = (): TicketFormFields => ({
     vehicleNo: "",
     party: "",
@@ -47,7 +50,7 @@ export interface UseWeighingTicket {
     applyRecalledFields: (values: Partial<Pick<TicketFormFields, RecalledField>>) => void;
     /** Values for whatever custom Fields the active Schema adds beyond the 5 fixed ones above — keyed by FieldId. */
     customFields: Record<string, CustomFieldValue>;
-    setCustomField: (fieldId: string, value: CustomFieldValue) => void;
+    setCustomField: (fieldId: string, value: CustomFieldInput) => void;
     captures: Capture[];
     weights: DerivedWeights;
     kind: CaptureType | null;
@@ -146,7 +149,7 @@ export const initialTicketState = (): TicketState => ({
 type TicketAction =
     | { type: "SetField"; key: keyof TicketFormFields; value: string }
     | { type: "ApplyRecalled"; values: Partial<Pick<TicketFormFields, RecalledField>> }
-    | { type: "SetCustomField"; fieldId: string; value: CustomFieldValue }
+    | { type: "SetCustomField"; fieldId: string; value: CustomFieldInput }
     | { type: "SetKind"; kind: CaptureType | null }
     | { type: "AddCapture"; capture: Capture }
     | { type: "ResetToNew" }
@@ -209,11 +212,17 @@ export const ticketReducer = (state: TicketState, action: TicketAction): TicketS
             for (const key of Object.keys(action.values) as RecalledField[]) recalledFields.add(key);
             return { ...state, fields: { ...state.fields, ...action.values }, recalledFields };
         }
-        case "SetCustomField":
+        case "SetCustomField": {
+            if (action.value === undefined) {
+                const customFields = { ...state.customFields };
+                delete customFields[action.fieldId];
+                return { ...state, customFields };
+            }
             return {
                 ...state,
                 customFields: { ...state.customFields, [action.fieldId]: action.value },
             };
+        }
         case "SetKind":
             return { ...state, kind: action.kind };
         case "AddCapture":
@@ -274,7 +283,7 @@ const useTicketFieldActions = (dispatch: Dispatch<TicketAction>) => ({
         [dispatch],
     ),
     setCustomField: useCallback(
-        (fieldId: string, value: CustomFieldValue) => dispatch({ type: "SetCustomField", fieldId, value }),
+        (fieldId: string, value: CustomFieldInput) => dispatch({ type: "SetCustomField", fieldId, value }),
         [dispatch],
     ),
     setKind: useCallback(
@@ -331,10 +340,15 @@ const useTicketCaptureActions = ({
             (weightKg: number, captureKind: CaptureType) => pushCapture(weightKg, "Manual", captureKind),
             [pushCapture],
         ),
+        // Always "Tare" — a stored tare is by definition a tare weight, and
+        // must be recorded as one regardless of which side (Tare/Gross) the
+        // operator currently has the toggle set to. Using the ambient `kind`
+        // here used to save the recalled weight as a Gross capture whenever
+        // Gross was the active toggle, corrupting the ticket.
         useStoredTare: useCallback(
             (weightKg: number, capturedAtIso: string) =>
-                pushCapture(weightKg, "StoredTare", kind, capturedAtIso),
-            [pushCapture, kind],
+                pushCapture(weightKg, "StoredTare", "Tare", capturedAtIso),
+            [pushCapture],
         ),
     };
 };
@@ -471,6 +485,10 @@ const useTicketPersistenceActions = ({
     // numbers) for the one lorry. This ref is checked and set synchronously,
     // before any `await`, to actually close that window.
     const savingRef = useRef(false);
+    // Same reasoning as savingRef above, for print() — a double-tap on the
+    // Print button before React repaints the `saving`-derived disabled state
+    // could otherwise double-increment PrintCount and double-write the doc.
+    const printingRef = useRef(false);
 
     const save = useCallback(async () => {
         if (isLocked || captures.length === 0 || savingRef.current) return;
@@ -512,11 +530,13 @@ const useTicketPersistenceActions = ({
     // ActionsCard, so an operator can print/reprint that first weight's
     // receipt without waiting for the ticket to be complete.
     const print = useCallback(async () => {
-        if (!docId) return;
+        if (!docId || printingRef.current) return;
+        printingRef.current = true;
         dispatch({ type: "SetSaving", saving: true });
         try {
             await printTicket({ docId, captures, fields, customFields, printCount, db, dispatch });
         } finally {
+            printingRef.current = false;
             dispatch({ type: "SetSaving", saving: false });
         }
     }, [captures, customFields, db, docId, fields, printCount, dispatch]);

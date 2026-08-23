@@ -1,88 +1,26 @@
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 import type { DataPort } from "@db/DataPort";
 import { setTicketNumberFormat } from "@features/weighing";
 
-import { DEFAULT_ADMIN_PASSWORD, hashAdminPassword } from "../adminAuth";
-import {
-    DEFAULT_BOARD,
-    DEFAULT_BUSINESS,
-    DEFAULT_CONNECTIONS,
-    DEFAULT_DAILY_SUMMARY,
-    DEFAULT_FORMATS,
-    DEFAULT_INTEGRATIONS,
-    DEFAULT_NUMBERING,
-    DEFAULT_OPERATOR_NAME,
-    DEFAULT_PRINTERS,
-    DEFAULT_REMOTE_ACCESS,
-    DEFAULT_RULES,
-    DEFAULT_SKIN,
-    DEFAULT_SMTP,
-    DEFAULT_STABILITY,
-    DEFAULT_TALLY,
-    DEFAULT_TEXT_SCALE,
-    DEFAULT_WEBHOOK,
-    SETTINGS_CONFIG_ID,
-    settingsBodySchema,
-} from "../settingsSchema";
 import type { SettingsBody } from "../settingsSchema";
-
-// Rendered before the real row has loaded (or on a brand-new install, before
-// the default row is created) so nothing downstream has to handle `null` —
-// same non-blocking shape as `WeighingScreen`'s own doc list starting empty
-// and filling in via effect. An empty admin hash/salt can never verify a
-// password, so `unlock()` is safely inert until the real row is in.
-const SYNC_DEFAULT_BODY: SettingsBody = {
-    Business: DEFAULT_BUSINESS,
-    Rules: DEFAULT_RULES,
-    Stability: DEFAULT_STABILITY,
-    Numbering: DEFAULT_NUMBERING,
-    Formats: DEFAULT_FORMATS,
-    Connections: DEFAULT_CONNECTIONS,
-    Printers: DEFAULT_PRINTERS,
-    Integrations: DEFAULT_INTEGRATIONS,
-    RemoteAccess: DEFAULT_REMOTE_ACCESS,
-    Smtp: DEFAULT_SMTP,
-    Webhook: DEFAULT_WEBHOOK,
-    Tally: DEFAULT_TALLY,
-    Board: DEFAULT_BOARD,
-    DailySummary: DEFAULT_DAILY_SUMMARY,
-    OperatorName: DEFAULT_OPERATOR_NAME,
-    Skin: DEFAULT_SKIN,
-    TextScale: DEFAULT_TEXT_SCALE,
-    AdminPasswordHash: "",
-    AdminPasswordSalt: "",
-};
+import { loadSettingsRow, SYNC_DEFAULT_BODY } from "./loadSettingsRow";
+import { useSettingsPersist } from "./useSettingsPersist";
 
 export interface UseSettingsRecord {
     settings: SettingsBody;
     loading: boolean;
     persist: (next: SettingsBody) => Promise<void>;
+    persistPatch: (mutator: (current: SettingsBody) => SettingsBody) => Promise<void>;
+    /** Re-reads the settings row from the DB and replaces in-memory state with it — used after a backup restore swaps the whole backing store out from under whatever was last loaded. */
+    reload: () => Promise<void>;
 }
-
-// Fresh install, or a row that failed to parse (shouldn't happen once
-// shipped, but a corrupt/foreign Body must not brick the admin gate) —
-// create/overwrite with real defaults. Plain function (no hooks) so it
-// doesn't count against useSettingsRecord's own line budget.
-const createDefaultSettingsRow = async (db: DataPort): Promise<{ body: SettingsBody; version: number }> => {
-    const { Hash, Salt } = await hashAdminPassword(DEFAULT_ADMIN_PASSWORD);
-    const body: SettingsBody = {
-        ...SYNC_DEFAULT_BODY,
-        AdminPasswordHash: Hash,
-        AdminPasswordSalt: Salt,
-    };
-    const saved = await db.saveConfig({
-        ConfigId: SETTINGS_CONFIG_ID,
-        ConfigKind: "Settings",
-        Body: body,
-    });
-    return { body, version: saved.Version };
-};
 
 // Split out of SettingsProvider (over the line budget — docs/CodingStandards.md)
 // — the `"settings"` config row's load, the two DOM-sync effects that must
-// re-run whenever the row changes, and the shared `persist()` write path,
-// all unchanged from the inline versions they replace.
+// re-run whenever the row changes, and the shared persist path (further
+// split into useSettingsPersist.ts, also over budget on its own), all
+// unchanged from the inline versions they replace.
 export const useSettingsRecord = (db: DataPort): UseSettingsRecord => {
     const [settings, setSettings] = useState<SettingsBody>(SYNC_DEFAULT_BODY);
     const [version, setVersion] = useState(0);
@@ -90,29 +28,21 @@ export const useSettingsRecord = (db: DataPort): UseSettingsRecord => {
 
     useEffect(() => {
         let cancelled = false;
-        void (async () => {
-            const row = await db.getConfig(SETTINGS_CONFIG_ID);
-            if (cancelled) return;
-            const parsed = row ? settingsBodySchema.safeParse(row.Body) : null;
-            if (row && parsed?.success) {
-                setSettings(parsed.data);
-                setVersion(row.Version);
+        void loadSettingsRow(db)
+            .then(({ body, version: loadedVersion }) => {
+                if (cancelled) return;
+                setSettings(body);
+                setVersion(loadedVersion);
                 setLoading(false);
-                return;
-            }
-            const { body, version: freshVersion } = await createDefaultSettingsRow(db);
-            if (cancelled) return;
-            setSettings(body);
-            setVersion(freshVersion);
-            setLoading(false);
-        })().catch((err: unknown) => {
-            // Unhandled before this: a rejected getConfig/saveConfig left
-            // `loading` stuck true forever with no trace of why — clearing
-            // it here at least lets the rest of the app proceed on the
-            // SYNC_DEFAULT_BODY fallback instead of hanging on a spinner.
-            console.error("Settings record load failed", err);
-            if (!cancelled) setLoading(false);
-        });
+            })
+            .catch((err: unknown) => {
+                // Unhandled before this: a rejected getConfig/saveConfig left
+                // `loading` stuck true forever with no trace of why — clearing
+                // it here at least lets the rest of the app proceed on the
+                // SYNC_DEFAULT_BODY fallback instead of hanging on a spinner.
+                console.error("Settings record load failed", err);
+                if (!cancelled) setLoading(false);
+            });
         return () => {
             cancelled = true;
         };
@@ -139,19 +69,13 @@ export const useSettingsRecord = (db: DataPort): UseSettingsRecord => {
         document.documentElement.style.setProperty("--s", String(settings.TextScale));
     }, [settings.Skin, settings.TextScale]);
 
-    const persist = useCallback(
-        async (next: SettingsBody): Promise<void> => {
-            const row = await db.saveConfig({
-                ConfigId: SETTINGS_CONFIG_ID,
-                ConfigKind: "Settings",
-                Body: next,
-                Version: version + 1,
-            });
-            setSettings(next);
-            setVersion(row.Version);
-        },
-        [db, version],
-    );
+    const { persist, persistPatch } = useSettingsPersist(db, version, setSettings, setVersion);
 
-    return { settings, loading, persist };
+    const reload = async (): Promise<void> => {
+        const { body, version: loadedVersion } = await loadSettingsRow(db);
+        setSettings(body);
+        setVersion(loadedVersion);
+    };
+
+    return { settings, loading, persist, persistPatch, reload };
 };

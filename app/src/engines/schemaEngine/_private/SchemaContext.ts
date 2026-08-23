@@ -10,6 +10,8 @@ export interface SchemaContextValue {
     setTicketSchema: (schema: Schema) => Promise<void>;
     /** Switches the active schema to one already saved (or the built-in default) without re-uploading it. */
     setActiveSchemaId: (schemaId: string) => Promise<void>;
+    /** Re-reads the active schema and the full saved list from the DB, replacing in-memory state — used after `importBackup` (Settings' Backup/Restore card) swaps the whole backing store out from under whatever had loaded before the restore. */
+    reloadTicketSchema: () => Promise<void>;
 }
 
 export const SchemaContext = createContext<SchemaContextValue | null>(null);
