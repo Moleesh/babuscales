@@ -28,6 +28,12 @@ export const SegmentedControl = <Value extends string>({
         className={`${styles.bar} ${size === "big" ? styles.big : ""}`}
         role="group"
         aria-label={ariaLabel}
+        // A mutually-exclusive choice, not a step in a linear entry flow —
+        // without this, Enter after the last ticket field used to land on
+        // the Tare/Gross toggle instead of jumping straight to Capture
+        // (task: "enter should jump to capture, not tab through other
+        // controls"). Mouse/Tab access is unaffected, only the Enter-walk.
+        data-enter-skip
     >
         {options.map((option) => (
             <button

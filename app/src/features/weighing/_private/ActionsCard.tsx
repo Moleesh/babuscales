@@ -10,6 +10,7 @@ import { useTranslation } from "@i18n/useTranslation";
 
 import styles from "../_styles/WeighingScreen.module.css";
 import type { UseWeighingTicket } from "../useWeighingTicket";
+import { focusFirstTicketField } from "./focusFirstTicketField";
 
 const kindOptions = (t: ReturnType<typeof useTranslation>["t"]): SegmentedOption<CaptureType>[] => [
     { value: "Tare", label: t("weigh.tare") },
@@ -65,18 +66,29 @@ const SaveAndPrintRow = ({
     hasBlockingCustomFieldError,
     onSave,
     onOpenPrintModal,
+    forcePrintEnabled,
 }: Pick<
     ActionsCardProps,
-    "ticket" | "gated" | "hasBlockingCustomFieldError" | "onSave" | "onOpenPrintModal"
+    | "ticket"
+    | "gated"
+    | "hasBlockingCustomFieldError"
+    | "onSave"
+    | "onOpenPrintModal"
+    | "forcePrintEnabled"
 >) => {
     const { t } = useTranslation();
     // `docId` rather than `isLocked` — a single-weight save stays on screen
     // already persisted, and should be printable just like a
-    // complete/locked one.
-    const printEnabled = Boolean(ticket.docId) && ticket.printCount === 0;
+    // complete/locked one. `forcePrintEnabled` — a Reprint lookup just
+    // resumed+locked an already-printed ticket into the deck (task: "reprint
+    // should enable print and focus it") — bypasses the normal
+    // `printCount === 0` gate for that one ticket, same as any other
+    // already-printed ticket wouldn't otherwise be re-printable from here.
+    const printEnabled = Boolean(ticket.docId) && (ticket.printCount === 0 || forcePrintEnabled);
     return (
         <div className={styles.actions}>
             <Button
+                id="actionsSaveBtn"
                 disabled={
                     ticket.isLocked ||
                     ticket.captures.length === 0 ||
@@ -88,7 +100,7 @@ const SaveAndPrintRow = ({
             >
                 {t("weigh.save")}
             </Button>
-            <Button disabled={!printEnabled} onClick={onOpenPrintModal}>
+            <Button id="actionsPrintBtn" disabled={!printEnabled} onClick={onOpenPrintModal}>
                 {t("weigh.print")}
             </Button>
         </div>
@@ -107,11 +119,26 @@ const ReprintRow = ({
     const { t } = useTranslation();
     const printEnabled = Boolean(ticket.docId) && ticket.printCount === 0;
     return (
-        <div className={styles.actions}>
+        // `data-enter-skip` — task: "these three buttons should not be
+        // focusable" (Reprint/New ticket/Send a lorry) — same fix as
+        // OpenTicketStrip's own resume buttons: excluded from the Enter-walk
+        // as both source and destination (useEnterAsTab.ts), still fully
+        // clickable by mouse.
+        <div className={styles.actions} data-enter-skip>
             <Button disabled={printEnabled} onClick={onOpenReprintLookup}>
                 {t("weigh.reprint")}
             </Button>
-            <Button onClick={ticket.startNew}>{t("weigh.newTicket")}</Button>
+            <Button
+                onClick={() => {
+                    // Task: "on close of print dialog box the ticket need to
+                    // reset to new ticket, focusing on the first field in the
+                    // list same for new ticket".
+                    ticket.startNew();
+                    focusFirstTicketField();
+                }}
+            >
+                {t("weigh.newTicket")}
+            </Button>
         </div>
     );
 };
@@ -127,7 +154,8 @@ const SendLorryRow = ({ ticket, loadLorry }: Pick<ActionsCardProps, "ticket" | "
     const { t } = useTranslation();
     if (!loadLorry) return null;
     return (
-        <div className={styles.actions}>
+        // `data-enter-skip` — see ReprintRow's own comment above.
+        <div className={styles.actions} data-enter-skip>
             <Button
                 // `!ticket.kind` alone is the correct gate — `defaultCaptureKind`
                 // returns null once both Tare and Gross have been captured.
@@ -163,6 +191,11 @@ export interface ActionsCardProps {
      * here from CalcCard, task: "move the tare gross,net below the
      * capture") renders in it, same as everywhere else weight appears. */
     weightUnit: WeightUnit;
+    /** WeighingScreen's `useReprintFlow` — true right after a Reprint lookup
+     * resumes+locks a found ticket, overriding SaveAndPrintRow's normal
+     * `printCount === 0` gate (task: "reprint should enable print and focus
+     * it"). */
+    forcePrintEnabled: boolean;
 }
 
 // "0 prints" read as unclear (task #18) — an unprinted ticket now says so
@@ -187,8 +220,9 @@ export const ActionsCard = ({
     onOpenPrintModal,
     onOpenReprintLookup,
     weightUnit,
+    forcePrintEnabled,
 }: ActionsCardProps) => {
-    const { t } = useTranslation();
+    const { t, lang } = useTranslation();
     const headerRight = <span className="chip num">{printCountLabel(ticket.printCount, t)}</span>;
     return (
         <Card title={<span className="lbl">{t("weigh.actions")}</span>} headerRight={headerRight}>
@@ -204,11 +238,27 @@ export const ActionsCard = ({
                     ariaLabel={t("weigh.captureAs")}
                 />
                 <Button
+                    id="actionsCaptureBtn"
                     variant={ticket.isComplete ? "complete" : "primary"}
                     size="large"
                     disabled={!armed}
                     caption={captureHint}
-                    onClick={() => ticket.capture(reading.WeightKg)}
+                    onClick={() => {
+                        ticket.capture(reading.WeightKg);
+                        // Task: "enter in capture should capture and move
+                        // focus to save, which will get enabled after the
+                        // capture event is done" — `capture` is a synchronous
+                        // dispatch, but React hasn't re-rendered yet at this
+                        // point in the click handler, so Save's `disabled`
+                        // attribute (SaveAndPrintRow's own
+                        // `ticket.captures.length === 0` check) is still
+                        // stale here; focusing it immediately would silently
+                        // no-op on a still-disabled button. Deferring one
+                        // frame gives the capture's re-render (and thus
+                        // Save's real, now-enabled DOM state) time to land
+                        // first.
+                        requestAnimationFrame(() => document.getElementById("actionsSaveBtn")?.focus());
+                    }}
                 >
                     {captureLabel}
                 </Button>
@@ -218,6 +268,7 @@ export const ActionsCard = ({
                     netKg={ticket.weights.netKg}
                     hideNet
                     weightUnit={weightUnit}
+                    lang={lang}
                     labels={{ tare: t("weigh.tare"), gross: t("weigh.gross"), net: t("weigh.net") }}
                 />
                 <SaveAndPrintRow
@@ -226,6 +277,7 @@ export const ActionsCard = ({
                     hasBlockingCustomFieldError={hasBlockingCustomFieldError}
                     onSave={onSave}
                     onOpenPrintModal={onOpenPrintModal}
+                    forcePrintEnabled={forcePrintEnabled}
                 />
                 <ReprintRow ticket={ticket} onOpenReprintLookup={onOpenReprintLookup} />
                 <SendLorryRow ticket={ticket} loadLorry={loadLorry} />

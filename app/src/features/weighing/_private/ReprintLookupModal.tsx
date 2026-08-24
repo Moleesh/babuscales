@@ -64,11 +64,19 @@ export const ReprintLookupModal = ({ open, onClose, allTicketDocs, onFound }: Re
     return (
         <AppModal open={open} title={t("weigh.reprintLookup.title")} onClose={close} size="small">
             <div style={{ display: "grid", gap: 9 }}>
+                {/* `data-enter-skip` — this field has its own Enter handling
+                    (find(), below); without opting out, useEnterAsTab's
+                    global document-level listener still runs right after and
+                    walks focus to the next element in DOM order (Cancel),
+                    stealing focus back off Find whenever the lookup doesn't
+                    match (task: "enter should go to find not cancel"). */}
                 <Field id="reprint-lookup-ticket-no" label={t("weigh.ticket")}>
                     <input
                         id="reprint-lookup-ticket-no"
                         type="text"
                         autoFocus
+                        autoComplete="off"
+                        data-enter-skip
                         placeholder={t("weigh.reprintLookup.placeholder")}
                         value={ticketNo}
                         onChange={(event) => {
@@ -76,7 +84,9 @@ export const ReprintLookupModal = ({ open, onClose, allTicketDocs, onFound }: Re
                             setError(false);
                         }}
                         // Cursor lands after the pre-filled prefix, not at
-                        // its start, so typing the numeric part just works.
+                        // its start (`autoFocus` alone can leave the value
+                        // selected), so typing the numeric part just works
+                        // without first clearing a selection.
                         onFocus={(event) => {
                             const end = event.target.value.length;
                             event.target.setSelectionRange(end, end);

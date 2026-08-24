@@ -84,7 +84,7 @@ interface MaterialSplitChartProps {
 // The material-split list — pulled out of DashboardCharts purely to stay
 // under the file's own line budget.
 const MaterialSplitChart = ({ materialSplit, weightUnit }: MaterialSplitChartProps) => {
-    const { t } = useTranslation();
+    const { t, lang } = useTranslation();
     const totalLoads = materialSplit.reduce((sum, entry) => sum + entry.count, 0);
 
     return (
@@ -109,7 +109,7 @@ const MaterialSplitChart = ({ materialSplit, weightUnit }: MaterialSplitChartPro
                                 <i style={{ width: `${entry.share * 100}%` }} />
                             </span>
                             <span className={styles.splitValue}>
-                                <span className="num">{formatWeightIn(entry.tonnes * 1000, weightUnit)}</span>
+                                <span className="num">{formatWeightIn(entry.tonnes * 1000, weightUnit, lang)}</span>
                                 <span className={styles.hint}>
                                     {entry.count} {t("dashboard.chart.loads")}
                                 </span>

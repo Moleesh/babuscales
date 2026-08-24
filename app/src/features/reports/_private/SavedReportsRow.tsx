@@ -27,7 +27,18 @@ const useCloseOnOutsideClick = (open: boolean, onClose: () => void) => {
             if (ref.current && !ref.current.contains(event.target as Node)) onClose();
         };
         document.addEventListener("pointerdown", onPointerDown);
-        return () => document.removeEventListener("pointerdown", onPointerDown);
+        // Task: "on scroll close all the dropdowns" — same reasoning as
+        // Select.tsx's own copy of this hook, including the `contains` guard
+        // so scrolling the popover's own row list doesn't close it.
+        const onScroll = (event: Event) => {
+            if (ref.current && event.target instanceof Node && ref.current.contains(event.target)) return;
+            onClose();
+        };
+        document.addEventListener("scroll", onScroll, { capture: true, passive: true });
+        return () => {
+            document.removeEventListener("pointerdown", onPointerDown);
+            document.removeEventListener("scroll", onScroll, { capture: true });
+        };
     }, [open, onClose]);
     return ref;
 };

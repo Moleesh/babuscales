@@ -15,16 +15,16 @@ describe("StatusPill", () => {
 
     it("computes net as gross - tare when netKg isn't supplied (single-gross fallback)", () => {
         render(<StatusPill tareKg={1000} grossKg={3500} />);
-        expect(screen.getByText(formatWeightIn(1000, "kg"))).toBeInTheDocument();
-        expect(screen.getByText(formatWeightIn(3500, "kg"))).toBeInTheDocument();
-        expect(screen.getByText(formatWeightIn(2500, "kg"))).toBeInTheDocument();
+        expect(screen.getByText(formatWeightIn(1000, "kg", "en"))).toBeInTheDocument();
+        expect(screen.getByText(formatWeightIn(3500, "kg", "en"))).toBeInTheDocument();
+        expect(screen.getByText(formatWeightIn(2500, "kg", "en"))).toBeInTheDocument();
     });
 
     it("uses the ticket's own netKg (multi-gross) instead of gross - tare when given", () => {
         // Two Gross captures summing to more net than grossKg - tareKg would.
         render(<StatusPill tareKg={1000} grossKg={3500} netKg={4200} />);
-        expect(screen.getByText(formatWeightIn(4200, "kg"))).toBeInTheDocument();
-        expect(screen.queryByText(formatWeightIn(2500, "kg"))).toBeNull();
+        expect(screen.getByText(formatWeightIn(4200, "kg", "en"))).toBeInTheDocument();
+        expect(screen.queryByText(formatWeightIn(2500, "kg", "en"))).toBeNull();
     });
 
     it("renders custom labels when given", () => {

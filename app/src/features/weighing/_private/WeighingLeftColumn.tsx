@@ -20,6 +20,8 @@ export interface WeighingLeftColumnProps {
     ticketSchema: Schema;
     /** Settings → Weighing → Rules.ManualEntry — threaded to every "Calculated" segment's Tare/Gross boxes. */
     manualEntry: boolean;
+    /** Settings → Weighing → Rules.ShowFormulaBreakdown — threaded to every "Calculated" segment's formula line. */
+    showFormulaBreakdown: boolean;
     /** Settings' `Formats.WeightUnit` — threaded to every "Calculated" segment's boxes/formula/status pill. */
     weightUnit: WeightUnit;
     /** Settings' `Formats.DateFmt`/`TimeFmt` — threaded to every "Calculated" segment's Tare/Gross capture stamps. */
@@ -44,6 +46,7 @@ export const WeighingLeftColumn = ({
     caches,
     ticketSchema,
     manualEntry,
+    showFormulaBreakdown,
     weightUnit,
     dateFmt,
     timeFmt,
@@ -85,6 +88,7 @@ export const WeighingLeftColumn = ({
                         chargeValue={ticket.fields.charge}
                         onChargeChange={(value) => ticket.setField("charge", value)}
                         manualEntry={manualEntry}
+                        showFormulaBreakdown={showFormulaBreakdown}
                         kind={ticket.kind}
                         isLocked={ticket.isLocked}
                         onManualCapture={ticket.manualCapture}

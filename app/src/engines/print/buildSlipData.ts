@@ -36,8 +36,8 @@ export interface SlipInput {
     lang: string;
 }
 
-const weightOrDash = (kg: number | null, unit: WeightUnit): string =>
-    kg === null ? "—" : formatWeightIn(kg, unit);
+const weightOrDash = (kg: number | null, unit: WeightUnit, lang: string): string =>
+    kg === null ? "—" : formatWeightIn(kg, unit, lang);
 
 const stampOrDash = (iso: string | null, lang: string, dateFmt: string, timeFmt: "24" | "12"): string =>
     iso === null ? "—" : formatDateTimeInFmt(iso, lang, dateFmt, timeFmt);
@@ -51,13 +51,13 @@ export const buildSlipData = (input: SlipInput): SlipData => ({
     Material: input.material || "—",
     ChallanNo: input.challanNo || "—",
     Transporter: input.transporter || "—",
-    TareKg: weightOrDash(input.tareKg, input.weightUnit),
-    GrossKg: weightOrDash(input.grossKg, input.weightUnit),
-    NetKg: weightOrDash(input.netKg, input.weightUnit),
+    TareKg: weightOrDash(input.tareKg, input.weightUnit, input.lang),
+    GrossKg: weightOrDash(input.grossKg, input.weightUnit, input.lang),
+    NetKg: weightOrDash(input.netKg, input.weightUnit, input.lang),
     TareAt: stampOrDash(input.tareAt, input.lang, input.dateFmt, input.timeFmt),
     GrossAt: stampOrDash(input.grossAt, input.lang, input.dateFmt, input.timeFmt),
     GrossLoads: input.grossLoads.map((load) => ({
-        Kg: weightOrDash(load.kg, input.weightUnit),
+        Kg: weightOrDash(load.kg, input.weightUnit, input.lang),
         At: stampOrDash(load.at, input.lang, input.dateFmt, input.timeFmt),
     })),
     Charge: input.charge === null ? "—" : formatMoney(input.charge, input.amountDp),

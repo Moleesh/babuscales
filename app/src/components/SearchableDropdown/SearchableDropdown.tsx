@@ -90,10 +90,11 @@ export const SearchableDropdown = ({
         addNew,
         handleKeyDown,
         handleInputChange,
+        wrapperRef,
     } = useDropdownState({ value, onChange, onSearch, onPick, onAddNew });
 
     return (
-        <div className={styles.wrapper}>
+        <div className={styles.wrapper} ref={wrapperRef}>
             <input
                 autoComplete="off"
                 {...inputProps}

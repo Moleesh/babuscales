@@ -6,8 +6,6 @@ import type { WeightUnit } from "@constants/numberFormat";
 import type { Capture, CaptureType } from "@db/ticketBody";
 import type { DerivedWeights } from "@db/ticketBody";
 import { hasCapture } from "@db/ticketBody";
-import type { FormulaContext, FormulaValue } from "@engines/formulaEngine";
-import { fromInt } from "@engines/formulaEngine/Decimal";
 import { resolveFieldIdLabel } from "@engines/schemaEngine";
 import type { Field } from "@engines/schemaEngine";
 import { resolveLocalized } from "@i18n/types";
@@ -15,7 +13,7 @@ import { useTranslation } from "@i18n/useTranslation";
 
 import type { CalcFieldResults } from "./calcSegments";
 import { getCalcItemsForFields } from "./calcSegments";
-import { describeFormulaSubstitution } from "./formulaBreakdown";
+import { prettifyFormula } from "./formulaBreakdown";
 import { ManualCalcBox } from "./ManualCalcBox";
 import { evaluateFieldVisible } from "./schemaFieldValidation";
 import { resolveFieldLabel } from "./ticketFieldIds";
@@ -63,6 +61,21 @@ const CalcBox = ({ label, value, lead, pending, stamp }: CalcBoxProps) => (
     </div>
 );
 
+// Task: "not below the segment, below every field, just show the
+// calculation ... dont wrap it but you can truncate and show in hover incase
+// it long" — one single-line, truncated formula ("Round(0 − (x))",
+// "Gross − Tare") right under its own field's box, `title` carrying the full
+// text for a long formula that got clipped. No label repeat (the box above
+// already has its own label) and no substituted-value tail — just the
+// calculation itself, same for every calc field including Net (no special
+// treatment). `null` (a genuinely malformed formula) renders nothing.
+const FormulaLine = ({ formula }: { formula: string | null }) =>
+    formula ? (
+        <div className={styles.formulaLine} title={formula}>
+            {formula}
+        </div>
+    ) : null;
+
 interface ChargeBoxProps {
     label: string;
     value: string;
@@ -103,33 +116,28 @@ const CalcSegmentRows = ({
     items,
     lang,
     t,
+    showFormulaBreakdown,
 }: {
     items: ReturnType<typeof getCalcItemsForFields>;
     lang: string;
     t: (key: string) => string;
+    /** Settings → Weighing Rules' `ShowFormulaBreakdown` — off hides the raw formula lines below, keeping just the boxes. */
+    showFormulaBreakdown: boolean;
 }) => {
     if (items.length === 0) return null;
     return (
         <div className={styles.calcSegment}>
             <div className={styles.calcSegmentGrid}>
-                {items.map(({ fieldId, field, value }) => (
-                    <CalcBox
-                        key={fieldId}
-                        label={field.Label ? resolveLocalized(field.Label, lang) : resolveFieldIdLabel(fieldId, t)}
-                        value={value !== undefined ? formatPlainNumber(value) : "—"}
-                    />
+                {items.map(({ fieldId, field, formula, value }) => (
+                    <div key={fieldId} className={styles.calcBoxWithFormula}>
+                        <CalcBox
+                            label={field.Label ? resolveLocalized(field.Label, lang) : resolveFieldIdLabel(fieldId, t)}
+                            value={value !== undefined ? formatPlainNumber(value) : "—"}
+                        />
+                        {showFormulaBreakdown && <FormulaLine formula={prettifyFormula(formula)} />}
+                    </div>
                 ))}
             </div>
-            {items.map(({ fieldId, field, value, breakdown }) =>
-                breakdown && value !== undefined ? (
-                    <div key={fieldId} className={styles.formula}>
-                        <span>
-                            {field.Label ? resolveLocalized(field.Label, lang) : resolveFieldIdLabel(fieldId, t)} ={" "}
-                            {breakdown} = <em>{formatPlainNumber(value)}</em>
-                        </span>
-                    </div>
-                ) : null,
-            )}
         </div>
     );
 };
@@ -184,7 +192,7 @@ const TareGrossBoxes = ({
                 ) : (
                     <CalcBox
                         label={grossLabel}
-                        value={weights.grossKg !== null ? formatWeightIn(weights.grossKg, weightUnit) : "—"}
+                        value={weights.grossKg !== null ? formatWeightIn(weights.grossKg, weightUnit, lang) : "—"}
                         stamp={
                             formatStamp(grossCaptures[grossCaptures.length - 1]?.At, lang, dateFmt, timeFmt) +
                             (grossCaptures.length > 1
@@ -203,7 +211,7 @@ const TareGrossBoxes = ({
                 ) : (
                     <CalcBox
                         label={tareLabel}
-                        value={weights.tareKg !== null ? formatWeightIn(weights.tareKg, weightUnit) : "—"}
+                        value={weights.tareKg !== null ? formatWeightIn(weights.tareKg, weightUnit, lang) : "—"}
                         stamp={formatStamp(captures.find((c) => c.Type === "Tare")?.At, lang, dateFmt, timeFmt)}
                     />
                 ))}
@@ -212,27 +220,13 @@ const TareGrossBoxes = ({
 };
 
 // Net is always `Gross - Tare` (buildTicketFormulaContext.ts's own rule) —
-// the one fixed-box formula CalcCard owns outright rather than reading off
-// a schema `Formula` field. A minimal, local `FormulaContext` exposing just
-// those two variables is enough to reuse `describeFormulaSubstitution`
-// (formulaBreakdown.ts) instead of duplicating its substitution walk here,
-// same "Label = formula = substituted = result" line CalcSegmentRows already
-// renders per schema-driven calc field (task: "show this per calculated
-// field box", not just once at the bottom — see CalcCard's own removed
-// `showSummary`/CalcFormula usage).
-const netFormulaBreakdown = (weights: DerivedWeights): string | undefined => {
-    if (weights.netKg === null || weights.grossKg === null || weights.tareKg === null) return undefined;
-    const grossKg = weights.grossKg;
-    const tareKg = weights.tareKg;
-    const ctx: FormulaContext = {
-        getVariable: (name: string): FormulaValue => {
-            if (name === "Gross") return fromInt(grossKg);
-            if (name === "Tare") return fromInt(tareKg);
-            throw new Error(`unknown variable ${name}`);
-        },
-    };
-    return describeFormulaSubstitution("Gross - Tare", ctx) ?? undefined;
-};
+// the one fixed-box formula CalcCard owns outright rather than reading off a
+// schema `Formula` field. A plain constant now: no substitution, no
+// FormulaContext, so it needs neither `weights` nor a captured Gross/Tare to
+// render — same `prettifyFormula` + `FormulaLine` pattern CalcSegmentRows
+// uses for every schema-driven calc field, no special-casing (task: "make
+// net also work that way no need for special treatment").
+const NET_FORMULA = prettifyFormula("Gross - Tare");
 
 interface NetChargeBoxesProps {
     weights: DerivedWeights;
@@ -244,12 +238,14 @@ interface NetChargeBoxesProps {
     chargeValue: string;
     onChargeChange: (value: string) => void;
     isLocked: boolean;
+    /** Settings → Weighing Rules' `ShowFormulaBreakdown` — off hides the Net box's raw formula line below it. */
+    showFormulaBreakdown: boolean;
 }
 
 // Pulled out of CalcCard's own body (over the line budget —
 // docs/CodingStandards.md) — the Net/Charge half of the four-box grid, plus
-// Net's own substituted-formula line right under its box (Charge has no
-// formula — it's a plain editable field, same as Challan No).
+// Net's own raw formula line right under its box (Charge has no formula —
+// it's a plain editable field, same as Challan No).
 const NetChargeBoxes = ({
     weights,
     weightUnit,
@@ -260,24 +256,19 @@ const NetChargeBoxes = ({
     chargeValue,
     onChargeChange,
     isLocked,
+    showFormulaBreakdown,
 }: NetChargeBoxesProps) => {
-    const netBreakdown = showNet ? netFormulaBreakdown(weights) : undefined;
+    const { lang } = useTranslation();
     return (
         <>
             {showNet && (
                 <div className={styles.calcBoxWithFormula}>
                     <CalcBox
                         label={netLabel}
-                        value={weights.netKg !== null ? formatWeightIn(weights.netKg, weightUnit) : "—"}
+                        value={weights.netKg !== null ? formatWeightIn(weights.netKg, weightUnit, lang) : "—"}
                         lead={weights.netKg !== null}
                     />
-                    {netBreakdown && weights.netKg !== null && (
-                        <div className={styles.formula}>
-                            <span>
-                                {netLabel} = {netBreakdown} = <em>{formatPlainNumber(weights.netKg)}</em>
-                            </span>
-                        </div>
-                    )}
+                    {showFormulaBreakdown && <FormulaLine formula={NET_FORMULA} />}
                 </div>
             )}
             {showCharge && (
@@ -327,6 +318,8 @@ export interface CalcCardProps {
     onChargeChange: (value: string) => void;
     /** Settings → Weighing → Rules.ManualEntry — off leaves Tare/Gross exactly the read-only boxes they've always been. */
     manualEntry: boolean;
+    /** Settings → Weighing → Rules.ShowFormulaBreakdown — off hides every raw formula line (Net box and schema-driven Formula fields alike), leaving just the boxes' own values. */
+    showFormulaBreakdown: boolean;
     /** `ticket.kind` — which of the two boxes (if either) is the one still waiting on a weight; still gates the physical capture button, but no longer alone gates manual entry (see `manualTare`/`manualGross` below). */
     kind: CaptureType | null;
     isLocked: boolean;
@@ -366,6 +359,7 @@ interface CalcBoxGridProps {
     dateFmt: string;
     timeFmt: "24" | "12";
     boxLabel: (fieldId: string) => string;
+    showFormulaBreakdown: boolean;
 }
 
 // The `.calc` four-box grid plus its "nothing to show" fallback message —
@@ -384,6 +378,7 @@ const CalcBoxGrid = ({
     dateFmt,
     timeFmt,
     boxLabel,
+    showFormulaBreakdown,
 }: CalcBoxGridProps) => {
     const { manualTare, manualGross, showGross, showTare, showNet, showCharge } = useCalcCardVisibility(
         fields,
@@ -419,6 +414,7 @@ const CalcBoxGrid = ({
                     chargeValue={chargeValue}
                     onChargeChange={onChargeChange}
                     isLocked={isLocked}
+                    showFormulaBreakdown={showFormulaBreakdown}
                 />
             </div>
         </>
@@ -433,6 +429,7 @@ export const CalcCard = ({
     chargeValue,
     onChargeChange,
     manualEntry,
+    showFormulaBreakdown,
     isLocked,
     onManualCapture,
     weightUnit,
@@ -464,8 +461,9 @@ export const CalcCard = ({
                 dateFmt={dateFmt}
                 timeFmt={timeFmt}
                 boxLabel={boxLabel}
+                showFormulaBreakdown={showFormulaBreakdown}
             />
-            <CalcSegmentRows items={calcItems} lang={lang} t={t} />
+            <CalcSegmentRows items={calcItems} lang={lang} t={t} showFormulaBreakdown={showFormulaBreakdown} />
         </Card>
     );
 };

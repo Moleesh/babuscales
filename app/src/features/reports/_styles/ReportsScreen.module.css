@@ -70,9 +70,23 @@
 
 .date-range {
     display: flex;
-    align-items: center;
+    align-items: flex-end;
     gap: 9px;
     flex-wrap: wrap;
+}
+
+/* Task: "utilize the space in the second row of the report, give some
+   context to the dropdowns" — a small caption stacked above each date/
+   series control instead of the row reading as bare unlabeled controls. */
+.range-field {
+    display: grid;
+    gap: 3px;
+}
+.range-field-label {
+    font-size: 0.625rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--dim);
 }
 
 /* Reports rework, item 1 — the saved-views dropdown + "Save current view
@@ -174,36 +188,38 @@
     color: var(--led);
 }
 
-/* Task: "double scroll bar" — DataTable.module.css's `.wrapper` is its own
-   bounded, independently-scrolling region (65vh by default, for its
-   windowed rendering); once Tickets paginates at 50 rows/page that inner
-   scrollbar next to `.main`'s outer one reads as two scrollbars for what's
-   rarely even a full page. Unsets the bound (DataTable's own
-   `--datatable-max-height` custom property) so a page's rows just grow the
-   card and `.main` is the only scroll container — pagination is what keeps
-   row count bounded now, not DataTable's own windowing. */
-/* `--reports-filters-h` is set on `.body` (ReportsCardBody.tsx's own
-   ResizeObserver) to `.sticky-filters`'s actual rendered height — the
-   column header row needs to stick just below that row, not at the same
-   `top: 0` slot it'd otherwise collide with (task: "the highlighted section
-   has to be sticky on the screen", second half — the table's own header
-   row). */
+/* Reverted from the earlier "hand scrolling up to `.main`" approach (task
+   was "double scroll bar") — fresh feedback ("make the table scroll inside
+   the view with a fixed height, let the footer and header always be there")
+   wants the opposite: a bounded, self-scrolling table with the filters
+   above and the Print/Export/pagination bar below both staying in view.
+   `.wrapper` (DataTable.module.css) goes back to being the one scroll
+   region here, sized to whatever's left of the viewport under the shell's
+   weight header, the Card's own sticky title, and this screen's saved-
+   reports/date/filter block (`--reports-filters-h`, ReportsCardBody.tsx's
+   ResizeObserver) — `170px` is the `.bottom-bar`'s own rendered height plus
+   its gap, so the table never grows tall enough to push it off-screen.
+   `--datatable-header-top: 0` (the default) is right again too: the header
+   row only needs to stick within `.wrapper`'s own scroll now, not against
+   three composed page-level offsets — that composed calc is exactly what
+   made the header row "cut off"/land in the wrong spot while scrolling. */
+/* Task: "2 scroll bars" — the reserved `170px` (bottom-bar height + its
+   gap) left out several other fixed-size gaps that sit between the shell's
+   top and the table: AppShell's own `.screen` padding (12px top + 12px
+   bottom — AppShell.module.css), Card's `.body` padding (13px top + 13px
+   bottom — Card.module.css), and this screen's own `.body` gap between
+   `.stickyFilters` and the table (8px, above). None of those were measured
+   by `--reports-filters-h`'s ResizeObserver (which only covers
+   `.stickyFilters` itself), so the table kept rendering ~58px taller than
+   the room actually left for it — just enough overflow to push `.main`
+   into scrolling too, on top of the table's own bounded inner scroll
+   (hence the second scrollbar). Folded into one named `--reports-chrome-h`
+   so the breakdown stays legible instead of a single opaque magic number. */
 .tickets-table {
-    --datatable-max-height: none;
-    /* `visible`/`visible` alongside the `none` max-height above — both axes,
-       not just `-y`, since either one left non-`visible` still makes
-       `.wrapper` the sticky containing block per spec (see
-       DataTable.module.css's own comment for the full mechanism this fixes:
-       the column header rendering overlapped on top of a data row). */
-    --datatable-overflow-x: visible;
-    --datatable-overflow-y: visible;
-    /* Three stacked sticky layers above this table's own header row now:
-       the shell's weight header, the Card's own sticky title header
-       (`--card-header-h`), then this screen's saved-reports/date/filter
-       block (`--reports-filters-h`) — same composed-offset pattern as
-       `.sticky-filters` above, one layer deeper. */
-    --datatable-header-top: calc(
-        var(--shell-header-h, 0px) + var(--card-header-h, 0px) + var(--reports-filters-h, 0px)
+    --reports-chrome-h: 58px;
+    --datatable-max-height: calc(
+        100vh - var(--shell-header-h, 0px) - var(--card-header-h, 0px) - var(--reports-filters-h, 0px) - 170px -
+            var(--reports-chrome-h)
     );
 }
 

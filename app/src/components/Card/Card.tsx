@@ -41,9 +41,18 @@ const useStickyCardHeaderHeight = (
         const cardEl = cardRef.current;
         const headerEl = headerRef.current;
         if (!cardEl || !headerEl) return;
-        const observer = new ResizeObserver(([entry]) => {
-            if (!entry) return;
-            cardEl.style.setProperty("--card-header-h", `${entry.contentRect.height}px`);
+        // `entry.contentRect` is the header's *content* box — it excludes
+        // the header's own `padding: 9px 13px` and `border-bottom` entirely
+        // (Card.module.css's `.header`), undercounting the real rendered
+        // height by ~19px. A caller stacking sticky content under this
+        // offset (ReportsCardBody's `.stickyFilters`) then renders that
+        // 19px too tall for the room actually reserved for it, one of a
+        // few small measurement gaps that added up to `.main` needing to
+        // scroll a little even after the table's own `--datatable-max-height`
+        // was widened for it (task: "still some more scrolling"). Reading
+        // the header's real border-box height directly instead.
+        const observer = new ResizeObserver(() => {
+            cardEl.style.setProperty("--card-header-h", `${headerEl.getBoundingClientRect().height}px`);
         });
         observer.observe(headerEl);
         return () => observer.disconnect();

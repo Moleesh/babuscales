@@ -327,6 +327,9 @@ export const EN_STRINGS: Record<string, string> = {
     "settings.weighingRules.sameTicketNo.label": "Same ticket no. for tare & gross",
     "settings.weighingRules.sameTicketNo.note":
         "On: whichever weight is captured second keeps the ticket number the first one already has. Off: completing the second weight issues a brand-new ticket number, and the original single-weight ticket stays on record as its own entry.",
+    "settings.weighingRules.showFormulaBreakdown.label": "Show formula under calculated fields",
+    "settings.weighingRules.showFormulaBreakdown.note":
+        "On: every calculated box (Net, and any schema-defined formula field) shows a \"Label = formula = substituted values = result\" line underneath. Off hides that line, showing just the value.",
 
     "settings.numbering.prefix": "Prefix",
     "settings.numbering.digits": "Digits",
@@ -355,6 +358,7 @@ export const EN_STRINGS: Record<string, string> = {
     "reports.groupByLabel": "Group by",
     "reports.dateFromAriaLabel": "From date",
     "reports.dateToAriaLabel": "To date",
+    "reports.series.label": "Series",
     "reports.series.current": "Current",
     "reports.series.priorPrefix": "Before reset —",
 

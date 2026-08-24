@@ -27,54 +27,15 @@ export interface UseMasterFormActions {
     selectRow: (row: MasterRow) => void;
     startNew: () => void;
     handleSave: () => Promise<void>;
-    toggleActive: () => Promise<void>;
     handleDelete: () => Promise<void>;
 }
 
-// `toggleActive` and `handleDelete` share the same "act on `selected`, then
-// bail if there isn't one" shape — pulled `toggleActive` out to a plain
-// helper (rather than inline in the hook body) purely to keep
-// `useMasterFormActions` itself under the file's own line budget
-// (docs/CodingStandards.md), now that `handleDelete` has grown it past 60
-// lines.
-interface BuildToggleActiveArgs {
-    activeKind: MasterKind;
-    selected: MasterRow | null;
-    save: (draft: MasterDraft) => Promise<MasterRow>;
-    selectRow: (row: MasterRow) => void;
-    setSaving: (saving: boolean) => void;
-}
-
-const buildToggleActive = ({
-    activeKind,
-    selected,
-    save,
-    selectRow,
-    setSaving,
-}: BuildToggleActiveArgs): (() => Promise<void>) => {
-    return async () => {
-        if (!selected) return;
-        setSaving(true);
-        try {
-            const row = await save({
-                MasterId: selected.MasterId,
-                MasterKind: activeKind,
-                Name: selected.Name,
-                Body: selected.Body,
-                IsActive: !selected.IsActive,
-            });
-            selectRow(row);
-        } finally {
-            setSaving(false);
-        }
-    };
-};
-
-// Hard delete, distinct from `toggleActive` above — task: "we need an
-// option to remove the rows in master". The confirm prompt itself lives in
-// the button component (MasterFormActions.tsx), not here, so this stays
-// "the row is gone, no second-guessing" once called. Pulled out alongside
-// `buildToggleActive` to keep `useMasterFormActions` itself under budget.
+// Hard delete — task: "we need an option to remove the rows in master". The
+// confirm prompt itself lives in the button component (MasterFormActions.tsx),
+// not here, so this stays "the row is gone, no second-guessing" once called.
+// Pulled out to keep `useMasterFormActions` itself under budget. (Its former
+// sibling `buildToggleActive`/`toggleActive` was removed entirely — "we dont
+// want deactivate in masters remove the whole logic and the column".)
 const buildHandleDelete = (
     selected: MasterRow | null,
     remove: (masterId: string) => Promise<void>,
@@ -124,7 +85,7 @@ interface BuildHandleSaveArgs {
     form: MasterFormState;
     cacheRows: MasterRow[];
     save: (draft: MasterDraft) => Promise<MasterRow>;
-    selectRow: (row: MasterRow) => void;
+    startNew: () => void;
     setSaving: (saving: boolean) => void;
     setError: (error: string | null) => void;
 }
@@ -136,7 +97,7 @@ const buildHandleSave = ({
     form,
     cacheRows,
     save,
-    selectRow,
+    startNew,
     setSaving,
     setError,
 }: BuildHandleSaveArgs): (() => Promise<void>) => {
@@ -155,14 +116,17 @@ const buildHandleSave = ({
         setError(null);
         setSaving(true);
         try {
-            const row = await save({
+            await save({
                 MasterId: selected?.MasterId,
                 MasterKind: activeKind,
                 Name: name,
                 Body: buildMasterBody(activeKind, form, columns),
                 IsActive: selected?.IsActive,
             });
-            selectRow(row);
+            // Task: "on save on the master go to new row, do not keep in
+            // edit" — reset to a blank form instead of re-selecting the
+            // just-saved row (was `selectRow(row)`).
+            startNew();
         } finally {
             setSaving(false);
         }
@@ -205,12 +169,11 @@ export const useMasterFormActions = ({
         form,
         cacheRows,
         save,
-        selectRow,
+        startNew,
         setSaving,
         setError,
     });
-    const toggleActive = buildToggleActive({ activeKind, selected, save, selectRow, setSaving });
     const handleDelete = buildHandleDelete(selected, remove, startNew, setSaving);
 
-    return { saving, error, selectRow, startNew, handleSave, toggleActive, handleDelete };
+    return { saving, error, selectRow, startNew, handleSave, handleDelete };
 };

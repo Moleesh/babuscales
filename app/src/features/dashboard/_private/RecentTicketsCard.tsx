@@ -38,7 +38,7 @@ const buildRecentColumns = ({
         key: "net",
         header: t("dashboard.recent.col.net"),
         numeric: true,
-        render: (row) => (row.netKg !== null ? formatWeightIn(row.netKg, weightUnit) : "—"),
+        render: (row) => (row.netKg !== null ? formatWeightIn(row.netKg, weightUnit, lang) : "—"),
     },
     {
         key: "at",

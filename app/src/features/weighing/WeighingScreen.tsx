@@ -9,6 +9,7 @@ import { useSettings } from "@features/settings";
 import { useTranslation } from "@i18n/useTranslation";
 
 import { buildTicketFormulaContext } from "./_private/buildTicketFormulaContext";
+import { focusFirstTicketField } from "./_private/focusFirstTicketField";
 import { PrintPreviewModal } from "./_private/PrintPreviewModal";
 import { ReprintLookupModal } from "./_private/ReprintLookupModal";
 import { hasBlockingCustomFieldError } from "./_private/schemaFieldValidation";
@@ -108,6 +109,8 @@ interface BuildWeighingBodyPropsArgs {
     onOpenPrintModal: () => void;
     onOpenReprintLookup: () => void;
     onNavigateToCameras: () => void;
+    /** `useReprintFlow`'s own flag — see WeighingRightColumnProps' comment. */
+    forcePrintEnabled: boolean;
 }
 
 // Assembles WeighingBody's `left`/`right` props from the screen's own hook
@@ -131,6 +134,7 @@ const buildWeighingBodyProps = ({
     onOpenPrintModal,
     onOpenReprintLookup,
     onNavigateToCameras,
+    forcePrintEnabled,
 }: BuildWeighingBodyPropsArgs) => ({
     left: {
         ticket,
@@ -141,6 +145,7 @@ const buildWeighingBodyProps = ({
         ticketSchema,
         amountDp: settings.Formats.AmountDp,
         manualEntry: settings.Rules.ManualEntry,
+        showFormulaBreakdown: settings.Rules.ShowFormulaBreakdown,
         weightUnit: settings.Formats.WeightUnit,
         dateFmt: settings.Formats.DateFmt,
         timeFmt: settings.Formats.TimeFmt,
@@ -157,11 +162,25 @@ const buildWeighingBodyProps = ({
         armed,
         gated: licenseGated,
         hasBlockingCustomFieldError,
-        onSave: () => void handleSave(),
+        // Task: "enter on save should save then move to print" — Print only
+        // actually enables once `handleSave` resolves and `ticket.docId`
+        // lands (SaveAndPrintRow's own `printEnabled`), so the focus() has
+        // to wait for the same promise rather than firing immediately;
+        // Print stays unfocusable (and this is a no-op) if the save failed.
+        // Same staleness gap as Capture→Save (ActionsCard.tsx): the promise
+        // resolving only means the state update was dispatched, not that
+        // React has re-rendered Print's `disabled` attribute yet — deferring
+        // one frame past that gives the render time to land first (task:
+        // "like how we did for save we also need to do for print").
+        onSave: () =>
+            void handleSave().then(() =>
+                requestAnimationFrame(() => document.getElementById("actionsPrintBtn")?.focus()),
+            ),
         onOpenPrintModal,
         onOpenReprintLookup,
         onNavigateToCameras,
         weightUnit: settings.Formats.WeightUnit,
+        forcePrintEnabled,
     },
 });
 
@@ -261,29 +280,49 @@ const usePrintModals = () => {
     return { printModalOpen, setPrintModalOpen, reprintLookupOpen, setReprintLookupOpen };
 };
 
-// Reprint no longer opens PrintPreviewModal at all — it populates the deck
-// (`ticket.resume`), locks every field exactly like a Save (`ticket.lock`),
-// and prints straight away via the same `handlePrint` PrintPreviewModal's
-// own "Send to printer" already calls (task: "reprint ... skip print
-// preview, print directly"). `resume`'s own dispatch is async (a plain
-// useReducer), so `handlePrint` — which reads `ticket` fresh off this same
-// render's closure — can't fire in the same handler as `resume`: it would
-// still see the *previous* ticket's fields/DocId. This tracks which DocId
-// is still waiting on its resume to land, and the effect below fires the
-// actual print only once `ticket.docId` catches up to it.
-const useReprintFlow = (ticket: UseWeighingTicket, handlePrint: () => Promise<void>) => {
+// Reprint populates the deck (`ticket.resume`) and locks every field exactly
+// like a Save (`ticket.lock`) — it used to also print straight away, but
+// task: "reprint should enable print and focus it" now leaves the actual
+// send-to-printer step to the operator, same as any other Print, rather than
+// firing silently the moment a ticket is found. `resume`'s own dispatch is
+// async (a plain useReducer), so waiting for `ticket.docId` to catch up
+// (rather than reading the still-previous-ticket `ticket` straight off this
+// closure) is still needed before the Print button can be focused/enabled
+// for the *found* ticket. `forcePrintEnabled` stays true — bypassing
+// SaveAndPrintRow's normal `printCount === 0` gate for an already-printed
+// ticket — until the operator actually uses Print (or starts fresh), at
+// which point `clearForcePrintEnabled` (called from Print's own onClick,
+// and from "New ticket") turns the override back off.
+const useReprintFlow = (ticket: UseWeighingTicket) => {
     const [pendingDocId, setPendingDocId] = useState<string | null>(null);
+    const [forcePrintEnabled, setForcePrintEnabled] = useState(false);
     useEffect(() => {
         if (pendingDocId === null || ticket.docId !== pendingDocId) return;
         setPendingDocId(null);
-        void handlePrint();
-    }, [pendingDocId, ticket.docId, handlePrint]);
+        setForcePrintEnabled(true);
+        requestAnimationFrame(() => document.getElementById("actionsPrintBtn")?.focus());
+    }, [pendingDocId, ticket.docId]);
+    // Both "New ticket" and the print-modal's own onClose reset (task: "on
+    // close of print dialog box the ticket need to reset to new ticket")
+    // call `ticket.startNew()`, which always empties `captures` — a plain,
+    // reliable "this override no longer applies" signal without either of
+    // those two call sites needing a reference back into this hook's own
+    // state.
+    useEffect(() => {
+        if (ticket.captures.length === 0) setForcePrintEnabled(false);
+    }, [ticket.captures.length]);
     const reprint = (doc: DocRow): void => {
         ticket.resume(doc);
         ticket.lock();
         setPendingDocId(doc.DocId);
     };
-    return reprint;
+    // Print actually being used (whether via the override or the normal
+    // gate) is the other "done with this override" signal — without this,
+    // a reprinted ticket's Print button would stay force-enabled for
+    // additional reprints of the very same ticket instead of falling back
+    // to the normal printCount gate.
+    const clearForcePrintEnabled = (): void => setForcePrintEnabled(false);
+    return { reprint, forcePrintEnabled, clearForcePrintEnabled };
 };
 
 export const WeighingScreen = ({ ticket, licenseGated, onNavigateToCameras }: WeighingScreenProps) => {
@@ -291,7 +330,7 @@ export const WeighingScreen = ({ ticket, licenseGated, onNavigateToCameras }: We
     const screenRef = useRef<HTMLDivElement>(null);
     const stripRef = useRef<HTMLDivElement>(null);
     const state = useWeighingScreenState(ticket, licenseGated);
-    const reprint = useReprintFlow(ticket, state.handlePrint);
+    const { reprint, forcePrintEnabled } = useReprintFlow(ticket);
     // Mirrors OpenTicketStrip's own early-return condition (tickets.length === 0 && !loading).
     useStickyStripHeight(screenRef, stripRef, state.openTickets.length > 0 || state.ticketsLoading);
 
@@ -303,6 +342,7 @@ export const WeighingScreen = ({ ticket, licenseGated, onNavigateToCameras }: We
         onOpenPrintModal: () => setPrintModalOpen(true),
         onOpenReprintLookup: () => setReprintLookupOpen(true),
         onNavigateToCameras,
+        forcePrintEnabled,
     });
 
     return (
@@ -317,7 +357,15 @@ export const WeighingScreen = ({ ticket, licenseGated, onNavigateToCameras }: We
             <WeighingBody left={left} right={right} />
             <PrintPreviewModal
                 open={printModalOpen}
-                onClose={() => setPrintModalOpen(false)}
+                onClose={() => {
+                    setPrintModalOpen(false);
+                    // Task: "on close of print dialog box the ticket need to
+                    // reset to new ticket, focusing on the first field in the
+                    // list same for new ticket" — same reset ActionsCard's
+                    // own "New ticket" button triggers.
+                    ticket.startNew();
+                    focusFirstTicketField();
+                }}
                 data={state.slipData}
                 onSend={() => void state.handlePrint()}
                 sending={ticket.saving}

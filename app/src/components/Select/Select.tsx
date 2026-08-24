@@ -26,7 +26,24 @@ const useCloseOnOutsideClick = (open: boolean, onClose: () => void) => {
             if (ref.current && !ref.current.contains(event.target as Node)) onClose();
         };
         document.addEventListener("pointerdown", onPointerDown);
-        return () => document.removeEventListener("pointerdown", onPointerDown);
+        // Task: "on scroll close all the dropdowns" — an open list is
+        // absolutely-positioned off the trigger's own rect (`top: 100%`
+        // etc.), so it doesn't track the trigger during a scroll and ends up
+        // floating over unrelated content. `capture: true` so this still
+        // fires for scrolls inside any nested scroll container, not just the
+        // window — but that also means the list's own `.list` (max-height +
+        // overflow-y: auto, above) reports its internal scroll here too;
+        // without the `contains` check, scrolling through a long option list
+        // would close the very list being scrolled.
+        const onScroll = (event: Event) => {
+            if (ref.current && event.target instanceof Node && ref.current.contains(event.target)) return;
+            onClose();
+        };
+        document.addEventListener("scroll", onScroll, { capture: true, passive: true });
+        return () => {
+            document.removeEventListener("pointerdown", onPointerDown);
+            document.removeEventListener("scroll", onScroll, { capture: true });
+        };
     }, [open, onClose]);
     return ref;
 };

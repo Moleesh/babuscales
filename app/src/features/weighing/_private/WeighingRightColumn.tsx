@@ -22,6 +22,12 @@ export interface WeighingRightColumnProps {
     onOpenPrintModal: () => void;
     /** Opens ReprintLookupModal's "enter a ticket no" prompt. */
     onOpenReprintLookup: () => void;
+    /** WeighingScreen's `useReprintFlow` — true right after a Reprint lookup
+     * resumes+locks a found ticket, overriding SaveAndPrintRow's normal
+     * `printCount === 0` gate so Print is enabled (and gets focused) for
+     * that already-printed ticket too (task: "reprint should enable print
+     * and focus it"). */
+    forcePrintEnabled: boolean;
     /** Jumps to the Cameras tab (App.tsx's `setActiveTab`) — a shortcut out
      * of this decorative sidebar to the real Cameras screen. */
     onNavigateToCameras: () => void;
@@ -45,6 +51,7 @@ export const WeighingRightColumn = ({
     onOpenReprintLookup,
     onNavigateToCameras,
     weightUnit,
+    forcePrintEnabled,
 }: WeighingRightColumnProps) => {
     const { t } = useTranslation();
     const cameraBurnIn = computeCameraBurnIn(ticket.docSeq, ticket.captures);
@@ -66,6 +73,7 @@ export const WeighingRightColumn = ({
                     onOpenPrintModal={onOpenPrintModal}
                     onOpenReprintLookup={onOpenReprintLookup}
                     weightUnit={weightUnit}
+                    forcePrintEnabled={forcePrintEnabled}
                 />
             </div>
 

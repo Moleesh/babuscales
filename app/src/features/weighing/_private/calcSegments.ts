@@ -3,8 +3,6 @@ import type { FormulaContext, FormulaValue } from "@engines/formulaEngine";
 import { toNumber } from "@engines/formulaEngine/Decimal";
 import type { Field } from "@engines/schemaEngine";
 
-import { describeFormulaSubstitution } from "./formulaBreakdown";
-
 // CalcCard's 4 fixed boxes (Gross/Tare/Net/Charge) already own their own
 // capture/formula logic (TareGrossBoxes, the Net CalcBox, ChargeBox) —
 // any other `Calculated` field is a schema author's own `Formula` chain
@@ -15,10 +13,14 @@ export const FIXED_CALC_FIELD_IDS = ["Gross", "Tare", "Net", "Charge"];
 export interface CalcFieldItem {
     fieldId: string;
     field: Field;
+    /** The field's own raw `Formula` string — carried separately from `field`
+     * because `Field` is a discriminated union and only narrows to `Kind ===
+     * "Formula"` (and thus `.Formula`) inside this file's own filter/guard;
+     * consumers like CalcCard.tsx get an unnarrowed `Field` and would need to
+     * redo that guard themselves otherwise. */
+    formula: string;
     /** `undefined` when the formula threw (an input not yet filled in, a bad formula) — rendered as "—", never crashes the screen. */
     value: number | undefined;
-    /** "Gross − Tare" style substituted-values line — `undefined` when the formula couldn't be described (same reasons `value` can be `undefined`). See formulaBreakdown.ts. */
-    breakdown: string | undefined;
 }
 
 /**
@@ -34,7 +36,6 @@ export interface CalcFieldItem {
  */
 export interface CalcFieldResults {
     values: Map<string, number | undefined>;
-    breakdowns: Map<string, string | undefined>;
 }
 
 export const computeCalcFieldValues = (
@@ -43,7 +44,6 @@ export const computeCalcFieldValues = (
     calculatedIds: Set<string>,
 ): CalcFieldResults => {
     const computed = new Map<string, number | undefined>();
-    const breakdowns = new Map<string, string | undefined>();
     const chainedCtx: FormulaContext = {
         ...ctx,
         getVariable: (name: string): FormulaValue => {
@@ -62,9 +62,8 @@ export const computeCalcFieldValues = (
         } catch {
             computed.set(field.FieldId, undefined);
         }
-        breakdowns.set(field.FieldId, describeFormulaSubstitution(field.Formula, chainedCtx) ?? undefined);
     }
-    return { values: computed, breakdowns };
+    return { values: computed };
 };
 
 /**
@@ -80,11 +79,11 @@ export const getCalcItemsForFields = (
     results: CalcFieldResults,
 ): CalcFieldItem[] =>
     fields
-        .filter((field) => field.Kind === "Formula")
+        .filter((field): field is Field & { Kind: "Formula"; Formula: string } => field.Kind === "Formula")
         .filter((field) => !FIXED_CALC_FIELD_IDS.includes(field.FieldId))
         .map((field) => ({
             fieldId: field.FieldId,
             field,
+            formula: field.Formula,
             value: results.values.get(field.FieldId),
-            breakdown: results.breakdowns.get(field.FieldId),
         }));

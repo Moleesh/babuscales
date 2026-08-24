@@ -99,7 +99,7 @@ export const WeightDisplay = ({
                         stripped here since `labels.unit` below is this component's own
                         unit label. */}
                     <span className={`${styles.digits} num`}>
-                        {formatWeightIn(weightKg, weightUnit).replace(/\s\S+$/, "")}
+                        {formatWeightIn(weightKg, weightUnit, lang).replace(/\s\S+$/, "")}
                     </span>
                 </div>
                 <span className={styles.unit}>{labels.unit}</span>

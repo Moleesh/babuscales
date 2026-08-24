@@ -82,7 +82,7 @@ export const MastersScreen = () => {
     const [query, setQuery] = useState("");
     const { activeKind, setActiveKind, kinds, masterColumns, kindLower, columns, kindOptions } =
         useMastersScreenSetup(ticketSchema, settings, lang, t);
-    const { totalCount, reload, list, form } = useMastersScreenState(activeKind, masterColumns, query);
+    const { totalCount, list, form } = useMastersScreenState(activeKind, masterColumns, query);
 
     useEffect(() => {
         setQuery("");
@@ -121,7 +121,6 @@ export const MastersScreen = () => {
                 columns={masterColumns}
                 lang={lang}
                 addNewLabel={t(`masters.${kindLower}.addNew`)}
-                onReload={() => reload()}
                 t={t}
                 {...form}
             />

@@ -15,7 +15,7 @@ describe("WeightDisplay", () => {
         render(<WeightDisplay weightKg={1250} capacityKg={50000} stable motion={false} />);
         // formatWeightIn appends " kg" itself; the digits span strips that
         // suffix since the unit is shown separately via `labels.unit`.
-        expect(screen.getByText(formatWeightIn(1250, "kg").replace(/\s\S+$/, ""))).toBeInTheDocument();
+        expect(screen.getByText(formatWeightIn(1250, "kg", "en").replace(/\s\S+$/, ""))).toBeInTheDocument();
     });
 
     it("relabels to the given weightUnit without changing the digits, still showing the unit only once", () => {

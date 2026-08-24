@@ -19,7 +19,7 @@ export interface DashboardKpisProps {
 // onNavigateToReports is wired up — see DashboardScreenProps' own comment
 // for why nothing forces a filter across the tab switch.
 export const DashboardKpis = ({ kpis, amountDp, weightUnit, onNavigateToReports }: DashboardKpisProps) => {
-    const { t } = useTranslation();
+    const { t, lang } = useTranslation();
     return (
         <div className={styles.kpis}>
             <div className={styles.kpi}>
@@ -28,7 +28,7 @@ export const DashboardKpis = ({ kpis, amountDp, weightUnit, onNavigateToReports 
             </div>
             <div className={`${styles.kpi} ${styles.accent}`}>
                 <span className="lbl">{t("dashboard.kpi.tonnage")}</span>
-                <b className={styles.value}>{formatWeightIn(kpis.netTonnesToday * 1000, weightUnit)}</b>
+                <b className={styles.value}>{formatWeightIn(kpis.netTonnesToday * 1000, weightUnit, lang)}</b>
             </div>
             <div className={styles.kpi}>
                 <span className="lbl">{t("dashboard.kpi.charge")}</span>
@@ -50,7 +50,7 @@ export const DashboardKpis = ({ kpis, amountDp, weightUnit, onNavigateToReports 
                 <span className="lbl">{t("dashboard.kpi.avgNet")}</span>
                 <b className={styles.value}>
                     {kpis.avgNetKgPerTicket
-                        ? formatWeightIn(Math.round(kpis.avgNetKgPerTicket), weightUnit)
+                        ? formatWeightIn(Math.round(kpis.avgNetKgPerTicket), weightUnit, lang)
                         : "—"}
                 </b>
             </div>

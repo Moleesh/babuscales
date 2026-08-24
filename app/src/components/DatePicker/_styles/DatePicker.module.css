@@ -10,8 +10,10 @@
        a picked date like "15/08/26" aren't the same width, so the field
        visibly narrowed the moment a date was chosen). Wide enough for the
        longest realistic formatted date plus the calendar icon. */
-    width: 132px;
-    min-width: 132px;
+    /* Task: "increase the width of the buttons, dropdown and date in row 2"
+       — 132px → 150px, still fixed for the same reflow reason above. */
+    width: 150px;
+    min-width: 150px;
 }
 .trigger {
     display: flex;

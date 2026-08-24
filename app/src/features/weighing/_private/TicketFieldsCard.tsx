@@ -403,13 +403,21 @@ export const TicketFieldsCard = ({
             headerRight={primary ? <span className="chip num">{formatTicketNo(ticket.docSeq)}</span> : undefined}
         >
             {items.length === 0 && <p className={styles.emptySchema}>{t("weigh.ticket.empty")}</p>}
-            {chunkPairs(items).map((row) => (
-                <FieldGrid key={row.map((item) => item.key).join("_")} columns={2}>
-                    {row.map((item) => (
-                        <Fragment key={item.key}>{item.node}</Fragment>
-                    ))}
-                </FieldGrid>
-            ))}
+            {/* `primary`-only id — `focusFirstTicketField` (New ticket /
+                print-modal-close reset, task: "focusing on the first field in
+                the list") queries this specific card rather than the whole
+                screen, so it lands on the main ticket's first field and not,
+                say, a secondary segment's or the OpenTicketStrip's own
+                buttons. */}
+            <div id={primary ? "ticketFieldsList" : undefined}>
+                {chunkPairs(items).map((row) => (
+                    <FieldGrid key={row.map((item) => item.key).join("_")} columns={2}>
+                        {row.map((item) => (
+                            <Fragment key={item.key}>{item.node}</Fragment>
+                        ))}
+                    </FieldGrid>
+                ))}
+            </div>
             {primary && <RecallBanner offers={recallOffers} />}
         </Card>
     );

@@ -58,35 +58,53 @@ export const ReportsDateRangeRow = ({
                 — the OS-drawn native calendar can't be styled and the
                 custom cursor follower can't reach it — same "YYYY-MM-DD"
                 value contract, so nothing downstream of onDateFromChange/
-                onDateToChange had to change. */}
-            <DatePicker
-                value={dateFrom}
-                onChange={onDateFromChange}
-                dateFmt={dateFmt}
-                aria-label={t("reports.dateFromAriaLabel")}
-            />
-            <DatePicker
-                value={dateTo}
-                onChange={onDateToChange}
-                dateFmt={dateFmt}
-                aria-label={t("reports.dateToAriaLabel")}
-            />
-            {onSeriesEpochChange && seriesEpochOptions ? (
-                <Select
-                    id="reportsSeriesEpoch"
-                    value={seriesEpoch === "current" || seriesEpoch === undefined ? CURRENT_EPOCH_VALUE : String(seriesEpoch)}
-                    options={seriesEpochOptions.map((option, index) => ({
-                        // `listSeriesEpochOptions` always puts "Current" first
-                        // (reportRows.ts) — that one entry gets the sentinel
-                        // value so it matches `seriesEpoch === "current"`
-                        // regardless of what `Numbering.CurrentEpoch` actually is.
-                        value: index === 0 ? CURRENT_EPOCH_VALUE : String(option.epoch),
-                        label: option.label,
-                    }))}
-                    onChange={(value) =>
-                        onSeriesEpochChange(value === CURRENT_EPOCH_VALUE ? "current" : Number(value))
-                    }
+                onDateToChange had to change. Each control now carries a
+                small visible caption above it (task: "utilize the space in
+                the second row of the report, give some context to the
+                dropdowns") — this row previously read as three unlabeled
+                controls in a line; the caption text reuses each control's
+                own existing aria-label/i18n key rather than adding new ones. */}
+            <div className={styles.rangeField}>
+                <span className={styles.rangeFieldLabel}>{t("reports.dateFromAriaLabel")}</span>
+                <DatePicker
+                    value={dateFrom}
+                    onChange={onDateFromChange}
+                    dateFmt={dateFmt}
+                    aria-label={t("reports.dateFromAriaLabel")}
                 />
+            </div>
+            <div className={styles.rangeField}>
+                <span className={styles.rangeFieldLabel}>{t("reports.dateToAriaLabel")}</span>
+                <DatePicker
+                    value={dateTo}
+                    onChange={onDateToChange}
+                    dateFmt={dateFmt}
+                    aria-label={t("reports.dateToAriaLabel")}
+                />
+            </div>
+            {onSeriesEpochChange && seriesEpochOptions ? (
+                <div className={styles.rangeField}>
+                    <span className={styles.rangeFieldLabel}>{t("reports.series.label")}</span>
+                    <Select
+                        id="reportsSeriesEpoch"
+                        value={
+                            seriesEpoch === "current" || seriesEpoch === undefined
+                                ? CURRENT_EPOCH_VALUE
+                                : String(seriesEpoch)
+                        }
+                        options={seriesEpochOptions.map((option, index) => ({
+                            // `listSeriesEpochOptions` always puts "Current" first
+                            // (reportRows.ts) — that one entry gets the sentinel
+                            // value so it matches `seriesEpoch === "current"`
+                            // regardless of what `Numbering.CurrentEpoch` actually is.
+                            value: index === 0 ? CURRENT_EPOCH_VALUE : String(option.epoch),
+                            label: option.label,
+                        }))}
+                        onChange={(value) =>
+                            onSeriesEpochChange(value === CURRENT_EPOCH_VALUE ? "current" : Number(value))
+                        }
+                    />
+                </div>
             ) : null}
         </div>
     );

@@ -10,26 +10,26 @@ export interface MasterFormActionsProps {
     canSave: boolean;
     addNewLabel: string;
     onSave: () => void;
-    onToggleActive: () => void;
-    /** Hard delete (task: "we need an option to remove the rows in master") — distinct from `onToggleActive`, which only ever hides a row from the picker. Confirmed inline below before firing, since this can't be undone the way Deactivate can. */
+    /** Hard delete (task: "we need an option to remove the rows in master"). Confirmed inline below before firing — this can't be undone. */
     onDelete: () => void;
     onStartNew: () => void;
-    onReload: () => void;
 }
 
 // Split out of MastersScreen (over the line/complexity budget —
-// docs/CodingStandards.md) — the Save/Deactivate/New/Refresh button row,
-// unchanged from the inline version it replaces.
+// docs/CodingStandards.md) — the Save/New button row. Deactivate/Activate
+// (and its Status column in masterColumns.tsx) and Refresh were removed
+// per request: "we dont want deactivate in masters remove the whole logic
+// and the column" / "we dont need refresh in master" — Save's own
+// `reloadToken` (useMasterCache) already keeps the visible list current, so
+// a manual refresh button had nothing left to do.
 export const MasterFormActions = ({
     selected,
     saving,
     canSave,
     addNewLabel,
     onSave,
-    onToggleActive,
     onDelete,
     onStartNew,
-    onReload,
 }: MasterFormActionsProps) => {
     const { t } = useTranslation();
     return (
@@ -37,11 +37,6 @@ export const MasterFormActions = ({
             <Button variant="primary" disabled={saving || !canSave} onClick={onSave}>
                 {selected ? t("masters.action.saveChanges") : addNewLabel}
             </Button>
-            {selected && (
-                <Button variant={selected.IsActive ? "danger" : "default"} disabled={saving} onClick={onToggleActive}>
-                    {selected.IsActive ? t("masters.action.deactivate") : t("masters.action.activate")}
-                </Button>
-            )}
             {selected && (
                 <Button
                     variant="danger"
@@ -64,9 +59,6 @@ export const MasterFormActions = ({
                     {t("masters.action.new")}
                 </Button>
             )}
-            <Button disabled={saving} onClick={onReload}>
-                {t("masters.action.refresh")}
-            </Button>
         </div>
     );
 };

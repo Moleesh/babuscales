@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { KeyboardEvent as ReactKeyboardEvent } from "react";
 
 import type { SearchableDropdownOption } from "../SearchableDropdown.types";
@@ -54,6 +54,10 @@ const handleDropdownKeyDown = (event: ReactKeyboardEvent<HTMLInputElement>, ctx:
 export const useDropdownState = ({ value, onChange, onSearch, onPick, onAddNew }: UseDropdownStateArgs) => {
     const [open, setOpen] = useState(false);
     const [highlightedIndex, setHighlightedIndex] = useState(-1);
+    // Handed to SearchableDropdown.tsx's own `.wrapper` div (input + popover
+    // together) — lets the scroll-close effect below tell the popover's own
+    // internal scroll apart from a scroll elsewhere on the page.
+    const wrapperRef = useRef<HTMLDivElement>(null);
     const results = open ? onSearch(value) : [];
     const showAddNew = Boolean(
         open && onAddNew && value.trim() && !results.some((r) => r.Label === value),
@@ -66,6 +70,27 @@ export const useDropdownState = ({ value, onChange, onSearch, onPick, onAddNew }
         setOpen(false);
         setHighlightedIndex(-1);
     };
+
+    // Task: "on scroll close all the dropdowns, date drop down and other
+    // custom dropdowns" — same reasoning as Select.tsx's/DatePicker.tsx's
+    // own `useCloseOnOutsideClick`: the open popover is absolutely
+    // positioned off the input's rect and doesn't track it during a scroll.
+    // `.pop`'s own `overflow: auto` (SearchableDropdown.module.css) means a
+    // long result list's internal scroll fires here too — the `contains`
+    // guard below skips those so scrolling through results doesn't close
+    // the very popover being scrolled.
+    useEffect(() => {
+        if (!open) return;
+        const onScroll = (event: Event) => {
+            if (wrapperRef.current && event.target instanceof Node && wrapperRef.current.contains(event.target)) {
+                return;
+            }
+            close();
+        };
+        document.addEventListener("scroll", onScroll, { capture: true, passive: true });
+        return () => document.removeEventListener("scroll", onScroll, { capture: true });
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [open]);
 
     const pick = (option: SearchableDropdownOption) => {
         onChange(option.Label);
@@ -119,5 +144,6 @@ export const useDropdownState = ({ value, onChange, onSearch, onPick, onAddNew }
         addNew,
         handleKeyDown,
         handleInputChange,
+        wrapperRef,
     };
 };

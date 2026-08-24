@@ -113,9 +113,15 @@ const useStickyFiltersHeight = (
         const bodyEl = bodyRef.current;
         const filtersEl = filtersRef.current;
         if (!bodyEl || !filtersEl) return;
-        const observer = new ResizeObserver(([entry]) => {
-            if (!entry) return;
-            bodyEl.style.setProperty("--reports-filters-h", `${entry.contentRect.height}px`);
+        // `entry.contentRect` is `.stickyFilters`' own *content* box — it
+        // excludes that element's own `padding-block: 4px 6px`
+        // (ReportsScreen.module.css), undercounting its real rendered
+        // height by 10px, so the table below kept rendering 10px too tall
+        // for the room actually left under it (task: "still some more
+        // scrolling", same root cause as Card.tsx's own `--card-header-h`
+        // fix). Reading the real border-box height directly instead.
+        const observer = new ResizeObserver(() => {
+            bodyEl.style.setProperty("--reports-filters-h", `${filtersEl.getBoundingClientRect().height}px`);
         });
         observer.observe(filtersEl);
         return () => observer.disconnect();

@@ -5,8 +5,11 @@
     position: relative;
     /* Enough for a typical SchemaId/option label ("default-ticket") without
        truncating — a caller in a tighter layout can still override this on
-       its own wrapping element; this is just a sane floor, not a fixed size. */
-    min-width: 140px;
+       its own wrapping element; this is just a sane floor, not a fixed size.
+       140px → 160px (task: "increase the width of the buttons, dropdown
+       and date in row 2" — Reports' own series-epoch Select is one of
+       these). */
+    min-width: 160px;
 }
 .trigger {
     display: flex;

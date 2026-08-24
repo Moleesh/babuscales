@@ -23,9 +23,14 @@ const COLUMNS: DataTableColumn<Row>[] = [
 ];
 
 describe("DataTable", () => {
-    it("renders an EmptyState instead of a table when there are no rows", () => {
+    it("renders an EmptyState below the column headers when there are no rows", () => {
+        // Task: "the header for report is mising" — the header row stays
+        // visible (so the operator still sees what columns to expect) even
+        // once there are no rows to show under it; only the body swaps to
+        // EmptyState.
         renderWithI18n(<DataTable columns={COLUMNS} rows={[]} getRowId={(row: Row) => row.id} />);
-        expect(screen.queryByRole("table")).toBeNull();
+        expect(screen.getByRole("columnheader", { name: "Name" })).toBeInTheDocument();
+        expect(screen.queryByRole("row", { name: /Blue Metal|M-Sand/ })).toBeNull();
         expect(screen.getByText("Nothing here yet")).toBeInTheDocument();
     });
 

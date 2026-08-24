@@ -45,7 +45,7 @@ const buildResumeOffer = (args: BuildRecallOffersArgs): RecallOffer | null => {
     return {
         key: "resume",
         label: `${t("weigh.recall.resume")} ${formatTicketNo(openMatch.doc.DocSeq)}`,
-        hint: `${t(openMatch.kind === "Tare" ? "tare" : "gross")} ${formatWeightIn(openMatch.weightKg, weightUnit)} · ${formatStamp(openMatch.capturedAt, lang, dateFmt, timeFmt)}`,
+        hint: `${t(openMatch.kind === "Tare" ? "tare" : "gross")} ${formatWeightIn(openMatch.weightKg, weightUnit, lang)} · ${formatStamp(openMatch.capturedAt, lang, dateFmt, timeFmt)}`,
         onAccept: () => ticket.resume(openMatch.doc),
     };
 };
@@ -53,7 +53,7 @@ const buildResumeOffer = (args: BuildRecallOffersArgs): RecallOffer | null => {
 // The "reuse a stored tare" offer — pulled out of buildRecallOffers purely
 // to stay under the file's own line budget.
 const buildStoredTareOffer = (args: BuildRecallOffersArgs): RecallOffer | null => {
-    const { ticket, storedTareCache, strictTare, t, weightUnit } = args;
+    const { ticket, storedTareCache, strictTare, t, weightUnit, lang } = args;
     if (strictTare || ticket.captures.some((c) => c.Type === "Tare")) return null;
     const storedTare = storedTareCache
         .search(ticket.fields.vehicleNo)
@@ -62,7 +62,7 @@ const buildStoredTareOffer = (args: BuildRecallOffersArgs): RecallOffer | null =
     const body = storedTare.Body;
     return {
         key: "storedTare",
-        label: `${t("weigh.recall.useStoredTare")} ${formatWeightIn(body.WeightKg, weightUnit)}`,
+        label: `${t("weigh.recall.useStoredTare")} ${formatWeightIn(body.WeightKg, weightUnit, lang)}`,
         hint: `${t("weigh.recall.takenAgo")} ${storedTareAgeDays(body.CapturedAt)} ${t("weigh.recall.daysAgo")}`,
         onAccept: () => ticket.useStoredTare(body.WeightKg, body.CapturedAt),
     };

@@ -32,6 +32,11 @@ export interface StatusPillProps {
     /** Settings' `Formats.WeightUnit` — defaults to "kg" so a caller that predates this
      * setting (or doesn't have it in reach) keeps the pill's original look. */
     weightUnit?: WeightUnit;
+    /** i18n's active language — decides the translated "kg"/"t" suffix
+     * (task: "kg not translated"). A plain prop, not useTranslation(), same
+     * reasoning as WeightDisplay's own `lang` prop: keeps this component
+     * usable outside an I18nProvider. Defaults to "en". */
+    lang?: string;
 }
 
 const DEFAULT_LABELS: StatusPillLabels = { tare: "Tare", gross: "Gross", net: "Net" };
@@ -41,9 +46,10 @@ interface SegmentProps {
     kg: number | null;
     net?: boolean;
     weightUnit: WeightUnit;
+    lang: string;
 }
 
-const Segment = ({ label, kg, net, weightUnit }: SegmentProps) => {
+const Segment = ({ label, kg, net, weightUnit, lang }: SegmentProps) => {
     const on = kg !== null && kg !== undefined;
     const className = [styles.segment, on && styles.on, net && styles.net]
         .filter(Boolean)
@@ -51,7 +57,7 @@ const Segment = ({ label, kg, net, weightUnit }: SegmentProps) => {
     return (
         <i className={className}>
             {label}
-            <b className={styles.value}>{on ? formatWeightIn(kg, weightUnit) : "—"}</b>
+            <b className={styles.value}>{on ? formatWeightIn(kg, weightUnit, lang) : "—"}</b>
         </i>
     );
 };
@@ -67,6 +73,7 @@ export const StatusPill = ({
     hideNet,
     labels = DEFAULT_LABELS,
     weightUnit = "kg",
+    lang = "en",
 }: StatusPillProps) => {
     const tare = tareKg ?? null;
     const gross = grossKg ?? null;
@@ -79,9 +86,9 @@ export const StatusPill = ({
 
     return (
         <span className={`${styles.pill} ${cancelled ? styles.cancelled : ""}`}>
-            <Segment label={labels.gross} kg={gross} weightUnit={weightUnit} />
-            <Segment label={labels.tare} kg={tare} weightUnit={weightUnit} />
-            {!hideNet && <Segment label={labels.net} kg={net} net weightUnit={weightUnit} />}
+            <Segment label={labels.gross} kg={gross} weightUnit={weightUnit} lang={lang} />
+            <Segment label={labels.tare} kg={tare} weightUnit={weightUnit} lang={lang} />
+            {!hideNet && <Segment label={labels.net} kg={net} net weightUnit={weightUnit} lang={lang} />}
         </span>
     );
 };

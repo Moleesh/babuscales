@@ -102,13 +102,28 @@ export const formatPlainNumber = (value: number): string => Math.round(value).to
 export const WEIGHT_UNITS = ["kg", "t"] as const;
 export type WeightUnit = (typeof WEIGHT_UNITS)[number];
 
+// Same "lang decides the label" convention as `DATE_LOCALE_BY_LANG` above —
+// "kg"/"t" were showing untranslated even on the Tamil pack (task: "kg not
+// translated"). "கிலோ" is the everyday short Tamil form for kilogram (not a
+// literal transliteration of "kg"), matching the register of a printed slip
+// or a filter chip rather than the fuller "கிலோகிராம்" used in Settings'
+// dropdown (settings.amountFields.weightUnitKg) where there's room to spell
+// it out. An untranslated `lang` falls back to the English short forms.
+const WEIGHT_UNIT_LABEL: Record<string, Record<WeightUnit, string>> = {
+    en: { kg: "kg", t: "t" },
+    ta: { kg: "கிலோ", t: "டன்" },
+};
+const weightUnitLabel = (unit: WeightUnit, lang: string): string =>
+    (WEIGHT_UNIT_LABEL[lang] ?? WEIGHT_UNIT_LABEL.en)?.[unit] ?? unit;
+
 /** By request, this is a pure unit-*label* swap, not a kg→tonnes
  * conversion — the indicator only ever reports kg, and every consumer
  * (Dashboard, Reports, print slips, Masters, Weighing) should keep showing
- * that raw number unchanged, just suffixed "kg" or "t" per Settings'
- * Weight display unit. No division, no extra decimal places for tonnes. */
-export const formatWeightIn = (kg: number, unit: WeightUnit): string =>
-    `${Math.round(kg).toLocaleString(INDIAN_LOCALE)} ${unit}`;
+ * that raw number unchanged, just suffixed "kg" or "t" (translated per
+ * `lang`) per Settings' Weight display unit. No division, no extra decimal
+ * places for tonnes. */
+export const formatWeightIn = (kg: number, unit: WeightUnit, lang: string): string =>
+    `${Math.round(kg).toLocaleString(INDIAN_LOCALE)} ${weightUnitLabel(unit, lang)}`;
 
 // Ported from the mock's `money()` — `decimalPlaces` is Settings' System
 // pane "Amount rounding" (`Formats.AmountDp`), not a fixed 2, so a site

@@ -71,7 +71,6 @@ export const useMastersScreenState = (activeKind: MasterKind, columns: MasterCol
             saving: formActions.saving,
             error: formActions.error,
             onSave: () => void formActions.handleSave(),
-            onToggleActive: () => void formActions.toggleActive(),
             onDelete: () => void formActions.handleDelete(),
             onStartNew: formActions.startNew,
         },

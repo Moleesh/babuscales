@@ -48,6 +48,13 @@
     min-width: 6.5ch;
     text-align: right;
     color: var(--faint);
+    /* `.pill`'s own `text-transform: uppercase` (above) is meant for the
+       TARE/GROSS/NET label text, but it cascades into this value too,
+       uppercasing `formatWeightIn`'s "kg" suffix into "KG" — every other
+       weight display in the app (WeightDisplay, reportColumns, the print
+       slip) renders it lowercase. Task: "everywhere we use different case
+       for kg, use the same here". */
+    text-transform: none;
 }
 .segment.on .value {
     color: var(--text);

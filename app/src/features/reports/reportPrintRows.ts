@@ -16,7 +16,10 @@ export const buildTicketPrintRows = (rows: TicketRow[], weightUnit: WeightUnit):
         formatTicketNo(row.docSeq),
         row.vehicleNo || "—",
         row.party || "—",
-        row.isCancelled ? "CANCELLED" : row.netKg !== null ? formatWeightIn(row.netKg, weightUnit) : "open",
+        // "en" — every other column head/value in this print output ("Ticket",
+        // "Vehicle", "CANCELLED", "open") is hardcoded English too, unlike the
+        // on-screen report; formatWeightIn's `lang` just matches that.
+        row.isCancelled ? "CANCELLED" : row.netKg !== null ? formatWeightIn(row.netKg, weightUnit, "en") : "open",
     ]),
 });
 

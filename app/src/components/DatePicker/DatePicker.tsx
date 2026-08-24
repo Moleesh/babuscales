@@ -47,11 +47,21 @@ const useCloseOnOutsideClick = (open: boolean, onClose: () => void) => {
         const onKeyDown = (event: KeyboardEvent) => {
             if (event.key === "Escape") onClose();
         };
+        // Task: "on scroll close all the dropdowns, date drop down and other
+        // custom dropdowns" — same reasoning as Select.tsx's own copy,
+        // including the `contains` guard so scrolling inside the calendar
+        // popover itself doesn't close it.
+        const onScroll = (event: Event) => {
+            if (ref.current && event.target instanceof Node && ref.current.contains(event.target)) return;
+            onClose();
+        };
         document.addEventListener("pointerdown", onPointerDown);
         document.addEventListener("keydown", onKeyDown);
+        document.addEventListener("scroll", onScroll, { capture: true, passive: true });
         return () => {
             document.removeEventListener("pointerdown", onPointerDown);
             document.removeEventListener("keydown", onKeyDown);
+            document.removeEventListener("scroll", onScroll, { capture: true });
         };
     }, [open, onClose]);
     return ref;

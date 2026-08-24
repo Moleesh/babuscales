@@ -29,7 +29,9 @@
     color: var(--text);
     font: inherit;
     font-size: 0.8125rem;
-    width: 180px;
+    /* Task: "increase the width of the buttons, dropdown and date in row 2"
+       — 180px → 200px. */
+    width: 200px;
 }
 .trigger:hover:not(:disabled),
 .trigger:active:not(:disabled) {

@@ -11,8 +11,8 @@ import { formatTicketNo } from "@features/weighing";
 import { fieldColumnKey, groupLabel } from "../reportRows";
 import type { GroupKey, SummaryRow, TicketRow, Translate } from "../reportRows";
 
-const formatWeightCell = (kg: number | null, weightUnit: WeightUnit): string =>
-    kg === null ? "—" : formatWeightIn(kg, weightUnit);
+const formatWeightCell = (kg: number | null, weightUnit: WeightUnit, lang: string): string =>
+    kg === null ? "—" : formatWeightIn(kg, weightUnit, lang);
 
 // Reports rework, item 5 — the schema Fields that can become a *report*
 // column: everything except the 9 built-ins already covered by their own
@@ -125,19 +125,19 @@ const buildAllTicketColumns = ({
         key: "tare",
         header: t("reports.col.tare"),
         numeric: true,
-        render: (row) => formatWeightCell(row.tareKg, weightUnit),
+        render: (row) => formatWeightCell(row.tareKg, weightUnit, lang),
     },
     {
         key: "gross",
         header: t("reports.col.gross"),
         numeric: true,
-        render: (row) => formatWeightCell(row.grossKg, weightUnit),
+        render: (row) => formatWeightCell(row.grossKg, weightUnit, lang),
     },
     {
         key: "net",
         header: t("reports.col.net"),
         numeric: true,
-        render: (row) => formatWeightCell(row.netKg, weightUnit),
+        render: (row) => formatWeightCell(row.netKg, weightUnit, lang),
     },
     {
         key: "charge",

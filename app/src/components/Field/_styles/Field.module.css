@@ -36,9 +36,15 @@
    little differnt bg"). Contained inside the border here instead, with a
    faint led tint so a focused field is still visually distinct from a
    merely-hovered one. */
-.f :global(input:focus-visible),
-.f :global(select:focus-visible),
-.f :global(textarea:focus-visible) {
+/* :not(:disabled):not(:read-only) — a disabled field can't be focused by
+   mouse/keyboard at all (browsers already skip it), but a *readonly*
+   computed field (e.g. NET, GODOWN GROSS) still can, and previously showed
+   the same active-focus ring as an editable field on click even though
+   there's nothing to type into (task: "disabled fields still has focus
+   when we click them"). */
+.f :global(input:focus-visible:not(:disabled):not(:read-only)),
+.f :global(select:focus-visible:not(:disabled)),
+.f :global(textarea:focus-visible:not(:disabled):not(:read-only)) {
     outline: 2px solid var(--led);
     outline-offset: -2px;
     background: var(--led-ghost);

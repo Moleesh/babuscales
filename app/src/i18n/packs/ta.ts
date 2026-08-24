@@ -314,6 +314,9 @@ export const TA_PACK: LanguagePack = {
         "settings.weighingRules.sameTicketNo.label": "காலி & மொத்த எடைக்கு ஒரே டிக்கெட் எண்",
         "settings.weighingRules.sameTicketNo.note":
             "இயக்கத்தில்: இரண்டாவதாக எடுக்கப்படும் எடை, முதல் எடையின் டிக்கெட் எண்ணையே தக்கவைக்கும். அணைக்கப்பட்டால்: இரண்டாவது எடை முடிந்ததும் புதிய டிக்கெட் எண் வழங்கப்படும்; முதல் ஒற்றை-எடை டிக்கெட் தனி பதிவாகவே நிலைத்திருக்கும்.",
+        "settings.weighingRules.showFormulaBreakdown.label": "கணக்கிடப்பட்ட புலங்களுக்குக் கீழே சூத்திரத்தைக் காட்டு",
+        "settings.weighingRules.showFormulaBreakdown.note":
+            "இயக்கத்தில்: ஒவ்வொரு கணக்கிடப்பட்ட பெட்டியும் (நிகர எடை, மற்றும் ஸ்கீமா-வரையறுத்த சூத்திர புலங்கள்) அதற்குக் கீழே \"லேபிள் = சூத்திரம் = மதிப்புகள் = முடிவு\" எனும் வரியைக் காட்டும். அணைக்கப்பட்டால் அந்த வரி மறைந்து, மதிப்பு மட்டும் தெரியும்.",
         "settings.weighingRules.showSendLorry.label": "\"லாரிக்கு அனுப்பு\" பட்டனைக் காட்டு",
         "settings.weighingRules.showSendLorry.note":
             "உண்மையான தராசு அளவீட்டிற்குப் பதிலாக ஒரு எடையை நேரடியாகக் காட்டிக்கு அனுப்பும் சோதனை/டெமோ குறுக்குவழி — உருவகப்படுத்தப்பட்ட காட்டியில் மட்டுமே தோன்றும். அணைக்கப்பட்டால் அங்கும் மறைந்துவிடும்.",
@@ -346,6 +349,7 @@ export const TA_PACK: LanguagePack = {
         "reports.groupByLabel": "இதன் அடிப்படையில் குழு",
         "reports.dateFromAriaLabel": "தொடக்க தேதி",
         "reports.dateToAriaLabel": "முடிவு தேதி",
+        "reports.series.label": "தொடர்",
         "reports.series.current": "தற்போதையது",
         "reports.series.priorPrefix": "மீட்டமைப்பிற்கு முன் —",
 

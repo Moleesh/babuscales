@@ -31,11 +31,16 @@ export interface OpenTicketStripProps {
 // so the operator can pick the lorry back up the moment it returns to the
 // deck, without hunting through Reports for it.
 export const OpenTicketStrip = ({ tickets, loading, onResume, weightUnit, containerRef }: OpenTicketStripProps) => {
-    const { t } = useTranslation();
+    const { t, lang } = useTranslation();
     if (tickets.length === 0 && !loading) return null;
 
     return (
-        <div className={styles.strip} ref={containerRef}>
+        // `data-enter-skip` — task: "open segment should not be focusable".
+        // useEnterAsTab.ts excludes anything inside a `[data-enter-skip]`
+        // container from the Enter walk both as a source AND a destination,
+        // so these resume buttons no longer pick up the Enter-walk's focus
+        // ring while still staying reachable/clickable by mouse.
+        <div className={styles.strip} ref={containerRef} data-enter-skip>
             <span className="lbl">{t("weigh.open")}</span>
             {loading && tickets.length === 0 ? (
                 <span className={styles.loading}>
@@ -53,7 +58,7 @@ export const OpenTicketStrip = ({ tickets, loading, onResume, weightUnit, contai
                     <span>{ticket.body.VehicleNo || "—"}</span>
                     <span className={styles.weight}>
                         {t(ticket.kind === "Tare" ? "weigh.tare" : "weigh.gross")}{" "}
-                        {formatWeightIn(ticket.weightKg, weightUnit)}
+                        {formatWeightIn(ticket.weightKg, weightUnit, lang)}
                     </span>
                 </button>
             ))}

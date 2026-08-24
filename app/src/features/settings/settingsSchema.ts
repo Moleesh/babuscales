@@ -55,6 +55,15 @@ const rulesSchema = z.object({
     // same "old settings row still parses" reasoning as ShowSendLorry/
     // ManualEntry above.
     SameTicketNo: z.boolean().default(true),
+    // Task: "add the formula shown below fields plus a toggle to hide them"
+    // — the "Label = formula = substituted = result" line CalcCard.tsx
+    // renders under the fixed Net box (netFormulaBreakdown) and under every
+    // schema-driven Formula field (CalcSegmentRows, calcSegments.ts). On
+    // (default) keeps today's always-shown behaviour unchanged for existing
+    // installs; an admin who finds the extra line noisy on a small screen
+    // can turn it off. `.default()` — same "old settings row still parses"
+    // reasoning as ShowSendLorry/ManualEntry/SameTicketNo above.
+    ShowFormulaBreakdown: z.boolean().default(true),
 });
 export type WeighingRules = z.infer<typeof rulesSchema>;
 
@@ -381,6 +390,7 @@ export const DEFAULT_RULES: WeighingRules = {
     ShowSendLorry: !IS_TAURI_BUILD,
     ManualEntry: false,
     SameTicketNo: true,
+    ShowFormulaBreakdown: true,
 };
 
 export const DEFAULT_STABILITY: StabilityGate = {
@@ -501,5 +511,10 @@ export const ruleDefs = (t: (key: string) => string): readonly [key: keyof Weigh
         "ManualEntry",
         t("settings.weighingRules.manualEntry.label"),
         t("settings.weighingRules.manualEntry.note"),
+    ],
+    [
+        "ShowFormulaBreakdown",
+        t("settings.weighingRules.showFormulaBreakdown.label"),
+        t("settings.weighingRules.showFormulaBreakdown.note"),
     ],
 ];

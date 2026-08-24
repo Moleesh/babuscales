@@ -144,8 +144,30 @@ export const DataTable = <Row,>({
     const { t } = useTranslation();
     const { wrapperRef, rowHeightRef, range, recompute } = useVirtualizedRowRange(rows.length);
 
+    // Task: "the header for report is mising" — the column header row used to
+    // bail out entirely alongside the rows on an empty result (EmptyState
+    // replaced the whole table), so a freshly-opened Reports screen with no
+    // report applied yet showed nothing but the filter row above a blank
+    // gap — no TICKET/VEHICLE/... labels to hint at what the table will
+    // hold once a report is picked. The header (and its own sticky
+    // behaviour) now always renders; only the body swaps to EmptyState.
     if (rows.length === 0) {
-        return <EmptyState title={emptyMessage ?? t("dataTable.emptyDefault")} />;
+        return (
+            <div className={styles.wrapper}>
+                <table className={styles.table}>
+                    <thead>
+                        <tr>
+                            {columns.map((column) => (
+                                <th key={column.key} className={column.numeric ? styles.numeric : undefined}>
+                                    {column.header}
+                                </th>
+                            ))}
+                        </tr>
+                    </thead>
+                </table>
+                <EmptyState title={emptyMessage ?? t("dataTable.emptyDefault")} />
+            </div>
+        );
     }
 
     const rowHeight = rowHeightRef.current;

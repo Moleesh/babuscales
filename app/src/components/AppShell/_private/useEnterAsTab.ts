@@ -36,10 +36,24 @@ export const useEnterAsTab = (): void => {
             // back -1 since the chip's input isn't in `scope`'s list) before the chip's own
             // handler runs.
             if (target instanceof HTMLElement && target.closest("[data-enter-skip]")) return;
+            // A focused <button> gets the browser's own Enter-activates-it
+            // behavior instead of being walked past — Enter used to always
+            // move focus off a button without ever pressing it (task: "enter
+            // on buttons is not working"). Space still presses it too; this
+            // just stops Enter from being swallowed by the walker first.
+            if (target instanceof HTMLButtonElement) return;
 
             const scope = resolveScope();
+            // `data-enter-skip` used to only bail when the *source* element sat
+            // inside a skip container (the check above) — it never stopped a
+            // skip-marked element from being picked as the *destination*, so
+            // Enter from a ManualCalcBox's Tare input still landed on the
+            // Tare/Gross SegmentedControl right after it (task: "enter from
+            // tare goes directly to tare tab switch it should go to capture").
+            // Excluding skip-marked elements from the walk list entirely fixes
+            // both directions with one change.
             const list = Array.from(scope.querySelectorAll<HTMLElement>(FOCUSABLE)).filter(
-                isVisible,
+                (el) => isVisible(el) && !el.closest("[data-enter-skip]"),
             );
             if (!list.length) return;
 

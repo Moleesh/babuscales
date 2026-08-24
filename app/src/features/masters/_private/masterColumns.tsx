@@ -14,13 +14,14 @@ const storedTareColumns = (
     styles: CSSModuleClasses,
     t: Translate,
     weightUnit: WeightUnit,
+    lang: string,
 ): DataTableColumn<MasterRow>[] => [
     { key: "name", header: t("masters.col.vehicle"), render: (row) => row.Name },
     {
         key: "weight",
         header: t("masters.col.weight"),
         numeric: true,
-        render: (row) => (isStoredTareBody(row.Body) ? formatWeightIn(row.Body.WeightKg, weightUnit) : "—"),
+        render: (row) => (isStoredTareBody(row.Body) ? formatWeightIn(row.Body.WeightKg, weightUnit, lang) : "—"),
     },
     {
         key: "age",
@@ -41,11 +42,6 @@ const storedTareColumns = (
         key: "party",
         header: t("masters.col.party"),
         render: (row) => (isStoredTareBody(row.Body) ? (row.Body.PartyName ?? "—") : "—"),
-    },
-    {
-        key: "active",
-        header: t("masters.col.status"),
-        render: (row) => (row.IsActive ? t("masters.status.active") : t("masters.status.inactive")),
     },
 ];
 
@@ -90,15 +86,10 @@ export const buildMasterColumns = ({
     dateFmt,
     timeFmt,
 }: BuildMasterColumnsArgs): DataTableColumn<MasterRow>[] => {
-    if (activeKind === "StoredTare") return storedTareColumns(styles, t, weightUnit);
+    if (activeKind === "StoredTare") return storedTareColumns(styles, t, weightUnit, lang);
     return [
         { key: "name", header: t("masters.col.name"), render: (row) => row.Name },
         ...dynamicColumns(masterColumns, lang, t),
-        {
-            key: "active",
-            header: t("masters.col.status"),
-            render: (row) => (row.IsActive ? t("masters.status.active") : t("masters.status.inactive")),
-        },
         {
             key: "updated",
             header: t("masters.col.updated"),
