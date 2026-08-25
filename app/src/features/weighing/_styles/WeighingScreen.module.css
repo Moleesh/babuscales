@@ -245,24 +245,15 @@
     line-height: 1.5;
 }
 
-/* Wraps a `.calc-box` together with its own formula line (CalcCard.tsx's
-   `NetChargeBoxes`/`CalcSegmentRows`) so the pair still occupies exactly one
-   `.calc`/`.calc-segment-grid` grid cell — every calc field, Net included,
-   shows its own raw formula right under its own box (task: "not below the
-   segment, below every field"). */
-.calc-box-with-formula {
-    display: grid;
-    gap: 6px;
-    min-width: 0;
-}
-
 /* CalcCard.tsx's `FormulaLine` — the raw calculation ("Gross − Tare",
-   "Round(0 − (x))") under a calc field's own box, no substituted values (task:
-   "just show the clculation no need to subsuture value"). Single line,
-   truncated with an ellipsis rather than wrapping — the full text is still
-   available via the element's own `title` on hover (task: "dont wrap it but
-   you can trucate and show in hover incase it long"), same truncation
-   approach as `.calc-stamp`. */
+   "Round(0 − (x))") rendered inside a calc field's own `.calc-box` (below
+   the stamp), no substituted values (task: "just show the clculation no
+   need to subsuture value", then later "move the formula inside" — was a
+   sibling element below the box, now a child of it). Single line, truncated
+   with an ellipsis rather than wrapping — the full text is still available
+   via the element's own `title` on hover (task: "dont wrap it but you can
+   trucate and show in hover incase it long"), same truncation approach as
+   `.calc-stamp`. */
 .formula-line {
     font-size: 0.6875rem;
     color: var(--dim);
@@ -271,4 +262,5 @@
     overflow: hidden;
     text-overflow: ellipsis;
     min-width: 0;
+    margin-top: 2px;
 }

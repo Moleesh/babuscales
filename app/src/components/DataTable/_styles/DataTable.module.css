@@ -32,6 +32,25 @@
        callers (Masters, Settings, Dashboard) keep the 65vh default,
        unaffected. */
     max-height: var(--datatable-max-height, 65vh);
+    /* Overridable per-caller, same pattern as `--datatable-max-height` above
+       — Reports' own `.tickets-table` (ReportsScreen.module.css) sets this so
+       a short/empty result set still fills the table's full height budget
+       instead of shrinking to its own content, keeping the bottom bar below
+       flush at the screen's true bottom. Defaults to unset so every other
+       caller (Masters, Settings, Dashboard) keeps sizing to content. */
+    /* Harmless unless this `.wrapper` is itself a flex item (Card.module.css's
+       opt-in `.bodyFill`, so far only MastersListCard) — `flex-basis: auto`
+       lets it flex to fill whatever room is actually left instead of
+       `max-height` (above) capping it to a fixed vh, only for callers that
+       pair this with `--datatable-max-height: none`. The `min-height: 0`
+       that used to sit here (letting it shrink below its own content, the
+       usual flex-item default-`auto` fix) was silently overriding the
+       `--datatable-min-height` declaration above it in the cascade — folded
+       into that one property instead so a caller opting into a min-height
+       (Reports' `.tickets-table`) actually gets it, while every other caller
+       keeps the old shrink-to-content behaviour via the `0` fallback. */
+    min-height: var(--datatable-min-height, 0);
+    flex: 1 1 auto;
 }
 
 .table {

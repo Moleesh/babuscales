@@ -27,7 +27,15 @@ export const ReportsScreenCard = ({ s, loading }: ReportsScreenCardProps) => {
                     onViewChange={s.setView}
                     waitingCount={s.waitingCount}
                     onShowWaiting={s.showWaiting}
-                    onOpenBuilder={() => s.setBuilderOpen(true)}
+                    // `setEditingReportId(null)` — a fresh "Build report"
+                    // open must not inherit whatever saved view was last
+                    // edited via SavedReportsRow's pencil (openReportForEdit),
+                    // or Save here would silently overwrite that view instead
+                    // of adding a new one.
+                    onOpenBuilder={() => {
+                        s.setEditingReportId(null);
+                        s.setBuilderOpen(true);
+                    }}
                 />
             }
         >
@@ -35,6 +43,7 @@ export const ReportsScreenCard = ({ s, loading }: ReportsScreenCardProps) => {
                 loading={loading}
                 reportApplied={s.reportApplied}
                 savedReportActions={s.savedReportActions}
+                onEditSavedReport={s.openReportForEdit}
                 view={s.view}
                 query={s.query}
                 onQueryChange={s.setQuery}

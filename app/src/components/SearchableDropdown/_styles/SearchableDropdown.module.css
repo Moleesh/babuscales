@@ -24,7 +24,11 @@
     top: 100%;
     left: 0;
     z-index: 80;
-    min-width: 230px;
+    /* Task: "min pop width as the min field width, do it in all dropdown" —
+       `100%` of the wrapper (same width as the input) so the popover is
+       never narrower than the field it opened from; `230px` stays as an
+       absolute floor underneath that for a genuinely tiny field. */
+    min-width: max(230px, 100%);
     max-width: min(400px, 92vw);
     max-height: min(320px, 52vh);
     overflow: auto;
@@ -61,6 +65,11 @@
     font-size: 0.8125rem;
     cursor: pointer;
     text-align: left;
+    /* Task: "make the dropdown readable" — a long matched label (e.g. a
+       longer party/transporter name) no longer ellipsis-truncates; it wraps
+       instead, same reasoning as Select.module.css's own `.option`. */
+    white-space: normal;
+    word-break: break-word;
 }
 .option:hover,
 .option.highlighted {

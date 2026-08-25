@@ -362,7 +362,15 @@ export const WeighingScreen = ({ ticket, licenseGated, onNavigateToCameras }: We
                     // Task: "on close of print dialog box the ticket need to
                     // reset to new ticket, focusing on the first field in the
                     // list same for new ticket" — same reset ActionsCard's
-                    // own "New ticket" button triggers.
+                    // own "New ticket" button triggers. This used to skip the
+                    // reset for a reprint (`forcePrintEnabled`) and just
+                    // refocus Print instead, per an earlier task ("after
+                    // reprint dialog close we need to highlight the print
+                    // button") — but a later report ("reprint to first field
+                    // ... is still not fixed") wants reprint to behave exactly
+                    // like every other Print-modal close: reset to a fresh
+                    // ticket and focus the first field, not leave the
+                    // just-reprinted ticket sitting loaded.
                     ticket.startNew();
                     focusFirstTicketField();
                 }}

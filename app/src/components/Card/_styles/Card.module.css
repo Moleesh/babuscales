@@ -34,3 +34,25 @@
 .body {
     padding: 13px;
 }
+
+/* Opt-in via CardProps.fill (Masters' MastersListCard so far) — task: "like
+   in report can you make the table only scrolling nothing else" — lets a
+   DataTable inside this card flex to fill whatever room is actually left
+   in its flex-column parent (MastersScreen.module.css's `.screen`) and do
+   its own internal scrolling there, instead of the table's natural content
+   height pushing `.main` (AppShell.module.css) itself into a page-level
+   scroll alongside the table's own. Off by default — every other caller
+   keeps its natural content height. */
+.fill {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.bodyFill {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}

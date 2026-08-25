@@ -30,8 +30,10 @@
     font: inherit;
     font-size: 0.8125rem;
     /* Task: "increase the width of the buttons, dropdown and date in row 2"
-       — 180px → 200px. */
-    width: 200px;
+       — 180px → 200px, then later "all of them can have more better width"
+       — 200px → 240px, same width bump as ReportsDateRangeRow's own
+       DatePicker/Select triggers (DatePicker.module.css/Select.module.css). */
+    width: 240px;
 }
 .trigger:hover:not(:disabled),
 .trigger:active:not(:disabled) {
@@ -58,7 +60,10 @@
     position: absolute;
     top: 100%;
     left: 0;
-    min-width: 220px;
+    /* Task: "min pop width as the min field width" — `.trigger` above is a
+       fixed 240px, so this list must be at least as wide as it too (it
+       used to fall short at 220px, narrower than its own trigger). */
+    min-width: 100%;
     z-index: 30;
     display: flex;
     flex-direction: column;
@@ -104,9 +109,14 @@
     color: var(--text);
     font: inherit;
     font-size: 0.8125rem;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    /* Task: "make the dropdown readable" — same reasoning as Select.module.css's
+       own `.option`: a long saved-view name no longer ellipsis-truncates in
+       the open list (the closed `.trigger`'s own `.label` above still does —
+       that's a fixed-width button, not a scrolling list). */
+    overflow: visible;
+    text-overflow: unset;
+    white-space: normal;
+    word-break: break-word;
 }
 .option:hover:not(:disabled),
 .option:active:not(:disabled) {
@@ -130,19 +140,4 @@
     background: var(--panel);
     transform: none;
     box-shadow: none;
-}
-
-.rename-input {
-    flex: 1 1 auto;
-    margin: 3px;
-    padding: 5px 8px;
-    border-radius: 6px;
-    border: 1px solid var(--led);
-    background: var(--panel-2);
-    color: var(--text);
-    font: inherit;
-    font-size: 0.8125rem;
-}
-.rename-input:focus {
-    outline: none;
 }

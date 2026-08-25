@@ -1,11 +1,28 @@
 .screen {
-    display: grid;
+    display: flex;
+    flex-direction: column;
+    /* Task: "report table still does have a horizotal scroll" — a flex
+       item's automatic `min-width` is `auto`, i.e. it won't shrink
+       below its content's own min-content width. The Tickets table
+       nested deep inside (Card > `.body` > DataTable's `.wrapper`,
+       which already has its own contained `overflow-x: auto`) was
+       still wide enough to drag `.screen` itself wider than `.main`,
+       taking the whole page — filter chips and column headers included,
+       not just the table — into `.main`'s page-level horizontal scroll
+       instead of staying contained in the table's own scrollbar.
+       `min-width: 0` opts `.screen` out of that content-based floor. */
+    min-width: 0;
     gap: 13px;
 }
 
 .body {
     display: grid;
     gap: 8px;
+    /* Same fix as `.screen` above, one level down (Card's own `.body`
+       — Card.module.css — is a plain block, but this grid child still
+       needs it since CSS Grid items get the identical automatic
+       `min-width: auto` floor that flex items do). */
+    min-width: 0;
 }
 
 .loading-row {
@@ -82,6 +99,14 @@
     display: grid;
     gap: 3px;
 }
+/* Task: "make this dropdown little bigger" — ReportsDateRangeRow's series
+   Select, whose longer "Before reset …" option labels were truncating with
+   an ellipsis at Select.module.css's own 160px floor. `min-width` (not
+   `width`) so it still only takes what it needs above that, same as
+   `.range-field` itself. */
+.series-field {
+    min-width: 220px;
+}
 .range-field-label {
     font-size: 0.625rem;
     letter-spacing: 0.08em;
@@ -144,6 +169,11 @@
 .bottom-bar {
     position: sticky;
     bottom: 0;
+    /* Task: "fix the bottom bar to the end of the screen always" —
+       flushes it to the true bottom of `.screen` (now `min-height: 100%`
+       above) on short-content pages, while `position: sticky` above
+       still keeps it pinned during scroll on tall pages. */
+    margin-top: auto;
     z-index: 5;
     background: var(--panel);
     border: 1px solid var(--line);
@@ -216,11 +246,32 @@
    (hence the second scrollbar). Folded into one named `--reports-chrome-h`
    so the breakdown stays legible instead of a single opaque magic number. */
 .tickets-table {
+    /* Task: "report table still does have a horizotal scroll" — same
+       `min-width: 0` fix as `.screen`/`.body` above, one level further
+       down (this div is `.body`'s direct grid child, wrapping
+       DataTable's own `.wrapper`). */
+    min-width: 0;
     --reports-chrome-h: 58px;
     --datatable-max-height: calc(
         100vh - var(--shell-header-h, 0px) - var(--card-header-h, 0px) - var(--reports-filters-h, 0px) - 170px -
             var(--reports-chrome-h)
     );
+    /* User: "revert it all we need to do is add a min height for the table
+       there so the bottom stay always at the bottom" — instead of stretching
+       the whole page's flex chain (AppShell.module.css's `.screen`, reverted)
+       to fill the viewport so `.bottom-bar`'s `margin-top: auto` has
+       something to push against, just make the table itself always at least
+       as tall as its own max-height budget above. Set on `--datatable-min-height`
+       (read by DataTable.module.css's `.wrapper`) rather than directly on
+       this div — this div is only a thin non-scrolling shell around
+       DataTable's `.wrapper`, which is the actual bounded/scrolling region;
+       a `min-height` here just left a dead gap between `.wrapper`'s own
+       (content-sized) bottom edge and this div's forced-tall bottom edge
+       instead of making the table itself taller. A short result set (or the
+       empty state) no longer leaves the table shorter than the room it's
+       given, so `.bottom-bar` sits flush at the true bottom without touching
+       `.main`'s own scroll behaviour at all. */
+    --datatable-min-height: var(--datatable-max-height);
 }
 
 /* Tickets pagination (TICKET_PAGE_SIZE, reportRows.ts) — now lives in the

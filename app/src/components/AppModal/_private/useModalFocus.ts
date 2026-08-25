@@ -19,7 +19,17 @@ export const useModalFocus = (open: boolean) => {
         if (!open) return;
 
         previouslyFocused.current = document.activeElement as HTMLElement | null;
-        sheetRef.current?.focus();
+        // Task: "reprint should autom focus to the end of the input" — an
+        // `autoFocus` field inside the dialog (ReprintLookupModal's ticket
+        // input) grabs focus during React's commit phase, before this
+        // passive effect ever runs; unconditionally moving focus to the
+        // sheet here was stealing it right back off that field (and losing
+        // its own onFocus-set cursor position with it) the instant the
+        // dialog finished mounting. Only take over when nothing inside the
+        // sheet already has focus on its own.
+        if (!sheetRef.current?.contains(document.activeElement)) {
+            sheetRef.current?.focus();
+        }
 
         return () => {
             previouslyFocused.current?.focus();

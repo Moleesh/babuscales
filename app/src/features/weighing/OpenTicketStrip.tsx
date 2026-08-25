@@ -52,6 +52,17 @@ export const OpenTicketStrip = ({ tickets, loading, onResume, weightUnit, contai
                     key={ticket.doc.DocId}
                     type="button"
                     className={styles.item}
+                    // Task: "all tab should not be focusable and dont show
+                    // border" — a plain click still gives a clicked <button>
+                    // the browser's native focus/outline (screenshot: the
+                    // just-resumed chip stayed ringed in orange after New/
+                    // Send to Lorry moved on), on top of `data-enter-skip`
+                    // above only ever having excluded these from the
+                    // Enter-walk, not from focus outright. `tabIndex={-1}`
+                    // takes them out of the tab order entirely; `.item:focus`
+                    // below drops the outline for the mouse-click case
+                    // tabIndex alone doesn't cover.
+                    tabIndex={-1}
                     onClick={() => onResume(ticket)}
                 >
                     <span>{formatTicketNo(ticket.doc.DocSeq)}</span>

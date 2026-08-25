@@ -1,3 +1,5 @@
+import type { MouseEvent } from "react";
+
 import { DatePicker } from "@components/DatePicker";
 import { Field } from "@components/Field";
 import { SearchableDropdown } from "@components/SearchableDropdown";
@@ -37,12 +39,27 @@ interface KindInputProps {
     t: (key: string) => string;
 }
 
+// `tabIndex={readOnly ? -1 : undefined}` on every plain-`<input readOnly>`
+// control below — task: "i can still foxus on disanled fields". `readOnly`
+// alone doesn't stop Tab from focusing an input the way `disabled` does.
+// `onMouseDown` preventDefault alongside it — task: "focus on disable is
+// still not fixed" — `tabIndex={-1}` only drops it from the Tab sequence; a
+// `readOnly` input still accepts focus from a plain mouse click, which kept
+// showing the orange `:focus` border on a locked field even without Tab
+// ever reaching it (SearchableDropdown.tsx's own copy of this fix has the
+// full reasoning).
+const blockReadOnlyFocus = (readOnly: boolean) => (e: MouseEvent) => {
+    if (readOnly) e.preventDefault();
+};
+
 const TextInput = ({ id, field, value, onChange, readOnly, t }: KindInputProps & { field: Extract<SchemaField, { Kind: "Text" }> }) => (
     <input
         id={id}
         value={typeof value === "string" ? value : ""}
         maxLength={field.MaxLength}
         readOnly={readOnly}
+        tabIndex={readOnly ? -1 : undefined}
+        onMouseDown={blockReadOnlyFocus(readOnly)}
         placeholder={resolvePlaceholder(field.FieldId, t)}
         onChange={(e) => onChange(field.Upper ? e.target.value.toUpperCase() : e.target.value)}
     />
@@ -54,6 +71,8 @@ const NumberInput = ({ id, field, value, onChange, readOnly, t }: KindInputProps
         type="number"
         value={typeof value === "number" ? value : ""}
         readOnly={readOnly}
+        tabIndex={readOnly ? -1 : undefined}
+        onMouseDown={blockReadOnlyFocus(readOnly)}
         placeholder={resolvePlaceholder(field.FieldId, t)}
         onChange={(e) => onChange(e.target.value === "" ? null : Number(e.target.value))}
     />
@@ -88,6 +107,8 @@ const DateTimeInput = ({ id, value, onChange, readOnly }: KindInputProps) => (
         type="datetime-local"
         value={typeof value === "string" ? value : ""}
         readOnly={readOnly}
+        tabIndex={readOnly ? -1 : undefined}
+        onMouseDown={blockReadOnlyFocus(readOnly)}
         onChange={(e) => onChange(e.target.value)}
     />
 );

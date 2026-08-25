@@ -114,6 +114,22 @@ export const deleteReportDef = (db: DataPort, id: string): Promise<void> =>
         );
     });
 
+/** Task: "edit save report should open the create report in edit form" —
+ * overwrites everything about a saved definition (View/GroupBy/Filter/dates/
+ * columns/name) in place, keeping its `Id`. The report-builder modal's Save
+ * button when opened via a saved view's edit (pencil) action, as opposed to
+ * `addReportDef` (a fresh save from scratch) or `renameReportDef` (name
+ * only, still used nowhere now that edit opens the full builder instead of
+ * an inline rename box). */
+export const updateReportDef = (db: DataPort, id: string, def: Omit<ReportDefinition, "Id">): Promise<void> =>
+    withLock(async () => {
+        const existing = await loadReportDefs(db);
+        await saveAll(
+            db,
+            existing.map((row) => (row.Id === id ? { ...def, Id: id } : row)),
+        );
+    });
+
 /** Renames a saved report definition in place — everything else about it
  * (View/GroupBy/Filter/dates/columns) is untouched. The saved-views dropdown's
  * own edit (pencil) action, so an operator can fix a typo'd name without

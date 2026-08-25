@@ -42,8 +42,13 @@ export const MastersListCard = ({
     onLoadMore,
     t,
 }: MastersListCardProps) => (
-    <Card title={<span className="lbl">{title}</span>} headerRight={<span className="chip num">{count}</span>}>
-        <div className={styles.body}>
+    // `fill` — task: "like in report can you make the table only scrolling
+    // nothing else" — lets this card's DataTable flex to fill the room left
+    // by MastersScreen's SegmentedControl and MastersFormCard (the two
+    // siblings that must stay put) instead of pushing `.main` itself into a
+    // second, page-level scroll.
+    <Card fill title={<span className="lbl">{title}</span>} headerRight={<span className="chip num">{count}</span>}>
+        <div className={`${styles.body} ${styles["body-fill-inner"]}`}>
             <input
                 className={styles.search}
                 value={query}

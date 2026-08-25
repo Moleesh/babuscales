@@ -28,6 +28,10 @@ export interface ReportsCardBodyProps {
      * empty state below instead of the usual "nothing matches" one. */
     reportApplied: boolean;
     savedReportActions: UseSavedReportActions;
+    /** Task: "edit save report should open the create report in edit form" —
+     * SavedReportsRow's pencil action now opens the builder pre-filled,
+     * instead of an inline rename box. */
+    onEditSavedReport: (id: string) => void;
     view: ReportView;
     query: string;
     onQueryChange: (query: string) => void;
@@ -142,6 +146,7 @@ export const ReportsCardBody = ({
     seriesEpochOptions,
     dateFmt,
     savedReportActions,
+    onEditSavedReport,
     ...view
 }: ReportsCardBodyProps) => {
     const bodyRef = useRef<HTMLDivElement>(null);
@@ -164,7 +169,7 @@ export const ReportsCardBody = ({
                     selectedId={savedReportActions.selectedId}
                     onRecall={savedReportActions.handleRecallReport}
                     onDelete={savedReportActions.handleDeleteReport}
-                    onRename={savedReportActions.handleRenameReport}
+                    onEdit={onEditSavedReport}
                 />
                 <ReportsDateRangeRow
                     dateFrom={dateFrom}

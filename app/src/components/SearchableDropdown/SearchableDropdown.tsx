@@ -106,11 +106,30 @@ export const SearchableDropdown = ({
                 // fires focus/keydown, so without this guard a disabled
                 // Search field's popover opened and could still be typed
                 // into on click even though nothing could actually be saved.
+                // Task: "focus on disable is still not fixed" — `tabIndex={-1}`
+                // below only removes this from the Tab sequence; a `readOnly`
+                // input still accepts focus from a plain mouse click (unlike
+                // `disabled`), which is exactly how the orange `:focus` border
+                // (SearchableDropdown.module.css) kept showing up on a locked
+                // field. `preventDefault` on mousedown stops the browser from
+                // ever focusing it in the first place — the click still
+                // "lands" on the input, it just never becomes the focused
+                // element.
+                onMouseDown={(e) => {
+                    if (inputProps.readOnly) e.preventDefault();
+                }}
                 onFocus={() => !inputProps.readOnly && setOpen(true)}
                 onBlur={() => setOpen(false)}
                 onKeyDown={(e) => !inputProps.readOnly && handleKeyDown(e)}
                 role="combobox"
                 aria-expanded={open}
+                // Task: "i can still foxus on disanled fields" — `readOnly`
+                // alone (unlike `disabled`) doesn't stop Tab/click from
+                // focusing an input; useEnterAsTab.ts's own walk already
+                // excludes `[readonly]`, but a plain browser Tab press still
+                // landed here. After the `{...inputProps}` spread so this
+                // wins over anything the caller might have set.
+                tabIndex={inputProps.readOnly ? -1 : inputProps.tabIndex}
             />
             {open && (results.length > 0 || showAddNew) && (
                 <DropdownResults

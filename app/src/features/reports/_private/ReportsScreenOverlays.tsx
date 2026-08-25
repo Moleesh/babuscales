@@ -15,6 +15,9 @@ export interface ReportsScreenOverlaysProps {
     onPrintOpenChange: (open: boolean) => void;
     builderOpen: boolean;
     onBuilderOpenChange: (open: boolean) => void;
+    /** Task: "edit save report should open the create report in edit form" —
+     * `def.Id` of the saved view being edited, or `null` for a fresh build. */
+    editingReportId: string | null;
     view: ReportView;
     /** Tickets pagination — only rendered in the bottom bar when `view === "tickets"`. See reportRows.ts's `paginateTicketRows`. */
     pageIndex: number;
@@ -76,6 +79,7 @@ export const ReportsScreenOverlays = ({
     onPrintOpenChange,
     builderOpen,
     onBuilderOpenChange,
+    editingReportId,
     view,
     groupBy,
     filter,
@@ -86,7 +90,11 @@ export const ReportsScreenOverlays = ({
     pageIndex,
     pageCount,
     onPageIndexChange,
-}: ReportsScreenOverlaysProps) => (
+}: ReportsScreenOverlaysProps) => {
+    const editingDef = editingReportId
+        ? savedReportActions.savedReports.find((def) => def.Id === editingReportId)
+        : undefined;
+    return (
     <>
         <ReportsBottomBar
             reportSlipData={reportSlipData}
@@ -104,13 +112,26 @@ export const ReportsScreenOverlays = ({
         <ReportBuilderModal
             open={builderOpen}
             onClose={() => onBuilderOpenChange(false)}
-            initialView={view}
-            initialGroupBy={groupBy}
-            initialFilter={filter}
-            initialDateFrom={dateFrom}
-            initialDateTo={dateTo}
-            initialVisibleColumnKeys={visibleColumnKeys}
+            editingId={editingReportId}
+            // Editing a saved view seeds the whole draft from *that*
+            // definition, not the screen's currently-applied filters — the
+            // two can differ (task's own scenario: pick a saved view from
+            // the dropdown, edit a different one's pencil without recalling
+            // it first). Falls back to the screen's live filters for a
+            // fresh "Build report" (`editingReportId` is null then, so this
+            // lookup is never used).
+            initialView={editingDef?.View === "tickets" || editingDef?.View === "summary" ? editingDef.View : view}
+            initialGroupBy={editingDef ? (editingDef.GroupBy as GroupKey) : groupBy}
+            initialFilter={editingDef ? (editingDef.Filter as TicketRowFilter) : filter}
+            initialDateFrom={editingDef ? (editingDef.DateFrom ?? "") : dateFrom}
+            initialDateTo={editingDef ? (editingDef.DateTo ?? "") : dateTo}
+            initialVisibleColumnKeys={
+                editingDef ? (editingDef.Columns ? editingDef.Columns.split(",").filter(Boolean) : null) : visibleColumnKeys
+            }
+            initialName={editingDef?.Name ?? ""}
             onSaveReport={savedReportActions.handleSaveReportDraft}
+            onUpdateReport={savedReportActions.handleUpdateReportDraft}
         />
     </>
-);
+    );
+};

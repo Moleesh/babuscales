@@ -1,3 +1,6 @@
+import { useState } from "react";
+
+import { AppModal } from "@components/AppModal";
 import { Button } from "@components/Button";
 import type { MasterRow } from "@db/types";
 import { useTranslation } from "@i18n/useTranslation";
@@ -32,25 +35,20 @@ export const MasterFormActions = ({
     onStartNew,
 }: MasterFormActionsProps) => {
     const { t } = useTranslation();
+    // The browser's native `window.confirm()` used to gate the hard delete —
+    // task: "delete in master is a message we need a better pop" (the raw
+    // "localhost:1420 says…" browser chrome read as broken, not themed at
+    // all). `AppModal` is the same dialog every other screen-blocking prompt
+    // in the app already uses (ReprintLookupModal, PrintPreviewModal), so
+    // this stays visually consistent instead of a one-off.
+    const [confirmOpen, setConfirmOpen] = useState(false);
     return (
         <div className={styles.formActions}>
             <Button variant="primary" disabled={saving || !canSave} onClick={onSave}>
                 {selected ? t("masters.action.saveChanges") : addNewLabel}
             </Button>
             {selected && (
-                <Button
-                    variant="danger"
-                    disabled={saving}
-                    onClick={() => {
-                        // `confirm()`, not a custom modal — no confirm dialog
-                        // exists anywhere else in this app yet to reuse, and
-                        // a hard delete is exactly the kind of irreversible
-                        // click this app doesn't otherwise have.
-                        if (window.confirm(`${t("masters.action.deleteConfirm")} "${selected.Name}"?`)) {
-                            onDelete();
-                        }
-                    }}
-                >
+                <Button variant="danger" disabled={saving} onClick={() => setConfirmOpen(true)}>
                     {t("masters.action.delete")}
                 </Button>
             )}
@@ -58,6 +56,32 @@ export const MasterFormActions = ({
                 <Button disabled={saving} onClick={onStartNew}>
                     {t("masters.action.new")}
                 </Button>
+            )}
+            {selected && (
+                <AppModal
+                    open={confirmOpen}
+                    title={t("masters.action.deleteConfirmTitle")}
+                    onClose={() => setConfirmOpen(false)}
+                    size="small"
+                >
+                    <div style={{ display: "grid", gap: 13 }}>
+                        <p>
+                            {t("masters.action.deleteConfirm")} "{selected.Name}"?
+                        </p>
+                        <div style={{ display: "flex", gap: 9, justifyContent: "flex-end" }}>
+                            <Button onClick={() => setConfirmOpen(false)}>{t("weigh.cancel")}</Button>
+                            <Button
+                                variant="danger"
+                                onClick={() => {
+                                    setConfirmOpen(false);
+                                    onDelete();
+                                }}
+                            >
+                                {t("masters.action.delete")}
+                            </Button>
+                        </div>
+                    </div>
+                </AppModal>
             )}
         </div>
     );

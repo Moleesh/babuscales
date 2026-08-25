@@ -83,7 +83,12 @@ export const ReportsDateRangeRow = ({
                 />
             </div>
             {onSeriesEpochChange && seriesEpochOptions ? (
-                <div className={styles.rangeField}>
+                // Task: "make this dropdown little bigger" — "Before reset …"
+                // labels (reportRows.ts's listSeriesEpochOptions) run longer
+                // than Select's own 160px floor (Select.module.css), so they
+                // were truncating with an ellipsis; `.series-field` widens
+                // just this one instance's track, not every Select in the app.
+                <div className={`${styles.rangeField} ${styles["series-field"]}`}>
                     <span className={styles.rangeFieldLabel}>{t("reports.series.label")}</span>
                     <Select
                         id="reportsSeriesEpoch"

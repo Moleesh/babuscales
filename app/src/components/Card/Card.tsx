@@ -14,6 +14,8 @@ export interface CardProps {
      *  title scrolling off while its own filter row stayed stuck below it
      *  read as broken/disconnected). Off by default — opt-in per caller. */
     sticky?: boolean;
+    /** Opt-in — see Card.module.css's `.fill`/`.bodyFill` doc comment. */
+    fill?: boolean;
     children: ReactNode;
 }
 
@@ -62,7 +64,7 @@ const useStickyCardHeaderHeight = (
 // The one panel every screen is built from — a bordered
 // surface with an optional header strip and a padded body. Ported from the
 // mock's ".card"/".card>header"/".card>.body".
-export const Card = ({ title, headerRight, sticky, children }: CardProps) => {
+export const Card = ({ title, headerRight, sticky, fill, children }: CardProps) => {
     const cardRef = useRef<HTMLElement>(null);
     const headerRef = useRef<HTMLElement>(null);
     const [hasHeader, setHasHeader] = useState(false);
@@ -76,7 +78,7 @@ export const Card = ({ title, headerRight, sticky, children }: CardProps) => {
     }, []);
     useStickyCardHeaderHeight(sticky, cardRef, headerRef, hasHeader);
     return (
-        <section className={styles.card} ref={cardRef}>
+        <section className={fill ? `${styles.card} ${styles.fill}` : styles.card} ref={cardRef}>
             {(title || headerRight) && (
                 <header
                     className={sticky ? `${styles.header} ${styles.headerSticky}` : styles.header}
@@ -86,7 +88,7 @@ export const Card = ({ title, headerRight, sticky, children }: CardProps) => {
                     {headerRight && <span className={styles.push}>{headerRight}</span>}
                 </header>
             )}
-            <div className={styles.body}>{children}</div>
+            <div className={fill ? `${styles.body} ${styles.bodyFill}` : styles.body}>{children}</div>
         </section>
     );
 };

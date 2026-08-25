@@ -84,7 +84,22 @@ const SaveAndPrintRow = ({
     // should enable print and focus it") — bypasses the normal
     // `printCount === 0` gate for that one ticket, same as any other
     // already-printed ticket wouldn't otherwise be re-printable from here.
-    const printEnabled = Boolean(ticket.docId) && (ticket.printCount === 0 || forcePrintEnabled);
+    // `!ticket.justResumed` — task: "resume on opening ticket should disable
+    // save and print" — a freshly-resumed single-weight ticket hasn't been
+    // acted on yet this sitting, so it doesn't read as already
+    // save/print-ready until the operator captures the second weight.
+    // `!ticket.awaitingSave` — task: "for second weight as soon as the
+    // capture is done both save and print popup only save should be
+    // enabled" — the instant the second capture lands, `awaitingSave` goes
+    // true and the ticket already has a `docId` from its first-weight save,
+    // so without this the Print button lit up right alongside Save even
+    // though nothing from *this* capture has been persisted yet. Only Save
+    // should be actionable until that save actually happens.
+    const printEnabled =
+        Boolean(ticket.docId) &&
+        (ticket.printCount === 0 || forcePrintEnabled) &&
+        !ticket.justResumed &&
+        !ticket.awaitingSave;
     return (
         <div className={styles.actions}>
             <Button
@@ -94,7 +109,17 @@ const SaveAndPrintRow = ({
                     ticket.captures.length === 0 ||
                     ticket.saving ||
                     gated ||
-                    hasBlockingCustomFieldError
+                    hasBlockingCustomFieldError ||
+                    // Task: "in case of reprint save and capture is disabled
+                    // only print is available" — a reprint resumes an
+                    // already-saved, already-printed ticket purely to print
+                    // it again; re-saving it (or the capture button below)
+                    // has no business being live during that window.
+                    forcePrintEnabled ||
+                    // Task: "resume on opening ticket should disable save
+                    // and print, save will be disabled until we capture the
+                    // second weight" — see ticket.justResumed's own comment.
+                    ticket.justResumed
                 }
                 onClick={onSave}
             >
@@ -118,6 +143,14 @@ const ReprintRow = ({
 }: Pick<ActionsCardProps, "ticket" | "onOpenReprintLookup">) => {
     const { t } = useTranslation();
     const printEnabled = Boolean(ticket.docId) && ticket.printCount === 0;
+    // Task: "after capture disable the reprint until we save is completed" —
+    // `printEnabled` above only catches the *saved-and-not-yet-printed*
+    // window; a capture just taken (first weight, still `docId === null`, or
+    // second weight, `awaitingSave`) hasn't been persisted at all yet, so
+    // Reprint — which looks up an already-saved ticket by number — has
+    // nothing valid to act on for *this* ticket until that save lands.
+    const hasUnsavedCapture = ticket.captures.length > 0 && (ticket.docId === null || ticket.awaitingSave);
+    const reprintDisabled = printEnabled || hasUnsavedCapture;
     return (
         // `data-enter-skip` — task: "these three buttons should not be
         // focusable" (Reprint/New ticket/Send a lorry) — same fix as
@@ -125,7 +158,7 @@ const ReprintRow = ({
         // as both source and destination (useEnterAsTab.ts), still fully
         // clickable by mouse.
         <div className={styles.actions} data-enter-skip>
-            <Button disabled={printEnabled} onClick={onOpenReprintLookup}>
+            <Button disabled={reprintDisabled} onClick={onOpenReprintLookup}>
                 {t("weigh.reprint")}
             </Button>
             <Button
@@ -241,7 +274,10 @@ export const ActionsCard = ({
                     id="actionsCaptureBtn"
                     variant={ticket.isComplete ? "complete" : "primary"}
                     size="large"
-                    disabled={!armed}
+                    // `forcePrintEnabled` — see SaveAndPrintRow's own comment:
+                    // a reprint's whole point is re-printing an already-saved
+                    // ticket, not capturing a fresh weight into it.
+                    disabled={!armed || forcePrintEnabled}
                     caption={captureHint}
                     onClick={() => {
                         ticket.capture(reading.WeightKg);

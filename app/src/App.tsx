@@ -103,6 +103,13 @@ interface TopBarActionsProps {
     pin: ReactNode;
     minimizeTitle: string;
     onMinimize: () => void;
+    /** True whenever `windowPin.fillScreen()`'s effect has already stuck —
+     * the fullscreen recovery button (rendered between Minimize and Close)
+     * only shows up when this is false (task: "if in fullscreen not need
+     * to show it"). */
+    isFullscreen: boolean;
+    fullscreenTitle: string;
+    onFillScreen: () => void;
     closeTitle: string;
     onClose: () => void;
 }
@@ -119,6 +126,9 @@ const TopBarActions = ({
     pin,
     minimizeTitle,
     onMinimize,
+    isFullscreen,
+    fullscreenTitle,
+    onFillScreen,
     closeTitle,
     onClose,
 }: TopBarActionsProps) => (
@@ -156,6 +166,17 @@ const TopBarActions = ({
                 ─
             </button>
         </Tooltip>
+        {/* Task: "add a temporary fullscreen button in between minimize and
+            close, if in fullscreen not need to show it" — a manual
+            recovery button for whatever leaves the window short of filling
+            the monitor; hidden once it already is (`isFullscreen`). */}
+        {!isFullscreen && (
+            <Tooltip label={fullscreenTitle} align="end">
+                <button className="iconbtn" onClick={onFillScreen}>
+                    ⛶
+                </button>
+            </Tooltip>
+        )}
         <Tooltip label={closeTitle} align="end">
             <button className="iconbtn" onClick={onClose}>
                 ✕
@@ -344,6 +365,32 @@ const usePinToggle = (windowPin: WindowPinSource) => {
     return { pinned, onToggle: () => setPinned((value) => !value) };
 };
 
+// Task: "if the app is somehow stuck not in fullscreen ... add a temporary
+// fullscreen button in between minimize and close, if in fullscreen not
+// need to show it" — App.tsx already calls `windowPin.fillScreen()` once on
+// startup (see WindowPinSource's own doc comment), so the window should
+// normally already fill the monitor; this is a manual recovery button for
+// whatever edge case leaves it short of that (task's own "somehow stuck").
+// No Tauri "is fullscreen" event to subscribe to for a borderless
+// fill-the-monitor window (that's not OS fullscreen, just a resized/moved
+// window) — comparing the outer window size against the monitor's available
+// area via `resize`/`orientationchange` is the same approach the browser
+// itself offers for "is this window filling the screen", and degrades
+// harmlessly to "always false" in a plain browser preview (outerWidth stays
+// whatever the browser chrome reports).
+const isWindowFillingScreen = (): boolean =>
+    window.outerWidth >= window.screen.availWidth && window.outerHeight >= window.screen.availHeight;
+
+const useIsWindowFullscreen = (): boolean => {
+    const [fullscreen, setFullscreen] = useState(isWindowFillingScreen);
+    useEffect(() => {
+        const onResize = (): void => setFullscreen(isWindowFillingScreen());
+        window.addEventListener("resize", onResize);
+        return () => window.removeEventListener("resize", onResize);
+    }, []);
+    return fullscreen;
+};
+
 // The two handlers TabContent needs that reach outside its own props (resume
 // a ticket from Reports by switching tabs; reset the doc series from
 // Settings) — pulled out of Shell's body so Shell itself stays under the
@@ -417,6 +464,7 @@ const useShellTopBar = ({
 }: UseShellTopBarArgs) => {
     const { t } = useTranslation();
     const { pinned, onToggle } = usePinToggle(windowPin);
+    const isFullscreen = useIsWindowFullscreen();
     // Rendered inline as part of `topRight` now, directly before Close —
     // pin next to close, not off on its own at the row's left edge —
     // AppShell's separate always-visible `pin` slot is no longer used for
@@ -442,6 +490,9 @@ const useShellTopBar = ({
             pin={pin}
             minimizeTitle={t("nav.minimize")}
             onMinimize={() => void windowPin.minimize()}
+            isFullscreen={isFullscreen}
+            fullscreenTitle={t("nav.fullscreen")}
+            onFillScreen={() => void windowPin.fillScreen()}
             closeTitle={t("nav.close")}
             onClose={() => void windowPin.close()}
         />
@@ -483,7 +534,20 @@ const ShellBody = (props: ShellBodyProps) => {
             siteLabel={buildSiteLabel(settings.Business)}
             tabs={buildNavTabs(t)}
             activeTab={activeTab}
-            onNavigate={(key) => setActiveTab(key as (typeof TAB_KEYS)[number])}
+            onNavigate={(key) => {
+                // Task: "Always coming to weighing tab has to reset to new
+                // weight except for coming from resume in report" — the nav
+                // bar's own tab clicks are the only entry point that should
+                // reset; resuming a ticket from Reports goes through
+                // `openTicket` (useShellTicketActions) instead, which calls
+                // `ticket.resume` directly and switches tabs without ever
+                // routing through this handler, so it's naturally exempt.
+                // `activeTab !== "weigh"` guards against wiping an
+                // in-progress ticket if the operator re-clicks the Weighing
+                // tab while already on it.
+                if (key === "weigh" && activeTab !== "weigh") ticket.resetToNew();
+                setActiveTab(key as (typeof TAB_KEYS)[number]);
+            }}
             topRight={topRight}
             header={
                 <ShellWeightHeader

@@ -54,6 +54,12 @@ export const AdminUnlockModal = ({ open, onClose }: AdminUnlockModalProps) => {
             onClose();
         } else {
             setError(t("settings.adminUnlock.error"));
+            // Task: "after wrong password let it select the text in the
+            // input and wait" — select the rejected password so the next
+            // keystroke replaces it outright instead of the operator having
+            // to clear it themselves first.
+            passwordRef.current?.focus();
+            passwordRef.current?.select();
         }
     };
 

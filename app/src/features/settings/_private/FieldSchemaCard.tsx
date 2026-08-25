@@ -4,6 +4,7 @@ import { Card } from "@components/Card";
 import { DataTable } from "@components/DataTable";
 import type { DataTableColumn } from "@components/DataTable";
 import { Select } from "@components/Select";
+import { Tooltip } from "@components/Tooltip";
 import { getAllFields, resolveFieldIdLabel } from "@engines/schemaEngine";
 import type { Field, Schema } from "@engines/schemaEngine";
 import { resolveLocalized } from "@i18n/types";
@@ -78,7 +79,16 @@ const fieldColumns = ({
         render: (field) => (
             <>
                 {fieldLabel(field, lang, labelT)}
-                {field.Kind === "Formula" && <div className={styles.formula}>{field.Formula}</div>}
+                {field.Kind === "Formula" && field.Formula && (
+                    // Task: "if the formula is big truncate it ... truncate
+                    // should follow the tooltip that we implement not the
+                    // generic one" — themed Tooltip (components/Tooltip)
+                    // instead of a native `title` attribute, same as every
+                    // other truncated-text tooltip in the app.
+                    <Tooltip label={field.Formula} style={{ display: "block", minWidth: 0 }}>
+                        <div className={styles.formula}>{field.Formula}</div>
+                    </Tooltip>
+                )}
             </>
         ),
     },

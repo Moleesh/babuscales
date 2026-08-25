@@ -6,6 +6,7 @@ import { Field } from "@components/Field";
 import type { DocRow } from "@db/types";
 import { useTranslation } from "@i18n/useTranslation";
 
+import { focusFirstTicketField } from "./focusFirstTicketField";
 import styles from "../_styles/WeighingScreen.module.css";
 import { formatTicketNo, getTicketNumberPrefix } from "../ticketNumber";
 
@@ -51,6 +52,18 @@ export const ReprintLookupModal = ({ open, onClose, allTicketDocs, onFound }: Re
         onClose();
     };
 
+    // Task: "from reprint find highlights print, cancel first field" — Find
+    // (below) hands off to `onFound` → `useReprintFlow`'s `reprint`, which
+    // schedules its own focus onto the Print button once the found ticket
+    // lands. Cancel/X/backdrop has no such follow-up target, so it left
+    // focus wherever the browser's default post-close fallback happened to
+    // land it instead of somewhere useful — same "reset and focus the first
+    // field" behavior every other way out of this screen already gives.
+    const cancel = (): void => {
+        close();
+        focusFirstTicketField();
+    };
+
     const find = (): void => {
         const match = allTicketDocs.find((doc) => !doc.IsCancelled && matchesTicketNo(doc, ticketNo));
         if (!match) {
@@ -62,7 +75,7 @@ export const ReprintLookupModal = ({ open, onClose, allTicketDocs, onFound }: Re
     };
 
     return (
-        <AppModal open={open} title={t("weigh.reprintLookup.title")} onClose={close} size="small">
+        <AppModal open={open} title={t("weigh.reprintLookup.title")} onClose={cancel} size="small">
             <div style={{ display: "grid", gap: 9 }}>
                 {/* `data-enter-skip` — this field has its own Enter handling
                     (find(), below); without opting out, useEnterAsTab's
@@ -98,7 +111,7 @@ export const ReprintLookupModal = ({ open, onClose, allTicketDocs, onFound }: Re
                 </Field>
                 {error && <p className={styles.fieldError}>{t("weigh.reprintLookup.notFound")}</p>}
                 <div style={{ display: "flex", gap: 9 }}>
-                    <Button onClick={close}>{t("weigh.cancel")}</Button>
+                    <Button onClick={cancel}>{t("weigh.cancel")}</Button>
                     <Button variant="primary" onClick={find}>
                         {t("weigh.reprintLookup.find")}
                     </Button>

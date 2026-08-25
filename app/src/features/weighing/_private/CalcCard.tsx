@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 
 import { Card } from "@components/Card";
+import { Tooltip } from "@components/Tooltip";
 import { formatDateTimeInFmt, formatPlainNumber, formatWeightIn } from "@constants/numberFormat";
 import type { WeightUnit } from "@constants/numberFormat";
 import type { Capture, CaptureType } from "@db/ticketBody";
@@ -46,34 +47,46 @@ interface CalcBoxProps {
     lead?: boolean;
     pending?: boolean;
     stamp?: string;
+    /** The field's own raw formula (task: "move the formula inside") —
+     * rendered inside this same box, under the stamp, instead of as a
+     * sibling element below it. */
+    formula?: string | null;
 }
 
 // The mock's own `.calc` box, repeated four times (Tare/Gross/Net/Charge)
 // with only the label/value/modifier changing — pulled out so CalcCard's
 // own body reads as "four boxes" instead of four near-identical blocks.
-const CalcBox = ({ label, value, lead, pending, stamp }: CalcBoxProps) => (
+const CalcBox = ({ label, value, lead, pending, stamp, formula }: CalcBoxProps) => (
     <div
         className={`${styles.calcBox} ${lead ? styles.calcLead : ""} ${pending ? styles.calcPending : ""}`}
     >
         <span className="lbl">{label}</span>
         <b className={styles.calcValue}>{value}</b>
         <div className={styles.calcStamp}>{stamp ?? <>&nbsp;</>}</div>
+        <FormulaLine formula={formula} />
     </div>
 );
 
 // Task: "not below the segment, below every field, just show the
 // calculation ... dont wrap it but you can truncate and show in hover incase
-// it long" — one single-line, truncated formula ("Round(0 − (x))",
-// "Gross − Tare") right under its own field's box, `title` carrying the full
-// text for a long formula that got clipped. No label repeat (the box above
-// already has its own label) and no substituted-value tail — just the
-// calculation itself, same for every calc field including Net (no special
-// treatment). `null` (a genuinely malformed formula) renders nothing.
-const FormulaLine = ({ formula }: { formula: string | null }) =>
+// it long", then later "move the formula inside" — one single-line,
+// truncated formula ("Round(0 − (x))", "Gross − Tare") inside its own
+// field's box (below the stamp). No label repeat (the box above already has
+// its own label) and no substituted-value tail — just the calculation
+// itself, same for every calc field including Net (no special treatment).
+// `null`/`undefined` (no formula, or a genuinely malformed one) renders
+// nothing. Themed Tooltip (components/Tooltip) rather than a native `title`
+// attribute for the full text on hover — task: "truncate should follow the
+// tooltip that we implement not the generic one".
+const FormulaLine = ({ formula }: { formula?: string | null }) =>
     formula ? (
-        <div className={styles.formulaLine} title={formula}>
-            {formula}
-        </div>
+        // Tooltip's own wrapper is `inline-block` (sized to its content) by
+        // default — forced block + `minWidth: 0` here so it still spans the
+        // box's full width and the child's own overflow-ellipsis CSS
+        // (`.formula-line`) actually has a width to truncate against.
+        <Tooltip label={formula} style={{ display: "block", minWidth: 0 }}>
+            <div className={styles.formulaLine}>{formula}</div>
+        </Tooltip>
     ) : null;
 
 interface ChargeBoxProps {
@@ -96,6 +109,13 @@ const ChargeBox = ({ label, value, onChange, readOnly }: ChargeBoxProps) => (
             value={value}
             onChange={(event) => onChange(event.target.value)}
             readOnly={readOnly}
+            // Task: "i can still foxus on disanled fields".
+            tabIndex={readOnly ? -1 : undefined}
+            // Task: "focus on disable is still not fixed" — a plain mouse
+            // click still focuses a `readOnly` input even with tabIndex -1.
+            onMouseDown={(event) => {
+                if (readOnly) event.preventDefault();
+            }}
             placeholder="—"
             autoComplete="off"
         />
@@ -129,13 +149,12 @@ const CalcSegmentRows = ({
         <div className={styles.calcSegment}>
             <div className={styles.calcSegmentGrid}>
                 {items.map(({ fieldId, field, formula, value }) => (
-                    <div key={fieldId} className={styles.calcBoxWithFormula}>
-                        <CalcBox
-                            label={field.Label ? resolveLocalized(field.Label, lang) : resolveFieldIdLabel(fieldId, t)}
-                            value={value !== undefined ? formatPlainNumber(value) : "—"}
-                        />
-                        {showFormulaBreakdown && <FormulaLine formula={prettifyFormula(formula)} />}
-                    </div>
+                    <CalcBox
+                        key={fieldId}
+                        label={field.Label ? resolveLocalized(field.Label, lang) : resolveFieldIdLabel(fieldId, t)}
+                        value={value !== undefined ? formatPlainNumber(value) : "—"}
+                        formula={showFormulaBreakdown ? prettifyFormula(formula) : null}
+                    />
                 ))}
             </div>
         </div>
@@ -262,14 +281,12 @@ const NetChargeBoxes = ({
     return (
         <>
             {showNet && (
-                <div className={styles.calcBoxWithFormula}>
-                    <CalcBox
-                        label={netLabel}
-                        value={weights.netKg !== null ? formatWeightIn(weights.netKg, weightUnit, lang) : "—"}
-                        lead={weights.netKg !== null}
-                    />
-                    {showFormulaBreakdown && <FormulaLine formula={NET_FORMULA} />}
-                </div>
+                <CalcBox
+                    label={netLabel}
+                    value={weights.netKg !== null ? formatWeightIn(weights.netKg, weightUnit, lang) : "—"}
+                    lead={weights.netKg !== null}
+                    formula={showFormulaBreakdown ? NET_FORMULA : null}
+                />
             )}
             {showCharge && (
                 <ChargeBox label={chargeLabel} value={chargeValue} onChange={onChargeChange} readOnly={isLocked} />

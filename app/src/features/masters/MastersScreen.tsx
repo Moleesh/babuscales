@@ -116,14 +116,27 @@ export const MastersScreen = () => {
                 {...list}
             />
 
-            <MastersFormCard
-                activeKind={activeKind}
-                columns={masterColumns}
-                lang={lang}
-                addNewLabel={t(`masters.${kindLower}.addNew`)}
-                t={t}
-                {...form}
-            />
+            {/* Task: "fix the bottom bar to the end of the screen always ...
+                in master" — wrapper purely so `.form-card`'s
+                `margin-top: auto` (MastersScreen.module.css) can flush
+                this card to the true bottom of the screen on
+                short-content pages, matching Reports' bottom bar. */}
+            {/* `styles.formCard`, not `styles["form-card"]` — Vite's CSS
+                Modules export only exposes the camelCase key here, so the
+                bracket-hyphen lookup silently returned `undefined` and this
+                div rendered with no class at all, meaning `.form-card`'s
+                rule below (MastersScreen.module.css) was dead code and
+                never actually applied. */}
+            <div className={styles.formCard}>
+                <MastersFormCard
+                    activeKind={activeKind}
+                    columns={masterColumns}
+                    lang={lang}
+                    addNewLabel={t(`masters.${kindLower}.addNew`)}
+                    t={t}
+                    {...form}
+                />
+            </div>
         </div>
     );
 };

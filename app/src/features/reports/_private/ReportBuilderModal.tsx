@@ -32,17 +32,29 @@ export interface ReportBuilderModalProps {
     open: boolean;
     onClose: () => void;
     /** Starting point for the draft — the screen's currently-applied
-     * config. Only a starting point: nothing here changes until Save. */
+     * config, or (task: "edit save report should open the create report in
+     * edit form") the saved view being edited, once `editingId` is set.
+     * Only a starting point: nothing here changes until Save. */
     initialView: ReportView;
     initialGroupBy: GroupKey;
     initialFilter: TicketRowFilter;
     initialDateFrom: string;
     initialDateTo: string;
     initialVisibleColumnKeys: string[] | null;
+    /** Seeds the name field — the saved view's own name while editing, ""
+     * for a fresh build. */
+    initialName?: string;
+    /** `def.Id` of the saved view being edited, or `null`/undefined for a
+     * fresh "Build report". Non-null flips Save to `onUpdateReport` instead
+     * of `onSaveReport`, and the modal's own title to "Edit report". */
+    editingId?: string | null;
     /** Persists the named report and applies it as the screen's active
      * view. The modal closes itself right after calling this — it does not
      * wait on the (async) save to finish. */
     onSaveReport: (draft: ReportBuilderDraft, name: string) => void;
+    /** Overwrites the saved view named by `editingId` in place instead of
+     * adding a new one, then applies it the same way `onSaveReport` does. */
+    onUpdateReport: (id: string, draft: ReportBuilderDraft, name: string) => void;
 }
 
 const draftFromInitial = (initial: ReportBuilderDraft): ReportBuilderDraft => ({ ...initial });
@@ -61,16 +73,17 @@ const draftFromInitial = (initial: ReportBuilderDraft): ReportBuilderDraft => ({
 const useReportBuilderDraft = (
     open: boolean,
     initial: ReportBuilderDraft,
+    initialName: string,
 ): [ReportBuilderDraft, (patch: Partial<ReportBuilderDraft>) => void, string, (name: string) => void] => {
     const [draft, setDraft] = useState<ReportBuilderDraft>(() => draftFromInitial(initial));
-    const [name, setName] = useState("");
+    const [name, setName] = useState(initialName);
 
     useEffect(() => {
         if (open) {
             setDraft(draftFromInitial(initial));
-            setName("");
+            setName(initialName);
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps -- deliberately excludes `initial`'s own fields once `open` is already true: re-seeding on every live-state change would overwrite an in-progress edit with whatever the screen behind the modal is doing.
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- deliberately excludes `initial`/`initialName`'s own fields once `open` is already true: re-seeding on every live-state change would overwrite an in-progress edit with whatever the screen behind the modal is doing.
     }, [open]);
 
     const patchDraft = (patch: Partial<ReportBuilderDraft>): void => setDraft((current) => ({ ...current, ...patch }));
@@ -141,7 +154,7 @@ const ReportBuilderScopeFields = ({
 // persists the named report and applies its config as the screen's active
 // view in the same action (see onSaveReport), then closes the modal.
 export const ReportBuilderModal = (props: ReportBuilderModalProps) => {
-    const { open, onClose, onSaveReport } = props;
+    const { open, onClose, onSaveReport, onUpdateReport, editingId } = props;
     const { t } = useTranslation();
     const initial: ReportBuilderDraft = {
         view: props.initialView,
@@ -151,17 +164,22 @@ export const ReportBuilderModal = (props: ReportBuilderModalProps) => {
         dateTo: props.initialDateTo,
         visibleColumnKeys: props.initialVisibleColumnKeys,
     };
-    const [draft, patchDraft, name, setName] = useReportBuilderDraft(open, initial);
+    const [draft, patchDraft, name, setName] = useReportBuilderDraft(open, initial, props.initialName ?? "");
 
     const handleSave = (): void => {
         const trimmed = name.trim();
         if (!trimmed) return;
-        onSaveReport(draft, trimmed);
+        if (editingId) onUpdateReport(editingId, draft, trimmed);
+        else onSaveReport(draft, trimmed);
         onClose();
     };
 
     return (
-        <AppModal open={open} title={t("reports.builder.title")} onClose={onClose}>
+        <AppModal
+            open={open}
+            title={editingId ? t("reports.builder.editTitle") : t("reports.builder.title")}
+            onClose={onClose}
+        >
             <div className={styles.body}>
                 <ReportBuilderScopeFields draft={draft} patchDraft={patchDraft} />
                 <ReportBuilderColumns

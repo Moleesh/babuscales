@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import type { DataPort } from "@db/DataPort";
-import { addReportDef, deleteReportDef, loadReportDefs, renameReportDef } from "@db/reportDefs";
+import { addReportDef, deleteReportDef, loadReportDefs, renameReportDef, updateReportDef } from "@db/reportDefs";
 import type { ReportDefinition } from "@db/reportDefs";
 
 import { GROUP_KEY_VALUES, TICKET_ROW_FILTER_VALUES } from "../reportRows";
@@ -53,10 +53,19 @@ export interface UseSavedReportActions {
      * screen's own inline "Save current view as…" input/button was removed
      * (Reports rework: "remove save view as and save view"). */
     handleSaveReportDraft: (draft: ReportBuilderSaveDraft, name: string) => void;
+    /** Task: "edit save report should open the create report in edit form" —
+     * the builder modal's Save button when it was opened via a saved view's
+     * edit (pencil) action: overwrites that same definition (View/GroupBy/
+     * Filter/dates/columns/name) instead of adding a new one, and applies it
+     * live the same way a fresh save does. */
+    handleUpdateReportDraft: (id: string, draft: ReportBuilderSaveDraft, name: string) => void;
     handleRecallReport: (def: ReportDefinition) => void;
     handleDeleteReport: (id: string) => void;
     /** The saved-views dropdown's own edit (pencil) action — renames in
-     * place, doesn't touch what's currently applied to the screen. */
+     * place, doesn't touch what's currently applied to the screen. Unused by
+     * SavedReportsRow now that its pencil opens the full builder instead of
+     * an inline rename box; kept as a small, still-correct standalone action
+     * in case a future caller wants rename-only. */
     handleRenameReport: (id: string, name: string) => void;
     /** `def.Id` of whichever saved view is currently applied, or `null` —
      * `null` on first landing and after any manual filter edit invalidates
@@ -210,6 +219,23 @@ export const useSavedReportActions = (args: UseSavedReportActionsArgs): UseSaved
         onApplied();
     };
 
+    const handleUpdateReportDraft = (id: string, draft: ReportBuilderSaveDraft, name: string): void => {
+        const trimmed = name.trim();
+        if (!trimmed) return;
+        justAppliedRef.current = true;
+        setView(draft.view);
+        setGroupBy(draft.groupBy);
+        setFilter(draft.filter);
+        setDateFrom(draft.dateFrom);
+        setDateTo(draft.dateTo);
+        setVisibleColumnKeys(draft.visibleColumnKeys);
+        setSelectedId(id);
+        void updateReportDef(db, id, buildSaveArgs(draft, trimmed))
+            .then(() => loadReportDefs(db))
+            .then(setSavedReports);
+        onApplied();
+    };
+
     const handleRecallReport = (def: ReportDefinition): void => {
         justAppliedRef.current = true;
         applyRecalledReport(def, { setView, setGroupBy, setFilter, setDateFrom, setDateTo, setVisibleColumnKeys });
@@ -243,6 +269,7 @@ export const useSavedReportActions = (args: UseSavedReportActionsArgs): UseSaved
     return {
         savedReports,
         handleSaveReportDraft,
+        handleUpdateReportDraft,
         handleRecallReport,
         handleDeleteReport,
         handleRenameReport,

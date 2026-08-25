@@ -57,16 +57,31 @@ export interface UseWeighingTicket {
     setKind: (kind: CaptureType) => void;
     /** Both weights are in — the ticket carries its final numbers, whether or not it has been saved yet. */
     isComplete: boolean;
+    /** A capture just landed and hasn't been saved yet — see the
+     * reducer-level `TicketState.awaitingSave`'s own doc comment. Exposed
+     * publicly so ActionsCard can gate Print/Reprint on it (tasks: "for
+     * second weight as soon as the capture is done both save and print
+     * popup only save should be enabled", "after capture disable the
+     * reprint until we save is completed"). */
+    awaitingSave: boolean;
     /** "inLedger" equivalent — fields lock and the deck is free for the next lorry. */
     isLocked: boolean;
     printCount: number;
     saving: boolean;
+    /** Task: "resume on opening ticket should disable save and print, save
+     * will be disabled until we capture the second weight" — see the
+     * reducer-level field of the same name for the full reasoning. */
+    justResumed: boolean;
     capture: (weightKg: number) => void;
     /** Settings → Weighing → Rules.ManualEntry (CalcCard's typed inputs) — same `pushCapture` pipeline as `capture`, just `Source: "Manual"` instead of `"Indicator"`. Takes an explicit `CaptureType` so both the Tare and Gross boxes can submit independently, regardless of the awaitingSave gate that blocks `capture`. */
     manualCapture: (weightKg: number, kind: CaptureType) => void;
     useStoredTare: (weightKg: number, capturedAtIso: string) => void;
     save: () => Promise<void>;
     startNew: () => void;
+    /** Task: "Always coming to weighing tab has to reset to new weight
+     * except for coming from resume in report" — App.tsx's nav-tab click
+     * handler calls this directly on entry into Weighing from elsewhere. */
+    resetToNew: () => void;
     resume: (doc: DocRow) => void;
     print: () => Promise<void>;
     /** Same "Lock" transition `save()` already applies unconditionally on every save — exposed directly so Reprint (ReprintLookupModal → WeighingScreen) can lock a resumed ticket's fields even when it only carries a single capture (`resume`'s own `isLocked` only locks a *complete*, 2-capture ticket, matching normal open-strip resume behaviour). */
@@ -98,6 +113,15 @@ interface TicketState {
     isLocked: boolean;
     printCount: number;
     saving: boolean;
+    /** Task: "resume on opening ticket should disable save and print, save
+     * will be disabled until we capture the second weight" — true right
+     * after resuming a single-weight (not yet complete) parked ticket, so
+     * Save/Print don't read as immediately actionable before the operator
+     * has actually captured anything *this* sitting. Cleared the moment a
+     * new capture lands (`AddCapture`) — from then on the normal
+     * awaitingSave/isComplete rules already cover it. Never set on a
+     * fresh/complete resume (nothing to wait on). */
+    justResumed: boolean;
 }
 
 const fieldsFromBody = (body: TicketBody): TicketFormFields => ({
@@ -144,6 +168,7 @@ export const initialTicketState = (): TicketState => ({
     isLocked: false,
     printCount: 0,
     saving: false,
+    justResumed: false,
 });
 
 type TicketAction =
@@ -196,6 +221,12 @@ const resumedState = (doc: DocRow): TicketState => {
         isLocked: body.Captures.length >= 2,
         printCount: body.PrintCount ?? 0,
         saving: false,
+        // Task: "resume on opening ticket should disable save and print" —
+        // only the single-weight, not-yet-complete case has anything to
+        // wait on; a resumed complete/locked ticket (Reprint's own resume
+        // path) has nothing left to capture, so Save/Print keep their
+        // normal (already-locked) behaviour instead.
+        justResumed: body.Captures.length === 1,
     };
 };
 
@@ -234,6 +265,9 @@ export const ticketReducer = (state: TicketState, action: TicketAction): TicketS
                 captures: [...state.captures, action.capture],
                 kind: null,
                 awaitingSave: true,
+                // The operator just captured the second weight this
+                // sitting — the wait `justResumed` was gating is over.
+                justResumed: false,
             };
         case "ResetToNew":
             return initialTicketState();
@@ -635,6 +669,11 @@ interface AssembleTicketArgs {
     captureActions: ReturnType<typeof useTicketCaptureActions>;
     persistenceActions: ReturnType<typeof useTicketPersistenceActions>;
     lifecycleActions: ReturnType<typeof useTicketLifecycleActions>;
+    /** `useTicketState`'s own `resetToNew` — passed straight through rather
+     * than routed via `lifecycleActions` (which only re-exposes `startNew`,
+     * a save-aware wrapper around this), since App.tsx's Weighing nav-tab
+     * handler needs the raw unconditional reset. */
+    resetToNew: () => void;
 }
 
 // The public shape the hook returns, assembled from `state` plus the four
@@ -647,6 +686,7 @@ const assembleTicket = ({
     captureActions,
     persistenceActions,
     lifecycleActions,
+    resetToNew,
 }: AssembleTicketArgs): UseWeighingTicket => ({
     docId: state.docId,
     docSeq: state.docSeq,
@@ -661,14 +701,17 @@ const assembleTicket = ({
     kind: state.kind,
     setKind: fieldActions.setKind,
     isComplete: state.captures.length >= 2,
+    awaitingSave: state.awaitingSave,
     isLocked: state.isLocked,
     printCount: state.printCount,
     saving: state.saving,
+    justResumed: state.justResumed,
     capture: captureActions.capture,
     manualCapture: captureActions.manualCapture,
     useStoredTare: captureActions.useStoredTare,
     save: persistenceActions.save,
     startNew: lifecycleActions.startNew,
+    resetToNew,
     resume: lifecycleActions.resume,
     print: persistenceActions.print,
     lock: lifecycleActions.lock,
@@ -715,5 +758,5 @@ export const useWeighingTicket = (
         indicator,
     });
 
-    return assembleTicket({ state, fieldActions, captureActions, persistenceActions, lifecycleActions });
+    return assembleTicket({ state, fieldActions, captureActions, persistenceActions, lifecycleActions, resetToNew });
 };

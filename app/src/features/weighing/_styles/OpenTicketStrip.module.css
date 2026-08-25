@@ -61,6 +61,12 @@
     border-color: var(--led-dim);
     color: var(--led);
 }
+/* tabIndex={-1} (OpenTicketStrip.tsx) already removes these from the tab
+   order — this just drops the leftover browser focus ring a plain mouse
+   click still leaves on a clicked <button>. */
+.item:focus {
+    outline: none;
+}
 .weight {
     font-family: var(--mono);
     font-variant-numeric: tabular-nums;

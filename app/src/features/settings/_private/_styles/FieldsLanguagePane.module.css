@@ -17,12 +17,21 @@
     line-height: 1.6;
 }
 
-/* A Formula field's own expression, shown under its label in the field-schema table's Label column. */
+/* A Formula field's own expression, shown under its label in the field-schema
+   table's Label column. Truncated with an ellipsis rather than wrapping/
+   overflowing the row (task: "if the formula is big truncate it") — the full
+   text is still available via components/Tooltip on hover
+   (FieldSchemaCard.tsx), same truncation approach as CalcCard.tsx's own
+   FormulaLine. */
 .formula {
     font-size: 0.625rem;
     color: var(--dim);
     font-family: monospace;
     margin-top: 2px;
+    max-width: 260px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 /* Ported from the mock's own `.drop` — a dashed drop zone that doubles as a file-picker label. */

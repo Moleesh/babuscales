@@ -1,11 +1,67 @@
 .screen {
-    display: grid;
+    display: flex;
+    flex-direction: column;
+    /* Task: "Can you do the same in masters tab before push like in report
+       tab?" / "Master is still not fixed" — this used to be `height: 100%`,
+       which depends on `.main` (AppShell.module.css) resolving as a
+       *definite* height for the percentage to compute against; that
+       stopped holding once AppShell.module.css's own `.screen` stretch
+       rule was reverted ("you messged up the scroll ... revert it all"),
+       so this silently fell back to `auto` and every flex-fill child below
+       (Card.module.css's `.fill`/`.bodyFill`, `.body-fill-inner`) had no
+       real leftover space to grow into. A `calc(100vh - ...)` is always
+       definite regardless of ancestor flex resolution — AppShell.module.css's
+       `.top` (fixed 52px) and `.main`'s own `padding: 12px 24px 12px 12px`
+       (24px vertical) are the only other fixed vertical chrome above this
+       screen. Once this has a real height, the existing `flex: 1` chain
+       down to DataTable's `.wrapper` (DataTable.module.css) does the rest,
+       and `.form-card`'s `margin-top: auto` below has real room to flush
+       against on short-content pages — same effect as
+       ReportsScreen.module.css's `.tickets-table` fix, just resolved one
+       level higher since Masters' table stays in flex-fill mode
+       (`--datatable-max-height: none` below) rather than a vh calc of its
+       own. */
+    min-height: calc(100vh - var(--shell-header-h, 0px) - 76px);
+    /* Same reasoning as ReportsScreen.module.css's `.screen` — stops the
+       list's own wide DataTable from stretching this flex item past
+       `.main`'s width. */
+    min-width: 0;
     gap: 13px;
+}
+
+/* Task: "scroll on master need to constrained on the table only, on other
+   place" — this card used to have no `min-height`, so a tall form (many
+   custom fields) refused to shrink below its own content height (a flex
+   item's default `min-height: auto`) and pushed `.screen` past `.main`'s
+   height, forcing a second, page-level scrollbar alongside the table's own
+   internal one. `min-height: 0` lets it shrink into whatever room the
+   `.fill` table above actually left it; `overflow-y: auto` then contains
+   any leftover overflow (an unusually tall form) inside this card's own
+   scroll region instead of leaking back out to `.main`. */
+.form-card {
+    margin-top: auto;
+    min-height: 0;
+    overflow-y: auto;
 }
 
 .body {
     display: grid;
     gap: 11px;
+}
+
+/* Paired with Card's own opt-in `fill` prop (MastersListCard) — task: "like
+   in report can you make the table only scrolling nothing else". `.body`
+   above is shared with MastersFormCard too, so this stays a separate
+   modifier rather than changing `.body` itself. Switches this particular
+   `.body` from `grid` to a flex column so its DataTable child (the last of
+   the two — search input above it keeps its natural height) can flex to
+   fill the rest, and overrides DataTable's own `--datatable-max-height` (a
+   fixed vh by default) so nothing caps it before the flex sizing does. */
+.body-fill-inner {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    --datatable-max-height: none;
 }
 
 /* Ported from demo/BabuScales-demo.html's ".search". */

@@ -4,6 +4,7 @@ import type { ReportDefinition } from "@db/reportDefs";
 import { useTranslation } from "@i18n/useTranslation";
 
 import styles from "./_styles/SavedReportsRow.module.css";
+import dateRangeStyles from "../_styles/ReportsScreen.module.css";
 
 export interface SavedReportsRowProps {
     savedReports: ReportDefinition[];
@@ -12,7 +13,10 @@ export interface SavedReportsRowProps {
     selectedId: string | null;
     onRecall: (def: ReportDefinition) => void;
     onDelete: (id: string) => void;
-    onRename: (id: string, name: string) => void;
+    /** Task: "edit save report should open the create report in edit form" —
+     * the pencil action opens the builder pre-filled with this def instead
+     * of the old inline rename box. */
+    onEdit: (id: string) => void;
 }
 
 // Closes the popover on an outside click — same shape as components/Select's
@@ -46,50 +50,16 @@ const useCloseOnOutsideClick = (open: boolean, onClose: () => void) => {
 interface SavedViewRowProps {
     def: ReportDefinition;
     active: boolean;
-    editing: boolean;
-    editValue: string;
-    onEditValueChange: (name: string) => void;
     onPick: () => void;
-    onStartEdit: () => void;
-    onCommitEdit: () => void;
-    onCancelEdit: () => void;
+    onEdit: () => void;
     onDelete: () => void;
 }
 
-// One row of the open popover: either the plain recall button + pencil/trash
-// actions, or (mid-rename) a text input replacing the label — split out
-// purely to keep SavedReportsRow itself under the file's own line budget.
-const SavedViewRow = ({
-    def,
-    active,
-    editing,
-    editValue,
-    onEditValueChange,
-    onPick,
-    onStartEdit,
-    onCommitEdit,
-    onCancelEdit,
-    onDelete,
-}: SavedViewRowProps) => {
+// One row of the open popover: the plain recall button + pencil/trash
+// actions — split out purely to keep SavedReportsRow itself under the
+// file's own line budget.
+const SavedViewRow = ({ def, active, onPick, onEdit, onDelete }: SavedViewRowProps) => {
     const { t } = useTranslation();
-    if (editing) {
-        return (
-            <div className={styles.optionRow}>
-                <input
-                    className={styles.renameInput}
-                    value={editValue}
-                    autoFocus
-                    onChange={(event) => onEditValueChange(event.target.value)}
-                    onKeyDown={(event) => {
-                        if (event.key === "Enter") onCommitEdit();
-                        if (event.key === "Escape") onCancelEdit();
-                    }}
-                    onBlur={onCommitEdit}
-                    aria-label={t("reports.savedReportsNewAriaLabel")}
-                />
-            </div>
-        );
-    }
     return (
         <div className={`${styles.optionRow} ${active ? styles.optionRowActive : ""}`}>
             <button type="button" className={styles.option} data-cursor="compact" onClick={onPick}>
@@ -100,7 +70,7 @@ const SavedViewRow = ({
                 className={styles.iconBtn}
                 data-cursor="compact"
                 aria-label={`${t("reports.savedReportsEditPrefix")} ${def.Name}`}
-                onClick={onStartEdit}
+                onClick={onEdit}
             >
                 ✎
             </button>
@@ -127,30 +97,14 @@ const SavedViewRow = ({
 interface SavedViewsListProps {
     savedReports: ReportDefinition[];
     selectedId: string | null;
-    editingId: string | null;
-    editValue: string;
-    onEditValueChange: (name: string) => void;
-    onCommitEdit: () => void;
-    onCancelEdit: () => void;
-    onStartEdit: (def: ReportDefinition) => void;
     onPick: (def: ReportDefinition) => void;
+    onEdit: (id: string) => void;
     onDelete: (id: string) => void;
 }
 
 // The open popover's row list — split out of SavedReportsRow purely to keep
 // it under the file's own line budget (docs/CodingStandards.md).
-const SavedViewsList = ({
-    savedReports,
-    selectedId,
-    editingId,
-    editValue,
-    onEditValueChange,
-    onCommitEdit,
-    onCancelEdit,
-    onStartEdit,
-    onPick,
-    onDelete,
-}: SavedViewsListProps) => {
+const SavedViewsList = ({ savedReports, selectedId, onPick, onEdit, onDelete }: SavedViewsListProps) => {
     const { t } = useTranslation();
     return (
         <div className={styles.list} role="listbox">
@@ -160,13 +114,8 @@ const SavedViewsList = ({
                     key={def.Id}
                     def={def}
                     active={def.Id === selectedId}
-                    editing={editingId === def.Id}
-                    editValue={editValue}
-                    onEditValueChange={onEditValueChange}
                     onPick={() => onPick(def)}
-                    onStartEdit={() => onStartEdit(def)}
-                    onCommitEdit={onCommitEdit}
-                    onCancelEdit={onCancelEdit}
+                    onEdit={() => onEdit(def.Id)}
                     onDelete={() => onDelete(def.Id)}
                 />
             ))}
@@ -183,60 +132,48 @@ const SavedViewsList = ({
 // one action — this row now only recalls/renames/deletes what's already
 // saved.
 
-export const SavedReportsRow = ({
-    savedReports,
-    selectedId,
-    onRecall,
-    onDelete,
-    onRename,
-}: SavedReportsRowProps) => {
+export const SavedReportsRow = ({ savedReports, selectedId, onRecall, onDelete, onEdit }: SavedReportsRowProps) => {
     const { t } = useTranslation();
     const [open, setOpen] = useState(false);
-    const [editingId, setEditingId] = useState<string | null>(null);
-    const [editValue, setEditValue] = useState("");
-    const ref = useCloseOnOutsideClick(open, () => {
-        setOpen(false);
-        setEditingId(null);
-    });
+    const ref = useCloseOnOutsideClick(open, () => setOpen(false));
     const selected = savedReports.find((def) => def.Id === selectedId);
 
-    const commitEdit = (): void => {
-        if (editingId) onRename(editingId, editValue);
-        setEditingId(null);
-    };
-
     return (
-        <div className={styles.wrap} ref={ref}>
-            <button
-                type="button"
-                className={`${styles.trigger} ${open ? styles.triggerOpen : ""}`}
-                aria-haspopup="listbox"
-                aria-expanded={open}
-                onClick={() => setOpen((v) => !v)}
-            >
-                <span className={styles.label}>{selected?.Name ?? t("reports.savedReportsPlaceholder2")}</span>
-                <span className={styles.chevron} aria-hidden="true">▾</span>
-            </button>
-            {open && (
-                <SavedViewsList
-                    savedReports={savedReports}
-                    selectedId={selectedId}
-                    editingId={editingId}
-                    editValue={editValue}
-                    onEditValueChange={setEditValue}
-                    onCommitEdit={commitEdit}
-                    onCancelEdit={() => setEditingId(null)}
-                    onStartEdit={(def) => {
-                        setEditingId(def.Id);
-                        setEditValue(def.Name);
-                    }}
-                    onPick={(def) => {
-                        onRecall(def);
-                        setOpen(false);
-                    }}
-                    onDelete={onDelete}
-                />
-            )}
+        // Task: "the below one need a better placement first one doesnt
+        // have a label" — this dropdown used to be the one unlabeled
+        // control on the row; wrapped the same way ReportsDateRangeRow
+        // captions its own From date/To date/Series triggers (same
+        // `rangeField`/`rangeFieldLabel` classes, reused rather than
+        // duplicated) so the whole filter line reads consistently.
+        <div className={dateRangeStyles.rangeField}>
+            <span className={dateRangeStyles.rangeFieldLabel}>{t("reports.savedReportsLabel")}</span>
+            <div className={styles.wrap} ref={ref}>
+                <button
+                    type="button"
+                    className={`${styles.trigger} ${open ? styles.triggerOpen : ""}`}
+                    aria-haspopup="listbox"
+                    aria-expanded={open}
+                    onClick={() => setOpen((v) => !v)}
+                >
+                    <span className={styles.label}>{selected?.Name ?? t("reports.savedReportsPlaceholder2")}</span>
+                    <span className={styles.chevron} aria-hidden="true">▾</span>
+                </button>
+                {open && (
+                    <SavedViewsList
+                        savedReports={savedReports}
+                        selectedId={selectedId}
+                        onPick={(def) => {
+                            onRecall(def);
+                            setOpen(false);
+                        }}
+                        onEdit={(id) => {
+                            onEdit(id);
+                            setOpen(false);
+                        }}
+                        onDelete={onDelete}
+                    />
+                )}
+            </div>
         </div>
     );
 };

@@ -188,6 +188,17 @@ const buildFixedControl = (field: SchemaField, args: BuildFixedControlArgs): Rea
                         value={accessor.getValue(ticket)}
                         onChange={(event) => accessor.setValue(ticket, event.target.value)}
                         readOnly={ticket.isLocked}
+                        // Task: "i can still foxus on disanled fields" —
+                        // `readOnly` alone doesn't stop Tab from focusing an
+                        // input.
+                        tabIndex={ticket.isLocked ? -1 : undefined}
+                        // Task: "focus on disable is still not fixed" —
+                        // `tabIndex={-1}` alone doesn't stop a plain mouse
+                        // click from focusing a `readOnly` input either (see
+                        // SearchableDropdown.tsx's own copy of this fix).
+                        onMouseDown={(e) => {
+                            if (ticket.isLocked) e.preventDefault();
+                        }}
                         autoComplete="off"
                     />
                 </Field>
@@ -251,7 +262,8 @@ const buildFixedItems = ({
             key: "TicketDate",
             node: (
                 <Field id="fDate" label={dateLabel}>
-                    <input id="fDate" readOnly value={ticketDate} className={styles.dateField} />
+                    {/* Always read-only, so always out of the tab order too — see "i can still foxus on disanled fields". */}
+                    <input id="fDate" readOnly tabIndex={-1} value={ticketDate} className={styles.dateField} />
                 </Field>
             ),
         });

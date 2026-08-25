@@ -65,6 +65,12 @@ const useReportsScreenFilters = () => {
     const [groupBy, setGroupBy] = useState<GroupKey>("material");
     const [printOpen, setPrintOpen] = useState(false);
     const [builderOpen, setBuilderOpen] = useState(false);
+    /** Task: "edit save report should open the create report in edit form" —
+     * `def.Id` of the saved view being edited via the builder, or `null` when
+     * the builder was opened fresh from "Build report" instead. Read by
+     * ReportBuilderModal to seed its draft/name from that definition and to
+     * update it in place on Save, instead of adding a new one. */
+    const [editingReportId, setEditingReportId] = useState<string | null>(null);
     const [sortKey, setSortKey] = useState<TicketSortKey>("at");
     const [sortDir, setSortDir] = useState<SortDir>("desc");
     const [visibleColumnKeys, setVisibleColumnKeys] = useState<string[] | null>(null);
@@ -102,6 +108,8 @@ const useReportsScreenFilters = () => {
         setPrintOpen,
         builderOpen,
         setBuilderOpen,
+        editingReportId,
+        setEditingReportId,
         sortKey,
         setSortKey,
         sortDir,
@@ -228,7 +236,15 @@ export const useReportsScreenController = (args: UseReportsScreenControllerArgs)
     const { dateFmt, reportsIntent } = args;
     const filters = useReportsScreenFilters();
     const { setView, setFilter, query, filter, dateFrom, dateTo, sortKey, sortDir, setPageIndex, setReportApplied } = filters;
+    const { setBuilderOpen, setEditingReportId } = filters;
     const { savedReportActions, screenData } = useReportsScreenDerivedData(filters, args);
+
+    // Task: "edit save report should open the create report in edit form" —
+    // SavedReportsRow's pencil action, wired through ReportsCardBody.
+    const openReportForEdit = (id: string): void => {
+        setEditingReportId(id);
+        setBuilderOpen(true);
+    };
 
     // The header's own "waiting for a second weight" chip (waitingCount) —
     // clicking it is an explicit request for a report the same as recalling
@@ -242,7 +258,16 @@ export const useReportsScreenController = (args: UseReportsScreenControllerArgs)
     useReportsIntentEffect(reportsIntent, setView, setFilter, setReportApplied);
     useResetPageOnFilterChange({ setPageIndex, query, filter, dateFrom, dateTo, sortKey, sortDir });
 
-    return { ...filters, savedReportActions, showWaiting, dateFmt, ...screenData };
+    // The builder can also be closed via its own X/backdrop/Cancel (not just
+    // a successful Save) — either way, `editingReportId` must not linger
+    // into the next "Build report" open (that would silently update the
+    // last-edited saved view instead of adding a new one).
+    const closeBuilder = (): void => {
+        setBuilderOpen(false);
+        setEditingReportId(null);
+    };
+
+    return { ...filters, savedReportActions, showWaiting, openReportForEdit, closeBuilder, dateFmt, ...screenData };
 };
 
 export type UseReportsScreenController = ReturnType<typeof useReportsScreenController>;

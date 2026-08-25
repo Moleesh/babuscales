@@ -121,9 +121,15 @@
     color: var(--text);
     font: inherit;
     font-size: 0.8125rem;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    /* Task: "make the dropdown readable" — a longer option label (e.g. a
+       series option's "Before reset — …" caption) used to ellipsis-truncate
+       at the trigger's own width, same as the closed trigger's `.label`
+       above. Unlike the trigger, an open row has no fixed-width constraint
+       forcing that — wraps onto a second line instead of hiding text. */
+    overflow: visible;
+    text-overflow: unset;
+    white-space: normal;
+    word-break: break-word;
 }
 .option:hover {
     background: var(--panel-2);
