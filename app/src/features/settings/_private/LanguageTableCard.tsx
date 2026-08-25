@@ -118,7 +118,8 @@ export const LanguageTableCard = ({
     // (shouldn't normally happen, but keeps the picker from silently
     // pointing at nothing either way).
     useEffect(() => {
-        if (!selectedPack && otherPacks.length > 0) onSelectCode(otherPacks[0].Code);
+        const first = otherPacks[0];
+        if (!selectedPack && first) onSelectCode(first.Code);
     }, [selectedPack, otherPacks, onSelectCode]);
 
     const allKeys = useMemo(() => Object.keys(EN_STRINGS), []);
@@ -213,7 +214,7 @@ export const LanguageTableCard = ({
                         />
                     );
                 }
-                const value = enPack?.Strings[row.key] ?? EN_STRINGS[row.key];
+                const value = enPack?.Strings[row.key] ?? EN_STRINGS[row.key] ?? "";
                 const status = statusOf(enPack, row.key);
                 const statusClass =
                     status === "edited" ? styles.valueTranslated : status === "missing" ? styles.valueMissing : "";
@@ -237,7 +238,7 @@ export const LanguageTableCard = ({
             key: "lang",
             header: (
                 <span className={styles.langHeader}>
-                    {otherPacks.length > 0 ? (
+                    {otherPacks[0] ? (
                         <>
                             <Select
                                 id="language-pane-picker"

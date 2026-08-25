@@ -7,7 +7,7 @@ import { DEFAULT_NUMBERING, ruleDefs, settingsBodySchema } from "./settingsSchem
 const fakeT = (key: string): string => `[${key}]`;
 
 describe("ruleDefs(t)", () => {
-    it("returns exactly the five WeighingRules keys, in order", () => {
+    it("returns exactly the six WeighingRules keys, in order", () => {
         const defs = ruleDefs(fakeT);
         expect(defs.map((d) => d[0])).toEqual([
             "StrictTare",
@@ -15,6 +15,7 @@ describe("ruleDefs(t)", () => {
             "ShowSendLorry",
             "ManualEntry",
             "ShowFormulaBreakdown",
+            "ShowSeriesInReports",
         ]);
     });
 
@@ -42,6 +43,11 @@ describe("ruleDefs(t)", () => {
                 "[settings.weighingRules.showFormulaBreakdown.label]",
                 "[settings.weighingRules.showFormulaBreakdown.note]",
             ],
+            [
+                "ShowSeriesInReports",
+                "[settings.weighingRules.showSeriesInReports.label]",
+                "[settings.weighingRules.showSeriesInReports.note]",
+            ],
         ]);
     });
 
@@ -51,7 +57,7 @@ describe("ruleDefs(t)", () => {
             calls++;
             return key;
         });
-        expect(calls).toBe(10); // 5 rules x (label + note)
+        expect(calls).toBe(12); // 6 rules x (label + note)
     });
 });
 
