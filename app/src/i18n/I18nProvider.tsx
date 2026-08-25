@@ -28,7 +28,19 @@ export const I18nProvider = ({ packs, initialLang = "en", children }: I18nProvid
         [activePack],
     );
 
-    const value = useMemo(() => ({ lang, setLang, t, packs }), [lang, t, packs]);
+    // Bug: "when another language is selected it to change the top language
+    // also" — see I18nContext.ts's own doc comment. `null` until either side
+    // (the top-bar toggle's own `otherPack` fallback in App.tsx, or
+    // LanguageTableCard's picker) picks a real code; both already fall back
+    // to "the first non-`en` pack" whenever this is still `null` or points at
+    // a pack that's since disappeared, so this never needs its own fallback
+    // logic here.
+    const [otherLangCode, setOtherLangCode] = useState<string | null>(null);
+
+    const value = useMemo(
+        () => ({ lang, setLang, t, packs, otherLangCode, setOtherLangCode }),
+        [lang, t, packs, otherLangCode],
+    );
 
     return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
 };

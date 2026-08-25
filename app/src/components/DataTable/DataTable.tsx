@@ -12,6 +12,14 @@ export interface DataTableColumn<Row> {
     header: ReactNode;
     render: (row: Row) => ReactNode;
     numeric?: boolean;
+    /** Fixed pixel width for this column's `th`/`td`, paired with
+     * `tableClassName`'s `table-layout: fixed` (e.g. the Language table).
+     * Under `table-layout: fixed`, any column left without a `width` splits
+     * the table's remaining space instead of shrinking to its content — so
+     * a caller can pin every column except one and let that one column
+     * absorb whatever room is left, instead of the table stopping short of
+     * its container and leaving a blank strip after the last column. */
+    width?: number;
 }
 
 export interface DataTableProps<Row> {
@@ -20,6 +28,20 @@ export interface DataTableProps<Row> {
     getRowId: (row: Row) => string;
     onRowClick?: (row: Row) => void;
     emptyMessage?: ReactNode;
+    /** Extra class on the `<table>` itself, alongside `.table`. Task: "too
+     * many space"/"let the table take the whole space" — the Language
+     * table's columns used to size themselves from fixed-width inner spans
+     * under the default `table-layout: auto`, which either spread leftover
+     * width out as gaps between columns (`width: 100%`) or left a blank
+     * strip after the last one (`width: max-content`) depending on which
+     * way it was fought. Pass a class that sets `table-layout: fixed` here
+     * together with `width` on every column but one (see
+     * `DataTableColumn.width`) — under fixed layout the one column left
+     * without a width automatically absorbs all the table's remaining
+     * space, so it fills the container exactly with no gap either side.
+     * Every other caller (Masters, Reports, …) leaves this unset and keeps
+     * the default auto layout. */
+    tableClassName?: string;
 }
 
 // Estimated row height (px) used to compute which rows are in view before
@@ -96,6 +118,26 @@ interface DataTableRowProps<Row> {
     onRowClick?: (row: Row) => void;
 }
 
+// The column-header `<tr>` — identical in both the empty and populated
+// branches below, pulled out purely to stay under DataTable's own line
+// budget now that the empty branch grew a sticky wrapper (`.emptyPin`) of
+// its own.
+const DataTableHeaderRow = <Row,>({ columns }: { columns: DataTableColumn<Row>[] }) => (
+    <thead>
+        <tr>
+            {columns.map((column) => (
+                <th
+                    key={column.key}
+                    className={column.numeric ? styles.numeric : undefined}
+                    style={column.width ? { width: column.width } : undefined}
+                >
+                    {column.header}
+                </th>
+            ))}
+        </tr>
+    </thead>
+);
+
 // One `<tr>` — pulled out of DataTable's render purely to stay under the
 // file's own line budget.
 const DataTableRow = <Row,>({ row, columns, getRowId, onRowClick }: DataTableRowProps<Row>) => (
@@ -117,7 +159,11 @@ const DataTableRow = <Row,>({ row, columns, getRowId, onRowClick }: DataTableRow
         }
     >
         {columns.map((column) => (
-            <td key={column.key} className={column.numeric ? styles.numeric : undefined}>
+            <td
+                key={column.key}
+                className={column.numeric ? styles.numeric : undefined}
+                style={column.width ? { width: column.width } : undefined}
+            >
                 {column.render(row)}
             </td>
         ))}
@@ -140,6 +186,7 @@ export const DataTable = <Row,>({
     getRowId,
     onRowClick,
     emptyMessage,
+    tableClassName,
 }: DataTableProps<Row>) => {
     const { t } = useTranslation();
     const { wrapperRef, rowHeightRef, range, recompute } = useVirtualizedRowRange(rows.length);
@@ -154,18 +201,21 @@ export const DataTable = <Row,>({
     if (rows.length === 0) {
         return (
             <div className={styles.wrapper}>
-                <table className={styles.table}>
-                    <thead>
-                        <tr>
-                            {columns.map((column) => (
-                                <th key={column.key} className={column.numeric ? styles.numeric : undefined}>
-                                    {column.header}
-                                </th>
-                            ))}
-                        </tr>
-                    </thead>
+                <table className={tableClassName ? `${styles.table} ${tableClassName}` : styles.table}>
+                    <DataTableHeaderRow columns={columns} />
                 </table>
-                <EmptyState title={emptyMessage ?? t("dataTable.emptyDefault")} />
+                {/* Task: "the messge is scolling along with the scroll bar" —
+                    `.wrapper` is the same `overflow-x: auto` box the wide
+                    `<table>` above scrolls in (Reports Tickets/Masters both
+                    have more columns than fit); as a plain static sibling in
+                    that flow, EmptyState's box scrolled off with the header
+                    the moment the user dragged the new horizontal thumb,
+                    even though there are no body rows to actually scroll to.
+                    `.emptyPin` sticks it to the viewport's left edge the same
+                    way `.table th` already sticks to the top. */}
+                <div className={styles.emptyPin}>
+                    <EmptyState title={emptyMessage ?? t("dataTable.emptyDefault")} />
+                </div>
             </div>
         );
     }
@@ -177,21 +227,24 @@ export const DataTable = <Row,>({
     const topSpacerHeight = start * rowHeight;
     const bottomSpacerHeight = (rows.length - end) * rowHeight;
 
+    // `className={styles.wrapperOuter}` on top of the usual
+    // `contentClassName={styles.wrapper}` — ScrollArea's plain positioning
+    // `.area` div (ScrollArea.module.css) has no sizing of its own, so
+    // without this it never shrinks as a flex item of a fill-mode ancestor
+    // (Masters' `.body-fill-inner`); it just grows to fit every row, and the
+    // real scrolling `.content` div inside it (sized correctly via
+    // `.wrapper`) never gets a chance to clip anything, since its own
+    // parent already expanded to match. `.wrapperOuter` mirrors `.wrapper`'s
+    // sizing but deliberately skips its `overflow-x`/`-y` — duplicating that
+    // too would make this outer div scroll natively itself instead of just
+    // sizing around the real, custom-scrollbar `.content` div. Reports'
+    // table never surfaced this because it bounds itself with a hard
+    // `--datatable-max-height` vh calc instead of relying on the flex chain
+    // at all.
     return (
-        <ScrollArea contentRef={wrapperRef} contentClassName={styles.wrapper} onScroll={recompute}>
-            <table className={styles.table}>
-                <thead>
-                    <tr>
-                        {columns.map((column) => (
-                            <th
-                                key={column.key}
-                                className={column.numeric ? styles.numeric : undefined}
-                            >
-                                {column.header}
-                            </th>
-                        ))}
-                    </tr>
-                </thead>
+        <ScrollArea contentRef={wrapperRef} className={styles.wrapperOuter} contentClassName={styles.wrapper} onScroll={recompute}>
+            <table className={tableClassName ? `${styles.table} ${tableClassName}` : styles.table}>
+                <DataTableHeaderRow columns={columns} />
                 <tbody>
                     {topSpacerHeight > 0 && (
                         <tr aria-hidden="true">

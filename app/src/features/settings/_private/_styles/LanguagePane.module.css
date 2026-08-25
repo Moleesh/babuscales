@@ -1,0 +1,327 @@
+/* Task: "we have scrolling issue again in this tab" — SettingsScreen's own
+   `.pane-area` (SettingsScreen.module.css) is now the one scroll region for
+   this whole pane; without the `--datatable-max-height` override, DataTable's
+   own default 65vh cap (DataTable.module.css) still applied inside it,
+   nesting a second independently-scrolling box (the table) inside the
+   first — same "double scroll" shape Masters/Reports already hit. `none`
+   lets the table grow to its full content height instead, so `.pane-area`
+   is the only thing that ever actually scrolls.
+
+   Bug: "the end of the scroll is missing and title is not sticky" — `none`
+   alone wasn't enough. DataTable.module.css's own doc comment on `.wrapper`
+   spells it out: ANY non-`visible` overflow (the default `overflow-y: auto`
+   was still in effect even with nothing left to scroll) makes that element
+   the sticky positioning context instead of `.pane-area` — so the table's
+   own sticky column-header row, and the Card's title above it, both stuck
+   to a box that never itself scrolled and just rode off the top of
+   `.pane-area` with everything else, present nowhere once scrolled past.
+   `--datatable-overflow-y: visible` hands the sticky context up to
+   `.pane-area`, same pairing DataTable.module.css's comment calls for.
+   Now that `.pane-area` is the shared sticky context, the table's own
+   header row (`--datatable-header-top`, default `0`) would stick right at
+   `.pane-area`'s own top — underneath the Card's newly-sticky title
+   (LanguageTableCard.tsx's `sticky` prop), which sits there first.
+   `--card-header-h` (Card.tsx's own ResizeObserver, set on the Card's own
+   root element) is exactly that title's rendered height, so stacking the
+   table header under it is the same pairing Card.module.css's own doc
+   comment describes — set on `.body` below, not here: `--card-header-h`
+   only exists on the Card's own root and its descendants, and `.grid` is
+   Card's *ancestor* (LanguagePane.tsx renders `<div className={grid}><Card
+   .../></div>`), so reading it here would only ever see the `0px`
+   fallback. */
+.grid {
+    display: grid;
+    gap: 12px;
+    align-items: start;
+    --datatable-max-height: none;
+    --datatable-overflow-y: visible;
+}
+
+.body {
+    display: grid;
+    gap: 11px;
+    --datatable-header-top: var(--card-header-h, 0px);
+}
+
+.toolbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.filter {
+    flex: 1;
+    min-width: 180px;
+    padding: 7px 10px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--panel-2);
+    color: var(--text);
+    font: inherit;
+    font-size: 0.75rem;
+}
+.filter:focus {
+    outline: none;
+    border-color: var(--led);
+}
+
+/* Task: "can we simplfy this or add a pop" — the Code/Name inputs used to
+   sit inline in the toolbar; now they only ever render inside the "Add
+   language" AppModal (AddLanguageForm.tsx), so `.addInput` is full-width
+   there instead of the old cramped fixed width. */
+.addModalBody {
+    display: grid;
+    gap: 11px;
+}
+
+.addModalField {
+    display: grid;
+    gap: 4px;
+    font-size: 0.6875rem;
+    color: var(--dim);
+}
+
+.addInput {
+    width: 100%;
+    padding: 7px 9px;
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    background: var(--panel-2);
+    color: var(--text);
+    font: inherit;
+    font-size: 0.8125rem;
+}
+.addInput:focus {
+    outline: none;
+    border-color: var(--led);
+}
+
+.addButton {
+    padding: 6px 11px;
+    border-radius: 7px;
+    border: 1px solid var(--led-dim);
+    background: var(--panel-2);
+    color: var(--led);
+    font: inherit;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+}
+.addButton:hover:not(:disabled) {
+    border-color: var(--led);
+    background: var(--panel);
+}
+.addButton:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
+/* Task: "remove everthing here and just add all edited (edited english),
+   label(from field json), missed" — the field-namespace pills (one per
+   dotted key prefix) were dropped, leaving just the three status pills
+   below. Styled to match SegmentedControl's `.bar`/button look, hand-rolled
+   rather than reusing that component since it wasn't otherwise needed. */
+.filterBar {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    flex-wrap: wrap;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 2px;
+    background: var(--panel-2);
+}
+
+.filterPill {
+    border: none;
+    background: none;
+    color: var(--dim);
+    font: inherit;
+    font-size: 0.6875rem;
+    padding: 4px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    white-space: nowrap;
+}
+.filterPill[aria-pressed="true"] {
+    background: var(--panel);
+    color: var(--text);
+    box-shadow: inset 0 0 0 1px var(--line);
+}
+
+/* Header cell for the picked-language column — the dropdown lives inline
+   in the header itself (task: "change the table header better ... we can
+   also select the second language here") instead of as a separate control
+   above the table, so picking a language reads as "this is the column
+   you're choosing", not an unrelated toolbar action. */
+.langHeader {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+}
+
+/* Task: "make the language dropdown a little bigger we have longer language
+   name and now we have two more icons in it" — Select's own default
+   `min-width: 160px` (Select.module.css) was sized for a short code-derived
+   label; a longer name plus the edit/delete icons next to it (below) made
+   the trigger crowd its own text against the chevron. */
+.langSelect {
+    min-width: 210px;
+}
+
+/* Edit (rename) / delete-package icons next to the language picker — task:
+   "add a small edit icon and delete icon in the dropdown of the language,
+   which we will use to edit the language name or delete the package". Same
+   flat, bordered look as `.visibility-toggle` (FieldsLanguagePane.module.css)
+   and `.reset-button`, just square instead of text-width, since these only
+   ever hold a single glyph. */
+.langIconButton {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    border-radius: 6px;
+    border: 1px solid var(--line);
+    background: var(--panel-2);
+    color: var(--text);
+    font: inherit;
+    font-size: 0.75rem;
+    cursor: pointer;
+}
+.langIconButton:hover:not(:disabled) {
+    border-color: var(--led-dim);
+    color: var(--led);
+}
+.langIconButton:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+.langIconButtonDanger:hover:not(:disabled) {
+    border-color: var(--alert);
+    color: var(--alert);
+}
+
+/* Task: "the table is not fixed, we need to truncate the words in case they
+   are too long" — follow-up screenshot: "see column resizing in the ss" —
+   `max-width` alone still let a column *shrink* to whatever the currently
+   virtualized rows happen to contain (DataTable only ever mounts the rows
+   scrolled into view), so scrolling from a screenful of short keys to a
+   screenful of long ones visibly resized every column each time. A plain
+   `width` (not `max-width`) makes each cell's own box that size regardless
+   of its content — the column stops taking its cue from whichever rows
+   happen to be mounted right now. `text-overflow: ellipsis` still handles
+   anything that doesn't fit, and Tooltip (portaled, so it's never clipped by
+   this table's own horizontal scroll — see Tooltip.tsx's own doc comment)
+   keeps the full text one hover away. */
+/* Task: "too many space" → "let the table take the whole space" → "give
+   same width for english and tamil" → "keys should be the shortest" — Key
+   is now the only fixed-width column (220px, a `field.dot.path` doesn't
+   need much room), and English/Language are both left without a `width` in
+   LanguageTableCard.tsx's columns. Under `table-layout: fixed` (passed via
+   `DataTable`'s `tableClassName`, below), any column left unset splits the
+   table's remaining width evenly among however many there are — with
+   exactly two left unset here, that's English and Language landing on the
+   same width automatically, and together they still add up to fill
+   whatever's left of the container after Key's fixed 220px. */
+.fixedTable {
+    width: 100%;
+    table-layout: fixed;
+}
+
+/* Task (screenshot): the KEY column's text was overlapping the ENGLISH
+   column instead of truncating — `Tooltip`'s own wrapper span is
+   `display: inline-block` with no width of its own (Tooltip.module.css's
+   `.wrap`), so it was growing to fit the *untruncated* key before the
+   ellipsis span inside it ever got a chance to clip anything against its
+   parent `<td>`'s real width. Passed to `Tooltip`'s `className` prop on
+   all three truncating cells so the wrapper itself is pinned to the cell's
+   width instead of shrink-wrapping its content. */
+.truncateWrap {
+    display: block;
+    width: 100%;
+    min-width: 0;
+}
+
+.keyCell,
+.englishCell,
+.valueCell {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.keyCell {
+    font-family: var(--mono);
+    font-size: 0.6875rem;
+    color: var(--dim);
+}
+
+.englishCell {
+    font-size: 0.75rem;
+    color: var(--dim);
+    cursor: pointer;
+    padding: 2px 0;
+    min-height: 1.2em;
+}
+.englishCell:hover {
+    background: var(--panel-2);
+    border-radius: 4px;
+}
+
+/* Task: "we can update it hsould hsow a differnt color" — a picked
+   language's value that still matches the English default (i.e. nobody has
+   translated it yet) reads as dim/muted, same visual language as an
+   untouched placeholder; the moment it diverges from English it switches to
+   `--led`, the same accent color the rest of the app uses for "this is set/
+   active/yours" (AdminChip, Select's `.active`, etc.) — so a glance down the
+   column shows exactly which rows are still English and which are real
+   translations. */
+.valueCell {
+    font-size: 0.75rem;
+    color: var(--dim);
+    cursor: pointer;
+    display: block;
+    padding: 2px 0;
+    min-height: 1.2em;
+}
+.valueTranslated {
+    color: var(--led);
+}
+.valueMissing {
+    color: var(--alert);
+    font-style: italic;
+}
+.valueCell:hover {
+    background: var(--panel-2);
+    border-radius: 4px;
+}
+
+.editInput {
+    width: 100%;
+    padding: 3px 6px;
+    border: 1px solid var(--led);
+    border-radius: 5px;
+    background: var(--panel);
+    color: var(--text);
+    font: inherit;
+    font-size: 0.75rem;
+}
+.editInput:focus {
+    outline: none;
+}
+
+.noLanguage {
+    font-size: 0.75rem;
+    color: var(--dim);
+}
+
+.bad {
+    font-size: 0.6875rem;
+    color: var(--alert);
+    margin: 0;
+}

@@ -39,7 +39,10 @@ export interface UseWeighingScreenTickets {
 // — the five master caches plus everything that reads off the whole-ticket
 // list (open-ticket strip, resume, and the save→refresh loop), unchanged
 // from the inline versions they replace.
-export const useWeighingScreenTickets = (ticket: UseWeighingTicket): UseWeighingScreenTickets => {
+export const useWeighingScreenTickets = (
+    ticket: UseWeighingTicket,
+    currentEpoch: number,
+): UseWeighingScreenTickets => {
     const { allTicketDocs, loading: ticketsLoading, bumpRefresh } = useTicketDocs();
     const { showToast } = useToast();
     const { t } = useTranslation();
@@ -53,9 +56,14 @@ export const useWeighingScreenTickets = (ticket: UseWeighingTicket): UseWeighing
         storedTare: useMasterCache("StoredTare"),
     };
 
+    // Task: "We dont want all series as a defult for all these case it
+    // should be only on the current series, do it all the places" —
+    // scoped to the active numbering series like every other "open"/
+    // "waiting" figure in the app (recall.ts's own doc comment on
+    // `listOpenTickets`).
     const openTickets = useMemo(
-        () => listOpenTickets(allTicketDocs).filter((t) => t.doc.DocId !== ticket.docId),
-        [allTicketDocs, ticket.docId],
+        () => listOpenTickets(allTicketDocs, currentEpoch).filter((t) => t.doc.DocId !== ticket.docId),
+        [allTicketDocs, currentEpoch, ticket.docId],
     );
 
     const handleResume = (summary: OpenTicketSummary): void => {

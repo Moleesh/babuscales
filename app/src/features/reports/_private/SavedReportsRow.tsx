@@ -1,9 +1,12 @@
 import { useLayoutEffect, useRef, useState } from "react";
 
+import { AppModal } from "@components/AppModal";
+import { Button } from "@components/Button";
 import type { ReportDefinition } from "@db/reportDefs";
 import { useTranslation } from "@i18n/useTranslation";
 
 import styles from "./_styles/SavedReportsRow.module.css";
+import { builtinReportDefs, isBuiltinReportId } from "./builtinReportDefs";
 import dateRangeStyles from "../_styles/ReportsScreen.module.css";
 
 export interface SavedReportsRowProps {
@@ -11,6 +14,14 @@ export interface SavedReportsRowProps {
     /** `def.Id` of whichever saved view is currently applied, or `null` —
      * `null` on landing (Reports rework: "no report selected by default"). */
     selectedId: string | null;
+    /** Bug: "if we change any quick filter it goes back to select saved
+     * instead of saying dynamic" — true once a report *was* applied (a
+     * recall, Dashboard's waiting tile, a builder save) but `selectedId` has
+     * since gone back to `null` because a filter was edited by hand
+     * (useSavedReportActions.ts's invalidation effect) or a direct-apply
+     * path cleared it (its `clearSelection`). Swaps the trigger's
+     * placeholder from "no view chosen yet" to "diverged from a view". */
+    dynamic: boolean;
     onRecall: (def: ReportDefinition) => void;
     onDelete: (id: string) => void;
     /** Task: "edit save report should open the create report in edit form" —
@@ -60,29 +71,38 @@ interface SavedViewRowProps {
 // file's own line budget.
 const SavedViewRow = ({ def, active, onPick, onEdit, onDelete }: SavedViewRowProps) => {
     const { t } = useTranslation();
+    // Task: "...think of more and implement them they cant be edited or
+    // deleted" — builtinReportDefs.ts's presets (Daily/Weekly/.../Waiting)
+    // never reach `addReportDef`, so there's nothing in the db an edit or
+    // delete could act on; just don't offer the actions for them.
+    const builtin = isBuiltinReportId(def.Id);
     return (
         <div className={`${styles.optionRow} ${active ? styles.optionRowActive : ""}`}>
             <button type="button" className={styles.option} data-cursor="compact" onClick={onPick}>
                 {def.Name}
             </button>
-            <button
-                type="button"
-                className={styles.iconBtn}
-                data-cursor="compact"
-                aria-label={`${t("reports.savedReportsEditPrefix")} ${def.Name}`}
-                onClick={onEdit}
-            >
-                ✎
-            </button>
-            <button
-                type="button"
-                className={styles.iconBtn}
-                data-cursor="compact"
-                aria-label={`${t("reports.savedReportsDeletePrefix")} ${def.Name}`}
-                onClick={onDelete}
-            >
-                ×
-            </button>
+            {!builtin && (
+                <>
+                    <button
+                        type="button"
+                        className={styles.iconBtn}
+                        data-cursor="compact"
+                        aria-label={`${t("reports.savedReportsEditPrefix")} ${def.Name}`}
+                        onClick={onEdit}
+                    >
+                        ✎
+                    </button>
+                    <button
+                        type="button"
+                        className={styles.iconBtn}
+                        data-cursor="compact"
+                        aria-label={`${t("reports.savedReportsDeletePrefix")} ${def.Name}`}
+                        onClick={onDelete}
+                    >
+                        ×
+                    </button>
+                </>
+            )}
         </div>
     );
 };
@@ -132,11 +152,24 @@ const SavedViewsList = ({ savedReports, selectedId, onPick, onEdit, onDelete }: 
 // one action — this row now only recalls/renames/deletes what's already
 // saved.
 
-export const SavedReportsRow = ({ savedReports, selectedId, onRecall, onDelete, onEdit }: SavedReportsRowProps) => {
+export const SavedReportsRow = ({ savedReports, selectedId, dynamic, onRecall, onDelete, onEdit }: SavedReportsRowProps) => {
     const { t } = useTranslation();
     const [open, setOpen] = useState(false);
     const ref = useCloseOnOutsideClick(open, () => setOpen(false));
-    const selected = savedReports.find((def) => def.Id === selectedId);
+    // Task: "delete needs confirmation, i think we missed this in the
+    // report add it there too" — the × button used to call `onDelete`
+    // straight through to `deleteReportDef`; same confirm-modal shape as
+    // Settings → Language's delete-package flow (LanguageTableCard.tsx).
+    const [pendingDelete, setPendingDelete] = useState<ReportDefinition | null>(null);
+    // Task: "we might need to create some default filters / 1 daily, weekly,
+    // monthly, waiting for second wait, ... think of more and implement
+    // them they cant be edited or deleted" — the built-ins always lead the
+    // list, ahead of whatever the operator has saved themselves. Recomputed
+    // fresh on every render (not memoized) so "Daily"/"Weekly"/"Monthly"
+    // always resolve to *today*'s date, not whatever day this component
+    // first mounted.
+    const allReports = [...builtinReportDefs(t), ...savedReports];
+    const selected = allReports.find((def) => def.Id === selectedId);
 
     return (
         // Task: "the below one need a better placement first one doesnt
@@ -155,12 +188,14 @@ export const SavedReportsRow = ({ savedReports, selectedId, onRecall, onDelete, 
                     aria-expanded={open}
                     onClick={() => setOpen((v) => !v)}
                 >
-                    <span className={styles.label}>{selected?.Name ?? t("reports.savedReportsPlaceholder2")}</span>
+                    <span className={styles.label}>
+                        {selected?.Name ?? (dynamic ? t("reports.savedReportsDynamic") : t("reports.savedReportsPlaceholder2"))}
+                    </span>
                     <span className={styles.chevron} aria-hidden="true">▾</span>
                 </button>
                 {open && (
                     <SavedViewsList
-                        savedReports={savedReports}
+                        savedReports={allReports}
                         selectedId={selectedId}
                         onPick={(def) => {
                             onRecall(def);
@@ -170,10 +205,40 @@ export const SavedReportsRow = ({ savedReports, selectedId, onRecall, onDelete, 
                             onEdit(id);
                             setOpen(false);
                         }}
-                        onDelete={onDelete}
+                        onDelete={(id) => {
+                            const target = allReports.find((def) => def.Id === id);
+                            if (target) setPendingDelete(target);
+                            setOpen(false);
+                        }}
                     />
                 )}
             </div>
+            {pendingDelete && (
+                <AppModal
+                    open
+                    title={t("reports.savedReportsDeleteConfirmTitle")}
+                    onClose={() => setPendingDelete(null)}
+                    size="small"
+                >
+                    <div style={{ display: "grid", gap: 13 }}>
+                        <p>
+                            {t("reports.savedReportsDeleteConfirm")} "{pendingDelete.Name}"?
+                        </p>
+                        <div style={{ display: "flex", gap: 9, justifyContent: "flex-end" }}>
+                            <Button onClick={() => setPendingDelete(null)}>{t("weigh.cancel")}</Button>
+                            <Button
+                                variant="danger"
+                                onClick={() => {
+                                    onDelete(pendingDelete.Id);
+                                    setPendingDelete(null);
+                                }}
+                            >
+                                {t("reports.savedReportsDeletePrefix")}
+                            </Button>
+                        </div>
+                    </div>
+                </AppModal>
+            )}
         </div>
     );
 };

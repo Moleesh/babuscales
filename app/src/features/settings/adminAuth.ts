@@ -1,3 +1,5 @@
+import { sha256Hex } from "@db/hash";
+
 // The mock's own default (demo/BabuScales-demo.html's `cfg.admPw = "1234"`) —
 // what a fresh install's Settings row is created with, changeable from the
 // System pane once unlocked.
@@ -63,12 +65,25 @@ export const hashAdminPassword = async (password: string, saltHex?: string): Pro
     return { Hash: `${PBKDF2_PREFIX}${PBKDF2_ITERATIONS}$${hash}`, Salt: salt };
 };
 
-// Pre-release, so no installed base to stay compatible with — every stored
-// hash is the `pbkdf2$<iterations>$<hex>` format `hashAdminPassword` above
-// produces; anything else is just treated as a non-match rather than
-// falling back to the old single-round scheme.
+// Bug: "admin password 1234 is not working" — turned out there *was* an
+// installed base after all (any DB created before this PBKDF2 change), each
+// with a Settings row still holding the old single-round `sha256Hex(salt +
+// ":" + password)` hash. This function used to reject anything without the
+// `pbkdf2$` prefix outright, so every pre-existing install's admin password
+// silently stopped working the moment this file shipped. Falls back to that
+// legacy scheme for an unprefixed hash instead.
+const verifyLegacySha256 = (password: string, hash: string, salt: string): Promise<boolean> =>
+    sha256Hex(`${salt}:${password}`).then((computed) => computed === hash);
+
+// Lets useAdminLock silently re-hash a successful legacy login to the
+// PBKDF2 format (via hashAdminPassword) so each row upgrades itself the
+// first time its owner unlocks it, instead of staying on the weaker scheme
+// forever.
+export const isLegacyAdminHash = (hash: string): boolean => !!hash && !hash.startsWith(PBKDF2_PREFIX);
+
 export const verifyAdminPassword = async (password: string, hash: string, salt: string): Promise<boolean> => {
-    if (!hash || !salt || !hash.startsWith(PBKDF2_PREFIX)) return false;
+    if (!hash || !salt) return false;
+    if (!hash.startsWith(PBKDF2_PREFIX)) return verifyLegacySha256(password, hash, salt);
     const [, iterationsRaw, storedHex] = hash.split("$");
     const iterations = Number(iterationsRaw);
     if (!storedHex || !Number.isFinite(iterations) || iterations <= 0) return false;

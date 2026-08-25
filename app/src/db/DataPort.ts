@@ -54,6 +54,8 @@ export interface DataPort {
     getConfig(configId: string): Promise<ConfigRow | null>;
     listConfig(query?: ConfigQuery): Promise<ConfigRow[]>;
     saveConfig(draft: ConfigDraft): Promise<ConfigRow>;
+    /** Hard delete — task: "delete needs confirmation" (Settings → Language's "delete the package" action). Same shape as `deleteMaster`: nothing else has an FK into `config`. */
+    deleteConfig(configId: string): Promise<void>;
 
     // asset — all binary content. Metadata and bytes are fetched separately
     // on purpose: `SELECT *` on this table would materialise every image

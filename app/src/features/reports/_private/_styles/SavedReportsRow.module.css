@@ -101,6 +101,11 @@
 
 .option {
     flex: 1 1 auto;
+    /* `min-width: 0` — a flex item's default `min-width: auto` would let its
+       *content* (the un-truncated name) force the row wider than `.list`'s
+       own 240px floor instead of actually eliding, the same trap `.label`
+       above avoids by not being a flex item in the first place. */
+    min-width: 0;
     text-align: left;
     padding: 7px 9px;
     border-radius: 6px;
@@ -109,14 +114,17 @@
     color: var(--text);
     font: inherit;
     font-size: 0.8125rem;
-    /* Task: "make the dropdown readable" — same reasoning as Select.module.css's
-       own `.option`: a long saved-view name no longer ellipsis-truncates in
-       the open list (the closed `.trigger`'s own `.label` above still does —
-       that's a fixed-width button, not a scrolling list). */
-    overflow: visible;
-    text-overflow: unset;
-    white-space: normal;
-    word-break: break-word;
+    /* Task: "make the dropdown readable" tried letting long saved-view names
+       wrap instead of ellipsis-truncating in the open list; follow-up "smae
+       here" (i hate 2 line drop down...) — unlike the series Select's fixed,
+       known label set, a saved view's name is arbitrary free text an
+       operator typed, so there's no sane width to grow to fit every one of
+       them. Truncating (matching the closed `.trigger`'s own `.label`
+       above) instead — the full name is still available via the row's own
+       edit action. */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 .option:hover:not(:disabled),
 .option:active:not(:disabled) {

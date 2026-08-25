@@ -22,6 +22,10 @@ export interface BuildRecallOffersArgs {
     storedTareCache: UseMasterCache;
     /** Settings' `Rules.StrictTare` — off lets a stored tare be offered at all. */
     strictTare: boolean;
+    /** Settings' `Numbering.CurrentEpoch` — task: "do it all the places" —
+     * scopes the "resume an open ticket" offer to the active numbering
+     * series, same as the open-ticket strip (recall.ts's own comment). */
+    currentEpoch: number;
     /** i18n's active language — decides the locale the "resume" offer's timestamp renders in. */
     lang: string;
     /** Task: these three offers were hardcoded English, unlike the rest of the screen — resolves the labels/hints against the active language pack. */
@@ -36,10 +40,11 @@ export interface BuildRecallOffersArgs {
 // The "resume an open ticket" offer — pulled out of buildRecallOffers purely
 // to stay under the file's own line budget.
 const buildResumeOffer = (args: BuildRecallOffersArgs): RecallOffer | null => {
-    const { ticket, allTicketDocs, lang, t, weightUnit, dateFmt, timeFmt } = args;
+    const { ticket, allTicketDocs, currentEpoch, lang, t, weightUnit, dateFmt, timeFmt } = args;
     const openMatch = findOpenTicketForVehicle(
         allTicketDocs.filter((doc) => doc.DocId !== ticket.docId),
         ticket.fields.vehicleNo,
+        currentEpoch,
     );
     if (!openMatch) return null;
     return {

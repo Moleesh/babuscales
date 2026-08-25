@@ -6,7 +6,7 @@ import { Spinner } from "@components/Spinner";
 import type { WeightUnit } from "@constants/numberFormat";
 import type { DocRow } from "@db/types";
 import { useDataPort } from "@db/useDataPort";
-import { buildTicketRows } from "@features/reports";
+import { buildTicketRows, filterRowsBySeries } from "@features/reports";
 import { useSettings } from "@features/settings";
 import { useTranslation } from "@i18n/useTranslation";
 
@@ -80,7 +80,11 @@ const REFRESH_MS = 60_000;
 // Split out of DashboardScreen (over the line/complexity budget —
 // docs/CodingStandards.md) — the docs load effect plus every period-derived
 // figure, unchanged from the inline version it replaces.
-const useDashboardData = (db: ReturnType<typeof useDataPort>, period: DashboardPeriod) => {
+const useDashboardData = (
+    db: ReturnType<typeof useDataPort>,
+    period: DashboardPeriod,
+    currentEpoch: number,
+) => {
     const [docs, setDocs] = useState<DocRow[]>([]);
     const [loading, setLoading] = useState(true);
     // Re-derived every `REFRESH_MS` (not just at mount) so "today"'s
@@ -107,8 +111,24 @@ const useDashboardData = (db: ReturnType<typeof useDataPort>, period: DashboardP
         };
     }, [db]);
 
-    const rows = useMemo(() => buildTicketRows(docs), [docs]);
-    const kpis = useMemo(() => computeDashboardKpis(rows, referenceIso, period), [rows, referenceIso, period]);
+    // Task: "hope dashboar is using the current instease data not from
+    // backed up records", then "We dont want all series as a defult for
+    // all these case it should be only on the current series, do it all
+    // the places" — `rows` is scoped to the active numbering series
+    // (`Numbering.CurrentEpoch`), matching Reports' own default view
+    // (reportRows.ts's `filterRowsBySeries`), for every figure below
+    // including `waitingCount` (no all-series exception anywhere on this
+    // screen), so a ticket "backed" by a prior "Reset the counter now"
+    // never pads throughput/tonnage/material-split/waiting just because
+    // its date falls in the selected period.
+    const rows = useMemo(
+        () => filterRowsBySeries(buildTicketRows(docs), currentEpoch),
+        [docs, currentEpoch],
+    );
+    const kpis = useMemo(
+        () => computeDashboardKpis(rows, referenceIso, period),
+        [rows, referenceIso, period],
+    );
     const buckets = useMemo(
         () => computeActivityBuckets(rows, referenceIso, period),
         [rows, referenceIso, period],
@@ -136,7 +156,11 @@ export const DashboardScreen = ({ onNavigateToReports }: DashboardScreenProps) =
     const { settings } = useSettings();
     const { t } = useTranslation();
     const [period, setPeriod] = useState<DashboardPeriod>("day");
-    const { loading, rows, kpis, buckets, materialSplit } = useDashboardData(db, period);
+    const { loading, rows, kpis, buckets, materialSplit } = useDashboardData(
+        db,
+        period,
+        settings.Numbering.CurrentEpoch,
+    );
 
     return (
         <div className={styles.screen}>

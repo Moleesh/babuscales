@@ -41,3 +41,9 @@ pub fn save_config(state: State<'_, AppState>, draft: ConfigDraft) -> Result<Con
     let conn = lock(&state)?;
     store::save_config(&conn, &draft)
 }
+
+#[tauri::command]
+pub fn delete_config(state: State<'_, AppState>, config_id: String) -> Result<(), AppError> {
+    let conn = lock(&state)?;
+    store::delete_config(&conn, &config_id)
+}

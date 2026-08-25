@@ -43,6 +43,16 @@ pub fn list_config(conn: &Connection, query: &ConfigQuery) -> Result<Vec<ConfigR
     Ok(rows)
 }
 
+// Hard delete — task: "delete the package" (a language pack an admin adds
+// via Settings → Language, `ConfigKind: "LanguagePack"`, `config_id` from
+// `languagePackConfigId`) needed a real way to go away rather than just
+// being overwritten with new content. Same shape as `delete_master`: no
+// other table has an FK into `config`, so nothing else needs to change.
+pub fn delete_config(conn: &Connection, config_id: &str) -> Result<(), AppError> {
+    conn.execute("DELETE FROM config WHERE config_id = ?1", params![config_id])?;
+    Ok(())
+}
+
 pub fn save_config(conn: &Connection, draft: &ConfigDraft) -> Result<ConfigRow, AppError> {
     let existing = match &draft.config_id {
         Some(id) => get_config(conn, id)?,

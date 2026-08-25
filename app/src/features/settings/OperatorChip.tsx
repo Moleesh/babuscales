@@ -60,7 +60,12 @@ export const OperatorChip = () => {
     }
 
     return (
-        <Tooltip label={t("settings.operatorChip.changeTitle")}>
+        // Task: "same tooltip isues here , check everthing here and see if
+        // the tooltip is fixed" — this chip sits in the same top-bar row as
+        // Settings/Help (App.tsx's TopBarActions), flush against the
+        // window's own top edge, so the default `side="top"` had nowhere to
+        // open and clipped the same way those did before their fix.
+        <Tooltip label={t("settings.operatorChip.changeTitle")} side="bottom">
             <button
                 className="chip act"
                 onClick={() => setEditing(true)}

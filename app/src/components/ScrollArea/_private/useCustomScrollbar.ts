@@ -1,7 +1,9 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import type { PointerEvent, RefObject } from "react";
+import { useCallback, useEffect, useState } from "react";
+import type { RefObject } from "react";
 
-const MIN_THUMB_HEIGHT = 24;
+import { useThumbDrag } from "./useThumbDrag";
+
+const MIN_THUMB_SIZE = 24;
 
 interface Thumb {
     top: number;
@@ -9,7 +11,26 @@ interface Thumb {
     visible: boolean;
 }
 
+interface ThumbX {
+    left: number;
+    width: number;
+    visible: boolean;
+}
+
 const NO_THUMB: Thumb = { top: 0, height: 0, visible: false };
+const NO_THUMB_X: ThumbX = { left: 0, width: 0, visible: false };
+
+// Shared thumb-size/position math for one axis — pulled out of `recompute`
+// below purely to keep that (and this file's default-export hook) under the
+// line budget (docs/CodingStandards.md) now that a second (horizontal) axis
+// doubled what used to be one inline calculation.
+const computeThumb = (scrollPos: number, scrollSize: number, clientSize: number): { pos: number; size: number } => {
+    const size = Math.max(MIN_THUMB_SIZE, (clientSize / scrollSize) * clientSize);
+    const scrollRange = scrollSize - clientSize;
+    const trackRange = clientSize - size;
+    const pos = scrollRange > 0 ? (scrollPos / scrollRange) * trackRange : 0;
+    return { pos, size };
+};
 
 // The native OS/browser scrollbar can't be fully re-skinned in cursor terms
 // — dragging its thumb hands pointer handling to the browser/OS itself,
@@ -19,28 +40,38 @@ const NO_THUMB: Thumb = { top: 0, height: 0, visible: false };
 // `::-webkit-scrollbar-*` pseudo-elements (base.css's hover-only fix).
 // This renders a plain `<div>` thumb instead — a real DOM node the custom
 // cursor's `body.custom-cursor-active *` rule already reaches, and whose
-// drag we drive ourselves via pointer capture, so the browser never takes
-// the gesture over.
+// drag we drive ourselves via pointer capture (useThumbDrag.ts), so the
+// browser never takes the gesture over.
 export const useCustomScrollbar = (contentRef: RefObject<HTMLDivElement | null>) => {
     const [thumb, setThumb] = useState<Thumb>(NO_THUMB);
-    // Not state — written and read every pointermove of a drag, which would
-    // otherwise mean a re-render per pixel of mouse movement just to remember
-    // where the drag started.
-    const dragRef = useRef<{ startY: number; startScrollTop: number } | null>(null);
+    // Task: "horizontal scroll bar is missing when data is there" — this
+    // hook used to only ever compute a vertical thumb, so a table wide
+    // enough to overflow (Reports' Tickets table, most Masters lists) had
+    // real `overflow-x: auto` scrolling (DataTable.module.css's `.wrapper`)
+    // but zero visible affordance for it once the native scrollbar was
+    // hidden (`.content`'s `scrollbar-width: none` — ScrollArea.module.css)
+    // — the only way to reach those columns was an undiscoverable
+    // shift+wheel/trackpad swipe. Mirrors the vertical thumb's own math
+    // (`computeThumb` above), off `scrollLeft`/`scrollWidth`/`clientWidth`
+    // instead.
+    const [thumbX, setThumbX] = useState<ThumbX>(NO_THUMB_X);
 
     const recompute = useCallback(() => {
         const el = contentRef.current;
         if (!el) return;
-        const { scrollTop, scrollHeight, clientHeight } = el;
+        const { scrollTop, scrollHeight, clientHeight, scrollLeft, scrollWidth, clientWidth } = el;
         if (scrollHeight <= clientHeight) {
             setThumb((previous) => (previous.visible ? NO_THUMB : previous));
-            return;
+        } else {
+            const { pos, size } = computeThumb(scrollTop, scrollHeight, clientHeight);
+            setThumb({ top: pos, height: size, visible: true });
         }
-        const height = Math.max(MIN_THUMB_HEIGHT, (clientHeight / scrollHeight) * clientHeight);
-        const scrollRange = scrollHeight - clientHeight;
-        const trackRange = clientHeight - height;
-        const top = scrollRange > 0 ? (scrollTop / scrollRange) * trackRange : 0;
-        setThumb({ top, height, visible: true });
+        if (scrollWidth <= clientWidth) {
+            setThumbX((previous) => (previous.visible ? NO_THUMB_X : previous));
+        } else {
+            const { pos, size } = computeThumb(scrollLeft, scrollWidth, clientWidth);
+            setThumbX({ left: pos, width: size, visible: true });
+        }
     }, [contentRef]);
 
     useEffect(() => {
@@ -57,41 +88,18 @@ export const useCustomScrollbar = (contentRef: RefObject<HTMLDivElement | null>)
         return () => resizeObserver.disconnect();
     }, [contentRef, recompute]);
 
-    const onThumbPointerDown = useCallback(
-        (event: PointerEvent<HTMLDivElement>) => {
-            const el = contentRef.current;
-            if (!el) return;
-            event.currentTarget.setPointerCapture(event.pointerId);
-            dragRef.current = { startY: event.clientY, startScrollTop: el.scrollTop };
-            // Stops the drag from also starting a native text-selection drag
-            // on whatever's under the (invisible, cursor:none) real mouse
-            // position — the thumb itself has no selectable text, but the
-            // mousedown still bubbles as a selection-start otherwise.
-            event.preventDefault();
-        },
-        [contentRef],
-    );
+    const vertical = useThumbDrag(contentRef, "y");
+    const horizontal = useThumbDrag(contentRef, "x");
 
-    const onThumbPointerMove = useCallback(
-        (event: PointerEvent<HTMLDivElement>) => {
-            const el = contentRef.current;
-            const drag = dragRef.current;
-            if (!el || !drag) return;
-            const { scrollHeight, clientHeight } = el;
-            const height = Math.max(MIN_THUMB_HEIGHT, (clientHeight / scrollHeight) * clientHeight);
-            const trackRange = clientHeight - height;
-            const scrollRange = scrollHeight - clientHeight;
-            if (trackRange <= 0 || scrollRange <= 0) return;
-            const deltaY = event.clientY - drag.startY;
-            el.scrollTop = drag.startScrollTop + (deltaY / trackRange) * scrollRange;
-        },
-        [contentRef],
-    );
-
-    const onThumbPointerUp = useCallback((event: PointerEvent<HTMLDivElement>) => {
-        dragRef.current = null;
-        event.currentTarget.releasePointerCapture(event.pointerId);
-    }, []);
-
-    return { thumb, recompute, onThumbPointerDown, onThumbPointerMove, onThumbPointerUp };
+    return {
+        thumb,
+        thumbX,
+        recompute,
+        onThumbPointerDown: vertical.onPointerDown,
+        onThumbPointerMove: vertical.onPointerMove,
+        onThumbPointerUp: vertical.onPointerUp,
+        onThumbXPointerDown: horizontal.onPointerDown,
+        onThumbXPointerMove: horizontal.onPointerMove,
+        onThumbXPointerUp: horizontal.onPointerUp,
+    };
 };

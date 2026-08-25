@@ -2,26 +2,31 @@
     display: flex;
     flex-direction: column;
     /* Task: "Can you do the same in masters tab before push like in report
-       tab?" / "Master is still not fixed" — this used to be `height: 100%`,
-       which depends on `.main` (AppShell.module.css) resolving as a
-       *definite* height for the percentage to compute against; that
-       stopped holding once AppShell.module.css's own `.screen` stretch
-       rule was reverted ("you messged up the scroll ... revert it all"),
-       so this silently fell back to `auto` and every flex-fill child below
-       (Card.module.css's `.fill`/`.bodyFill`, `.body-fill-inner`) had no
-       real leftover space to grow into. A `calc(100vh - ...)` is always
-       definite regardless of ancestor flex resolution — AppShell.module.css's
-       `.top` (fixed 52px) and `.main`'s own `padding: 12px 24px 12px 12px`
+       tab?" / "Master is still not fixed" / "i still can see scrolling" —
+       this was `min-height: calc(...)`, which turned out to be the wrong
+       tool: a `min-height` is only a *floor*. With no matching ceiling,
+       an unbounded flex container just grows to fit whatever its children
+       naturally need — `flex: 1` on the fill card (Card.module.css) only
+       redistributes *surplus* space inside an already-bounded container, it
+       doesn't shrink a table that's asking for more room than that floor
+       provides. So every row this list actually had kept pushing `.screen`
+       taller than the viewport, `.main` (AppShell.module.css) picked that
+       overflow up as an ordinary page scroll, and the "table does its own
+       internal scrolling" goal (ReportsScreen.module.css's approach, via a
+       hard `--datatable-max-height` cap on the table itself, not a
+       flex-fill chain) never actually kicked in. Swapping to a real
+       `height` — a ceiling, not a floor — is what forces the fill card
+       (and DataTable's own `.wrapper`, DataTable.module.css) to actually
+       shrink into the budget and let its own `overflow-y: auto` do the
+       scrolling instead of `.main`. AppShell.module.css's `.top` (52px
+       fixed), its `.content`'s `gap: 12px` between the sticky weight header
+       and this screen, and `.main`'s own `padding: 12px 24px 12px 12px`
        (24px vertical) are the only other fixed vertical chrome above this
-       screen. Once this has a real height, the existing `flex: 1` chain
-       down to DataTable's `.wrapper` (DataTable.module.css) does the rest,
-       and `.form-card`'s `margin-top: auto` below has real room to flush
-       against on short-content pages — same effect as
-       ReportsScreen.module.css's `.tickets-table` fix, just resolved one
-       level higher since Masters' table stays in flex-fill mode
-       (`--datatable-max-height: none` below) rather than a vh calc of its
-       own. */
-    min-height: calc(100vh - var(--shell-header-h, 0px) - 76px);
+       screen — `var(--shell-header-h)` (AppShell.tsx's ResizeObserver)
+       covers the weight header's own height, which is real (a compact
+       ShellWeightHeader renders on every tab, Masters included) rather than
+       0 as an earlier pass here assumed. */
+    height: calc(100vh - var(--shell-header-h, 0px) - 88px);
     /* Same reasoning as ReportsScreen.module.css's `.screen` — stops the
        list's own wide DataTable from stretching this flex item past
        `.main`'s width. */

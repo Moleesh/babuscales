@@ -48,7 +48,11 @@ export const MastersListCard = ({
     // siblings that must stay put) instead of pushing `.main` itself into a
     // second, page-level scroll.
     <Card fill title={<span className="lbl">{title}</span>} headerRight={<span className="chip num">{count}</span>}>
-        <div className={`${styles.body} ${styles["body-fill-inner"]}`}>
+        {/* `styles.bodyFillInner`, not `styles["body-fill-inner"]` — Vite's CSS
+            Modules export (localsConvention: "camelCaseOnly") only exposes
+            the camelCase key, so the bracket-hyphen lookup silently returned
+            `undefined` here and this fill-mode class never actually applied. */}
+        <div className={`${styles.body} ${styles.bodyFillInner}`}>
             <input
                 className={styles.search}
                 value={query}
@@ -67,6 +71,15 @@ export const MastersListCard = ({
                         <span className={styles.loadingRow}>
                             <Spinner size="sm" label={t("masters.loading")} /> {t("masters.loading")}
                         </span>
+                    ) : query.trim() ? (
+                        // Task: "table also check when the search reaches
+                        // empty" — "No <title> yet" reads as "you have no
+                        // data" even while the list genuinely has rows that
+                        // just don't match the typed search; a distinct
+                        // message once `query` is non-empty makes clear it's
+                        // the search that came up empty, not the master list
+                        // itself.
+                        `${t("masters.searchEmptyPrefix")} ${title.toLowerCase()} ${t("masters.searchEmptySuffix")}`
                     ) : (
                         `${t("masters.emptyPrefix")} ${title.toLowerCase()} ${t("masters.emptySuffix")}`
                     )

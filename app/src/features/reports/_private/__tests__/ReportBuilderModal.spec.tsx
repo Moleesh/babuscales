@@ -17,8 +17,12 @@ const baseProps = (): ReportBuilderModalProps => ({
     initialFilter: "all",
     initialDateFrom: "",
     initialDateTo: "",
+    initialSeriesEpoch: "current",
+    seriesEpochOptions: [],
+    showSeriesEpoch: true,
     initialVisibleColumnKeys: null,
     onSaveReport: vi.fn(),
+    onUpdateReport: vi.fn(),
 });
 
 describe("ReportBuilderModal — single-page draft", () => {
@@ -62,6 +66,7 @@ describe("ReportBuilderModal — single-page draft", () => {
                 filter: "all",
                 dateFrom: "",
                 dateTo: "",
+                seriesEpoch: "current",
                 visibleColumnKeys: null,
             },
             "My report",

@@ -16,7 +16,7 @@ export interface SettingsProviderProps {
 export const SettingsProvider = ({ children }: SettingsProviderProps) => {
     const db = useDataPort();
     const { settings, loading, persist, persistPatch, reload } = useSettingsRecord(db);
-    const { unlocked, lock, unlock } = useAdminLock(settings);
+    const { unlocked, lock, unlock } = useAdminLock(settings, persistPatch);
     const { save, changeAdminPassword, setOperatorName, setSkin, setTextScale, recordDailySummarySent } =
         useSettingsActions({ settings, unlocked, persist, persistPatch });
 

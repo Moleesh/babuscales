@@ -24,6 +24,19 @@
     bottom: 0;
     width: 10px;
     pointer-events: none;
+    /* Task: "horizontal scroll bar is cut on the title (its behind it)" —
+       a sticky, `z-index: 1` descendant (DataTable.module.css's `.table th`
+       column-header row) establishes its own stacking context, and since
+       `.content` itself (this div's sibling, holding that header) isn't
+       positioned, that context ends up compared against `.area`'s (this
+       div's parent, `position: relative`) other children at the root level
+       — i.e. directly against this track/thumb pair, which had no
+       `z-index` at all (auto, effectively 0). `1 > 0` meant the sticky
+       header painted on top of the scrollbar it was supposed to sit
+       beside. Explicit `z-index: 2` keeps both thumbs above every sticky
+       header this component might wrap, regardless of that header's own
+       stacking value. */
+    z-index: 2;
 }
 
 .thumb {
@@ -41,5 +54,37 @@
     cursor: pointer;
 }
 .thumb:hover {
+    background: var(--dim);
+}
+
+/* Horizontal counterpart of `.track`/`.thumb` above — task: "horizontal
+   scroll bar is missing when data is there". Stops 2px short of the bottom
+   (rather than flush `bottom: 0`) so it doesn't sit directly under
+   `.track`'s own vertical thumb when both are visible at once (a wide,
+   tall table scrolling on both axes) — same shared-corner gap a native
+   double scrollbar leaves. */
+.trackX {
+    position: absolute;
+    left: 0;
+    right: 2px;
+    bottom: 2px;
+    height: 10px;
+    pointer-events: none;
+    /* Same stacking fix as `.track` above, same reason. */
+    z-index: 2;
+}
+
+.thumbX {
+    position: absolute;
+    bottom: 0;
+    height: 10px;
+    background: var(--line);
+    border-radius: 999px;
+    pointer-events: auto;
+    background-clip: padding-box;
+    border: 2px solid transparent;
+    cursor: pointer;
+}
+.thumbX:hover {
     background: var(--dim);
 }

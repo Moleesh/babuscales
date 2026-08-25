@@ -13,18 +13,25 @@ import { ReportBuilderReview } from "./ReportBuilderReview";
 import { ReportBuilderSaveRow } from "./ReportBuilderSaveRow";
 import { ReportsDateRangeRow } from "./ReportsDateRangeRow";
 import { groupOptions, filterOptions, viewOptions } from "../reportRows";
-import type { GroupKey, ReportView, TicketRowFilter } from "../reportRows";
+import type { GroupKey, ReportView, SeriesEpochOption, TicketRowFilter } from "../reportRows";
 
 /** The full set of picks the builder saves/applies in one shot — same
  * fields the wizard's three steps used to split across screens, now one
  * draft object so save + auto-apply (item 3) commit atomically instead of
- * racing individual setState calls. */
+ * racing individual setState calls.
+ *
+ * Task: "Add series to create report as well so it saved too" —
+ * `seriesEpoch` joined the other scope fields for the same reason
+ * `dateFrom`/`dateTo` are here: a built report should freeze *which* series
+ * it scans, not silently inherit whatever the screen's own Series dropdown
+ * happens to be on at recall time. */
 export interface ReportBuilderDraft {
     view: ReportView;
     groupBy: GroupKey;
     filter: TicketRowFilter;
     dateFrom: string;
     dateTo: string;
+    seriesEpoch: number | "current" | "all";
     visibleColumnKeys: string[] | null;
 }
 
@@ -40,6 +47,13 @@ export interface ReportBuilderModalProps {
     initialFilter: TicketRowFilter;
     initialDateFrom: string;
     initialDateTo: string;
+    initialSeriesEpoch: number | "current" | "all";
+    seriesEpochOptions: SeriesEpochOption[];
+    /** Settings' `Rules.ShowSeriesInReports` — task: "Add a config for
+     * showing the series in report, only then user can use it, it hidden
+     * behind the flag". Off (default): the builder's own Series field is
+     * withheld too, same reasoning as ReportsCardBody's copy of this flag. */
+    showSeriesEpoch: boolean;
     initialVisibleColumnKeys: string[] | null;
     /** Seeds the name field — the saved view's own name while editing, ""
      * for a fresh build. */
@@ -96,9 +110,13 @@ const useReportBuilderDraft = (
 const ReportBuilderScopeFields = ({
     draft,
     patchDraft,
+    seriesEpochOptions,
+    showSeriesEpoch,
 }: {
     draft: ReportBuilderDraft;
     patchDraft: (patch: Partial<ReportBuilderDraft>) => void;
+    seriesEpochOptions: SeriesEpochOption[];
+    showSeriesEpoch: boolean;
 }) => {
     const { t } = useTranslation();
     return (
@@ -132,6 +150,9 @@ const ReportBuilderScopeFields = ({
                 onDateFromChange={(dateFrom) => patchDraft({ dateFrom })}
                 dateTo={draft.dateTo}
                 onDateToChange={(dateTo) => patchDraft({ dateTo })}
+                seriesEpoch={showSeriesEpoch ? draft.seriesEpoch : undefined}
+                onSeriesEpochChange={showSeriesEpoch ? (seriesEpoch) => patchDraft({ seriesEpoch }) : undefined}
+                seriesEpochOptions={showSeriesEpoch ? seriesEpochOptions : undefined}
             />
             <Field id="rbFilter" label={t("reports.filterAriaLabel")}>
                 <SegmentedControl
@@ -154,7 +175,7 @@ const ReportBuilderScopeFields = ({
 // persists the named report and applies its config as the screen's active
 // view in the same action (see onSaveReport), then closes the modal.
 export const ReportBuilderModal = (props: ReportBuilderModalProps) => {
-    const { open, onClose, onSaveReport, onUpdateReport, editingId } = props;
+    const { open, onClose, onSaveReport, onUpdateReport, editingId, seriesEpochOptions, showSeriesEpoch } = props;
     const { t } = useTranslation();
     const initial: ReportBuilderDraft = {
         view: props.initialView,
@@ -162,6 +183,7 @@ export const ReportBuilderModal = (props: ReportBuilderModalProps) => {
         filter: props.initialFilter,
         dateFrom: props.initialDateFrom,
         dateTo: props.initialDateTo,
+        seriesEpoch: props.initialSeriesEpoch,
         visibleColumnKeys: props.initialVisibleColumnKeys,
     };
     const [draft, patchDraft, name, setName] = useReportBuilderDraft(open, initial, props.initialName ?? "");
@@ -181,7 +203,12 @@ export const ReportBuilderModal = (props: ReportBuilderModalProps) => {
             onClose={onClose}
         >
             <div className={styles.body}>
-                <ReportBuilderScopeFields draft={draft} patchDraft={patchDraft} />
+                <ReportBuilderScopeFields
+                    draft={draft}
+                    patchDraft={patchDraft}
+                    seriesEpochOptions={seriesEpochOptions}
+                    showSeriesEpoch={showSeriesEpoch}
+                />
                 <ReportBuilderColumns
                     visibleColumnKeys={draft.visibleColumnKeys}
                     onVisibleColumnKeysChange={(visibleColumnKeys) => patchDraft({ visibleColumnKeys })}

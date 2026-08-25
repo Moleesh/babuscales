@@ -46,7 +46,16 @@
     position: sticky;
     top: calc(var(--shell-header-h, 0px) + var(--card-header-h, 0px));
     z-index: 2;
-    background: var(--void);
+    /* Was `var(--void)` — the page background, not the Card's own body
+       background (`var(--panel)`, Card.module.css). Reports rework: "the
+       grey area around" — since this block sits *inside* Card's `.body`
+       (already `var(--panel)`), the mismatched `--void` painted a visibly
+       distinct box behind SAVED VIEW/FROM DATE/TO DATE/SERIES that read as
+       a stray border/panel rather than blending into the card underneath
+       it. Matching `--panel` keeps the original need (an opaque background
+       so scrolled content can't show through the sticky gap) without the
+       two-tone seam. */
+    background: var(--panel);
     padding-block: 4px 6px;
 }
 
@@ -101,11 +110,19 @@
 }
 /* Task: "make this dropdown little bigger" — ReportsDateRangeRow's series
    Select, whose longer "Before reset …" option labels were truncating with
-   an ellipsis at Select.module.css's own 160px floor. `min-width` (not
-   `width`) so it still only takes what it needs above that, same as
-   `.range-field` itself. */
+   an ellipsis at Select.module.css's own 160px floor. Follow-up: "give a
+   fixed width" — a bare `min-width` let the field grow/shrink with
+   whichever option's label happened to be selected ("Current" vs. "Before
+   reset — 2026-08-14"), shifting the SERIES label and everything beside it
+   every time the value changed; a fixed `width` keeps the row stable
+   regardless of the selected label's length. Follow-up: "i hate 2 line drop
+   down either tructe or increase the width" — 220px was still narrow enough
+   that Select.module.css's open-list rows (`.option`, deliberately
+   `white-space: normal` so labels never ellipsis-truncate) wrapped a
+   "Before reset — 2026-08-14" label onto two lines; widened past that
+   instead of reintroducing truncation. */
 .series-field {
-    min-width: 220px;
+    width: 280px;
 }
 .range-field-label {
     font-size: 0.625rem;
@@ -126,6 +143,18 @@
     align-items: center;
     gap: 9px;
     flex-wrap: wrap;
+}
+
+/* Task: "we needd the count of record somewhere for both total, corrent
+   view & current quick search", "move it close to report header", "move it
+   next to the Report label not atht the cirrent palce", "follow this for
+   count" — the "REPORTS" title plus its scoped/matching record-count pills
+   (base.css's own `.chip`), laid out on one line (ReportsScreenCard.tsx's
+   ReportsCardTitle). */
+.title-row {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
 }
 
 /* `.date-input` (the old `<input type="date">` styling) removed — the
@@ -271,6 +300,39 @@
        empty state) no longer leaves the table shorter than the room it's
        given, so `.bottom-bar` sits flush at the true bottom without touching
        `.main`'s own scroll behaviour at all. */
+    --datatable-min-height: var(--datatable-max-height);
+}
+
+/* Task: "we fixed the ticket view in report but not in summary view can you
+   fix that as well" — SummaryView.tsx used to return a bare Fragment (its
+   group-by `FieldGrid` and the `DataTable` as two direct siblings inside
+   `.body`'s own grid, relying on `.body`'s `gap: 8px` between them), so
+   there was nowhere to hang a `--datatable-max-height` calc that also knows
+   this view's own group-by row height. This wrapper replaces the Fragment;
+   `gap: 8px` reproduces `.body`'s old spacing between the group-by row and
+   the table now that they're nested one level deeper instead of direct
+   grid children. */
+.summary-root {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+}
+
+/* Same bounded-table pattern as `.tickets-table` above, adjusted for
+   Summary view's own chrome: this view has no `TicketsFilterRow` (already
+   folded into `--reports-filters-h` for Tickets), but it does have its own
+   group-by `FieldGrid` row sitting between `.stickyFilters` and the table,
+   which `--reports-filters-h` never measured — accounted for here via
+   `--summary-group-h` (SummaryView.tsx's own ResizeObserver) plus this
+   wrapper's own `gap: 8px` above instead of `.tickets-table`'s Tickets-only
+   `--reports-chrome-h` breakdown. */
+.summary-table {
+    min-width: 0;
+    --datatable-max-height: calc(
+        100vh - var(--shell-header-h, 0px) - var(--card-header-h, 0px) - var(--reports-filters-h, 0px) - 170px - 58px -
+            var(--summary-group-h, 0px) - 8px
+    );
     --datatable-min-height: var(--datatable-max-height);
 }
 

@@ -3,7 +3,7 @@ import type { DataPort } from "../../DataPort";
 import { configDraftSchema } from "../../schemas";
 import type { ConfigDraft, ConfigRow } from "../../types";
 
-type ConfigMethods = Pick<DataPort, "getConfig" | "listConfig" | "saveConfig">;
+type ConfigMethods = Pick<DataPort, "getConfig" | "listConfig" | "saveConfig" | "deleteConfig">;
 
 // Zod at every boundary (docs/CodingStandards.md) — the memory adapter
 // already parses drafts with these same schemas before writing; this
@@ -17,4 +17,6 @@ export const createConfigMethods = (): ConfigMethods => ({
 
     saveConfig: (draft: ConfigDraft) =>
         invoke<ConfigRow>("save_config", { draft: configDraftSchema.parse(draft) }),
+
+    deleteConfig: (configId) => invoke<void>("delete_config", { configId }),
 });

@@ -9,6 +9,33 @@ import type { SeriesEpochOption } from "../reportRows";
  * itself, stringified (numbers round-trip cleanly through `Number(...)`,
  * `SeriesEpoch` is always a small non-negative integer). */
 const CURRENT_EPOCH_VALUE = "current";
+/** Task: "its 19 on top and 5 when returning some calution mistake" — the
+ * waiting chip's own badge (waitingCount, useReportsScreenData.ts) counts
+ * every open ticket across every numbering series ever used, but there was
+ * no way to actually *view* that same scope — only "Current" or one prior
+ * series at a time (`filterRowsBySeries`'s own "never a merge across
+ * series" rule, reportRows.ts). This sentinel opts a recalled/clicked
+ * report out of the series scope entirely instead of merging series data
+ * for a search/ticket-number view (where a genuine merge could collide two
+ * different series' numbers) — it's a deliberate, explicit "show
+ * everything" choice, not the default. */
+const ALL_EPOCH_VALUE = "all";
+
+/** `seriesEpoch` -> the Select's string value — pulled out of the component
+ * body purely to keep it under the file's own line budget
+ * (docs/CodingStandards.md) now that a third (`"all"`) state joined the
+ * two this used to inline. */
+const seriesEpochValue = (seriesEpoch: number | "current" | "all" | undefined): string => {
+    if (seriesEpoch === "all") return ALL_EPOCH_VALUE;
+    if (seriesEpoch === "current" || seriesEpoch === undefined) return CURRENT_EPOCH_VALUE;
+    return String(seriesEpoch);
+};
+
+const seriesEpochOnChange = (value: string): number | "current" | "all" => {
+    if (value === ALL_EPOCH_VALUE) return "all";
+    if (value === CURRENT_EPOCH_VALUE) return "current";
+    return Number(value);
+};
 
 export interface ReportsDateRangeRowProps {
     dateFrom: string;
@@ -22,8 +49,8 @@ export interface ReportsDateRangeRowProps {
      * across series. Omitted by the report-builder modal (ReportBuilderModal.tsx),
      * which only scopes the date range itself, not this screen-level series
      * filter — the dropdown is hidden whenever these are left out. */
-    seriesEpoch?: number | "current";
-    onSeriesEpochChange?: (epoch: number | "current") => void;
+    seriesEpoch?: number | "current" | "all";
+    onSeriesEpochChange?: (epoch: number | "current" | "all") => void;
     seriesEpochOptions?: SeriesEpochOption[];
     /** Settings' `Formats.DateFmt` — passed straight through to `DatePicker`
      * so the two trigger buttons read a date in the same pattern as every
@@ -88,26 +115,23 @@ export const ReportsDateRangeRow = ({
                 // than Select's own 160px floor (Select.module.css), so they
                 // were truncating with an ellipsis; `.series-field` widens
                 // just this one instance's track, not every Select in the app.
-                <div className={`${styles.rangeField} ${styles["series-field"]}`}>
+                <div className={`${styles.rangeField} ${styles.seriesField}`}>
                     <span className={styles.rangeFieldLabel}>{t("reports.series.label")}</span>
                     <Select
                         id="reportsSeriesEpoch"
-                        value={
-                            seriesEpoch === "current" || seriesEpoch === undefined
-                                ? CURRENT_EPOCH_VALUE
-                                : String(seriesEpoch)
-                        }
-                        options={seriesEpochOptions.map((option, index) => ({
-                            // `listSeriesEpochOptions` always puts "Current" first
-                            // (reportRows.ts) — that one entry gets the sentinel
-                            // value so it matches `seriesEpoch === "current"`
-                            // regardless of what `Numbering.CurrentEpoch` actually is.
-                            value: index === 0 ? CURRENT_EPOCH_VALUE : String(option.epoch),
-                            label: option.label,
-                        }))}
-                        onChange={(value) =>
-                            onSeriesEpochChange(value === CURRENT_EPOCH_VALUE ? "current" : Number(value))
-                        }
+                        value={seriesEpochValue(seriesEpoch)}
+                        options={[
+                            { value: ALL_EPOCH_VALUE, label: t("reports.series.all") },
+                            ...seriesEpochOptions.map((option, index) => ({
+                                // `listSeriesEpochOptions` always puts "Current" first
+                                // (reportRows.ts) — that one entry gets the sentinel
+                                // value so it matches `seriesEpoch === "current"`
+                                // regardless of what `Numbering.CurrentEpoch` actually is.
+                                value: index === 0 ? CURRENT_EPOCH_VALUE : String(option.epoch),
+                                label: option.label,
+                            })),
+                        ]}
+                        onChange={(value) => onSeriesEpochChange(seriesEpochOnChange(value))}
                     />
                 </div>
             ) : null}

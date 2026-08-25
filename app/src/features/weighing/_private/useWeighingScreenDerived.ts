@@ -65,6 +65,7 @@ export const useWeighingScreenDerived = ({
         allTicketDocs,
         storedTareCache: caches.storedTare,
         strictTare: settings.Rules.StrictTare,
+        currentEpoch: settings.Numbering.CurrentEpoch,
         lang,
         t,
         weightUnit: settings.Formats.WeightUnit,

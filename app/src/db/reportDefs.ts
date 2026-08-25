@@ -43,6 +43,19 @@ export interface ReportDefinition {
     DateFrom?: string;
     DateTo?: string;
     Columns?: string;
+    /** The numbering-series scope this report was saved against — `"all"`
+     * (every series, no scoping at all), `"current"` (whatever series is
+     * active at recall time), a specific epoch number (that one series
+     * only), or absent for a pre-existing saved report from before this
+     * field existed, which leaves the screen's own series scope untouched
+     * on recall (reportRows.ts's `filterRowsBySeries` doc comment).
+     * Originally `"all"`-only, set exclusively by the built-in report
+     * presets (features/reports/_private/builtinReportDefs.ts) — task: "Add
+     * series to create report as well so it saved too" widened this so the
+     * report-builder wizard's own save can persist whichever choice the
+     * operator actually made in its Series dropdown, the same as
+     * `DateFrom`/`DateTo`. */
+    SeriesEpoch?: number | "current" | "all";
 }
 
 const reportDefinitionSchema: z.ZodType<ReportDefinition> = z.object({
@@ -54,6 +67,7 @@ const reportDefinitionSchema: z.ZodType<ReportDefinition> = z.object({
     DateFrom: z.string().optional(),
     DateTo: z.string().optional(),
     Columns: z.string().optional(),
+    SeriesEpoch: z.union([z.number(), z.literal("current"), z.literal("all")]).optional(),
 });
 
 const reportDefsBodySchema = z.object({ Definitions: z.array(reportDefinitionSchema) });

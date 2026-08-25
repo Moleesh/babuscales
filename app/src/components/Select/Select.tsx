@@ -13,6 +13,11 @@ export interface SelectProps<T extends string> {
     options: SelectOption<T>[];
     disabled?: boolean;
     onChange: (value: T) => void;
+    /** Extra class on `.wrap`, alongside its own default `min-width: 160px`
+     * — task: "make the language dropdown a little bigger, we have longer
+     * language names and now two more icons in it". Every other caller
+     * leaves this unset and keeps the default width. */
+    className?: string;
 }
 
 // Closes the list on an outside click — same shape as AppShell's
@@ -54,7 +59,7 @@ const useCloseOnOutsideClick = (open: boolean, onClose: () => void) => {
 // whole list as ordinary DOM buttons instead, so it looks and behaves like
 // the rest of the app rather than switching to native chrome the moment it
 // opens.
-export const Select = <T extends string>({ id, value, options, disabled, onChange }: SelectProps<T>) => {
+export const Select = <T extends string>({ id, value, options, disabled, onChange, className }: SelectProps<T>) => {
     const [open, setOpen] = useState(false);
     const ref = useCloseOnOutsideClick(open, () => setOpen(false));
     const selected = options.find((option) => option.value === value);
@@ -69,7 +74,7 @@ export const Select = <T extends string>({ id, value, options, disabled, onChang
     }, [disabled]);
 
     return (
-        <div className={styles.wrap} ref={ref}>
+        <div className={className ? `${styles.wrap} ${className}` : styles.wrap} ref={ref}>
             <button
                 id={id}
                 type="button"

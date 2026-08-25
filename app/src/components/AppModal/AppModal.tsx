@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { createPortal } from "react-dom";
 
 import { useModalFocus } from "./_private/useModalFocus";
 import styles from "./_styles/AppModal.module.css";
@@ -31,7 +32,17 @@ export const AppModal = ({
 
     if (!open) return null;
 
-    return (
+    // Bug: "indicator is not behind the grey shade" — AppShell's weight
+    // readout (`.headerSticky`, AppShell.module.css) is a sibling of every
+    // screen's own content deep inside AppShell's scroll container, not an
+    // ancestor of this modal. Rendered in place (no portal), this backdrop's
+    // `position: fixed` still nominally covers the viewport by z-index, but
+    // stayed visually behind/beside the readout in practice — a portal to
+    // `document.body` is the standard fix: it puts the backdrop in a
+    // stacking context of its own at the very end of `<body>`, with nothing
+    // from the app tree (this readout included) able to leak above it
+    // regardless of where the modal that opened it happens to live.
+    return createPortal(
         <div
             className={styles.backdrop}
             onClick={(event) => {
@@ -63,6 +74,7 @@ export const AppModal = ({
                 </header>
                 <div className={styles.body}>{children}</div>
             </div>
-        </div>
+        </div>,
+        document.body,
     );
 };

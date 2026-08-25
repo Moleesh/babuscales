@@ -5,7 +5,7 @@ import { newId } from "../../id";
 import { configDraftSchema } from "../../schemas";
 import type { ConfigDraft, ConfigRow } from "../../types";
 
-type ConfigMethods = Pick<DataPort, "getConfig" | "listConfig" | "saveConfig">;
+type ConfigMethods = Pick<DataPort, "getConfig" | "listConfig" | "saveConfig" | "deleteConfig">;
 
 export const createConfigMethods = (state: MemoryState): ConfigMethods => ({
     getConfig: (configId) => Promise.resolve(state.configs.get(configId) ?? null),
@@ -29,5 +29,10 @@ export const createConfigMethods = (state: MemoryState): ConfigMethods => ({
         };
         state.configs.set(row.ConfigId, row);
         return Promise.resolve(row);
+    },
+
+    deleteConfig: (configId) => {
+        state.configs.delete(configId);
+        return Promise.resolve();
     },
 });

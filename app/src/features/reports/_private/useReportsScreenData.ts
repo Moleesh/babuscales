@@ -9,6 +9,7 @@ import { buildSummaryColumns, buildTicketColumns } from "./reportColumns";
 import { buildReportsScreenSlipData } from "./reportSlipData";
 import {
     buildTicketRows,
+    countTicketRowsByFilter,
     filterRowsByDateRange,
     filterRowsBySeries,
     filterTicketRows,
@@ -26,6 +27,7 @@ import type {
     SummaryRow,
     TicketRow,
     TicketRowFilter,
+    TicketRowFilterCounts,
     TicketSortKey,
     Translate,
 } from "../reportRows";
@@ -40,7 +42,7 @@ export interface UseReportsScreenDataArgs {
     /** `Numbering.CurrentEpoch` — what `seriesEpoch === "current"` resolves to. */
     currentEpoch: number;
     /** Reports' own "include tickets from before the last reset" dropdown — `"current"` or a specific prior `SeriesEpoch` (reportRows.ts's `filterRowsBySeries`, scoped to exactly that one series). */
-    seriesEpoch: number | "current";
+    seriesEpoch: number | "current" | "all";
     groupBy: GroupKey;
     sortKey: TicketSortKey;
     sortDir: SortDir;
@@ -71,6 +73,21 @@ export interface UseReportsScreenDataArgs {
 
 export interface UseReportsScreenData {
     waitingCount: number;
+    /** Every ticket ever entered, unfiltered — task: "we needd the count of
+     * record somewhere for both total, corrent view & current quick search"
+     * — the "total" figure. Same base set `waitingCount` above reads from. */
+    totalCount: number;
+    /** `dateFilteredRows.length` — after the date-range + series scope but
+     * before the status filter (All/Waiting/Both) and search text, i.e. "how
+     * many tickets are in the range/series currently selected". The
+     * "current view" figure. */
+    scopedCount: number;
+    /** Task: "you can add the sub counts here too All / Waiting for the
+     * second weight / Both weights" — per-status counts (reportRows.ts's
+     * `countTicketRowsByFilter`) over the same date/series/search scope as
+     * `scopedCount`, but not the status filter itself — see that function's
+     * own doc comment for why. */
+    filterCounts: TicketRowFilterCounts;
     visibleRows: TicketRow[];
     /** The one page of `visibleRows` DataTable actually renders — see reportRows.ts's `paginateTicketRows`. */
     pagedRows: TicketRow[];
@@ -90,7 +107,7 @@ interface UseFilteredTicketRowsArgs {
     dateFrom: string;
     dateTo: string;
     currentEpoch: number;
-    seriesEpoch: number | "current";
+    seriesEpoch: number | "current" | "all";
     groupBy: GroupKey;
     sortKey: TicketSortKey;
     sortDir: SortDir;
@@ -116,14 +133,26 @@ const useFilteredTicketRows = ({
     reportApplied,
 }: UseFilteredTicketRowsArgs) => {
     const rows = useMemo(() => buildTicketRows(docs), [docs]);
-    // The open-ticket strip is a global "what's waiting right
-    // now" indicator, not scoped to whatever date range Reports happens to
-    // have selected, so this reads the full unfiltered `rows`, not
-    // `dateFilteredRows` below.
-    const waitingCount = useMemo(() => rows.filter((row) => row.isOpen).length, [rows]);
+    // Task: "We dont want all series as a defult for all these case it
+    // should be only on the current series, do it all the places" — the
+    // header's waiting-count chip is a global "what's waiting right now"
+    // indicator (not scoped to whatever date range Reports happens to have
+    // selected, so it still reads independent of `dateFilteredRows` below),
+    // but it IS scoped to the current numbering series like everything
+    // else, same as `seriesFilteredRows`. A ticket "backed" by a prior
+    // "Reset the counter now" no longer counts as waiting on the current
+    // shift just because it was never given a second weight.
+    const waitingCount = useMemo(
+        () => rows.filter((row) => row.isOpen && row.seriesEpoch === currentEpoch).length,
+        [rows, currentEpoch],
+    );
+    // `seriesEpoch === "all"` opts out of the series scope altogether
+    // (ReportsDateRangeRow.tsx's own comment on why this is a deliberate,
+    // explicit choice rather than the default) instead of resolving to some
+    // particular epoch to filter down to.
     const resolvedEpoch = seriesEpoch === "current" ? currentEpoch : seriesEpoch;
     const seriesFilteredRows = useMemo(
-        () => filterRowsBySeries(rows, resolvedEpoch),
+        () => (resolvedEpoch === "all" ? rows : filterRowsBySeries(rows, resolvedEpoch)),
         [rows, resolvedEpoch],
     );
     const dateFilteredRows = useMemo(
@@ -145,8 +174,27 @@ const useFilteredTicketRows = ({
         () => (reportApplied ? summarizeTicketRows(dateFilteredRows, groupBy) : []),
         [reportApplied, dateFilteredRows, groupBy],
     );
+    // Search-scoped but NOT status-filtered — `filterTicketRows(..., "all")`
+    // applies `query` without restricting by status, so counting across that
+    // set (not `dateFilteredRows` itself) reflects the search box too, same
+    // scope `visibleRows` above ends up filtered to once a status is picked.
+    const filterCounts = useMemo(
+        () => countTicketRowsByFilter(filterTicketRows(dateFilteredRows, query, "all")),
+        [dateFilteredRows, query],
+    );
 
-    return { waitingCount, rows, dateFilteredRows, visibleRows, pageCount, pagedRows, summaryRows };
+    return {
+        waitingCount,
+        totalCount: rows.length,
+        scopedCount: dateFilteredRows.length,
+        filterCounts,
+        rows,
+        dateFilteredRows,
+        visibleRows,
+        pageCount,
+        pagedRows,
+        summaryRows,
+    };
 };
 
 interface UseReportsTableColumnsArgs {
@@ -205,7 +253,7 @@ const useReportsTableColumns = ({
 // unchanged from the inline version it replaces.
 export const useReportsScreenData = (args: UseReportsScreenDataArgs): UseReportsScreenData => {
     const { view, amountDp, lang, weightUnit, dateFmt, timeFmt, currentEpoch, t, reportApplied } = args;
-    const { waitingCount, rows, dateFilteredRows, visibleRows, pageCount, pagedRows, summaryRows } =
+    const { waitingCount, totalCount, scopedCount, filterCounts, rows, dateFilteredRows, visibleRows, pageCount, pagedRows, summaryRows } =
         useFilteredTicketRows(args);
     // Every numbering series actually present on the (unfiltered) docs —
     // feeds the "include tickets from before the last reset" dropdown
@@ -247,6 +295,9 @@ export const useReportsScreenData = (args: UseReportsScreenDataArgs): UseReports
 
     return {
         waitingCount,
+        totalCount,
+        scopedCount,
+        filterCounts,
         visibleRows,
         pagedRows,
         pageCount,

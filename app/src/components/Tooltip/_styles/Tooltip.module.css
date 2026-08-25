@@ -11,11 +11,15 @@
    animation") plays every time the bubble mounts — a small scale+rise
    rather than a plain fade, echoing the custom cursor's own hover-ring
    growth (CustomCursor.module.css's `.cursor.hover .ring`) so hovering a
-   tooltip target feels like part of the same pointer language. */
+   tooltip target feels like part of the same pointer language.
+   `top`/`left` come from Tooltip.tsx's own inline `style` (computed from
+   the trigger's live `getBoundingClientRect()` — this is portaled to
+   `document.body`, so plain CSS positioning relative to `.wrap` can't
+   reach it any more); this class only owns the parts that don't depend on
+   where the trigger happens to sit. */
 .bubble {
-    position: absolute;
-    left: 50%;
-    z-index: 40;
+    position: fixed;
+    z-index: 1000;
     display: block;
     width: max-content;
     max-width: 220px;
@@ -33,33 +37,22 @@
     animation: tooltip-pop 0.14s cubic-bezier(0.2, 0.9, 0.3, 1.3);
 }
 
+/* Just the pop-in's pivot point now — Tooltip.tsx's placement effect
+   already lands the bubble on the correct side/edge in pixels. */
 .top {
-    bottom: calc(100% + 8px);
-    transform: translateX(-50%);
     transform-origin: center bottom;
 }
 .bottom {
-    top: calc(100% + 8px);
-    transform: translateX(-50%);
     transform-origin: center top;
 }
-
-/* For a trigger flush against the window's right edge (top bar's
-   Minimize/Close) — hangs the bubble off the trigger's right edge instead
-   of centering it, so it opens leftward into the window instead of past
-   the viewport edge, where `.app`'s `overflow: hidden` clipped it
-   entirely. Overrides `.top`/`.bottom`'s own `left: 50%`/`translateX`. */
-.alignEnd {
-    left: auto;
-    right: 0;
-    transform: none;
+.alignEnd.top {
     transform-origin: right bottom;
 }
-.bottom.alignEnd {
+.alignEnd.bottom {
     transform-origin: right top;
 }
 
-@keyframes tooltip-pop-end {
+@keyframes tooltip-pop {
     from {
         opacity: 0;
         transform: scale(0.85) translateY(4px);
@@ -67,20 +60,6 @@
     to {
         opacity: 1;
         transform: scale(1) translateY(0);
-    }
-}
-.alignEnd {
-    animation: tooltip-pop-end 0.14s cubic-bezier(0.2, 0.9, 0.3, 1.3);
-}
-
-@keyframes tooltip-pop {
-    from {
-        opacity: 0;
-        transform: translateX(-50%) scale(0.85) translateY(4px);
-    }
-    to {
-        opacity: 1;
-        transform: translateX(-50%) scale(1) translateY(0);
     }
 }
 

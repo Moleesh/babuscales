@@ -254,6 +254,7 @@ pub fn run() -> tauri::Result<()> {
             commands::configs::get_config,
             commands::configs::list_config,
             commands::configs::save_config,
+            commands::configs::delete_config,
             commands::assets::get_asset_meta,
             commands::assets::get_asset_bytes,
             commands::assets::list_asset_meta,

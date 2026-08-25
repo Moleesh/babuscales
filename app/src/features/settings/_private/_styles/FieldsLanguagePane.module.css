@@ -1,8 +1,18 @@
+/* Task: "we have scrolling issue again in this tab as well as in Field &
+   print" — SettingsScreen's own `.pane-area` (SettingsScreen.module.css) is
+   now the one scroll region for this whole pane; without the
+   `--datatable-max-height` override, the field-schema DataTable's own
+   default 65vh cap (DataTable.module.css) still applied inside it, nesting
+   a second independently-scrolling box (the table) inside the first — same
+   "double scroll" shape Masters/Reports already hit. `none` lets the table
+   grow to its full content height instead, so `.pane-area` is the only
+   thing that ever actually scrolls. */
 .grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
     gap: 12px;
     align-items: start;
+    --datatable-max-height: none;
 }
 
 .body {

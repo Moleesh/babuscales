@@ -41,7 +41,17 @@ export interface ScrollAreaProps {
 // as before, so this drops in around an existing scroll container without
 // touching whatever reads or reacts to its scroll state.
 export const ScrollArea = ({ className, contentClassName, contentRef, onScroll, dataAttrs, children }: ScrollAreaProps) => {
-    const { thumb, recompute, onThumbPointerDown, onThumbPointerMove, onThumbPointerUp } = useCustomScrollbar(contentRef);
+    const {
+        thumb,
+        thumbX,
+        recompute,
+        onThumbPointerDown,
+        onThumbPointerMove,
+        onThumbPointerUp,
+        onThumbXPointerDown,
+        onThumbXPointerMove,
+        onThumbXPointerUp,
+    } = useCustomScrollbar(contentRef);
 
     const handleScroll = useCallback(() => {
         recompute();
@@ -66,6 +76,21 @@ export const ScrollArea = ({ className, contentClassName, contentRef, onScroll, 
                         onPointerDown={onThumbPointerDown}
                         onPointerMove={onThumbPointerMove}
                         onPointerUp={onThumbPointerUp}
+                    />
+                </div>
+            )}
+            {/* Task: "horizontal scroll bar is missing when data is there" —
+                same track/thumb pair as the vertical one above, just along
+                the X axis; see useCustomScrollbar.ts's own comment for why
+                this never existed until now. */}
+            {thumbX.visible && (
+                <div className={styles.trackX} aria-hidden="true">
+                    <div
+                        className={styles.thumbX}
+                        style={{ left: thumbX.left, width: thumbX.width }}
+                        onPointerDown={onThumbXPointerDown}
+                        onPointerMove={onThumbXPointerMove}
+                        onPointerUp={onThumbXPointerUp}
                     />
                 </div>
             )}

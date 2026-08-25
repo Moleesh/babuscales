@@ -1,4 +1,4 @@
-export type DatePresetKey = "today" | "month" | "year" | "all";
+export type DatePresetKey = "today" | "week" | "month" | "year" | "all";
 
 // Local calendar date, not UTC — `date` here is always already a local
 // `Date` (either `new Date()` or `new Date(year, month, day)`), so reading
@@ -19,6 +19,14 @@ export const datePresetRange = (preset: DatePresetKey): { from: string; to: stri
     const now = new Date();
     const today = toDateOnly(now);
     if (preset === "today") return { from: today, to: today };
+    if (preset === "week") {
+        // Last 7 calendar days inclusive of today — a rolling window, not
+        // "this Mon–Sun", since the built-in "Weekly" preset (builtinReportDefs.ts)
+        // is meant to answer "what came in over the last week" at any point
+        // mid-week, not just once a calendar week closes.
+        const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 6);
+        return { from: toDateOnly(start), to: today };
+    }
     if (preset === "month") {
         return { from: toDateOnly(new Date(now.getFullYear(), now.getMonth(), 1)), to: today };
     }

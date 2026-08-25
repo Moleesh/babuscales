@@ -72,6 +72,7 @@ export const ReportsScreen = ({ onOpenTicket, reportsIntent = null }: ReportsScr
         lang,
         reportsIntent,
         schemaFields,
+        showSeriesEpoch: settings.Rules.ShowSeriesInReports,
     });
     return (
         <div className={styles.screen}>
@@ -88,6 +89,9 @@ export const ReportsScreen = ({ onOpenTicket, reportsIntent = null }: ReportsScr
                 filter={s.filter}
                 dateFrom={s.dateFrom}
                 dateTo={s.dateTo}
+                seriesEpoch={s.seriesEpoch}
+                seriesEpochOptions={s.seriesEpochOptions}
+                showSeriesEpoch={s.showSeriesEpoch}
                 visibleColumnKeys={s.visibleColumnKeys}
                 savedReportActions={s.savedReportActions}
                 pageIndex={s.pageIndex}

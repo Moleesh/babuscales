@@ -7,7 +7,7 @@ import { useTranslation } from "@i18n/useTranslation";
 import { TicketsSortRow } from "./TicketsSortRow";
 import styles from "../_styles/ReportsScreen.module.css";
 import { filterOptions } from "../reportRows";
-import type { SortDir, TicketRow, TicketRowFilter, TicketSortKey } from "../reportRows";
+import type { SortDir, TicketRow, TicketRowFilter, TicketRowFilterCounts, TicketSortKey } from "../reportRows";
 
 export interface TicketsFilterRowProps {
     query: string;
@@ -18,6 +18,10 @@ export interface TicketsFilterRowProps {
     onSortKeyChange: (sortKey: TicketSortKey) => void;
     sortDir: SortDir;
     onSortDirChange: (sortDir: SortDir) => void;
+    /** Follow-up: "you can add the sub counts here too All / Waiting for
+     * the second weight / Both weights" — per-status counts, appended onto
+     * each `SegmentedControl` option's own label below. */
+    filterCounts: TicketRowFilterCounts;
 }
 
 // Split out of TicketsView so ReportsCardBody can stack it with
@@ -33,6 +37,7 @@ export const TicketsFilterRow = ({
     onSortKeyChange,
     sortDir,
     onSortDirChange,
+    filterCounts,
 }: TicketsFilterRowProps) => {
     const { t } = useTranslation();
     return (
@@ -46,7 +51,7 @@ export const TicketsFilterRow = ({
                 autoComplete="off"
             />
             <SegmentedControl
-                options={filterOptions(t)}
+                options={filterOptions(t, filterCounts)}
                 value={filter}
                 onChange={onFilterChange}
                 ariaLabel={t("reports.filterAriaLabel")}

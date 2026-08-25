@@ -49,7 +49,14 @@ interface TabButtonProps {
 }
 
 const TabButton = ({ tab, active, onNavigate, inMenu }: TabButtonProps) => (
-    <Tooltip label={tab.label}>
+    // Bug: "tabs don't have a tooltip [visible]" — Tooltip defaults to
+    // `side="top"` (opens above the trigger), but these tabs sit in the
+    // window's own top title bar with nothing above them to open into; the
+    // bubble rendered off the top edge and was clipped by `.app`'s
+    // `overflow: hidden` — mounting correctly the whole time, just never
+    // visible. Same failure mode `align="end"` already fixes for the
+    // top bar's Minimize/Close buttons (Tooltip.tsx's own doc comment).
+    <Tooltip label={tab.label} side="bottom">
         <button
             className={`${styles.tab} ${active ? styles.active : ""}`}
             role={inMenu ? "menuitem" : undefined}
@@ -77,6 +84,29 @@ const TopBar = ({ siteLabel, tabs, activeTab, onNavigate, topRight, pin, section
     const { visibleTabCount, secondaryCollapsed } = useTopBarFit(barRef, tabs.length);
     const visibleTabs = tabs.slice(0, visibleTabCount);
     const overflowTabs = tabs.slice(visibleTabCount);
+
+    // Bug: "double scroll bar in pretty much all tabs" — SettingsScreen's own
+    // `.screen` sizes itself off raw `100vh` (SettingsScreen.module.css) so
+    // it stays under a fixed ceiling and only its own `.pane-area` scrolls;
+    // that formula only ever subtracted `--shell-header-h` (the sticky
+    // weight readout), never this bar's own height, so it always came out
+    // taller than the room actually left in `.main` (AppShell.module.css) —
+    // `.main` then had to scroll its own extra few dozen pixels *underneath*
+    // `.pane-area`'s already-complete inner scroll, i.e. two nested
+    // scrollbars for one screen. `--shell-topbar-h`, same ResizeObserver
+    // shape as `useStickyHeaderHeight` below, is what was missing; set on
+    // `:root` (not `.main`) since this bar renders as `.main`'s own sibling,
+    // not its descendant.
+    useEffect(() => {
+        const barEl = barRef.current;
+        if (!barEl) return;
+        const observer = new ResizeObserver(([entry]) => {
+            if (!entry) return;
+            document.documentElement.style.setProperty("--shell-topbar-h", `${entry.contentRect.height}px`);
+        });
+        observer.observe(barEl);
+        return () => observer.disconnect();
+    }, []);
 
     return (
         // `data-tauri-drag-region`: decorations are off (tauri.conf.json),

@@ -53,7 +53,7 @@ import { setTicketNumberDraftLabel, useWeighingTicket, WeighingScreen } from "@f
 import type { UseWeighingTicket } from "@features/weighing";
 import { DEFAULT_HELP_TOPICS } from "@i18n/helpTopics";
 import { I18nProvider } from "@i18n/I18nProvider";
-import { loadLanguagePacks, mergeLanguagePacks, saveLanguagePack } from "@i18n/loadLanguagePacks";
+import { languagePackConfigId, loadLanguagePacks, mergeLanguagePacks, saveLanguagePack } from "@i18n/loadLanguagePacks";
 import { BUILT_IN_PACKS } from "@i18n/packs";
 import type { LanguagePack } from "@i18n/types";
 import { useTranslation } from "@i18n/useTranslation";
@@ -139,12 +139,17 @@ const TopBarActions = ({
             </button>
         )}
         <OperatorChip />
-        <Tooltip label={settingsTitle}>
+        {/* Task: "when i hover on this icons the toltip is on top of them
+            which is cut off" — these buttons sit flush against the window's
+            own top edge, so Tooltip's default `side="top"` had nowhere to
+            open and clipped against the title bar/monitor edge. `"bottom"`
+            opens the bubble downward into the window instead. */}
+        <Tooltip label={settingsTitle} side="bottom">
             <button className="iconbtn" onClick={onOpenSettings}>
                 ⚙
             </button>
         </Tooltip>
-        <Tooltip label={helpTitle}>
+        <Tooltip label={helpTitle} side="bottom">
             <button
                 className="iconbtn"
                 aria-expanded={helpOpen}
@@ -161,7 +166,7 @@ const TopBarActions = ({
         {/* The window's native title bar is gone (`decorations: false`,
             tauri.conf.json) — Minimize/Close here are the only controls
             left for either. */}
-        <Tooltip label={minimizeTitle} align="end">
+        <Tooltip label={minimizeTitle} side="bottom" align="end">
             <button className="iconbtn" onClick={onMinimize}>
                 ─
             </button>
@@ -171,13 +176,13 @@ const TopBarActions = ({
             recovery button for whatever leaves the window short of filling
             the monitor; hidden once it already is (`isFullscreen`). */}
         {!isFullscreen && (
-            <Tooltip label={fullscreenTitle} align="end">
+            <Tooltip label={fullscreenTitle} side="bottom" align="end">
                 <button className="iconbtn" onClick={onFillScreen}>
                     ⛶
                 </button>
             </Tooltip>
         )}
-        <Tooltip label={closeTitle} align="end">
+        <Tooltip label={closeTitle} side="bottom" align="end">
             <button className="iconbtn" onClick={onClose}>
                 ✕
             </button>
@@ -213,7 +218,7 @@ interface PinToggleProps {
 // relaunch always comes back to the config's own default, exactly as the
 // "temporary" ask wants.
 const PinToggle = ({ pinned, onToggle, labelOn, labelOff }: PinToggleProps) => (
-    <Tooltip label={pinned ? labelOn : labelOff}>
+    <Tooltip label={pinned ? labelOn : labelOff} side="bottom">
         <button
             className="iconbtn"
             aria-pressed={pinned}
@@ -232,6 +237,7 @@ interface TabContentProps {
     onNavigateToCameras: () => void;
     onResetTicketSeries: (startSeq: number) => Promise<{ Epoch: number }>;
     onAddLanguagePack: (pack: LanguagePack) => Promise<void>;
+    onDeleteLanguagePack: (code: string) => Promise<void>;
     /** `useLicense().isGated` — the one place licensing actually changes what the operator can do; see WeighingScreen's own `licenseGated` prop comment. */
     licenseGated: boolean;
     /** See ReportsScreen's own `reportsIntent` prop comment. */
@@ -249,6 +255,7 @@ const TabContent = ({
     onNavigateToCameras,
     onResetTicketSeries,
     onAddLanguagePack,
+    onDeleteLanguagePack,
     licenseGated,
     reportsIntent,
 }: TabContentProps) => {
@@ -272,6 +279,7 @@ const TabContent = ({
                 <SettingsScreen
                     onResetTicketSeries={onResetTicketSeries}
                     onAddLanguagePack={onAddLanguagePack}
+                    onDeleteLanguagePack={onDeleteLanguagePack}
                 />
             );
         case "cameras":
@@ -436,6 +444,8 @@ const useDraftLabelSync = (t: ReturnType<typeof useTranslation>["t"]): void => {
 interface ShellProps {
     /** Owned at App level — the loaded/live pack list lives above I18nProvider, which is above Shell. */
     onAddLanguagePack: (pack: LanguagePack) => Promise<void>;
+    /** Owned at App level, same reason as `onAddLanguagePack` — task: "delete the package". */
+    onDeleteLanguagePack: (code: string) => Promise<void>;
     /** Owned at App level, same "one instance per app, not per Shell render" shape as every other `@engines/*` source below. */
     windowPin: WindowPinSource;
 }
@@ -518,6 +528,7 @@ interface ShellBodyProps {
     onNavigateToReports: () => void;
     resetTicketSeries: ReturnType<typeof useShellTicketActions>["resetTicketSeries"];
     onAddLanguagePack: (pack: LanguagePack) => Promise<void>;
+    onDeleteLanguagePack: (code: string) => Promise<void>;
     reportsIntent: ReturnType<typeof useReportsNavigation>["reportsIntent"];
     helpOpen: boolean;
     setHelpOpen: (open: boolean) => void;
@@ -527,7 +538,7 @@ const ShellBody = (props: ShellBodyProps) => {
     const {
         settings, activeTab, setActiveTab, topRight, reading, lang, t, license,
         ticket, openTicket, onNavigateToReports, resetTicketSeries,
-        onAddLanguagePack, reportsIntent, helpOpen, setHelpOpen,
+        onAddLanguagePack, onDeleteLanguagePack, reportsIntent, helpOpen, setHelpOpen,
     } = props;
     return (
         <AppShell
@@ -572,6 +583,7 @@ const ShellBody = (props: ShellBodyProps) => {
                 }}
                 onResetTicketSeries={resetTicketSeries}
                 onAddLanguagePack={onAddLanguagePack}
+                onDeleteLanguagePack={onDeleteLanguagePack}
                 licenseGated={license.isGated}
                 reportsIntent={reportsIntent}
             />
@@ -586,8 +598,8 @@ const ShellBody = (props: ShellBodyProps) => {
     );
 };
 
-const Shell = ({ onAddLanguagePack, windowPin }: ShellProps) => {
-    const { t, lang, setLang, packs } = useTranslation();
+const Shell = ({ onAddLanguagePack, onDeleteLanguagePack, windowPin }: ShellProps) => {
+    const { t, lang, setLang, packs, otherLangCode } = useTranslation();
     const [activeTab, setActiveTab] = useState<(typeof TAB_KEYS)[number]>("weigh");
     const [helpOpen, setHelpOpen] = useState(false);
     const reading = useIndicatorReading();
@@ -596,7 +608,16 @@ const Shell = ({ onAddLanguagePack, windowPin }: ShellProps) => {
     const license = useLicense();
     useRemoveInitialSplash(!settingsLoading);
     const ticket = useWeighingTicket(settings.OperatorName, settings.Rules.SameTicketNo);
-    const otherPack = packs.find((pack) => pack.Code !== "en") ?? null;
+    // Bug: "when another language is selected it to change the top language
+    // also" — used to always be "whichever non-`en` pack happens to be
+    // first", ignoring whatever Settings → Language's own picker
+    // (LanguageTableCard.tsx) had selected. Prefers `otherLangCode`
+    // (I18nProvider's shared state, set by that picker) whenever it still
+    // resolves to an installed pack; falls back to "first non-`en` pack" for
+    // the same two cases the old expression covered on its own — nothing
+    // picked yet, or the picked code's pack has since been deleted.
+    const otherPack =
+        packs.find((pack) => pack.Code === otherLangCode) ?? packs.find((pack) => pack.Code !== "en") ?? null;
     const { openTicket, resetTicketSeries } = useShellTicketActions(ticket, db, setActiveTab);
     const { reportsIntent, onNavigateToReports } = useReportsNavigation(setActiveTab);
     useDraftLabelSync(t);
@@ -625,6 +646,7 @@ const Shell = ({ onAddLanguagePack, windowPin }: ShellProps) => {
             onNavigateToReports={onNavigateToReports}
             resetTicketSeries={resetTicketSeries}
             onAddLanguagePack={onAddLanguagePack}
+            onDeleteLanguagePack={onDeleteLanguagePack}
             reportsIntent={reportsIntent}
             helpOpen={helpOpen}
             setHelpOpen={setHelpOpen}
@@ -991,7 +1013,17 @@ const useAppLanguagePacks = (db: ReturnType<typeof useDataPort>) => {
         setUploaded((prev) => [...prev.filter((existing) => existing.Code !== pack.Code), pack]);
     };
 
-    return { packs: mergeLanguagePacks(BUILT_IN_PACKS, uploaded), addLanguagePack };
+    // Task: "delete the package" — a real, admin-added pack (not one of
+    // `BUILT_IN_PACKS`, which ship in source and can't be removed) hard-
+    // deletes its own `config` row and drops out of the live list the same
+    // render pass, same "persist, then update local state" shape as
+    // `addLanguagePack` above.
+    const deleteLanguagePack = async (code: string): Promise<void> => {
+        await db.deleteConfig(languagePackConfigId(code));
+        setUploaded((prev) => prev.filter((existing) => existing.Code !== code));
+    };
+
+    return { packs: mergeLanguagePacks(BUILT_IN_PACKS, uploaded), addLanguagePack, deleteLanguagePack };
 };
 
 // Both loaded together on startup — split out of useAppTicketSchema purely
@@ -1089,7 +1121,7 @@ export const App = () => {
     const [licensing] = useState(() => createLicensingSource());
     const [scheduler] = useState(() => createSchedulerSource());
     const [windowPin] = useState(() => createWindowPinSource());
-    const { packs, addLanguagePack } = useAppLanguagePacks(db);
+    const { packs, addLanguagePack, deleteLanguagePack } = useAppLanguagePacks(db);
     const { ticketSchema, schemas, setTicketSchema, setActiveSchemaId, reloadTicketSchema } =
         useAppTicketSchema(db);
 
@@ -1118,7 +1150,11 @@ export const App = () => {
                                             <DailySummaryTaskSync scheduler={scheduler} />
                                             <HeadlessDailySummarySync scheduler={scheduler} />
                                             <OutboxWorkerSync />
-                                            <Shell onAddLanguagePack={addLanguagePack} windowPin={windowPin} />
+                                            <Shell
+                                                onAddLanguagePack={addLanguagePack}
+                                                onDeleteLanguagePack={deleteLanguagePack}
+                                                windowPin={windowPin}
+                                            />
                                         </SchemaProvider>
                                     </TunnelProvider>
                                 </VerificationServerProvider>

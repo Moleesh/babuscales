@@ -287,7 +287,15 @@ export const ticketReducer = (state: TicketState, action: TicketAction): TicketS
                 customFields: { ...state.customFields, TicketDate: action.ticketDateIso },
             };
         case "Lock":
-            return { ...state, isLocked: true };
+            // Also clears `justResumed` — a locked ticket (whether saved
+            // normally or force-locked by Reprint for a 1-capture doc, see
+            // `lock`'s own comment above) is no longer "waiting on a second
+            // capture", so SaveAndPrintRow's `!justResumed` gate shouldn't
+            // keep blocking Print for it. Without this, reprinting a
+            // 1-capture (parked) ticket left `justResumed` stuck `true` from
+            // `resumedState`, and Print/Save/Capture all stayed disabled
+            // despite `forcePrintEnabled`'s override — a dead-end reprint.
+            return { ...state, isLocked: true, justResumed: false };
         case "Resumed":
             return resumedState(action.doc);
         case "Printed":

@@ -17,6 +17,7 @@ import type {
     SummaryRow,
     TicketRow,
     TicketRowFilter,
+    TicketRowFilterCounts,
     TicketSortKey,
 } from "../reportRows";
 
@@ -46,11 +47,21 @@ export interface ReportsCardBodyProps {
     dateTo: string;
     onDateToChange: (date: string) => void;
     /** Reports' "include tickets from before the last reset" dropdown — see reportRows.ts's `filterRowsBySeries`/`listSeriesEpochOptions`. */
-    seriesEpoch: number | "current";
-    onSeriesEpochChange: (epoch: number | "current") => void;
+    seriesEpoch: number | "current" | "all";
+    onSeriesEpochChange: (epoch: number | "current" | "all") => void;
     seriesEpochOptions: SeriesEpochOption[];
+    /** Settings' `Rules.ShowSeriesInReports` — task: "Add a config for
+     * showing the series in report, only then user can use it, it hidden
+     * behind the flag". Off (default): the Series dropdown is withheld from
+     * ReportsDateRangeRow entirely (it self-hides when
+     * `onSeriesEpochChange`/`seriesEpochOptions` are absent) — Reports stays
+     * on its current-series default with no control to change it. */
+    showSeriesEpoch: boolean;
     /** Settings' `Formats.DateFmt`, passed straight through to ReportsDateRangeRow's DatePicker pair. */
     dateFmt: string;
+    /** Per-status sub-counts (All/Waiting/Both) for the Tickets filter chips
+     * — see useReportsScreenData.ts's own `filterCounts`. */
+    filterCounts: TicketRowFilterCounts;
     groupBy: GroupKey;
     onGroupByChange: (groupBy: GroupKey) => void;
     ticketColumns: DataTableColumn<TicketRow>[];
@@ -132,6 +143,66 @@ const useStickyFiltersHeight = (
     }, [bodyRef, filtersRef]);
 };
 
+type ReportsFilterBarProps = Pick<
+    ReportsCardBodyProps,
+    | "dateFrom"
+    | "onDateFromChange"
+    | "dateTo"
+    | "onDateToChange"
+    | "seriesEpoch"
+    | "onSeriesEpochChange"
+    | "seriesEpochOptions"
+    | "showSeriesEpoch"
+    | "dateFmt"
+    | "savedReportActions"
+    | "onEditSavedReport"
+    | "reportApplied"
+>;
+
+// The saved-views dropdown + date-range/series row — pulled out of
+// ReportsCardBody purely to stay under its own line budget.
+const ReportsFilterBar = ({
+    dateFrom,
+    onDateFromChange,
+    dateTo,
+    onDateToChange,
+    seriesEpoch,
+    onSeriesEpochChange,
+    seriesEpochOptions,
+    showSeriesEpoch,
+    dateFmt,
+    savedReportActions,
+    onEditSavedReport,
+    reportApplied,
+}: ReportsFilterBarProps) => (
+    <div className={styles.filterBar}>
+        <SavedReportsRow
+            savedReports={savedReportActions.savedReports}
+            selectedId={savedReportActions.selectedId}
+            // Bug: "if we change any quick filter it goes back to select
+            // saved instead of saying dynamic" — `reportApplied` is exactly
+            // "a report was explicitly asked for at some point and has never
+            // gone back to the empty state" (useReportsScreenController.ts's
+            // own doc comment on it), so `selectedId === null` alongside it
+            // means "diverged from that report", not "never picked one".
+            dynamic={reportApplied}
+            onRecall={savedReportActions.handleRecallReport}
+            onDelete={savedReportActions.handleDeleteReport}
+            onEdit={onEditSavedReport}
+        />
+        <ReportsDateRangeRow
+            dateFrom={dateFrom}
+            onDateFromChange={onDateFromChange}
+            dateTo={dateTo}
+            onDateToChange={onDateToChange}
+            seriesEpoch={showSeriesEpoch ? seriesEpoch : undefined}
+            onSeriesEpochChange={showSeriesEpoch ? onSeriesEpochChange : undefined}
+            seriesEpochOptions={showSeriesEpoch ? seriesEpochOptions : undefined}
+            dateFmt={dateFmt}
+        />
+    </div>
+);
+
 // Split out of ReportsScreen (over the line/complexity budget —
 // docs/CodingStandards.md) — the Card's body: saved-reports row and the
 // active view (Tickets or Summary). The Print/Export button row moved out
@@ -144,7 +215,9 @@ export const ReportsCardBody = ({
     seriesEpoch,
     onSeriesEpochChange,
     seriesEpochOptions,
+    showSeriesEpoch,
     dateFmt,
+    filterCounts,
     savedReportActions,
     onEditSavedReport,
     ...view
@@ -163,25 +236,20 @@ export const ReportsCardBody = ({
             one line (Reports rework, item 1) instead of each getting its
             own crowded row. */}
         <div className={styles.stickyFilters} ref={filtersRef}>
-            <div className={styles.filterBar}>
-                <SavedReportsRow
-                    savedReports={savedReportActions.savedReports}
-                    selectedId={savedReportActions.selectedId}
-                    onRecall={savedReportActions.handleRecallReport}
-                    onDelete={savedReportActions.handleDeleteReport}
-                    onEdit={onEditSavedReport}
-                />
-                <ReportsDateRangeRow
-                    dateFrom={dateFrom}
-                    onDateFromChange={onDateFromChange}
-                    dateTo={dateTo}
-                    onDateToChange={onDateToChange}
-                    seriesEpoch={seriesEpoch}
-                    onSeriesEpochChange={onSeriesEpochChange}
-                    seriesEpochOptions={seriesEpochOptions}
-                    dateFmt={dateFmt}
-                />
-            </div>
+            <ReportsFilterBar
+                dateFrom={dateFrom}
+                onDateFromChange={onDateFromChange}
+                dateTo={dateTo}
+                onDateToChange={onDateToChange}
+                seriesEpoch={seriesEpoch}
+                onSeriesEpochChange={onSeriesEpochChange}
+                seriesEpochOptions={seriesEpochOptions}
+                showSeriesEpoch={showSeriesEpoch}
+                dateFmt={dateFmt}
+                savedReportActions={savedReportActions}
+                onEditSavedReport={onEditSavedReport}
+                reportApplied={view.reportApplied}
+            />
             {view.view === "tickets" && (
                 <TicketsFilterRow
                     query={view.query}
@@ -192,6 +260,7 @@ export const ReportsCardBody = ({
                     onSortKeyChange={view.onSortKeyChange}
                     sortDir={view.sortDir}
                     onSortDirChange={view.onSortDirChange}
+                    filterCounts={filterCounts}
                 />
             )}
         </div>

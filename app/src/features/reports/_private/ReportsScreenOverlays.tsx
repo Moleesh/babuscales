@@ -7,7 +7,7 @@ import { ReportsActionsRow } from "./ReportsActionsRow";
 import { TicketsPaginationRow } from "./TicketsView";
 import type { UseSavedReportActions } from "./useSavedReportActions";
 import styles from "../_styles/ReportsScreen.module.css";
-import type { GroupKey, ReportView, TicketRowFilter } from "../reportRows";
+import type { GroupKey, ReportView, SeriesEpochOption, TicketRowFilter } from "../reportRows";
 
 export interface ReportsScreenOverlaysProps {
     reportSlipData: ReportSlipData;
@@ -27,6 +27,15 @@ export interface ReportsScreenOverlaysProps {
     filter: TicketRowFilter;
     dateFrom: string;
     dateTo: string;
+    /** Task: "Add series to create report as well so it saved too" —
+     * threaded down to ReportBuilderModal the same way `filter`/`dateFrom`
+     * already are. */
+    seriesEpoch: number | "current" | "all";
+    seriesEpochOptions: SeriesEpochOption[];
+    /** Settings' `Rules.ShowSeriesInReports` — task: "Add a config for
+     * showing the series in report, only then user can use it, it hidden
+     * behind the flag". Threaded straight to ReportBuilderModal. */
+    showSeriesEpoch: boolean;
     visibleColumnKeys: string[] | null;
     savedReportActions: UseSavedReportActions;
 }
@@ -85,6 +94,9 @@ export const ReportsScreenOverlays = ({
     filter,
     dateFrom,
     dateTo,
+    seriesEpoch,
+    seriesEpochOptions,
+    showSeriesEpoch,
     visibleColumnKeys,
     savedReportActions,
     pageIndex,
@@ -125,6 +137,9 @@ export const ReportsScreenOverlays = ({
             initialFilter={editingDef ? (editingDef.Filter as TicketRowFilter) : filter}
             initialDateFrom={editingDef ? (editingDef.DateFrom ?? "") : dateFrom}
             initialDateTo={editingDef ? (editingDef.DateTo ?? "") : dateTo}
+            initialSeriesEpoch={editingDef ? (editingDef.SeriesEpoch ?? "current") : seriesEpoch}
+            seriesEpochOptions={seriesEpochOptions}
+            showSeriesEpoch={showSeriesEpoch}
             initialVisibleColumnKeys={
                 editingDef ? (editingDef.Columns ? editingDef.Columns.split(",").filter(Boolean) : null) : visibleColumnKeys
             }

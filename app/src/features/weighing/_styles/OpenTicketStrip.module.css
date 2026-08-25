@@ -15,10 +15,6 @@
    its own opaque background since sticky content still sits above whatever
    scrolls underneath it. */
 .strip {
-    display: flex;
-    align-items: center;
-    gap: 9px;
-    padding: 7px 11px 10px;
     /* `flex: 0 1 auto` + `min-width: 0` (not `flex: none`) — `.screen`
        switched from `display: grid` to a column flex container, where a
        flex item's default cross-axis minimum is its own content width
@@ -33,10 +29,25 @@
     border: 1px solid var(--line);
     border-radius: var(--radius);
     background: var(--panel);
-    overflow-x: auto;
     position: sticky;
     top: var(--shell-header-h, 0px);
     z-index: 2;
+}
+
+/* Task: "like how we solved the issue with dragging the vertical scroll
+   shwoing native cursor we need to fix the horizotal as well" — mirrors
+   DataTable.module.css's `.wrapperOuter`/`.wrapper` split: `.strip` above
+   stays the outer sticky/bordered box (its rendered box is what
+   OpenTicketStrip.tsx's `containerRef` measures for WeighingBody's sticky
+   height math, so it must keep no `overflow` of its own), and this inner
+   class is the actual `overflow-x` region ScrollArea draws its custom,
+   cursor-safe thumb over. */
+.stripContent {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 7px 11px 10px;
+    overflow-x: auto;
 }
 
 .label {

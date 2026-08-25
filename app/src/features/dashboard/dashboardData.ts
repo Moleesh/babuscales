@@ -164,13 +164,27 @@ export const computeActivityBuckets = (
 export interface DashboardKpis {
     ticketsToday: number;
     netTonnesToday: number;
-    /** Parked, one-weight tickets. Counted across all days, not just today: an open ticket from yesterday is still waiting. */
+    /** Parked, one-weight tickets. Counted across all days, not just today —
+     * an open ticket from yesterday is still waiting — but, per task "We
+     * dont want all series as a defult for all these case it should be
+     * only on the current series, do it all the places", scoped to the
+     * active numbering series the same as every other figure here: a
+     * ticket "backed" by a prior "Reset the counter now" no longer counts
+     * as waiting on the current shift. */
     waitingCount: number;
     avgNetKgPerTicket: number;
     /** The mock's "Charge collected" KPI — real now (engines/billing), though still the flat per-ticket rate, not a per-vehicle-type/material one. */
     chargeToday: number;
 }
 
+/** Task: "hope dashboar is using the current instease data not from backed
+ * up records" — `rows` must already be scoped to the active numbering
+ * series (`Numbering.CurrentEpoch`, filtered by the caller via
+ * `filterRowsBySeries`, matching Reports' own default view). Tickets from a
+ * prior "Reset the counter now" generation ("backed" data — settingsSchema.ts's
+ * own `CurrentEpoch` doc comment) never pad any figure below, `waitingCount`
+ * included (task: "do it all the places" — current-series is the default
+ * everywhere, not just tonnage/throughput). */
 export const computeDashboardKpis = (
     rows: TicketRow[],
     referenceIso: string,

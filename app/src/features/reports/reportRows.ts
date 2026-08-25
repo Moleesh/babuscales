@@ -181,10 +181,36 @@ export const listSeriesEpochOptions = (
     ];
 };
 
-export const filterOptions = (t: Translate): { value: TicketRowFilter; label: string }[] => [
-    { value: "all", label: t("reports.filter.all") },
-    { value: "half", label: t("reports.filter.half") },
-    { value: "both", label: t("reports.filter.both") },
+export interface TicketRowFilterCounts {
+    all: number;
+    half: number;
+    both: number;
+}
+
+/** How many rows each `TicketRowFilter` chip would show — task: "you can add
+ * the sub counts here too All / Waiting for the second weight / Both
+ * weights". `rows` should already be scoped to the date range/series/search
+ * text (useReportsScreenData.ts's `filterCounts`), but NOT to the status
+ * filter itself — that's exactly the one axis this is counting across, so
+ * counting `dateFilteredRows` post-status-filter would make every option but
+ * the currently-selected one wrong. */
+export const countTicketRowsByFilter = (rows: TicketRow[]): TicketRowFilterCounts => ({
+    all: rows.length,
+    half: rows.filter((row) => row.isOpen).length,
+    both: rows.filter((row) => row.netKg !== null).length,
+});
+
+/** `counts` optional so every other `SegmentedControl` caller pattern
+ * (view/group options, this file's own `viewOptions`/`groupOptions`) is
+ * unaffected — passing it appends each option's own count in parentheses,
+ * e.g. "All (308)". `SegmentedControl`'s `label` is a plain `string`
+ * (shared by Masters/Settings/Dashboard, not worth widening to `ReactNode`
+ * for one caller), so the count is baked into the label text itself rather
+ * than rendered as a separate badge. */
+export const filterOptions = (t: Translate, counts?: TicketRowFilterCounts): { value: TicketRowFilter; label: string }[] => [
+    { value: "all", label: counts ? `${t("reports.filter.all")} (${counts.all})` : t("reports.filter.all") },
+    { value: "half", label: counts ? `${t("reports.filter.half")} (${counts.half})` : t("reports.filter.half") },
+    { value: "both", label: counts ? `${t("reports.filter.both")} (${counts.both})` : t("reports.filter.both") },
 ];
 
 export type TicketSortKey = "at" | "docSeq" | "vehicleNo" | "party" | "material" | "netKg" | "charge";

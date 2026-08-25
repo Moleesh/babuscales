@@ -18,10 +18,19 @@ export interface OpenTicketSummary {
     capturedAt: string;
 }
 
-/** The open-ticket strip: every ticket parked with exactly one weight. */
-export const listOpenTickets = (docs: DocRow[]): OpenTicketSummary[] =>
+/** The open-ticket strip: every ticket parked with exactly one weight, in
+ * the active numbering series. Task: "We dont want all series as a defult
+ * for all these case it should be only on the current series, do it all
+ * the places" — a ticket "backed" by a prior "Reset the counter now" no
+ * longer shows up here to be (mistakenly) resumed against the current
+ * shift's numbering. `currentEpoch` is optional, defaulting to "every
+ * series", only so `findLatestTicketForVehicle` below (fill-from-history,
+ * a deliberately unscoped lookup) doesn't need its own copy of this
+ * filter. */
+export const listOpenTickets = (docs: DocRow[], currentEpoch?: number): OpenTicketSummary[] =>
     docs
         .filter((doc) => !doc.IsCancelled)
+        .filter((doc) => currentEpoch === undefined || doc.SeriesEpoch === currentEpoch)
         .map((doc) => ({ doc, body: parseTicketBody(doc.Body) }))
         .filter(({ doc, body }) => isOpenTicket(doc.IsCancelled, body.Captures))
         .map(({ doc, body }) => {
@@ -36,13 +45,15 @@ export const listOpenTickets = (docs: DocRow[]): OpenTicketSummary[] =>
         })
         .sort((a, b) => b.doc.UpdatedAt.localeCompare(a.doc.UpdatedAt));
 
-/** "That vehicle has a ticket awaiting its second weight." */
+/** "That vehicle has a ticket awaiting its second weight." Current-series
+ * scoped — same reasoning as `listOpenTickets` above. */
 export const findOpenTicketForVehicle = (
     docs: DocRow[],
     vehicleNo: string,
+    currentEpoch?: number,
 ): OpenTicketSummary | undefined =>
     vehicleNo.trim()
-        ? listOpenTickets(docs).find((t) => sameVehicle(t.body.VehicleNo ?? "", vehicleNo))
+        ? listOpenTickets(docs, currentEpoch).find((t) => sameVehicle(t.body.VehicleNo ?? "", vehicleNo))
         : undefined;
 
 export interface PreviousTicketSummary {

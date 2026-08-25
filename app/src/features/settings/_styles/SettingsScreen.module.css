@@ -1,8 +1,44 @@
+/* Task: "we have scrolling issue again in this tab as well as in Field &
+   print" — this used to be a plain `display: grid` with no height of its
+   own, so a tall pane (the Language table, the Field-schema editor) just
+   grew `.screen` past the viewport and `.main` (AppShell.module.css) picked
+   that up as an ordinary page scroll, stacked on top of the DataTable's own
+   internal 65vh-capped scroll (`.wrapper`, DataTable.module.css) — the same
+   "double scroll" shape Masters/Reports already hit and fixed
+   (MastersScreen.module.css's own doc comment). A real `height` (a ceiling,
+   not a floor) + `flex-direction: column` forces `.pane-area` below to
+   shrink into the leftover budget and do the one scroll itself, same
+   reasoning as Masters' `.screen`. */
+/* Bug: "double scroll bar in pretty much all tabs" — this only ever
+   subtracted `--shell-header-h` (the sticky weight readout inside `.main`);
+   it never accounted for the top bar itself (`--shell-topbar-h`,
+   AppShell.tsx — this screen's own `100vh` includes that bar's height, but
+   `.main`'s available space, what this box actually has to fit in,
+   doesn't) or the 24px + 12px that AppShell.module.css's shared `.screen`
+   wrapper (padding) and `.main` (flex `gap`) add around this one. Coming
+   out taller than the room actually left made `.main` pick up a second,
+   several-dozen-pixel scroll underneath `.pane-area`'s own complete one. */
 .screen {
+    height: calc(100vh - var(--shell-topbar-h, 0px) - var(--shell-header-h, 0px) - 36px);
     padding: 12px;
-    display: grid;
+    display: flex;
+    flex-direction: column;
     gap: 12px;
-    align-content: start;
+    min-width: 0;
+}
+
+/* The one scroll region for whichever pane is active — sibling of
+   `.top-row`/the lock banner, which now stay permanently visible instead of
+   scrolling away with the pane content underneath them. Panes that don't
+   need a table's own internal scroll (Business & Appearance, Weighing, …)
+   just render shorter than this box and never trigger it; Language/Fields &
+   Print override their own DataTable's `--datatable-max-height` to `none`
+   (see LanguagePane.module.css/FieldsLanguagePane.module.css) so this is the
+   only scrollbar for those, not a second one nested inside it. */
+.pane-area {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
 }
 
 .top-row {

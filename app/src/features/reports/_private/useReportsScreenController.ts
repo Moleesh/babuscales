@@ -42,6 +42,14 @@ export interface UseReportsScreenControllerArgs {
      * so clicking the same tile twice in a row re-applies the filter even
      * if the operator had since changed it by hand. */
     reportsIntent: { kind: "waiting"; nonce: number } | null;
+    /** Settings' `Rules.ShowSeriesInReports` — task: "Add a config for
+     * showing the series in report, only then user can use it, it hidden
+     * behind the flag". Passed straight through to the return value;
+     * ReportsCardBody/ReportBuilderModal use it to decide whether the
+     * Series dropdown/field renders at all. Doesn't affect `seriesEpoch`'s
+     * own default ("current") — the flag only hides the control, not the
+     * underlying scoping behaviour. */
+    showSeriesEpoch: boolean;
 }
 
 // Split out of useReportsScreenController (over the line/complexity budget —
@@ -61,7 +69,7 @@ const useReportsScreenFilters = () => {
     // *only* that series, never a merge across series (reportRows.ts's
     // `filterRowsBySeries` doc comment). Plain local state, not persisted,
     // same as every other filter here.
-    const [seriesEpoch, setSeriesEpoch] = useState<number | "current">("current");
+    const [seriesEpoch, setSeriesEpoch] = useState<number | "current" | "all">("current");
     const [groupBy, setGroupBy] = useState<GroupKey>("material");
     const [printOpen, setPrintOpen] = useState(false);
     const [builderOpen, setBuilderOpen] = useState(false);
@@ -159,7 +167,11 @@ const useReportsIntentEffect = (
     reportsIntent: { kind: "waiting"; nonce: number } | null,
     setView: (view: ReportView) => void,
     setFilter: (filter: TicketRowFilter) => void,
+    setDateFrom: (dateFrom: string) => void,
+    setDateTo: (dateTo: string) => void,
+    setSeriesEpoch: (seriesEpoch: number | "current" | "all") => void,
     setReportApplied: (applied: boolean) => void,
+    clearSelection: () => void,
 ): void => {
     // Deliberately keyed on `reportsIntent` alone (not `setView`/`setFilter`,
     // which are stable setState identities anyway) — this should fire once
@@ -168,6 +180,26 @@ const useReportsIntentEffect = (
         if (reportsIntent?.kind === "waiting") {
             setView("tickets");
             setFilter("half");
+            // Bug: "when click from dashboard on waiting for second waiting
+            // the saved view [is] not [de]selected" — this applies a filter
+            // batch directly, not via `handleRecallReport`, so it must clear
+            // whichever saved view the dropdown was showing itself — see
+            // `clearSelection`'s own doc comment (useSavedReportActions.ts).
+            clearSelection();
+            // Task: "i have 19 waiting on second wait when i click it
+            // alwyas brings 5 back" — this tile is a *different* entry
+            // point than Reports' own header waiting chip (`showWaiting`
+            // below), which already had this exact fix for the same
+            // mismatch. Then: "We dont want all series as a defult for all
+            // these case it should be only on the current series, do it
+            // all the places" — Dashboard's waitingCount is now
+            // current-series scoped (dashboardData.ts's own doc comment),
+            // so this resets to `"current"`, not `"all"`, to keep landing
+            // here agreeing with the chip's own number. Clearing the date
+            // range still matters — it's an all-date count.
+            setDateFrom("");
+            setDateTo("");
+            setSeriesEpoch("current");
             // Reports rework, item 3 — arriving here via the Dashboard tile
             // is itself "otherwise explicitly requesting a report" (the
             // operator clicked a KPI asking for exactly this data), so it
@@ -175,7 +207,7 @@ const useReportsIntentEffect = (
             // state.
             setReportApplied(true);
         }
-    }, [reportsIntent, setView, setFilter, setReportApplied]);
+    }, [reportsIntent, setView, setFilter, setDateFrom, setDateTo, setSeriesEpoch, setReportApplied, clearSelection]);
 };
 
 // Split out of useReportsScreenController (over the line/complexity budget —
@@ -189,6 +221,7 @@ const useReportsScreenDerivedData = (
     const { db, docs, onOpenTicket, amountDp, weightUnit, dateFmt, timeFmt, currentEpoch, styles, t, lang, schemaFields } = args;
     const { view, groupBy, filter, setView, setGroupBy, setFilter, dateFrom, dateTo, setDateFrom, setDateTo, visibleColumnKeys, setVisibleColumnKeys } =
         filters;
+    const { seriesEpoch, setSeriesEpoch } = filters;
 
     const savedReportActions = useSavedReportActions({
         db,
@@ -198,12 +231,14 @@ const useReportsScreenDerivedData = (
         dateFrom,
         dateTo,
         visibleColumnKeys,
+        seriesEpoch,
         setView,
         setGroupBy,
         setFilter,
         setDateFrom,
         setDateTo,
         setVisibleColumnKeys,
+        setSeriesEpoch,
         // Reports rework, item 3 — recalling a saved view or saving+applying
         // the builder's draft both count as "the operator explicitly asked
         // for a report", so both flip the screen out of its empty state.
@@ -233,10 +268,10 @@ const useReportsScreenDerivedData = (
 // existing derived-data/handler hooks (useSavedReportActions,
 // useReportsScreenData) so ReportsScreen itself only calls one hook.
 export const useReportsScreenController = (args: UseReportsScreenControllerArgs) => {
-    const { dateFmt, reportsIntent } = args;
+    const { dateFmt, reportsIntent, showSeriesEpoch } = args;
     const filters = useReportsScreenFilters();
     const { setView, setFilter, query, filter, dateFrom, dateTo, sortKey, sortDir, setPageIndex, setReportApplied } = filters;
-    const { setBuilderOpen, setEditingReportId } = filters;
+    const { setBuilderOpen, setEditingReportId, setDateFrom, setDateTo, setSeriesEpoch } = filters;
     const { savedReportActions, screenData } = useReportsScreenDerivedData(filters, args);
 
     // Task: "edit save report should open the create report in edit form" —
@@ -249,13 +284,41 @@ export const useReportsScreenController = (args: UseReportsScreenControllerArgs)
     // The header's own "waiting for a second weight" chip (waitingCount) —
     // clicking it is an explicit request for a report the same as recalling
     // a saved view (item 3), so it also leaves the empty state.
+    // Task: "When i click on it only bring 14 records either the count is
+    // wront some other issue" — waitingCount is a global count over every
+    // ticket ever entered (useReportsScreenData.ts's own comment on it), but
+    // this used to leave whatever date range/series scope was already
+    // selected in place, so the resulting table could legitimately show
+    // fewer rows than the chip promised. Clearing the date range here makes
+    // the chip's own number and what it navigates to agree.
+    // Task: "We dont want all series as a defult for all these case it
+    // should be only on the current series, do it all the places" —
+    // waitingCount (useReportsScreenData.ts) is now current-series scoped
+    // like everything else, so this resets to `"current"` rather than
+    // `"all"` to keep the chip's own number and what it navigates to in
+    // agreement.
     const showWaiting = (): void => {
         setView("tickets");
         setFilter("half");
+        setDateFrom("");
+        setDateTo("");
+        setSeriesEpoch("current");
         setReportApplied(true);
+        // Same reasoning as useReportsIntentEffect's own copy of this call —
+        // this applies a filter batch directly, bypassing handleRecallReport.
+        savedReportActions.clearSelection();
     };
 
-    useReportsIntentEffect(reportsIntent, setView, setFilter, setReportApplied);
+    useReportsIntentEffect(
+        reportsIntent,
+        setView,
+        setFilter,
+        setDateFrom,
+        setDateTo,
+        setSeriesEpoch,
+        setReportApplied,
+        savedReportActions.clearSelection,
+    );
     useResetPageOnFilterChange({ setPageIndex, query, filter, dateFrom, dateTo, sortKey, sortDir });
 
     // The builder can also be closed via its own X/backdrop/Cancel (not just
@@ -267,7 +330,16 @@ export const useReportsScreenController = (args: UseReportsScreenControllerArgs)
         setEditingReportId(null);
     };
 
-    return { ...filters, savedReportActions, showWaiting, openReportForEdit, closeBuilder, dateFmt, ...screenData };
+    return {
+        ...filters,
+        savedReportActions,
+        showWaiting,
+        openReportForEdit,
+        closeBuilder,
+        dateFmt,
+        showSeriesEpoch,
+        ...screenData,
+    };
 };
 
 export type UseReportsScreenController = ReturnType<typeof useReportsScreenController>;

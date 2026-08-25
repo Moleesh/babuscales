@@ -13,6 +13,10 @@ export interface UseRecallOffersArgs {
     allTicketDocs: DocRow[];
     storedTareCache: UseMasterCache;
     strictTare: boolean;
+    /** Settings' `Numbering.CurrentEpoch` — task: "do it all the places" —
+     * scopes the "resume an open ticket" offer to the active numbering
+     * series, same as the open-ticket strip (recall.ts's own comment). */
+    currentEpoch: number;
     lang: string;
     t: (key: string) => string;
     weightUnit: WeightUnit;
@@ -28,6 +32,7 @@ export const useRecallOffers = ({
     allTicketDocs,
     storedTareCache,
     strictTare,
+    currentEpoch,
     lang,
     t,
     weightUnit,
@@ -41,11 +46,12 @@ export const useRecallOffers = ({
                 allTicketDocs,
                 storedTareCache,
                 strictTare,
+                currentEpoch,
                 lang,
                 t,
                 weightUnit,
                 dateFmt,
                 timeFmt,
             }),
-        [ticket, allTicketDocs, storedTareCache, strictTare, lang, t, weightUnit, dateFmt, timeFmt],
+        [ticket, allTicketDocs, storedTareCache, strictTare, currentEpoch, lang, t, weightUnit, dateFmt, timeFmt],
     );

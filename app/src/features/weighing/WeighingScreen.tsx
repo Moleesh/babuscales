@@ -213,7 +213,7 @@ const useWeighingScreenState = (ticket: UseWeighingTicket, licenseGated: boolean
     const { ticketSchema } = useSchema();
 
     const { caches, allTicketDocs, ticketsLoading, openTickets, bumpRefresh, handleResume, handleSave } =
-        useWeighingScreenTickets(ticket);
+        useWeighingScreenTickets(ticket, settings.Numbering.CurrentEpoch);
 
     const { armed, recallOffers, billing, handlePrint, slipData } = useWeighingScreenDerived({
         ticket,
@@ -290,9 +290,10 @@ const usePrintModals = () => {
 // closure) is still needed before the Print button can be focused/enabled
 // for the *found* ticket. `forcePrintEnabled` stays true — bypassing
 // SaveAndPrintRow's normal `printCount === 0` gate for an already-printed
-// ticket — until the operator actually uses Print (or starts fresh), at
-// which point `clearForcePrintEnabled` (called from Print's own onClick,
-// and from "New ticket") turns the override back off.
+// ticket — until the operator actually uses Print or starts fresh, at
+// which point the `captures.length === 0` effect below (both "New ticket"
+// and the print-modal's onClose empty captures via `ticket.startNew()`)
+// turns the override back off.
 const useReprintFlow = (ticket: UseWeighingTicket) => {
     const [pendingDocId, setPendingDocId] = useState<string | null>(null);
     const [forcePrintEnabled, setForcePrintEnabled] = useState(false);
@@ -316,13 +317,7 @@ const useReprintFlow = (ticket: UseWeighingTicket) => {
         ticket.lock();
         setPendingDocId(doc.DocId);
     };
-    // Print actually being used (whether via the override or the normal
-    // gate) is the other "done with this override" signal — without this,
-    // a reprinted ticket's Print button would stay force-enabled for
-    // additional reprints of the very same ticket instead of falling back
-    // to the normal printCount gate.
-    const clearForcePrintEnabled = (): void => setForcePrintEnabled(false);
-    return { reprint, forcePrintEnabled, clearForcePrintEnabled };
+    return { reprint, forcePrintEnabled };
 };
 
 export const WeighingScreen = ({ ticket, licenseGated, onNavigateToCameras }: WeighingScreenProps) => {

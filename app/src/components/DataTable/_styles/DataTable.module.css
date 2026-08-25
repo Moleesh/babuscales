@@ -53,6 +53,30 @@
     flex: 1 1 auto;
 }
 
+/* ScrollArea's own positioning wrapper (`.area`, ScrollArea.module.css) has
+   no sizing of its own — it needs these same flex/height rules to actually
+   shrink as a flex item of a fill-mode ancestor (Masters' `.body-fill-inner`),
+   or it just grows to fit every row and the real scroll container underneath
+   (`.wrapper` above, on `.content`) never gets a chance to clip anything.
+   Deliberately NOT `overflow-x`/`-y` here, though — duplicating that too
+   would make this outer div *itself* start scrolling (with a visible native
+   scrollbar, since only `.content::-webkit-scrollbar` hides one) instead of
+   just sizing correctly around the real, custom-scrollbar `.content` div
+   inside it. */
+.wrapperOuter {
+    /* `display: flex; flex-direction: column` — so the inner `.content`
+       div (its only child, also carrying `.wrapper`'s own `flex: 1 1 auto`)
+       actually stretches to fill this box instead of staying sized to its
+       own unbounded content; without this, `.wrapperOuter` would size
+       correctly but the real scroll container inside it still wouldn't. */
+    display: flex;
+    flex-direction: column;
+    max-height: var(--datatable-max-height, 65vh);
+    min-height: var(--datatable-min-height, 0);
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
 .table {
     width: 100%;
     border-collapse: collapse;
@@ -110,4 +134,15 @@
 
 .clickable {
     cursor: pointer;
+}
+
+/* Keeps the empty-state message pinned to the visible viewport when the
+   header row above it overflows horizontally — see DataTable.tsx's own
+   comment. `left: 0` (not `inset-inline-start`, matching `.table th`'s own
+   plain `top` above) is enough on its own: sticky only needs one axis
+   constrained to stay put while its scroll container's inline content
+   scrolls underneath it. */
+.emptyPin {
+    position: sticky;
+    left: 0;
 }

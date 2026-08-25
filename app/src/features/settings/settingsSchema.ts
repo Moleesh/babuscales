@@ -64,6 +64,15 @@ const rulesSchema = z.object({
     // can turn it off. `.default()` — same "old settings row still parses"
     // reasoning as ShowSendLorry/ManualEntry/SameTicketNo above.
     ShowFormulaBreakdown: z.boolean().default(true),
+    // Task: "Add a config for showing the series in report, only then user
+    // can use it, it hidden behind the flag" — the Series scope dropdown
+    // (ReportsDateRangeRow.tsx) and the report-builder's own Series field
+    // (ReportBuilderModal.tsx) only render when this is on. Off by default:
+    // "current series only" is now the fixed, hidden-away behaviour for
+    // everyone until an admin opts in — same "no behaviour change until an
+    // admin opts in" shape as `ManualEntry`. `.default(false)` — same "old
+    // settings row still parses" reasoning as every other field here.
+    ShowSeriesInReports: z.boolean().default(false),
 });
 export type WeighingRules = z.infer<typeof rulesSchema>;
 
@@ -391,6 +400,7 @@ export const DEFAULT_RULES: WeighingRules = {
     ManualEntry: false,
     SameTicketNo: true,
     ShowFormulaBreakdown: true,
+    ShowSeriesInReports: false,
 };
 
 export const DEFAULT_STABILITY: StabilityGate = {
@@ -516,5 +526,10 @@ export const ruleDefs = (t: (key: string) => string): readonly [key: keyof Weigh
         "ShowFormulaBreakdown",
         t("settings.weighingRules.showFormulaBreakdown.label"),
         t("settings.weighingRules.showFormulaBreakdown.note"),
+    ],
+    [
+        "ShowSeriesInReports",
+        t("settings.weighingRules.showSeriesInReports.label"),
+        t("settings.weighingRules.showSeriesInReports.note"),
     ],
 ];
