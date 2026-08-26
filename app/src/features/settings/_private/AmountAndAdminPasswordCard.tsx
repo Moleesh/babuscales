@@ -28,7 +28,9 @@ export const AmountAndAdminPasswordCard = ({
     const { t } = useTranslation();
 
     return (
-        <Card title={<span className="lbl">{t("settings.amountAdmin.title")}</span>}>
+        <Card
+            sticky
+            title={<span className="lbl">{t("settings.amountAdmin.title")}</span>}>
             <div className={styles.body}>
                 <AmountAndAdminPasswordFields
                     settings={settings}

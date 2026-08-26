@@ -22,7 +22,9 @@ export const IntegrationConfigCard = () => {
     const { t } = useTranslation();
 
     return (
-        <Card title={<span className="lbl">{t("settings.integrationConfig.title")}</span>}>
+        <Card
+            sticky
+            title={<span className="lbl">{t("settings.integrationConfig.title")}</span>}>
             <div className={styles.body}>
                 <WebhookTallyBoardFields
                     settings={settings}

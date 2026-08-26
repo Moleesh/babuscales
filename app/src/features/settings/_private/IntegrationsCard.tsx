@@ -19,6 +19,7 @@ export const IntegrationsCard = () => {
 
     return (
         <Card
+            sticky
             title={<span className="lbl">{t("settings.integrations.title")}</span>}
             headerRight={flash ? <span className={styles.applied}>{flash}</span> : null}
         >

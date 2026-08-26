@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { AppModal } from "@components/AppModal";
-import { Button } from "@components/Button";
 import { Card } from "@components/Card";
+import { ConfirmDeleteModal } from "@components/ConfirmDeleteModal";
 import { DataTable } from "@components/DataTable";
 import type { DataTableColumn } from "@components/DataTable";
 import { Select } from "@components/Select";
@@ -420,24 +420,15 @@ export const LanguageTableCard = ({
                 </AppModal>
             )}
             {selectedPack && (
-                <AppModal
+                <ConfirmDeleteModal
                     open={deleteConfirmOpen}
                     title={t("settings.languagePane.deleteConfirmTitle")}
-                    onClose={() => setDeleteConfirmOpen(false)}
-                    size="small"
-                >
-                    <div style={{ display: "grid", gap: 13 }}>
-                        <p>
-                            {t("settings.languagePane.deleteConfirm")} "{selectedPack.Name}"?
-                        </p>
-                        <div style={{ display: "flex", gap: 9, justifyContent: "flex-end" }}>
-                            <Button onClick={() => setDeleteConfirmOpen(false)}>{t("weigh.cancel")}</Button>
-                            <Button variant="danger" onClick={confirmDelete}>
-                                {t("settings.languagePane.deleteLabel")}
-                            </Button>
-                        </div>
-                    </div>
-                </AppModal>
+                    message={t("settings.languagePane.deleteConfirm")}
+                    name={selectedPack.Name}
+                    confirmLabel={t("settings.languagePane.deleteLabel")}
+                    onCancel={() => setDeleteConfirmOpen(false)}
+                    onConfirm={confirmDelete}
+                />
             )}
         </Card>
     );

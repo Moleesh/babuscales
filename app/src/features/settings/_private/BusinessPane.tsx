@@ -22,7 +22,9 @@ export const BusinessPane = () => {
 
     return (
         <div className={styles.grid}>
-            <Card title={<span className="lbl">{t("settings.business.title")}</span>}>
+            <Card
+            sticky
+            title={<span className="lbl">{t("settings.business.title")}</span>}>
                 <div className={styles.form}>
                     <Field id="setBizName" label={t("settings.business.name")}>
                         <input

@@ -36,6 +36,7 @@ export const DailySummaryCard = () => {
 
     return (
         <Card
+            sticky
             title={<span className="lbl">{t("settings.dailySummary.title")}</span>}
             headerRight={flash ? <span className={styles.applied}>{flash}</span> : null}
         >

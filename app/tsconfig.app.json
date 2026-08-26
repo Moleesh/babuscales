@@ -30,7 +30,8 @@
             "@db/*": ["src/db/*"],
             "@i18n/*": ["src/i18n/*"],
             "@styles/*": ["src/styles/*"],
-            "@constants/*": ["src/constants/*"]
+            "@constants/*": ["src/constants/*"],
+            "@hooks/*": ["src/hooks/*"]
         }
     },
     "include": ["src"]

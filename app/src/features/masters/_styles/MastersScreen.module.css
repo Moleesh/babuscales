@@ -43,8 +43,23 @@
    `.fill` table above actually left it; `overflow-y: auto` then contains
    any leftover overflow (an unusually tall form) inside this card's own
    scroll region instead of leaking back out to `.main`. */
-.form-card {
+/* Bug: "in settings we have page pretty much all tab has the wrong [scroll
+   bar]" — this used to be a plain `overflow-y: auto` div, the native
+   OS/browser scrollbar (arrows at each end) instead of the app's custom
+   draggable thumb. Now rendered through <ScrollArea> (MastersScreen.tsx),
+   same `.xxxOuter`/`.xxx` split as DataTable.module.css's
+   `.wrapper`/`.wrapperOuter`: `.form-card-outer` carries the flex-fill
+   sizing (incl. `margin-top: auto`) with no `overflow` of its own,
+   `.form-card` (ScrollArea's `contentClassName`) keeps the real
+   `overflow-y: auto` scroll region. */
+.form-card-outer {
+    display: flex;
+    flex-direction: column;
     margin-top: auto;
+    min-height: 0;
+}
+
+.form-card {
     min-height: 0;
     overflow-y: auto;
 }

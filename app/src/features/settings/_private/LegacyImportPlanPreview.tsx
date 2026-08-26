@@ -1,3 +1,6 @@
+import { useRef } from "react";
+
+import { ScrollArea } from "@components/ScrollArea";
 import type { LegacyImportPlan } from "@engines/importEngine/legacyImportPlan";
 
 import styles from "./_styles/SystemPane.module.css";
@@ -22,7 +25,9 @@ export const LegacyImportPlanPreview = ({
     unlocked,
     committing,
     onCommit,
-}: LegacyImportPlanPreviewProps) => (
+}: LegacyImportPlanPreviewProps) => {
+    const skipListRef = useRef<HTMLDivElement | null>(null);
+    return (
     <>
         <ul className={styles.countList}>
             {kindCounts.map(({ kind, count }) => (
@@ -42,14 +47,20 @@ export const LegacyImportPlanPreview = ({
                     {plan.skipped.length} row{plan.skipped.length === 1 ? "" : "s"} skipped — already
                     here or missing a required field
                 </summary>
-                <ul className={styles.skipList}>
-                    {plan.skipped.slice(0, 50).map((skip, i) => (
-                        <li key={i}>
-                            {skip.Kind} &quot;{skip.Name}&quot; — {skip.Reason}
-                        </li>
-                    ))}
-                    {plan.skipped.length > 50 && <li>…and {plan.skipped.length - 50} more</li>}
-                </ul>
+                <ScrollArea
+                    contentRef={skipListRef}
+                    className={styles["skip-list-outer"]}
+                    contentClassName={styles["skip-list-area"]}
+                >
+                    <ul className={styles.skipList}>
+                        {plan.skipped.slice(0, 50).map((skip, i) => (
+                            <li key={i}>
+                                {skip.Kind} &quot;{skip.Name}&quot; — {skip.Reason}
+                            </li>
+                        ))}
+                        {plan.skipped.length > 50 && <li>…and {plan.skipped.length - 50} more</li>}
+                    </ul>
+                </ScrollArea>
             </details>
         )}
         <div className={styles.confirmRow}>
@@ -70,4 +81,5 @@ export const LegacyImportPlanPreview = ({
             )}
         </div>
     </>
-);
+    );
+};

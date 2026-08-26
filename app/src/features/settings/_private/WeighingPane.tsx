@@ -74,7 +74,9 @@ const IndicatorColumn = ({ settings, unlocked, onSave, onSetStability }: Indicat
         // IndicatorCard — but the stability gate still applies to
         // the simulated indicator, so it gets its own small card
         // instead of disappearing.
-        <Card title={<span className="lbl">{t("settings.indicator.title")}</span>}>
+        <Card
+            sticky
+            title={<span className="lbl">{t("settings.indicator.title")}</span>}>
             <StabilityGateFields stability={settings.Stability} unlocked={unlocked} onChange={onSetStability} />
         </Card>
     );

@@ -44,6 +44,15 @@ export const useAdminLock = (
 
     const unlock = useCallback(
         async (password: string): Promise<boolean> => {
+            // Perf: an already-unlocked session re-arming its own timer (a
+            // second admin action while unlocked) used to still pay for a
+            // full PBKDF2 verify on every call — expensive by design (that's
+            // the whole point of PBKDF2) and pointless when the session is
+            // already proven unlocked in this tab.
+            if (unlocked) {
+                armLockTimer();
+                return true;
+            }
             const ok = await verifyAdminPassword(
                 password,
                 settings.AdminPasswordHash,
@@ -66,7 +75,7 @@ export const useAdminLock = (
             }
             return ok;
         },
-        [settings.AdminPasswordHash, settings.AdminPasswordSalt, armLockTimer, persistPatch],
+        [unlocked, settings.AdminPasswordHash, settings.AdminPasswordSalt, armLockTimer, persistPatch],
     );
 
     return { unlocked, lock, unlock };

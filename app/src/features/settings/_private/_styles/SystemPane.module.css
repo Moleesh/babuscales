@@ -149,6 +149,23 @@
     color: var(--led);
 }
 
+/* Bug: "in settings we have page pretty much all tab has the wrong [scroll
+   bar]" — this used to be the `<ul>` itself with `overflow-y: auto`, the
+   native OS/browser scrollbar (arrows at each end). Now the `<ul>` (still
+   `.skip-list`, unstyled for scrolling) sits inside a <ScrollArea>
+   (LegacyImportPlanPreview.tsx/LegacyImportResultSummary.tsx):
+   `.skip-list-outer` carries the fixed max-height with no `overflow` of its
+   own, `.skip-list-area` (ScrollArea's `contentClassName`) keeps the real
+   `overflow-y: auto` scroll region. */
+.skip-list-outer {
+    max-height: 120px;
+}
+
+.skip-list-area {
+    max-height: 120px;
+    overflow-y: auto;
+}
+
 .skip-list {
     display: grid;
     gap: 2px;
@@ -156,6 +173,4 @@
     padding: 0 0 0 16px;
     font-size: 0.6875rem;
     color: var(--dim);
-    max-height: 120px;
-    overflow-y: auto;
 }

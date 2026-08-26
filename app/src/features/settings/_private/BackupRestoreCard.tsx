@@ -41,7 +41,9 @@ export const BackupRestoreCard = () => {
     } = useBackupRestoreActions(db, { settings: reloadSettings, ticketSchema: reloadTicketSchema });
 
     return (
-        <Card title={<span className="lbl">{t("settings.backup.cardTitle")}</span>}>
+        <Card
+            sticky
+            title={<span className="lbl">{t("settings.backup.cardTitle")}</span>}>
             <div className={styles.body}>
                 <BackupActionsRow
                     busy={busy}

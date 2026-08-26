@@ -1,8 +1,9 @@
-import { useLayoutEffect, useRef, useState } from "react";
+import { useState } from "react";
 
 import { AppModal } from "@components/AppModal";
 import { Button } from "@components/Button";
 import type { ReportDefinition } from "@db/reportDefs";
+import { useCloseOnOutsideClick } from "@hooks/useCloseOnOutsideClick";
 import { useTranslation } from "@i18n/useTranslation";
 
 import styles from "./_styles/SavedReportsRow.module.css";
@@ -30,33 +31,6 @@ export interface SavedReportsRowProps {
     onEdit: (id: string) => void;
 }
 
-// Closes the popover on an outside click — same shape as components/Select's
-// own `useCloseOnOutsideClick`, duplicated here rather than imported since
-// Select doesn't export it and this dropdown's per-row edit/delete actions
-// make it enough of a variant to not just wrap Select directly.
-const useCloseOnOutsideClick = (open: boolean, onClose: () => void) => {
-    const ref = useRef<HTMLDivElement>(null);
-    useLayoutEffect(() => {
-        if (!open) return;
-        const onPointerDown = (event: PointerEvent) => {
-            if (ref.current && !ref.current.contains(event.target as Node)) onClose();
-        };
-        document.addEventListener("pointerdown", onPointerDown);
-        // Task: "on scroll close all the dropdowns" — same reasoning as
-        // Select.tsx's own copy of this hook, including the `contains` guard
-        // so scrolling the popover's own row list doesn't close it.
-        const onScroll = (event: Event) => {
-            if (ref.current && event.target instanceof Node && ref.current.contains(event.target)) return;
-            onClose();
-        };
-        document.addEventListener("scroll", onScroll, { capture: true, passive: true });
-        return () => {
-            document.removeEventListener("pointerdown", onPointerDown);
-            document.removeEventListener("scroll", onScroll, { capture: true });
-        };
-    }, [open, onClose]);
-    return ref;
-};
 
 interface SavedViewRowProps {
     def: ReportDefinition;

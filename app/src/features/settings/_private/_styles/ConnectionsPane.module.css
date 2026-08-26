@@ -89,6 +89,19 @@
     gap: 6px;
 }
 
+/* Bug: "in settings we have page pretty much all tab has the wrong [scroll
+   bar]" — this used to be a plain `overflow-y: auto` div, the native
+   OS/browser scrollbar (arrows at each end) instead of the app's custom
+   draggable thumb. Now rendered through <ScrollArea> (IndicatorPortMonitor.tsx),
+   same `.xxxOuter`/`.xxx` split as DataTable.module.css's
+   `.wrapper`/`.wrapperOuter`: `.monitorLogOuter` carries the box's fixed
+   height with no `overflow` of its own, `.monitorLog` (ScrollArea's
+   `contentClassName`) keeps the real `overflow-y: auto` scroll region plus
+   all the original visual styling. */
+.monitorLogOuter {
+    max-height: 160px;
+}
+
 .monitorLog {
     max-height: 160px;
     overflow-y: auto;

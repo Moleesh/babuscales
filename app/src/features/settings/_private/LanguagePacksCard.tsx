@@ -38,6 +38,7 @@ export const LanguagePacksCard = ({ packs, unlocked, busy, message, onFile }: La
     const { t } = useTranslation();
     return (
         <Card
+            sticky
             title={<span className="lbl">{t("settings.languagePacks.title")}</span>}
             headerRight={
                 <span className="chip num">

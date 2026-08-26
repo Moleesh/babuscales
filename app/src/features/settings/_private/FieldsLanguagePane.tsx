@@ -24,7 +24,9 @@ import { useFieldSchemaUpload } from "./useFieldSchemaUpload";
 // ticket schema this tab's field editor works on, so it reads more naturally
 // alongside Fields than alongside the Printer tab's device/fixture config.
 const templatesCard = (t: (key: string) => string) => (
-    <Card title={<span className="lbl">{t("settings.printTemplates.title")}</span>}>
+    <Card
+            sticky
+            title={<span className="lbl">{t("settings.printTemplates.title")}</span>}>
         <p className={styles.hint}>{t("settings.printTemplates.hint")}</p>
     </Card>
 );

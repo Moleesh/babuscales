@@ -1,5 +1,6 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 
+import { ScrollArea } from "@components/ScrollArea";
 import { SegmentedControl } from "@components/SegmentedControl";
 import type { SegmentedOption } from "@components/SegmentedControl";
 import type { LanguagePack } from "@i18n/types";
@@ -64,6 +65,7 @@ export const SettingsScreen = ({ onResetTicketSeries, onAddLanguagePack, onDelet
     const { t } = useTranslation();
     const [pane, setPane] = useState<PaneKey>("biz");
     const paneOptions = useMemo(() => buildPaneOptions(t), [t]);
+    const paneAreaRef = useRef<HTMLDivElement | null>(null);
 
     return (
         <div className={styles.screen}>
@@ -91,7 +93,7 @@ export const SettingsScreen = ({ onResetTicketSeries, onAddLanguagePack, onDelet
                 </div>
             )}
 
-            <div className={styles.paneArea}>
+            <ScrollArea contentRef={paneAreaRef} className={styles.paneAreaOuter} contentClassName={styles.paneArea}>
                 {pane === "biz" && (
                     <div className={styles.bizGrid}>
                         <BusinessPane />
@@ -106,7 +108,7 @@ export const SettingsScreen = ({ onResetTicketSeries, onAddLanguagePack, onDelet
                 {pane === "weigh" && <WeighingPane onResetTicketSeries={onResetTicketSeries} />}
                 {pane === "conn" && <ConnectionsPane />}
                 {pane === "sys" && <SystemPane />}
-            </div>
+            </ScrollArea>
         </div>
     );
 };

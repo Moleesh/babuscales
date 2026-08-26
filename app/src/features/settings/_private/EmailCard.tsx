@@ -32,6 +32,7 @@ export const EmailCard = () => {
 
     return (
         <Card
+            sticky
             title={<span className="lbl">{t("settings.email.title")}</span>}
             headerRight={flash ? <span className={styles.applied}>{flash}</span> : null}
         >

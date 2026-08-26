@@ -52,6 +52,7 @@ export const TicketAndDateTimeCard = ({
 
     return (
         <Card
+            sticky
             title={<span className="lbl">{t("settings.ticketNumbering.title")}</span>}
             headerRight={<span className={styles.applied}>{t("settings.weighingRules.appliedImmediately")}</span>}
         >

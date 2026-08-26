@@ -45,7 +45,12 @@ export const AdminUnlockModal = ({ open, onClose }: AdminUnlockModalProps) => {
     };
 
     const attempt = async (): Promise<void> => {
-        if (!password) return;
+        // Bug: redundant PBKDF2 verify on repeat unlock — the Enter-to-submit
+        // handler below isn't itself disabled while `checking`, unlike the
+        // Unlock button, so holding/mashing Enter while a verify is already
+        // in flight fired a fresh (expensive by design) PBKDF2 hash per
+        // keystroke instead of just the one already running.
+        if (!password || checking) return;
         setChecking(true);
         const ok = await unlock(password);
         setChecking(false);

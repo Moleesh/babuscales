@@ -141,6 +141,27 @@ const parseSavedColumns = (columns: string | undefined): string[] | null => {
     return keys.length > 0 ? keys : null;
 };
 
+/** Shared by `handleSaveReportDraft` (via `buildSaveHandlers`) and
+ * `handleUpdateReportDraft` below — both apply the exact same
+ * View/GroupBy/Filter/dates/Series/Columns batch from a builder draft onto
+ * the screen's live state, previously two separate copies of the same seven
+ * setter calls that had already drifted out of matching order once. */
+const applyDraftToScreen = (
+    draft: ReportBuilderSaveDraft,
+    args: Pick<
+        UseSavedReportActionsArgs,
+        "setView" | "setGroupBy" | "setFilter" | "setDateFrom" | "setDateTo" | "setSeriesEpoch" | "setVisibleColumnKeys"
+    >,
+): void => {
+    args.setView(draft.view);
+    args.setGroupBy(draft.groupBy);
+    args.setFilter(draft.filter);
+    args.setDateFrom(draft.dateFrom);
+    args.setDateTo(draft.dateTo);
+    args.setSeriesEpoch(draft.seriesEpoch);
+    args.setVisibleColumnKeys(draft.visibleColumnKeys);
+};
+
 /** Split out of useSavedReportActions (over the line/complexity budget —
  * docs/CodingStandards.md) — applying a recalled `ReportDefinition` onto the
  * screen's live state, unchanged from the inline version it replaces. */
@@ -224,13 +245,7 @@ const buildSaveHandlers = (
         if (!trimmed) return;
         // Auto-apply first (synchronous) so the report becomes the active
         // view immediately, without waiting on the db round-trip below.
-        deps.setView(draft.view);
-        deps.setGroupBy(draft.groupBy);
-        deps.setFilter(draft.filter);
-        deps.setDateFrom(draft.dateFrom);
-        deps.setDateTo(draft.dateTo);
-        deps.setSeriesEpoch(draft.seriesEpoch);
-        deps.setVisibleColumnKeys(draft.visibleColumnKeys);
+        applyDraftToScreen(draft, deps);
         // Task: "after build reprot the report is selcted but the saved view
         // is not defaulthin to that report" — `handleUpdateReportDraft`/
         // `handleRecallReport` both call `setSelectedId` synchronously since
@@ -279,13 +294,7 @@ export const useSavedReportActions = (args: UseSavedReportActionsArgs): UseSaved
         const trimmed = name.trim();
         if (!trimmed) return;
         justAppliedRef.current = true;
-        setView(draft.view);
-        setGroupBy(draft.groupBy);
-        setFilter(draft.filter);
-        setDateFrom(draft.dateFrom);
-        setDateTo(draft.dateTo);
-        setSeriesEpoch(draft.seriesEpoch);
-        setVisibleColumnKeys(draft.visibleColumnKeys);
+        applyDraftToScreen(draft, { setView, setGroupBy, setFilter, setDateFrom, setDateTo, setSeriesEpoch, setVisibleColumnKeys });
         setSelectedId(id);
         void updateReportDef(db, id, buildSaveArgs(draft, trimmed))
             .then(() => loadReportDefs(db))

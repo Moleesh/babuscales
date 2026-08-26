@@ -1,7 +1,7 @@
 import { useState } from "react";
 
-import { AppModal } from "@components/AppModal";
 import { Button } from "@components/Button";
+import { ConfirmDeleteModal } from "@components/ConfirmDeleteModal";
 import type { MasterRow } from "@db/types";
 import { useTranslation } from "@i18n/useTranslation";
 
@@ -38,9 +38,8 @@ export const MasterFormActions = ({
     // The browser's native `window.confirm()` used to gate the hard delete —
     // task: "delete in master is a message we need a better pop" (the raw
     // "localhost:1420 says…" browser chrome read as broken, not themed at
-    // all). `AppModal` is the same dialog every other screen-blocking prompt
-    // in the app already uses (ReprintLookupModal, PrintPreviewModal), so
-    // this stays visually consistent instead of a one-off.
+    // all). ConfirmDeleteModal is the shared shape every hard-delete prompt
+    // in the app now uses (also settings' LanguageTableCard).
     const [confirmOpen, setConfirmOpen] = useState(false);
     return (
         <div className={styles.formActions}>
@@ -58,30 +57,18 @@ export const MasterFormActions = ({
                 </Button>
             )}
             {selected && (
-                <AppModal
+                <ConfirmDeleteModal
                     open={confirmOpen}
                     title={t("masters.action.deleteConfirmTitle")}
-                    onClose={() => setConfirmOpen(false)}
-                    size="small"
-                >
-                    <div style={{ display: "grid", gap: 13 }}>
-                        <p>
-                            {t("masters.action.deleteConfirm")} "{selected.Name}"?
-                        </p>
-                        <div style={{ display: "flex", gap: 9, justifyContent: "flex-end" }}>
-                            <Button onClick={() => setConfirmOpen(false)}>{t("weigh.cancel")}</Button>
-                            <Button
-                                variant="danger"
-                                onClick={() => {
-                                    setConfirmOpen(false);
-                                    onDelete();
-                                }}
-                            >
-                                {t("masters.action.delete")}
-                            </Button>
-                        </div>
-                    </div>
-                </AppModal>
+                    message={t("masters.action.deleteConfirm")}
+                    name={selected.Name}
+                    confirmLabel={t("masters.action.delete")}
+                    onCancel={() => setConfirmOpen(false)}
+                    onConfirm={() => {
+                        setConfirmOpen(false);
+                        onDelete();
+                    }}
+                />
             )}
         </div>
     );

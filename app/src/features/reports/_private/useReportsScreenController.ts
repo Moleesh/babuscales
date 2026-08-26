@@ -160,6 +160,54 @@ const useResetPageOnFilterChange = ({
     }, [setPageIndex, query, filter, dateFrom, dateTo, sortKey, sortDir]);
 };
 
+interface ApplyWaitingFilterArgs {
+    setView: (view: ReportView) => void;
+    setFilter: (filter: TicketRowFilter) => void;
+    setDateFrom: (dateFrom: string) => void;
+    setDateTo: (dateTo: string) => void;
+    setSeriesEpoch: (seriesEpoch: number | "current" | "all") => void;
+    setReportApplied: (applied: boolean) => void;
+    clearSelection: () => void;
+}
+
+// Shared by useReportsIntentEffect (Dashboard's "waiting" KPI tile) and
+// showWaiting (Reports' own header waiting chip) below — both are a
+// different entry point into the exact same "waiting for a second weight"
+// reset, previously two separately-maintained copies of the same six calls
+// (task: "i have 19 waiting on second wait when i click it alwyas brings 5
+// back" — Dashboard's own copy of this fix had already drifted from the
+// chip's once).
+//
+// Bug: "when click from dashboard on waiting for second waiting the saved
+// view [is] not [de]selected" — this applies a filter batch directly, not
+// via `handleRecallReport`, so it must clear whichever saved view the
+// dropdown was showing itself — see `clearSelection`'s own doc comment
+// (useSavedReportActions.ts). "We dont want all series as a defult for all
+// these case it should be only on the current series, do it all the
+// places" — Dashboard's/the header chip's waitingCount is current-series
+// scoped (dashboardData.ts's own doc comment), so this resets to
+// `"current"`, not `"all"`, to keep landing here agreeing with that number.
+// Clearing the date range still matters — it's an all-date count. Reports
+// rework, item 3 — this counts as "the operator explicitly asked for a
+// report", same as a saved-view recall, for leaving the empty state.
+const applyWaitingFilter = ({
+    setView,
+    setFilter,
+    setDateFrom,
+    setDateTo,
+    setSeriesEpoch,
+    setReportApplied,
+    clearSelection,
+}: ApplyWaitingFilterArgs): void => {
+    setView("tickets");
+    setFilter("half");
+    setDateFrom("");
+    setDateTo("");
+    setSeriesEpoch("current");
+    setReportApplied(true);
+    clearSelection();
+};
+
 // Split out of useReportsScreenController (over the line/complexity budget —
 // docs/CodingStandards.md) — Dashboard's "waiting" KPI tile intent-to-filter
 // wiring, unchanged from the inline version it replaces.
@@ -178,34 +226,7 @@ const useReportsIntentEffect = (
     // per nonce bump (a fresh Dashboard click), not on every render.
     useEffect(() => {
         if (reportsIntent?.kind === "waiting") {
-            setView("tickets");
-            setFilter("half");
-            // Bug: "when click from dashboard on waiting for second waiting
-            // the saved view [is] not [de]selected" — this applies a filter
-            // batch directly, not via `handleRecallReport`, so it must clear
-            // whichever saved view the dropdown was showing itself — see
-            // `clearSelection`'s own doc comment (useSavedReportActions.ts).
-            clearSelection();
-            // Task: "i have 19 waiting on second wait when i click it
-            // alwyas brings 5 back" — this tile is a *different* entry
-            // point than Reports' own header waiting chip (`showWaiting`
-            // below), which already had this exact fix for the same
-            // mismatch. Then: "We dont want all series as a defult for all
-            // these case it should be only on the current series, do it
-            // all the places" — Dashboard's waitingCount is now
-            // current-series scoped (dashboardData.ts's own doc comment),
-            // so this resets to `"current"`, not `"all"`, to keep landing
-            // here agreeing with the chip's own number. Clearing the date
-            // range still matters — it's an all-date count.
-            setDateFrom("");
-            setDateTo("");
-            setSeriesEpoch("current");
-            // Reports rework, item 3 — arriving here via the Dashboard tile
-            // is itself "otherwise explicitly requesting a report" (the
-            // operator clicked a KPI asking for exactly this data), so it
-            // counts the same as a saved-view recall for leaving the empty
-            // state.
-            setReportApplied(true);
+            applyWaitingFilter({ setView, setFilter, setDateFrom, setDateTo, setSeriesEpoch, setReportApplied, clearSelection });
         }
     }, [reportsIntent, setView, setFilter, setDateFrom, setDateTo, setSeriesEpoch, setReportApplied, clearSelection]);
 };
@@ -298,15 +319,15 @@ export const useReportsScreenController = (args: UseReportsScreenControllerArgs)
     // `"all"` to keep the chip's own number and what it navigates to in
     // agreement.
     const showWaiting = (): void => {
-        setView("tickets");
-        setFilter("half");
-        setDateFrom("");
-        setDateTo("");
-        setSeriesEpoch("current");
-        setReportApplied(true);
-        // Same reasoning as useReportsIntentEffect's own copy of this call —
-        // this applies a filter batch directly, bypassing handleRecallReport.
-        savedReportActions.clearSelection();
+        applyWaitingFilter({
+            setView,
+            setFilter,
+            setDateFrom,
+            setDateTo,
+            setSeriesEpoch,
+            setReportApplied,
+            clearSelection: savedReportActions.clearSelection,
+        });
     };
 
     useReportsIntentEffect(

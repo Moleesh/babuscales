@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import type { ReactNode } from "react";
 
 import { Card } from "@components/Card";
@@ -144,16 +145,30 @@ const CalcSegmentRows = ({
     /** Settings → Weighing Rules' `ShowFormulaBreakdown` — off hides the raw formula lines below, keeping just the boxes. */
     showFormulaBreakdown: boolean;
 }) => {
+    // Perf: `prettifyFormula` re-tokenizes its input string — cheap once, but
+    // this used to run it fresh for every item on every render (including
+    // renders triggered by an unrelated field's own value changing), even
+    // though a given field's `formula` string is schema-derived and doesn't
+    // change between those renders. Memoized per item so it only re-runs
+    // when that item's own formula (or the breakdown toggle) actually
+    // changes.
+    const prettified = useMemo(
+        () =>
+            showFormulaBreakdown
+                ? new Map(items.map(({ fieldId, formula }) => [fieldId, prettifyFormula(formula)]))
+                : null,
+        [items, showFormulaBreakdown],
+    );
     if (items.length === 0) return null;
     return (
         <div className={styles.calcSegment}>
             <div className={styles.calcSegmentGrid}>
-                {items.map(({ fieldId, field, formula, value }) => (
+                {items.map(({ fieldId, field, value }) => (
                     <CalcBox
                         key={fieldId}
                         label={field.Label ? resolveLocalized(field.Label, lang) : resolveFieldIdLabel(fieldId, t)}
                         value={value !== undefined ? formatPlainNumber(value) : "—"}
-                        formula={showFormulaBreakdown ? prettifyFormula(formula) : null}
+                        formula={prettified?.get(fieldId) ?? null}
                     />
                 ))}
             </div>

@@ -52,14 +52,21 @@ const blockReadOnlyFocus = (readOnly: boolean) => (e: MouseEvent) => {
     if (readOnly) e.preventDefault();
 };
 
+// The three props above, bundled — TextInput/NumberInput/DateTimeInput below
+// each spread this instead of repeating the same `readOnly`/`tabIndex`/
+// `onMouseDown` triplet.
+const readOnlyInputProps = (readOnly: boolean) => ({
+    readOnly,
+    tabIndex: readOnly ? -1 : undefined,
+    onMouseDown: blockReadOnlyFocus(readOnly),
+});
+
 const TextInput = ({ id, field, value, onChange, readOnly, t }: KindInputProps & { field: Extract<SchemaField, { Kind: "Text" }> }) => (
     <input
         id={id}
         value={typeof value === "string" ? value : ""}
         maxLength={field.MaxLength}
-        readOnly={readOnly}
-        tabIndex={readOnly ? -1 : undefined}
-        onMouseDown={blockReadOnlyFocus(readOnly)}
+        {...readOnlyInputProps(readOnly)}
         placeholder={resolvePlaceholder(field.FieldId, t)}
         onChange={(e) => onChange(field.Upper ? e.target.value.toUpperCase() : e.target.value)}
     />
@@ -70,9 +77,7 @@ const NumberInput = ({ id, field, value, onChange, readOnly, t }: KindInputProps
         id={id}
         type="number"
         value={typeof value === "number" ? value : ""}
-        readOnly={readOnly}
-        tabIndex={readOnly ? -1 : undefined}
-        onMouseDown={blockReadOnlyFocus(readOnly)}
+        {...readOnlyInputProps(readOnly)}
         placeholder={resolvePlaceholder(field.FieldId, t)}
         onChange={(e) => onChange(e.target.value === "" ? null : Number(e.target.value))}
     />
@@ -106,9 +111,7 @@ const DateTimeInput = ({ id, value, onChange, readOnly }: KindInputProps) => (
         id={id}
         type="datetime-local"
         value={typeof value === "string" ? value : ""}
-        readOnly={readOnly}
-        tabIndex={readOnly ? -1 : undefined}
-        onMouseDown={blockReadOnlyFocus(readOnly)}
+        {...readOnlyInputProps(readOnly)}
         onChange={(e) => onChange(e.target.value)}
     />
 );

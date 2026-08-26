@@ -500,6 +500,7 @@ export const FieldSchemaCard = (props: FieldSchemaCardProps) => {
     const { t } = useTranslation();
     return (
         <Card
+            sticky
             title={<span className="lbl">{t("settings.fieldSchema.title")}</span>}
             headerRight={
                 <span className="chip num">

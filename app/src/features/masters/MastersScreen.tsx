@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
+import { ScrollArea } from "@components/ScrollArea";
 import { SegmentedControl } from "@components/SegmentedControl";
 import type { MasterKind } from "@db/types";
 import { useSchema } from "@engines/schemaEngine";
@@ -83,6 +84,7 @@ export const MastersScreen = () => {
     const { activeKind, setActiveKind, kinds, masterColumns, kindLower, columns, kindOptions } =
         useMastersScreenSetup(ticketSchema, settings, lang, t);
     const { totalCount, list, form } = useMastersScreenState(activeKind, masterColumns, query);
+    const formCardRef = useRef<HTMLDivElement | null>(null);
 
     useEffect(() => {
         setQuery("");
@@ -127,7 +129,13 @@ export const MastersScreen = () => {
                 div rendered with no class at all, meaning `.form-card`'s
                 rule below (MastersScreen.module.css) was dead code and
                 never actually applied. */}
-            <div className={styles.formCard}>
+            {/* Bug: "in settings we have page pretty much all tab has the
+                wrong [scroll bar]" — this card used to scroll with the
+                native OS/browser scrollbar (arrows at each end) on a tall
+                form. Now rendered through <ScrollArea>, same
+                `.xxxOuter`/`.xxx` split as DataTable.module.css's
+                `.wrapper`/`.wrapperOuter`. */}
+            <ScrollArea contentRef={formCardRef} className={styles.formCardOuter} contentClassName={styles.formCard}>
                 <MastersFormCard
                     activeKind={activeKind}
                     columns={masterColumns}
@@ -136,7 +144,7 @@ export const MastersScreen = () => {
                     t={t}
                     {...form}
                 />
-            </div>
+            </ScrollArea>
         </div>
     );
 };

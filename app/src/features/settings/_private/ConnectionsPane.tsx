@@ -30,7 +30,9 @@ export const ConnectionsPane = () => {
     if (!serial) {
         return (
             <div className={styles.grid}>
-                <Card title={<span className="lbl">{t("settings.connections.title")}</span>}>
+                <Card
+            sticky
+            title={<span className="lbl">{t("settings.connections.title")}</span>}>
                     <p className={styles.hint}>{t("settings.connections.desktopOnlyHint")}</p>
                 </Card>
                 <IntegrationsCard />

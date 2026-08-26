@@ -200,7 +200,17 @@ export const DataTable = <Row,>({
     // behaviour) now always renders; only the body swaps to EmptyState.
     if (rows.length === 0) {
         return (
-            <div className={styles.wrapper}>
+            // Bug: "report before any values is loadd" shows the wrong
+            // scrollbar (native OS one, "after loading it become proper") —
+            // this branch used to render `.wrapper` as a bare div instead of
+            // through `<ScrollArea>` like the populated-rows branch below,
+            // so it kept `.wrapper`'s own `overflow-x: auto` scrolling but
+            // lost ScrollArea's native-scrollbar-hiding + custom track/thumb
+            // that every other DataTable state already gets. Same
+            // `contentRef`/`contentClassName={styles.wrapper}` pairing as
+            // the populated branch — `wrapperRef` is safe to reuse here too,
+            // nothing reads it while `rows.length === 0`.
+            <ScrollArea contentRef={wrapperRef} className={styles.wrapperOuter} contentClassName={styles.wrapper}>
                 <table className={tableClassName ? `${styles.table} ${tableClassName}` : styles.table}>
                     <DataTableHeaderRow columns={columns} />
                 </table>
@@ -216,7 +226,7 @@ export const DataTable = <Row,>({
                 <div className={styles.emptyPin}>
                     <EmptyState title={emptyMessage ?? t("dataTable.emptyDefault")} />
                 </div>
-            </div>
+            </ScrollArea>
         );
     }
 

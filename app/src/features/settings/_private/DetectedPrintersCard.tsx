@@ -17,6 +17,7 @@ export const DetectedPrintersCard = ({ detected, scanning, onRescan }: DetectedP
     const { t } = useTranslation();
     return (
         <Card
+            sticky
             title={<span className="lbl">{t("settings.printers.detectedTitle")}</span>}
             headerRight={<span className="chip num">{detected.length}</span>}
         >

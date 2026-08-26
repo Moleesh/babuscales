@@ -1,3 +1,4 @@
+import { ScrollArea } from "@components/ScrollArea";
 import { useIndicator } from "@engines/indicator";
 import { useTranslation } from "@i18n/useTranslation";
 
@@ -40,13 +41,21 @@ export const IndicatorPortMonitor = ({ conn, unlocked }: IndicatorPortMonitorPro
                 </button>
                 {error && <span className={styles.statusBad}>⚠ {error}</span>}
             </div>
-            <div className={styles.monitorLog} ref={logRef}>
+            {/* Bug: "in settings we have page pretty much all tab has the
+                wrong [scroll bar]" — this used to be a plain `overflow-y:
+                auto` div using the native OS/browser scrollbar. Now rendered
+                through <ScrollArea>, with `logRef` passed through as
+                `contentRef` so useIndicatorPortMonitor.ts's existing
+                autoscroll-to-newest-line effect (`el.scrollTop =
+                el.scrollHeight`) keeps reading/writing the same real
+                scrolling DOM node. */}
+            <ScrollArea contentRef={logRef} className={styles.monitorLogOuter} contentClassName={styles.monitorLog}>
                 {lines.length === 0 ? (
                     <span className={styles.monitorEmpty}>{t("settings.indicator.monitorEmpty")}</span>
                 ) : (
                     lines.map((line, index) => <div key={index}>{line}</div>)
                 )}
-            </div>
+            </ScrollArea>
         </div>
     );
 };

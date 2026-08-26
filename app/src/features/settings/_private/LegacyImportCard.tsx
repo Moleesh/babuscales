@@ -48,7 +48,9 @@ export const LegacyImportCard = () => {
     } = useLegacyImportActions(db);
 
     return (
-        <Card title={<span className="lbl">{t("settings.legacyImport.title")}</span>}>
+        <Card
+            sticky
+            title={<span className="lbl">{t("settings.legacyImport.title")}</span>}>
             <div className={styles.body}>
                 <LegacyImportFileRow
                     inputRef={inputRef}

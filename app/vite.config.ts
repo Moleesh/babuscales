@@ -40,6 +40,7 @@ export default defineConfig({
             "@i18n": alias("./src/i18n"),
             "@styles": alias("./src/styles"),
             "@constants": alias("./src/constants"),
+            "@hooks": alias("./src/hooks"),
         },
     },
     // Tauri expects a fixed dev-server port and a predictable dist/ output.

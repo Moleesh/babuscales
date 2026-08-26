@@ -111,7 +111,13 @@ export const Tooltip = ({
             const bubbleHeight = bubbleRef.current?.offsetHeight ?? 28;
             const rawLeft = align === "end" ? rect.right - bubbleWidth : rect.left + rect.width / 2 - bubbleWidth / 2;
             const left = Math.min(Math.max(rawLeft, VIEWPORT_MARGIN), window.innerWidth - bubbleWidth - VIEWPORT_MARGIN);
-            const top = side === "top" ? rect.top - GAP - bubbleHeight : rect.bottom + GAP;
+            const rawTop = side === "top" ? rect.top - GAP - bubbleHeight : rect.bottom + GAP;
+            // Bug: only `left` used to be clamped to the viewport — a row
+            // near the top of a scrolling table (default side="top") could
+            // compute a negative `top` and render the bubble off-screen or
+            // under a sticky header, the vertical twin of the "tooltip cut
+            // off" bug the horizontal clamp above already fixed.
+            const top = Math.min(Math.max(rawTop, VIEWPORT_MARGIN), window.innerHeight - bubbleHeight - VIEWPORT_MARGIN);
             setBubbleStyle({ position: "fixed", top, left });
         };
         place();
@@ -124,9 +130,19 @@ export const Tooltip = ({
         const close = () => setOpen(false);
         window.addEventListener("resize", place);
         window.addEventListener("scroll", close, true);
+        // Bug: "all tooltips has to close on scroll or loosing focus or
+        // chaning application" — scroll and `onBlur` (a focused trigger,
+        // e.g. tab-focus) were already covered, but a hover-opened tooltip
+        // has no DOM focus at all, so alt-tabbing away while hovering fired
+        // neither and left the bubble floating over the previous app.
+        // `window`'s own `blur` fires whenever the OS moves focus to another
+        // application (or another window), regardless of what has DOM focus
+        // inside this one.
+        window.addEventListener("blur", close);
         return () => {
             window.removeEventListener("resize", place);
             window.removeEventListener("scroll", close, true);
+            window.removeEventListener("blur", close);
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps -- `label` is included so a bubble whose text (and thus size) changes while already open re-measures.
     }, [open, side, align, label]);

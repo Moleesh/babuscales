@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import type { ReactNode } from "react";
 
 import { Tooltip } from "@components/Tooltip";
+import { useCloseOnOutsideClick } from "@hooks/useCloseOnOutsideClick";
 import { useTranslation } from "@i18n/useTranslation";
 
 import styles from "../_styles/AppShell.module.css";
@@ -18,32 +19,6 @@ export interface TopBarOverflowProps {
     collapsed: boolean;
 }
 
-// Closes the menu on an outside click/tap — the one bit of behaviour this
-// component owns beyond the plain "narrow ? menu : inline" toggle, so it's
-// split out to keep the component itself under the line budget.
-const useCloseOnOutsideClick = (open: boolean, onClose: () => void) => {
-    const ref = useRef<HTMLDivElement>(null);
-    useEffect(() => {
-        if (!open) return;
-        const onPointerDown = (event: PointerEvent) => {
-            if (ref.current && !ref.current.contains(event.target as Node)) onClose();
-        };
-        document.addEventListener("pointerdown", onPointerDown);
-        // Task: "on scroll close all the dropdowns" — same reasoning as
-        // Select.tsx's own copy of this hook, including the `contains` guard
-        // so scrolling the menu's own contents doesn't close it.
-        const onScroll = (event: Event) => {
-            if (ref.current && event.target instanceof Node && ref.current.contains(event.target)) return;
-            onClose();
-        };
-        document.addEventListener("scroll", onScroll, { capture: true, passive: true });
-        return () => {
-            document.removeEventListener("pointerdown", onPointerDown);
-            document.removeEventListener("scroll", onScroll, { capture: true });
-        };
-    }, [open, onClose]);
-    return ref;
-};
 
 // Collapses whatever it's given behind a "..." menu once the top bar
 // doesn't actually have room to show it inline (`collapsed`, from

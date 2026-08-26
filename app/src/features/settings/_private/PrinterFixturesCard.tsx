@@ -27,6 +27,7 @@ export const PrinterFixturesCard = ({ printers, unlocked, onChange }: PrinterFix
     const { t } = useTranslation();
     return (
         <Card
+            sticky
             title={<span className="lbl">{t("settings.printerFixtures.title")}</span>}
             headerRight={
                 <span className={styles.applied}>{t("settings.weighingRules.appliedImmediately")}</span>

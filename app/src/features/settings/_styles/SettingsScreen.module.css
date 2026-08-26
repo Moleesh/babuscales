@@ -34,7 +34,26 @@
    just render shorter than this box and never trigger it; Language/Fields &
    Print override their own DataTable's `--datatable-max-height` to `none`
    (see LanguagePane.module.css/FieldsLanguagePane.module.css) so this is the
-   only scrollbar for those, not a second one nested inside it. */
+   only scrollbar for those, not a second one nested inside it.
+
+   Bug: "in settings we have page pretty much all tab has the wrong [scroll
+   bar]" — this used to be a plain `overflow-y: auto` div, so every Settings
+   tab scrolled with the native OS/browser scrollbar (arrows at each end)
+   instead of the app's custom draggable thumb every other scroll region
+   (DataTable, ScrollArea's own callers) already uses. Now rendered through
+   `<ScrollArea>` (SettingsScreen.tsx) same as DataTable.module.css's
+   `.wrapper`/`.wrapperOuter` split: `.pane-area-outer` does the flex sizing
+   with no `overflow` of its own, `.pane-area` (ScrollArea's
+   `contentClassName`) keeps doing the actual `overflow-y: auto` scroll,
+   just with its native scrollbar hidden and ScrollArea's `.track`/`.thumb`
+   drawn over it instead. */
+.pane-area-outer {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+}
+
 .pane-area {
     flex: 1 1 auto;
     min-height: 0;

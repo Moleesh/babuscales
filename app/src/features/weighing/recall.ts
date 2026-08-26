@@ -9,6 +9,12 @@ const normalizeVehicleNo = (v: string): string => v.trim().toLowerCase().replace
 
 const sameVehicle = (a: string, b: string): boolean => normalizeVehicleNo(a) === normalizeVehicleNo(b);
 
+// Shared by listOpenTickets and findLatestTicketForVehicle below — both want
+// the same "most recently touched first" ordering, previously two identical
+// inline comparators.
+const byMostRecentlyUpdated = (a: { doc: DocRow }, b: { doc: DocRow }): number =>
+    b.doc.UpdatedAt.localeCompare(a.doc.UpdatedAt);
+
 export interface OpenTicketSummary {
     doc: DocRow;
     body: TicketBody;
@@ -43,7 +49,7 @@ export const listOpenTickets = (docs: DocRow[], currentEpoch?: number): OpenTick
                 capturedAt: capture?.At ?? doc.UpdatedAt,
             };
         })
-        .sort((a, b) => b.doc.UpdatedAt.localeCompare(a.doc.UpdatedAt));
+        .sort(byMostRecentlyUpdated);
 
 /** "That vehicle has a ticket awaiting its second weight." Current-series
  * scoped — same reasoning as `listOpenTickets` above. */
@@ -73,6 +79,6 @@ export const findLatestTicketForVehicle = (
         .map((doc) => ({ doc, body: parseTicketBody(doc.Body) }))
         .filter(({ body }) => sameVehicle(body.VehicleNo ?? "", vehicleNo))
         .filter(({ body }) => deriveWeights(body.Captures).netKg !== null)
-        .sort((a, b) => b.doc.UpdatedAt.localeCompare(a.doc.UpdatedAt));
+        .sort(byMostRecentlyUpdated);
     return candidates[0];
 };
