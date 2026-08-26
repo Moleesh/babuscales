@@ -1,5 +1,3 @@
-<!-- @format -->
-
 # ⚖️ BabuScales
 
 ### Weighbridge management software that a quarry can actually run 🚚
@@ -35,7 +33,7 @@ internet, in English or Tamil.
 > detection, a full test suite across every screen, and MiMaS (blocked on a spec that doesn't
 > exist yet) are the remaining gaps — see [`docs/Features.md`](docs/Features.md) for the current
 > feature-by-feature state, or [`app/README.md`](app/README.md)'s "Known gap" section for the full
-> narrative. The original technical plan is in [`PLAN.md`](PLAN.md).
+> narrative.
 
 ---
 
@@ -148,6 +146,73 @@ An Android debug build (`.apk`) also compiles from the same source — see
 
 ---
 
+## 🧪 Run it from source
+
+```bash
+cd app
+npm install
+
+# Web-only, mock DataPort — no Rust toolchain needed
+npm run dev
+
+# Full desktop app, real SQLite via Tauri/Rust — needs the Rust toolchain
+npm run dev:tauri
+```
+
+| Command | Purpose |
+|---|---|
+| `npm run dev:tauri` | Desktop app against the real SQLite database |
+| `npm run build:tauri` | Production desktop build (installer via `tauri build`) |
+| `npm run typecheck` | `tsc -b` |
+| `npm run lint` / `lint:strict` | ESLint — errors-only, or zero-warnings |
+| `npm run test:run` | Vitest, once |
+| `npm run format:check` | Prettier check |
+| `npm run scan:secrets` | Secretlint sweep |
+| `cargo check` / `cargo clippy -D warnings` | Rust side, from `app/src-tauri` |
+
+CI (`.github/workflows/ci.yml`) runs all of the above — typecheck, lint, unit tests, secret scan,
+Clippy, format check, and a debug build — on every push to `main`.
+
+### Project structure
+
+```text
+BabuScales/
+├── app/                    Tauri + React application
+│   ├── src/                React/TypeScript frontend
+│   │   ├── features/       Screen-level feature modules (Weighing, Reports, Masters, Settings…)
+│   │   ├── engines/        Pure logic — pricing, formulas, xlsx/csv export, hash chain
+│   │   ├── db/             SQLite access via the DataPort abstraction
+│   │   ├── i18n/           English + Tamil language packs
+│   │   └── components/     Shared UI
+│   └── src-tauri/          Rust backend
+│       ├── commands/       Tauri IPC commands the frontend calls
+│       ├── devices/        Weight indicator + printer detection (serial/USB, GetDefaultPrinterW)
+│       ├── licensing/      Ed25519 offline activation
+│       ├── outbox/         Background delivery worker (email/SMS/webhook/tally/board)
+│       ├── print/          Print pipeline
+│       └── security/       Admin auth (PBKDF2), audit hash chain
+├── docs/                   Feature inventory, operator/admin guides, coding standards
+├── demo/                   Original one-file, no-build, no-database mock
+├── resources/              Installer/app icons and assets
+└── tools/                  Offline licence-generation CLIs
+```
+
+### Architecture
+
+```mermaid
+flowchart LR
+  UI["React 19 UI\n(features/*)"] -->|Tauri IPC| Cmd["Rust commands"]
+  Cmd --> DB[("SQLite\none file")]
+  Cmd --> Dev["Weight indicator\n(serial/USB)"]
+  Cmd --> Print["Print pipeline\n(A4 / matrix / thermal)"]
+  Cmd --> Lic["Offline licensing\n(Ed25519)"]
+  Cmd --> Audit["Hash-chained audit\n+ QR verify server"]
+  Cmd --> Outbox["Outbox worker\nEmail/SMS/Webhook/Tally/Board"]
+  UI -.mock DataPort, no Tauri.-> Demo["Browser demo / Pages"]
+```
+
+---
+
 ## 🛠️ Built with
 
 | | |
@@ -165,16 +230,11 @@ tab.
 
 | | |
 |---|---|
-| [PLAN.md](PLAN.md) | Full technical plan |
 | [docs/Features.md](docs/Features.md) | Current feature inventory — what's real, partial or not built, today |
 | [docs/OperatorGuide.md](docs/OperatorGuide.md) | Day-to-day use, for whoever weighs vehicles |
 | [docs/AdminSetup.md](docs/AdminSetup.md) | Install, licence, configure — for whoever sets a site up |
 | [docs/CodingStandards.md](docs/CodingStandards.md) | How this codebase is written, and what CI enforces |
 | [docs/Terminology.md](docs/Terminology.md) | The words we use and why |
-
-`docs/JsonConfig.md`, `docs/PrintTemplate.md`, `docs/FormulaNotes.md`, `docs/Security.md` and
-`docs/DecisionLog.md` are named in `PLAN.md` §19 as intended documentation but don't exist yet —
-a real, tracked gap, not a broken link to ignore.
 
 ---
 
