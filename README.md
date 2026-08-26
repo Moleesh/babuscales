@@ -6,22 +6,20 @@ Live weight from the indicator, a hash-chained, QR-verifiable ticket that prints
 printer the site already owns, and reports the owner can trust — on a 4GB office PC, with no
 internet, in English or Tamil.
 
-[![Release](https://img.shields.io/badge/release-phase_8%2F9_remaining-blue)](#roadmap)
-[![Tests](https://img.shields.io/badge/tests-167_passing_%2F_25_files-brightgreen)](#roadmap)
+[![Tests](https://img.shields.io/badge/tests-167_passing_%2F_25_files-brightgreen)](docs/Features.md)
 [![Platform](https://img.shields.io/badge/platform-Windows_%7C_Android-informational)](#install)
 [![Licence](https://img.shields.io/badge/licence-proprietary-lightgrey)](#licence)
 
-> **Status (2026-08-12): Phases 0–7 are built** — weighing, masters, printing, reports/dashboard,
-> backup/restore, the audit hash chain with public QR verification, offline licence activation, a
-> Windows installer, remote access, an outbox worker that actually drains email/SMS/webhook/tally/
-> board deliveries, legacy v1/v2 data import and an Android debug build all run for real in
-> **[`app/`](app/README.md)** against a real SQLite database, not just the mock. What's left is
-> Phase 8 (ANPR, visual template designer, anomaly detection — deferred by decision, not started),
-> Phase 9 (a full test suite — 167 tests across 25 files today, paused mid-pass by request; most of
-> `src/features/` is still uncovered), MiMaS (blocked on a spec that doesn't exist yet), and a short
-> list of real, known gaps — see **[`docs/Features.md`](docs/Features.md)** for the current
-> feature-by-feature state, or `app/README.md`'s "Known gap" section for the full narrative. The
-> full technical plan is in **[PLAN.md](PLAN.md)**.
+> **Status (2026-08-26):** weighing, masters, printing (including a real managed print-template
+> list and single default-printer picker), reports/dashboard, backup/restore, the audit hash chain
+> with public QR verification, offline licence activation, a Windows installer, remote access, an
+> outbox worker that actually drains email/SMS/webhook/tally/board deliveries, legacy v1/v2 data
+> import and an Android debug build all run for real in **[`app/`](app/README.md)** against a real
+> SQLite database, not just the mock. Real USB/IP/RTSP/ONVIF camera capture, ANPR, a visual
+> template designer, anomaly detection, a full test suite across every screen, and MiMaS (blocked
+> on a spec that doesn't exist yet) are the remaining gaps — see **[`docs/Features.md`](docs/Features.md)**
+> for the current feature-by-feature state, or `app/README.md`'s "Known gap" section for the full
+> narrative. The full technical plan is in **[PLAN.md](PLAN.md)**.
 >
 > Pushed to GitHub as of 2026-08-12. The *Open the demo* link below goes live once the Pages
 > workflow finishes its first run against `main`; until then, open `demo/BabuScales-demo.html` in
@@ -182,38 +180,24 @@ a real, tracked gap, not a broken link to ignore.
 
 ---
 
-## Roadmap
-
-`PLAN.md`'s own phase table (§21) — this is the live status, not the original draft order:
-
-| Phase | | |
-|---|---|---|
-| 0 | Groundwork | Superseded — shipped without the site-preset/pdfium spike; printing goes through the OS dialog instead |
-| 0.5 | Mock | **Done.** Four review rounds on `demo/BabuScales-demo.html` — the reference spec for Phase 1+ |
-| 1 | Foundation | **Done.** Scaffold, schema, `DataPort` + adapters, component library, i18n, CI, backup/restore |
-| 2 | Core | **Done.** Schema + formula engines, capture model, masters + search, indicator, hash chain |
-| 3 | Print | **Done, scoped down.** No Windows RAW/ESC-P spooler path yet |
-| 4 | Capture | **Not really done.** Cameras are the mock's own decorative fixture — no real capture |
-| 5 | Insight | **Done.** Reports, dashboard, Excel/CSV export, mass print |
-| 6 | Trust & release | **Done.** QR verification, offline licensing, Windows installer |
-| 7 | Reach | **Done except MiMaS** (blocked, no spec) **and WhatsApp** (permanently decorative, by decision). Remote access, email/SMS, a real background outbox worker, scheduled daily summary, multi-gross, legacy v1/v2 import and an Android debug build all ship |
-| 8 | Deferred by decision | Not started — ANPR, visual template designer, anomaly detection |
-| 9 | Tests | Paused mid-pass, by request — **167 tests across 25 `*.spec.ts(x)` files** today, spanning `components/`, `constants/`, `engines/` (formula, schema, print, export, outbox…) and some `db/` and `i18n` coverage; most of `src/features/` (the screens themselves) is still uncovered |
-
-See [`docs/Features.md`](docs/Features.md) for the feature-level detail behind each phase, and
-`PLAN.md` §21's "What's left" for the concrete backlog.
-
----
-
 ## Compliance
 
 Tamil Nadu has **mandated integration between the e-permit system and digital weighbridges** for
 all quarry and crusher units, to curb excess quarrying and unauthorised mineral transport.
 BabuScales is being designed for that requirement from the start — permit references, quantity
 balances and a durable submission queue are part of the core data model, with the
-**MiMaS** client landing in Phase 7 — blocked today on an integration spec that doesn't exist yet.
+**MiMaS** client — blocked today on an integration spec that doesn't exist yet.
 
 ---
+
+## Built with Claude Code
+
+This codebase is written in an ongoing pairing session with
+[Claude Code](https://claude.com/claude-code) (Anthropic) — every commit's history in
+`app/README.md`'s numbered log and `git log` was driven turn by turn against real, running code:
+implementation, the pre-push review pass, `tsc`/`eslint`/`vitest`/`cargo clippy` verification, and
+this documentation are all part of that same collaboration, not generated once and left unedited.
+Product direction, feature scope, and every "designed for, not built" call are the author's.
 
 ## Licence
 
