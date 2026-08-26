@@ -23,16 +23,49 @@
 // noopPrinters.ts` on the TS side, for the browser/Pages build).
 
 #[cfg(target_os = "windows")]
-use windows::core::PCWSTR;
+use windows::core::{PCWSTR, PWSTR};
 #[cfg(target_os = "windows")]
 use windows::Win32::Graphics::Printing::{
-    EnumPrintersW, PRINTER_ENUM_CONNECTIONS, PRINTER_ENUM_LOCAL, PRINTER_INFO_4W,
+    EnumPrintersW, GetDefaultPrinterW, PRINTER_ENUM_CONNECTIONS, PRINTER_ENUM_LOCAL, PRINTER_INFO_4W,
 };
 
 use crate::error::AppError;
 
 pub struct DetectedPrinter {
     pub name: String,
+    /// Whether Windows' `GetDefaultPrinterW` names this one as the OS
+    /// default right now — Settings → Language pane's own doc-comment
+    /// precedent, "checkbox by default" (task: single-dropdown printer
+    /// picker). Always `false` on the non-Windows/noop path below, same as
+    /// every other Windows-only field in this codebase's device sources.
+    pub is_default: bool,
+}
+
+/// `GetDefaultPrinterW`'s own documented two-call pattern (same shape as
+/// `EnumPrintersW` above): call once with a null buffer to learn the
+/// required `u16` count, then again with a buffer that size. Returns `None`
+/// (not an error) when Windows has no default printer configured at all —
+/// a perfectly normal machine state, not a failure this should propagate.
+#[cfg(target_os = "windows")]
+fn default_printer_name() -> Option<String> {
+    let mut needed: u32 = 0;
+    // SAFETY: sizing probe — a null `PWSTR` is the documented way to ask
+    // "how many u16 do you need", same convention as EnumPrintersW's own
+    // sizing call above. The call is expected to "fail" here; only
+    // `needed` is meaningful.
+    let _ = unsafe { GetDefaultPrinterW(Some(PWSTR::null()), &mut needed) };
+    if needed == 0 {
+        return None;
+    }
+    let mut buffer = vec![0u16; needed as usize];
+    let pwstr = PWSTR(buffer.as_mut_ptr());
+    // SAFETY: `pwstr` wraps `buffer`'s own backing allocation, sized to
+    // exactly the `needed` count the sizing call just reported, for this
+    // same query run immediately after — `buffer` outlives this call.
+    unsafe { GetDefaultPrinterW(Some(pwstr), &mut needed) }.ok().ok()?;
+    // Trim the trailing NUL Win32 wrote into the buffer.
+    let end = buffer.iter().position(|&c| c == 0).unwrap_or(buffer.len());
+    Some(String::from_utf16_lossy(&buffer[..end]))
 }
 
 /// Lists the printers Windows currently has installed — local printers and
@@ -93,6 +126,8 @@ pub fn list_printers() -> Result<Vec<DetectedPrinter>, AppError> {
         std::slice::from_raw_parts(buffer.as_ptr().cast::<PRINTER_INFO_4W>(), returned as usize)
     };
 
+    let default_name = default_printer_name();
+
     let mut result = Vec::with_capacity(infos.len());
     for info in infos {
         if info.pPrinterName.is_null() {
@@ -105,7 +140,8 @@ pub fn list_printers() -> Result<Vec<DetectedPrinter>, AppError> {
         // is alive, which it still is here. `to_string()` copies it out.
         let name = unsafe { info.pPrinterName.to_string() }.unwrap_or_default();
         if !name.is_empty() {
-            result.push(DetectedPrinter { name });
+            let is_default = default_name.as_deref() == Some(name.as_str());
+            result.push(DetectedPrinter { name, is_default });
         }
     }
     Ok(result)

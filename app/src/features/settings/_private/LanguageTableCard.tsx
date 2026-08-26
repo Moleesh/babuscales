@@ -7,6 +7,7 @@ import { DataTable } from "@components/DataTable";
 import type { DataTableColumn } from "@components/DataTable";
 import { Select } from "@components/Select";
 import { Tooltip } from "@components/Tooltip";
+import { FIELD_LABEL_KEYS, FIELD_LABEL_PREFIX, getAllFields, useSchema } from "@engines/schemaEngine";
 import { EN_STRINGS } from "@i18n/strings";
 import type { LanguagePack } from "@i18n/types";
 import { useTranslation } from "@i18n/useTranslation";
@@ -27,11 +28,34 @@ type Status = "edited" | "missing" | "default";
 // anything that diverges from the English default without being empty;
 // everything else is still the English copy an "Add language" seeded it
 // with and hasn't been looked at yet.
+// Bug: "field label is empty" — a custom field's key (`weigh.label.
+// <FieldId>`) has no `EN_STRINGS` entry at all (it's a user-defined field
+// name, not app chrome), so the English column fell all the way to "" and
+// showed as permanently "Missing" for every custom field even though the
+// app itself renders something real for it (`fieldLabelKeys.ts`'s
+// `resolveFieldIdLabel` falls back to the FieldId itself). Derives that same
+// readable fallback here — PascalCase FieldId split into words — so the
+// column shows what the field would actually display, not a false "Missing".
+const defaultEnglishFor = (key: string): string => {
+    if (EN_STRINGS[key] !== undefined) return EN_STRINGS[key];
+    if (!key.startsWith(FIELD_LABEL_PREFIX)) return "";
+    const fieldId = key.slice(FIELD_LABEL_PREFIX.length);
+    if (!fieldId) return "";
+    return fieldId.replace(/([a-z0-9])([A-Z])/g, "$1 $2").replace(/^./, (char) => char.toUpperCase());
+};
+
+// "green for edited, red for missing" — a key is "missing" when the picked
+// pack's own value for it is empty (an admin cleared it, or a hand-authored
+// pack never had it — `Strings[key]` falls all the way back to `""`, not
+// English, since `?? EN_STRINGS[key]` would hide the gap); "edited" is
+// anything that diverges from the English default without being empty;
+// everything else is still the English copy an "Add language" seeded it
+// with and hasn't been looked at yet.
 const statusOf = (pack: LanguagePack | null, key: string): Status => {
     if (!pack) return "default";
     const value = pack.Strings[key] ?? "";
     if (value === "") return "missing";
-    return value === EN_STRINGS[key] ? "default" : "edited";
+    return value === defaultEnglishFor(key) ? "default" : "edited";
 };
 
 export interface LanguageTableCardProps {
@@ -81,7 +105,7 @@ export const LanguageTableCard = ({
     const [statusFilter, setStatusFilter] = useState<"all" | Status>("all");
     // Task: "bring all the possible labels for the field schema together" —
     // a field's own on-screen label lives under a `<namespace>.label.<Key>`
-    // key (e.g. `weighing.label.EstimatedWeight`, the field-schema-driven
+    // key (e.g. `weigh.label.EstimatedWeight`, the field-schema-driven
     // labels on the weighing screen) — a dedicated pill groups every one of
     // those regardless of which namespace they're under, instead of hunting
     // for them one namespace at a time.
@@ -122,12 +146,60 @@ export const LanguageTableCard = ({
         if (!selectedPack && first) onSelectCode(first.Code);
     }, [selectedPack, otherPacks, onSelectCode]);
 
-    const allKeys = useMemo(() => Object.keys(EN_STRINGS), []);
+    // Task: "wire it all the schema available" — this table used to only
+    // know about keys already hand-added to `strings.ts`, so a custom
+    // field's `weigh.label.<FieldId>` key was invisible here (not even
+    // shown as "missing") until someone remembered to add it there first.
+    // `schemas` is every saved ticket schema (not just the currently active
+    // one), so a field only used by a schema nobody has picked yet still
+    // shows up and can be translated ahead of time.
+    // Bug: "i still don't see the missing keys for tamil" — `schemas` is
+    // only *saved* schema rows (db/schema.ts's `listTicketSchemas`); a site
+    // that never explicitly saved one yet (or is mid-edit on the active one)
+    // has the active `ticketSchema` missing from that list entirely — the
+    // in-memory `DEFAULT_TICKET_SCHEMA` fallback isn't a DB row, so it
+    // wouldn't be in `schemas` either. `ticketSchema` is unioned in
+    // alongside `schemas` so the currently-active schema's fields always
+    // show up here even before (or instead of) being saved.
+    const { schemas, ticketSchema } = useSchema();
+    const allKeys = useMemo(() => {
+        const keys = new Set(Object.keys(EN_STRINGS));
+        for (const schema of [ticketSchema, ...schemas]) {
+            for (const field of getAllFields(schema)) {
+                keys.add(FIELD_LABEL_KEYS[field.FieldId] ?? FIELD_LABEL_PREFIX + field.FieldId);
+            }
+        }
+        return Array.from(keys);
+    }, [schemas, ticketSchema]);
     const rows: KeyRow[] = useMemo(() => {
         const needle = filter.trim().toLowerCase();
         let keys = needle ? allKeys.filter((key) => key.toLowerCase().includes(needle)) : allKeys;
-        if (statusFilter !== "all") keys = keys.filter((key) => statusOf(selectedPack, key) === statusFilter);
-        if (labelOnly) keys = keys.filter((key) => key.split(".")[1] === "label");
+        // Bug: "i still don't see the missing keys for tamil" — a pack
+        // created via "+ Add Language" seeds every key with a full copy of
+        // `EN_STRINGS` (task: "on create we will copy everything from
+        // english"), so an untranslated custom-field key isn't empty at
+        // all — it's a real string that just happens to equal the English
+        // default (`statusOf` calls that "default", not "missing"). The
+        // field-schema preview already treats "still English" as
+        // untranslated (falls back the same way), so the "Missing" pill
+        // has to mean the same thing here: for the picked (non-English)
+        // pack, "still equals English" is exactly as untranslated as
+        // "empty" — only the English column's own "missing" keeps its
+        // narrower, empty-only meaning.
+        if (statusFilter === "missing" && selectedPack) {
+            keys = keys.filter((key) => statusOf(selectedPack, key) !== "edited");
+        } else if (statusFilter !== "all") {
+            keys = keys.filter((key) => statusOf(selectedPack, key) === statusFilter);
+        }
+        // 3-part shape only (`<namespace>.label.<Key>`) — a 2-part key like
+        // "contextMenu.label" has "label" as its own last segment, not a
+        // namespace marker, and isn't a field-schema label.
+        if (labelOnly) {
+            keys = keys.filter((key) => {
+                const parts = key.split(".");
+                return parts.length === 3 && parts[1] === "label";
+            });
+        }
         return keys.map((key) => ({ key }));
     }, [allKeys, filter, statusFilter, labelOnly, selectedPack]);
 
@@ -147,7 +219,7 @@ export const LanguageTableCard = ({
     const commitEnglishEdit = (key: string): void => {
         setEditingEnglishKey(null);
         const value = englishDraft;
-        const current = enPack?.Strings[key] ?? EN_STRINGS[key];
+        const current = enPack?.Strings[key] ?? defaultEnglishFor(key);
         if (value === current) return;
         const base = enPack ?? { Code: "en", Name: "English", Version: 1, Strings: {} };
         void onAddLanguagePack({ ...base, Strings: { ...base.Strings, [key]: value } });
@@ -214,7 +286,7 @@ export const LanguageTableCard = ({
                         />
                     );
                 }
-                const value = enPack?.Strings[row.key] ?? EN_STRINGS[row.key] ?? "";
+                const value = enPack?.Strings[row.key] ?? defaultEnglishFor(row.key);
                 const status = statusOf(enPack, row.key);
                 const statusClass =
                     status === "edited" ? styles.valueTranslated : status === "missing" ? styles.valueMissing : "";
@@ -245,6 +317,7 @@ export const LanguageTableCard = ({
                                 className={styles.langSelect}
                                 value={selectedCode ?? otherPacks[0].Code}
                                 options={otherPacks.map((pack) => ({ value: pack.Code, label: pack.Name }))}
+                                disabled={!unlocked}
                                 onChange={onSelectCode}
                             />
                             <button
@@ -296,8 +369,17 @@ export const LanguageTableCard = ({
                 }
                 const value = selectedPack.Strings[row.key] ?? "";
                 const status = statusOf(selectedPack, row.key);
-                const statusClass =
-                    status === "edited" ? styles.valueTranslated : status === "missing" ? styles.valueMissing : "";
+                // Bug: "something is wrong with missing tab" — the Missing
+                // pill already treats "default" (still literally English,
+                // e.g. a pack seeded via "+ Add Language") the same as
+                // truly empty for this picked, non-English pack (see the
+                // filter above), but this cell's own red/green styling
+                // still only lit up for "missing", so a row the filter had
+                // just surfaced sat there looking like any ordinary,
+                // already-translated row — no visual signal it still needs
+                // work. Same rule here: anything short of "edited" reads as
+                // "still needs translating" for this column.
+                const statusClass = status === "edited" ? styles.valueTranslated : styles.valueMissing;
                 return (
                     <Tooltip label={value || t("settings.languagePane.missing")} onlyWhenTruncated className={styles.truncateWrap}>
                         <span
@@ -322,7 +404,6 @@ export const LanguageTableCard = ({
             // own doc comment); the pane's `.pane-area` (SettingsScreen.
             // module.css) is the actual scroll region now, so this needs
             // opting in the same way Reports' own Card already does.
-            sticky
             title={<span className="lbl">{t("settings.languagePane.title")}</span>}
             headerRight={
                 <span className="chip num">
@@ -354,14 +435,6 @@ export const LanguageTableCard = ({
                             }}
                         >
                             {t("settings.languagePane.statusAll")}
-                        </button>
-                        <button
-                            type="button"
-                            className={styles.filterPill}
-                            aria-pressed={statusFilter === "edited"}
-                            onClick={() => setStatusFilter(statusFilter === "edited" ? "all" : "edited")}
-                        >
-                            {t("settings.languagePane.statusEdited")}
                         </button>
                         <button
                             type="button"

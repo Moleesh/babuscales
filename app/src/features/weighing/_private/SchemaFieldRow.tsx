@@ -9,7 +9,7 @@ import type { UseMasterCache } from "@db/useMasterCache";
 import { evaluateFormula } from "@engines/formulaEngine";
 import type { FormulaContext } from "@engines/formulaEngine";
 import { toDecimalString } from "@engines/formulaEngine/Decimal";
-import { resolveFieldIdLabel, resolvePlaceholder } from "@engines/schemaEngine";
+import { resolveFieldLabel, resolvePlaceholder } from "@engines/schemaEngine";
 import type { Field as SchemaField } from "@engines/schemaEngine";
 import { resolveLocalized } from "@i18n/types";
 import { useTranslation } from "@i18n/useTranslation";
@@ -315,7 +315,7 @@ export const SchemaFieldRow = ({ field, value, onChange, ctx, readOnly, masterCa
     const failing = failingValidationRules(field.Validate, ctx);
 
     return (
-        <Field id={`fCustom_${field.FieldId}`} label={field.Label ?? resolveFieldIdLabel(field.FieldId, t)}>
+        <Field id={`fCustom_${field.FieldId}`} label={resolveFieldLabel(field, lang, t)}>
             <FieldInput
                 field={field}
                 value={value}

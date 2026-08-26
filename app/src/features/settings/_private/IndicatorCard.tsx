@@ -48,7 +48,6 @@ export const IndicatorCard = ({
     const { t } = useTranslation();
     return (
         <Card
-            sticky
             title={<span className="lbl">{t("settings.indicator.title")}</span>}
             headerRight={
                 <span className={styles.applied}>{t("settings.weighingRules.appliedImmediately")}</span>

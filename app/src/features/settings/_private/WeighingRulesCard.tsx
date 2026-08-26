@@ -20,7 +20,6 @@ export const WeighingRulesCard = ({ settings, unlocked, onSetRule }: WeighingRul
     const { t } = useTranslation();
     return (
         <Card
-            sticky
             title={<span className="lbl">{t("settings.weighingRules.title")}</span>}
             headerRight={<span className={styles.applied}>{t("settings.weighingRules.appliedImmediately")}</span>}
         >

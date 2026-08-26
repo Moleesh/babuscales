@@ -5,21 +5,40 @@ import { DataTable } from "@components/DataTable";
 import type { DataTableColumn } from "@components/DataTable";
 import { Select } from "@components/Select";
 import { Tooltip } from "@components/Tooltip";
-import { getAllFields, resolveFieldIdLabel } from "@engines/schemaEngine";
+import { FIELD_LABEL_KEYS, FIELD_LABEL_PREFIX, getAllFields, resolveFieldLabel } from "@engines/schemaEngine";
 import type { Field, Schema } from "@engines/schemaEngine";
-import { resolveLocalized } from "@i18n/types";
 import type { LanguagePack } from "@i18n/types";
 import { useTranslation } from "@i18n/useTranslation";
 
 import styles from "./_styles/FieldsLanguagePane.module.css";
 import { repairJson } from "./repairJson";
 
+// Reserved preview-language codes, not real pack `Code`s — task: "add one
+// more here ie) key and english". `PREVIEW_KEY_CODE` shows each row's raw
+// i18n key untranslated (handy for spotting which key a label actually
+// resolves to). Plain `"en"` doubles as the literal-English code: it's also
+// what an "en" override pack (LanguageTableCard.tsx's `enPack`) would use,
+// and `previewT`'s own fallback chain (FieldsLanguagePane.tsx) already
+// lands on `EN_STRINGS` when no pack matches, so no override pack existing
+// yet still resolves it correctly — only add it as its own option when
+// nothing already provides that code.
+export const PREVIEW_KEY_CODE = "__key__";
+
 // No field needs a `Label` at all now (task: "labels in the json we dont
-// need it") — same FieldId → `weighing.label.` i18n-key fallback the
+// need it") — same FieldId → `weigh.label.` i18n-key fallback the
 // Weighing screen itself uses (`resolveFieldIdLabel`), so this table shows
 // the same text an operator sees rather than a blank cell.
-const fieldLabel = (field: Field, lang: string, t: (key: string) => string): string =>
-    field.Label ? resolveLocalized(field.Label, lang) : resolveFieldIdLabel(field.FieldId, t);
+//
+// "Key" preview mode ("not having keys / we need consistency" — a field
+// with its own inline `Label` used to always show that literal text, even
+// in Key mode, while every other row showed its i18n key) has to bypass
+// `field.Label` entirely: an inline Label carries no key at all, so the
+// only key-shaped thing to show is the same `weigh.label.<FieldId>`
+// convention `resolveFieldIdLabel` falls back to for key-less fields.
+const fieldLabel = (field: Field, lang: string, t: (key: string) => string): string => {
+    if (lang === PREVIEW_KEY_CODE) return FIELD_LABEL_KEYS[field.FieldId] ?? FIELD_LABEL_PREFIX + field.FieldId;
+    return resolveFieldLabel(field, lang, t);
+};
 
 interface VisibilityToggleArgs {
     field: Field;
@@ -111,13 +130,12 @@ export interface FieldSchemaCardProps {
     ticketSchema: Schema;
     /** Every saved schema (built-in default + every upload) — lets you keep multiple uploads and pick from a dropdown. */
     schemas: Schema[];
-    /** The pack code the Label column resolves against — the caller's own `previewLang`, not necessarily the app's active runtime language. */
+    /** The pack code the Label column resolves against — always the app's own active runtime language now (FieldsLanguagePane.tsx's `lang`); the picker that used to let this diverge is read-only, see PreviewLangSelect. */
     lang: string;
-    /** Resolves a `weighing.label.<FieldId>` (or built-in) key against `lang` specifically — a pack-scoped `t`, distinct from the ambient `useTranslation().t` used everywhere else in this card, so the table can preview a language without switching the whole app over. */
+    /** Resolves a `weigh.label.<FieldId>` (or built-in) key against `lang` specifically — a pack-scoped `t`, distinct from the ambient `useTranslation().t` used everywhere else in this card, so the table renders labels in the same language `lang` resolves to. */
     labelT: (key: string) => string;
-    /** Every installed pack (English + every upload), for the preview-language picker below the schema picker. */
+    /** Every installed pack (English + every upload), shown in the (now read-only) preview-language indicator below the schema picker. */
     previewPacks: LanguagePack[];
-    onSelectPreviewLang: (lang: string) => void;
     unlocked: boolean;
     schemaBusy: boolean;
     schemaMessage: { text: string; bad: boolean } | null;
@@ -356,34 +374,36 @@ const ActiveSchemaSelect = ({
     </div>
 );
 
-// The Label column's preview-language picker — separate from the app's own
-// header language toggle, so an admin can see e.g. Tamil labels here
-// without switching the whole running app. Always shown (even with just
-// English + one pack) since it's also how you get back to English after
-// picking a preview language.
+// The Label column's preview-language indicator — used to be a real picker
+// (an admin could preview e.g. Tamil labels without switching the whole
+// running app); task "Preview labels in should auto select the language
+// curreclt used nad should be disabled" → "should not allow the dropdown to
+// be selcted atall" turned it read-only: it always shows the app's own
+// active `lang` and is unconditionally disabled, admin or not — `unlocked`
+// no longer has any say here.
 const PreviewLangSelect = ({
     lang,
     previewPacks,
-    unlocked,
-    onSelectPreviewLang,
     t,
 }: {
     lang: string;
     previewPacks: LanguagePack[];
-    unlocked: boolean;
-    onSelectPreviewLang: (lang: string) => void;
     t: (key: string) => string;
-}) => (
-    <div className={styles.activeSchemaRow}>
-        <span className="lbl">{t("settings.fieldSchema.previewLangLabel")}</span>
-        <Select
-            value={lang}
-            options={previewPacks.map((pack) => ({ value: pack.Code, label: pack.Name }))}
-            disabled={!unlocked}
-            onChange={onSelectPreviewLang}
-        />
-    </div>
-);
+}) => {
+    const options = [
+        { value: PREVIEW_KEY_CODE, label: t("settings.fieldSchema.previewKey") },
+        ...(previewPacks.some((pack) => pack.Code === "en")
+            ? []
+            : [{ value: "en", label: t("settings.fieldSchema.previewEnglish") }]),
+        ...previewPacks.map((pack) => ({ value: pack.Code, label: pack.Name })),
+    ];
+    return (
+        <div className={styles.activeSchemaRow}>
+            <span className="lbl">{t("settings.fieldSchema.previewLangLabel")}</span>
+            <Select value={lang} options={options} disabled={true} onChange={() => {}} />
+        </div>
+    );
+};
 
 interface PickerRowsProps {
     ticketSchema: Schema;
@@ -393,7 +413,6 @@ interface PickerRowsProps {
     unlocked: boolean;
     schemaBusy: boolean;
     onSelectActiveSchema: (schemaId: string) => void;
-    onSelectPreviewLang: (lang: string) => void;
     t: (key: string) => string;
 }
 
@@ -408,10 +427,12 @@ const PickerRows = ({
     unlocked,
     schemaBusy,
     onSelectActiveSchema,
-    onSelectPreviewLang,
     t,
 }: PickerRowsProps) => (
-    <>
+    // Task: "have both of them in one line" — Active schema and Preview
+    // labels in used to each be their own full-width row, stacking one atop
+    // the other even though side-by-side left plenty of room.
+    <div className={styles.pickerRows}>
         {schemas.length > 1 && (
             <ActiveSchemaSelect
                 ticketSchema={ticketSchema}
@@ -422,16 +443,8 @@ const PickerRows = ({
                 t={t}
             />
         )}
-        {previewPacks.length > 1 && (
-            <PreviewLangSelect
-                lang={lang}
-                previewPacks={previewPacks}
-                unlocked={unlocked}
-                onSelectPreviewLang={onSelectPreviewLang}
-                t={t}
-            />
-        )}
-    </>
+        <PreviewLangSelect lang={lang} previewPacks={previewPacks} t={t} />
+    </div>
 );
 
 // The card's own body — split out of FieldSchemaCard purely to stay under
@@ -442,7 +455,6 @@ const FieldSchemaCardBody = ({
     lang,
     labelT,
     previewPacks,
-    onSelectPreviewLang,
     unlocked,
     schemaBusy,
     schemaMessage,
@@ -456,19 +468,27 @@ const FieldSchemaCardBody = ({
     return (
         <div className={styles.body}>
             <p className={styles.hint}>{t("settings.fieldSchema.hint")}</p>
+            {/* Active-schema picker stays open — "others can be seen
+                [without admin]" — only upload and Hide/Show (below) stay
+                gated. Preview-language is no longer a picker at all (see
+                PreviewLangSelect's own doc comment). */}
             <PickerRows
                 ticketSchema={ticketSchema}
                 schemas={schemas}
                 lang={lang}
                 previewPacks={previewPacks}
-                unlocked={unlocked}
+                unlocked={true}
                 schemaBusy={schemaBusy}
                 onSelectActiveSchema={onSelectActiveSchema}
-                onSelectPreviewLang={onSelectPreviewLang}
                 t={t}
             />
+            {/* Task: "in field upload, hide/show are the one that cannt be
+                done without admin others can be seen" — upload stays behind
+                the real admin lock; paste-edit stays open (fixed `true`) —
+                see the DataTable's Hide/Show column below for the other
+                admin-gated one. */}
             <SchemaDropZone unlocked={unlocked} schemaBusy={schemaBusy} onSchemaFile={onSchemaFile} t={t} />
-            <SchemaPasteBox unlocked={unlocked} schemaBusy={schemaBusy} onSchemaText={onSchemaText} t={t} />
+            <SchemaPasteBox unlocked={true} schemaBusy={schemaBusy} onSchemaText={onSchemaText} t={t} />
             {unlocked && (
                 <button type="button" className={styles.resetButton} disabled={schemaBusy} onClick={onReset}>
                     {t("settings.fieldSchema.resetToDefault")}
@@ -482,6 +502,8 @@ const FieldSchemaCardBody = ({
                     lang,
                     t,
                     labelT,
+                    // Hide/Show stays behind the real admin lock too — see
+                    // the drop-zone's doc comment above.
                     unlocked,
                     schemaBusy,
                     onToggleVisible: onToggleFieldVisible,
@@ -500,7 +522,6 @@ export const FieldSchemaCard = (props: FieldSchemaCardProps) => {
     const { t } = useTranslation();
     return (
         <Card
-            sticky
             title={<span className="lbl">{t("settings.fieldSchema.title")}</span>}
             headerRight={
                 <span className="chip num">

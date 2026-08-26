@@ -8,9 +8,8 @@ import type { WeightUnit } from "@constants/numberFormat";
 import type { Capture, CaptureType } from "@db/ticketBody";
 import type { DerivedWeights } from "@db/ticketBody";
 import { hasCapture } from "@db/ticketBody";
-import { resolveFieldIdLabel } from "@engines/schemaEngine";
+import { resolveFieldLabel as resolveFieldLabelForField } from "@engines/schemaEngine";
 import type { Field } from "@engines/schemaEngine";
-import { resolveLocalized } from "@i18n/types";
 import { useTranslation } from "@i18n/useTranslation";
 
 import type { CalcFieldResults } from "./calcSegments";
@@ -166,7 +165,7 @@ const CalcSegmentRows = ({
                 {items.map(({ fieldId, field, value }) => (
                     <CalcBox
                         key={fieldId}
-                        label={field.Label ? resolveLocalized(field.Label, lang) : resolveFieldIdLabel(fieldId, t)}
+                        label={resolveFieldLabelForField(field, lang, t)}
                         value={value !== undefined ? formatPlainNumber(value) : "—"}
                         formula={prettified?.get(fieldId) ?? null}
                     />

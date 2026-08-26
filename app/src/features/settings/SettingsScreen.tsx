@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { ScrollArea } from "@components/ScrollArea";
 import { SegmentedControl } from "@components/SegmentedControl";
@@ -31,9 +31,9 @@ type PaneKey = "biz" | "fields" | "lang" | "printer" | "weigh" | "conn" | "sys";
 const buildPaneOptions = (t: (key: string) => string): SegmentedOption<PaneKey>[] => [
     { value: "biz", label: t("settings.pane.biz") },
     { value: "weigh", label: t("settings.pane.weigh") },
+    { value: "printer", label: t("settings.pane.printer") },
     { value: "fields", label: t("settings.pane.fields") },
     { value: "lang", label: t("settings.pane.lang") },
-    { value: "printer", label: t("settings.pane.printer") },
     { value: "conn", label: t("settings.pane.conn") },
     { value: "sys", label: t("settings.pane.sys") },
 ];
@@ -66,6 +66,14 @@ export const SettingsScreen = ({ onResetTicketSeries, onAddLanguagePack, onDelet
     const [pane, setPane] = useState<PaneKey>("biz");
     const paneOptions = useMemo(() => buildPaneOptions(t), [t]);
     const paneAreaRef = useRef<HTMLDivElement | null>(null);
+
+    // Task: "when switching tabs the scroll stay in the position of the
+    // previous tab it needs to reset to top" — the scroll container is
+    // shared across every pane (ScrollArea's `paneAreaRef`), so it kept
+    // whatever scrollTop the last tab left it at instead of starting fresh.
+    useEffect(() => {
+        paneAreaRef.current?.scrollTo({ top: 0 });
+    }, [pane]);
 
     return (
         <div className={styles.screen}>

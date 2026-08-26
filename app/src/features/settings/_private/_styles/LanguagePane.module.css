@@ -35,6 +35,26 @@
     align-items: start;
     --datatable-max-height: none;
     --datatable-overflow-y: visible;
+    /* Task: "on empty let it fill the page" — an empty result (e.g. the
+       Missing + Field labels filters combined with no matches) used to
+       shrink DataTable's EmptyState down to its own tiny content size,
+       leaving a big blank gap between the Card and the bottom of
+       `.pane-area` (SettingsScreen.module.css's own scroll region).
+       `--datatable-empty-min-height` (DataTable.module.css's `.emptyPin`) —
+       deliberately NOT `--datatable-min-height`, which applies to
+       `.wrapper` unconditionally and so also force-padded real, populated
+       results past `.pane-area`'s actual height (regression: "when toggle
+       the values the scroll stay visible instead of removing", Missing
+       filter alone, 7 real rows). Same fixed-constant-standing-in-for-
+       dynamic-chrome approach as Reports' own `--reports-chrome-h`
+       (ReportsScreen.module.css) rather than threading an exact
+       `.top-row`/toolbar/filter-bar measurement through; 320px covers
+       `.screen`'s own reserved 36px (SettingsScreen.module.css), `.top-row`
+       + its 12px gap, and this Card's own toolbar + filter-bar rows —
+       everything besides `--card-header-h`, which is actually measured. */
+    --datatable-empty-min-height: calc(
+        100vh - var(--shell-topbar-h, 0px) - var(--shell-header-h, 0px) - var(--card-header-h, 0px) - 320px
+    );
 }
 
 .body {
@@ -95,6 +115,32 @@
 .addInput:focus {
     outline: none;
     border-color: var(--led);
+}
+
+/* The optional labels-JSON paste box (task: "have a optional json text box
+   to upload the labels if they have them handy") — same shape as .addInput
+   but sized for a multi-line paste and switched to a monospace font, same
+   as FieldsLanguagePane.module.css's `.paste-input`. */
+.addTextarea {
+    width: 100%;
+    padding: 7px 9px;
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    background: var(--panel-2);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    resize: vertical;
+}
+.addTextarea:focus {
+    outline: none;
+    border-color: var(--led);
+}
+
+.hint {
+    font-size: 0.6875rem;
+    color: var(--dim);
+    line-height: 1.5;
 }
 
 .addButton {

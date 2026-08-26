@@ -8,11 +8,12 @@ import styles from "./_styles/BusinessPane.module.css";
 
 // New default-open Settings pane — name/address/phone shown in
 // the header's `siteLabel` (App.tsx) used to be a hardcoded string; this is
-// the one place to edit it. Admin-gated like every other configuration
-// pane (not "operator comfort" — see AppearancePane's own note on that
-// distinction), writes through `save()` immediately, same as WeighingPane.
+// the one place to edit it. Was admin-gated like most other configuration
+// panes; task "openup buniess & aperance" removed that — Business &
+// Appearance is now fully open, matching AppearancePane's own "operator
+// comfort" reasoning next to it (same tab).
 export const BusinessPane = () => {
-    const { settings, unlocked, save } = useSettings();
+    const { settings, save } = useSettings();
     const { t } = useTranslation();
 
     const setField = (key: keyof BusinessInfo, value: string): void => {
@@ -23,13 +24,11 @@ export const BusinessPane = () => {
     return (
         <div className={styles.grid}>
             <Card
-            sticky
             title={<span className="lbl">{t("settings.business.title")}</span>}>
                 <div className={styles.form}>
                     <Field id="setBizName" label={t("settings.business.name")}>
                         <input
                             id="setBizName"
-                            disabled={!unlocked}
                             defaultValue={settings.Business.Name}
                             key={settings.Business.Name}
                             autoComplete="off"
@@ -42,7 +41,6 @@ export const BusinessPane = () => {
                     <Field id="setBizAddress" label={t("settings.business.address")}>
                         <input
                             id="setBizAddress"
-                            disabled={!unlocked}
                             defaultValue={settings.Business.Address}
                             key={settings.Business.Address}
                             autoComplete="off"
@@ -55,7 +53,6 @@ export const BusinessPane = () => {
                     <Field id="setBizPhone" label={t("settings.business.phone")}>
                         <input
                             id="setBizPhone"
-                            disabled={!unlocked}
                             defaultValue={settings.Business.Phone}
                             key={settings.Business.Phone}
                             autoComplete="off"

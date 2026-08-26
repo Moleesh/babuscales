@@ -1,6 +1,7 @@
 import type { DataPort } from "@db/DataPort";
 
 import { languagePackSchema } from "./schemas";
+import { EN_STRINGS } from "./strings";
 import type { LanguagePack } from "./types";
 
 // "A language pack is a row in the database, not a file and not a code
@@ -40,6 +41,24 @@ export const saveLanguagePack = (db: DataPort, pack: LanguagePack): Promise<void
 // doc comment already describes one level up — an uploaded override doesn't
 // need to repeat every key the built-in pack already has, only the ones an
 // admin actually wants to change or add (e.g. a new custom field's label).
+//
+// Bug: "missing top 2 rows has value??" — `AddLanguageForm`'s "on create we
+// copy everything from English" seed (its own doc comment) means a
+// brand-new pack's `Strings` starts as a full, literal copy of `EN_STRINGS`
+// at that moment, key for key. The old unconditional per-key override above
+// then let that untouched copy outrank the shipped built-in translation
+// forever, for every key an admin never got around to editing — so when
+// `ta.ts` later gained a real translation for a key (`nav.dash`,
+// `weigh.paperA4`), a site's own years-old "தமிழ்" pack kept shadowing it
+// with its original, never-edited English seed value, and the Language
+// table's "Missing" tab (which flags exactly this "still equals English"
+// case, see `defaultEnglishFor`/`statusOf` below) had no way to tell that
+// apart from a key the admin genuinely wants to keep in English. Only let
+// an uploaded/DB value win when it's actually been edited away from what
+// English was for that key, or when the built-in pack has no value for that
+// key at all (a genuinely custom key, e.g. a per-site field label) — an
+// unedited seed copy defers to whatever the built-in pack ships instead of
+// freezing it out.
 export const mergeLanguagePacks = (
     builtIn: LanguagePack[],
     uploaded: LanguagePack[],
@@ -47,10 +66,15 @@ export const mergeLanguagePacks = (
     const byCode = new Map<string, LanguagePack>(builtIn.map((pack) => [pack.Code, pack]));
     for (const pack of uploaded) {
         const base = byCode.get(pack.Code);
-        byCode.set(pack.Code, {
-            ...pack,
-            Strings: base ? { ...base.Strings, ...pack.Strings } : pack.Strings,
-        });
+        if (!base) {
+            byCode.set(pack.Code, pack);
+            continue;
+        }
+        const strings = { ...base.Strings };
+        for (const [key, value] of Object.entries(pack.Strings)) {
+            if (base.Strings[key] === undefined || value !== EN_STRINGS[key]) strings[key] = value;
+        }
+        byCode.set(pack.Code, { ...pack, Strings: strings });
     }
     return [...byCode.values()];
 };

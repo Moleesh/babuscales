@@ -13,8 +13,8 @@ import type { UseWeighingTicket } from "../useWeighingTicket";
 import { focusFirstTicketField } from "./focusFirstTicketField";
 
 const kindOptions = (t: ReturnType<typeof useTranslation>["t"]): SegmentedOption<CaptureType>[] => [
-    { value: "Tare", label: t("weigh.tare") },
-    { value: "Gross", label: t("weigh.gross") },
+    { value: "Tare", label: t("weigh.label.tare") },
+    { value: "Gross", label: t("weigh.label.gross") },
 ];
 
 // Exactly one Tare and one Gross per ticket — once a kind is captured it's
@@ -305,7 +305,7 @@ export const ActionsCard = ({
                     hideNet
                     weightUnit={weightUnit}
                     lang={lang}
-                    labels={{ tare: t("weigh.tare"), gross: t("weigh.gross"), net: t("weigh.net") }}
+                    labels={{ tare: t("weigh.label.tare"), gross: t("weigh.label.gross"), net: t("weigh.label.net") }}
                 />
                 <SaveAndPrintRow
                     ticket={ticket}

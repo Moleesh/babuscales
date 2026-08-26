@@ -22,7 +22,6 @@ export const SmsCard = () => {
 
     return (
         <Card
-            sticky
             title={<span className="lbl">{t("settings.sms.title")}</span>}
             headerRight={flash ? <span className={styles.applied}>{flash}</span> : null}
         >

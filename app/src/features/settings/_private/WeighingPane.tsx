@@ -22,11 +22,15 @@ import { WeighingRulesCard } from "./WeighingRulesCard";
 // integrations, so it reads more naturally alongside them. Same
 // serial-only guard as before: nothing to show on the demo/web build, which
 // has no real port to configure.
-export interface WeighingPaneProps {
-    /** `DataPort.resetDocSeries("Ticket", "default")` — lives at App level, wired through here for TicketNumberingCard's Reset (ticket numbering moved here from SystemPane by request). Resolves with the new `Epoch`; TicketAndDateTimeCard persists it into `Numbering.CurrentEpoch`. */
-    onResetTicketSeries: (startSeq: number) => Promise<{ Epoch: number }>;
-}
-
+//
+// TicketAndDateTimeCard has bounced between this pane, PrinterPane, and its
+// own standalone tab a few times this project; task "move tivket to weighing
+// below rules" first landed it in column 2 under WeighingRulesCard, then
+// "move it below weighbridge indicator" moved it to column 1 under
+// IndicatorColumn instead — this pane keeps its two-column layout
+// (indicator+ticket / rules), the ticket card just stacks below whichever
+// card it's asked to follow. Still admin-gated ("ticket need admin"), same
+// `unlocked` this whole pane already threads through.
 interface IndicatorColumnProps {
     settings: ReturnType<typeof useSettings>["settings"];
     unlocked: boolean;
@@ -75,12 +79,16 @@ const IndicatorColumn = ({ settings, unlocked, onSave, onSetStability }: Indicat
         // the simulated indicator, so it gets its own small card
         // instead of disappearing.
         <Card
-            sticky
             title={<span className="lbl">{t("settings.indicator.title")}</span>}>
             <StabilityGateFields stability={settings.Stability} unlocked={unlocked} onChange={onSetStability} />
         </Card>
     );
 };
+
+export interface WeighingPaneProps {
+    /** `DataPort.resetDocSeries("Ticket", "default")` — lives at App level, wired through here for TicketAndDateTimeCard's Reset. Resolves with the new `Epoch`, which it persists into `Numbering.CurrentEpoch`. */
+    onResetTicketSeries: (startSeq: number) => Promise<{ Epoch: number }>;
+}
 
 export const WeighingPane = ({ onResetTicketSeries }: WeighingPaneProps) => {
     const { settings, unlocked, save } = useSettings();
@@ -95,6 +103,7 @@ export const WeighingPane = ({ onResetTicketSeries }: WeighingPaneProps) => {
 
     return (
         <div className={styles.grid}>
+            {/* Column 1 — weight indicator, ticket numbering & date/time below. */}
             <div className={styles.col}>
                 <IndicatorColumn
                     settings={settings}
@@ -102,10 +111,6 @@ export const WeighingPane = ({ onResetTicketSeries }: WeighingPaneProps) => {
                     onSave={(next) => void save(next)}
                     onSetStability={setStability}
                 />
-            </div>
-            {/* Column 2 — ticket numbering and date & time merged into one
-                card (by request), instead of two separate cards stacked. */}
-            <div className={styles.col}>
                 <TicketAndDateTimeCard
                     settings={settings}
                     unlocked={unlocked}
@@ -113,7 +118,7 @@ export const WeighingPane = ({ onResetTicketSeries }: WeighingPaneProps) => {
                     onResetTicketSeries={onResetTicketSeries}
                 />
             </div>
-            {/* Column 3 — weighing rules. */}
+            {/* Column 2 — weighing rules. */}
             <div className={styles.col}>
                 <WeighingRulesCard settings={settings} unlocked={unlocked} onSetRule={setRule} />
             </div>

@@ -83,6 +83,10 @@ export const Tooltip = ({
 }: TooltipProps) => {
     const [open, setOpen] = useState(false);
     const [bubbleStyle, setBubbleStyle] = useState<CSSProperties>(UNMEASURED_STYLE);
+    // Tracks whichever side the placement effect actually used (may differ
+    // from the `side` prop when it had to flip — see the "tooltip issue" fix
+    // below) so the bubble's arrow class always matches where it really is.
+    const [resolvedSide, setResolvedSide] = useState(side);
     const wrapRef = useRef<HTMLSpanElement>(null);
     const bubbleRef = useRef<HTMLSpanElement>(null);
     const id = useId();
@@ -111,14 +115,21 @@ export const Tooltip = ({
             const bubbleHeight = bubbleRef.current?.offsetHeight ?? 28;
             const rawLeft = align === "end" ? rect.right - bubbleWidth : rect.left + rect.width / 2 - bubbleWidth / 2;
             const left = Math.min(Math.max(rawLeft, VIEWPORT_MARGIN), window.innerWidth - bubbleWidth - VIEWPORT_MARGIN);
-            const rawTop = side === "top" ? rect.top - GAP - bubbleHeight : rect.bottom + GAP;
-            // Bug: only `left` used to be clamped to the viewport — a row
-            // near the top of a scrolling table (default side="top") could
-            // compute a negative `top` and render the bubble off-screen or
-            // under a sticky header, the vertical twin of the "tooltip cut
-            // off" bug the horizontal clamp above already fixed.
+            // Bug: "tooltip issue" — a row near the top of a scrolling table
+            // (default side="top") had its `rawTop` go negative, and the old
+            // fix just clamped that back down to VIEWPORT_MARGIN instead of
+            // flipping sides — for a row that starts only a few px below the
+            // viewport top, VIEWPORT_MARGIN still lands the bubble on top of
+            // the row's own text instead of clear of it. If "top" doesn't
+            // actually fit above the trigger, flip to "bottom" instead of
+            // clamping into an overlap; only clamp as a last resort when
+            // even "bottom" would run past the viewport's far edge.
+            const fitsAbove = rect.top - GAP - bubbleHeight >= VIEWPORT_MARGIN;
+            const effectiveSide = side === "top" && !fitsAbove ? "bottom" : side;
+            const rawTop = effectiveSide === "top" ? rect.top - GAP - bubbleHeight : rect.bottom + GAP;
             const top = Math.min(Math.max(rawTop, VIEWPORT_MARGIN), window.innerHeight - bubbleHeight - VIEWPORT_MARGIN);
             setBubbleStyle({ position: "fixed", top, left });
+            setResolvedSide(effectiveSide);
         };
         place();
         // Re-measures on resize, same as before. Scroll used to also
@@ -165,7 +176,7 @@ export const Tooltip = ({
                         ref={bubbleRef}
                         role="tooltip"
                         id={id}
-                        className={`${styles.bubble} ${styles[side]} ${align === "end" ? styles.alignEnd : ""}`}
+                        className={`${styles.bubble} ${styles[resolvedSide]} ${align === "end" ? styles.alignEnd : ""}`}
                         style={bubbleStyle}
                     >
                         {label}

@@ -1,6 +1,5 @@
-import { resolveFieldIdLabel } from "@engines/schemaEngine";
+import { resolveFieldLabel as resolveFieldLabelForField } from "@engines/schemaEngine";
 import type { Field } from "@engines/schemaEngine";
-import { resolveLocalized } from "@i18n/types";
 
 // The 5 fixed ticket fields rendered by their own dedicated controls in
 // TicketFieldsCard.tsx (still the hardware-shaped master-search/plain-text
@@ -16,7 +15,7 @@ export const FIXED_FIELD_IDS = ["VehicleNo", "Party", "Material", "Transporter",
 export const isCalculatedField = (field: Field, calculatedIds: Set<string>): boolean => calculatedIds.has(field.FieldId);
 
 /** Looks up `fieldId`'s Label in the active Schema, falling back to the
- * shared `weighing.label.<FieldId>` i18n convention (`resolveFieldIdLabel`)
+ * shared `weigh.label.<FieldId>` i18n convention (`resolveFieldIdLabel`)
  * when the schema has no such field or that field carries no `Label` of its
  * own — shared by TicketFieldsCard's fixed rows and CalcCard's capture
  * boxes. Schema JSON no longer needs a `Label` per field at all (task:
@@ -28,6 +27,6 @@ export const resolveFieldLabel = (
     t: (key: string) => string,
 ): string => {
     const field = fields.find((candidate) => candidate.FieldId === fieldId);
-    if (field?.Label) return resolveLocalized(field.Label, lang);
-    return resolveFieldIdLabel(fieldId, t);
+    if (field) return resolveFieldLabelForField(field, lang, t);
+    return resolveFieldLabelForField({ FieldId: fieldId }, lang, t);
 };

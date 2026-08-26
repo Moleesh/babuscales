@@ -59,7 +59,7 @@ export const WeightDisplay = ({
     motion,
     mode = "full",
     labels = DEFAULT_LABELS,
-    ghostPattern = "88,888",
+    ghostPattern = "88,8888",
     lang = "en",
     timeFmt = "24",
     dateFmt,

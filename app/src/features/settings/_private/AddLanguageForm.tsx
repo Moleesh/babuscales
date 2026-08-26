@@ -51,15 +51,40 @@ const uniqueCode = (base: string, existingCodes: string[]): string => {
     return `${base}${suffix}`;
 };
 
+// Task: "have a optional json text box to upload the labels if they have
+// them handy, missing one in this case will be missing" — pasting a
+// `{ "key": "value" }` map here uses those values as-is instead of the
+// default full-English-copy seed; any key the JSON leaves out is left out
+// of `Strings` entirely (not backfilled from English) so it reads as
+// genuinely "missing" (statusOf in LanguageTableCard.tsx) rather than
+// looking like an untouched English default — the point is to make gaps in
+// a handed-over translation sheet visible, not paper over them.
+const parseLabelsJson = (raw: string): Record<string, string> | null => {
+    let parsed: unknown;
+    try {
+        parsed = JSON.parse(raw);
+    } catch {
+        return null;
+    }
+    if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) return null;
+    const out: Record<string, string> = {};
+    for (const [key, value] of Object.entries(parsed as Record<string, unknown>)) {
+        if (typeof value === "string") out[key] = value;
+    }
+    return out;
+};
+
 export const AddLanguageForm = ({ existingCodes, unlocked, onCreate }: AddLanguageFormProps) => {
     const { t } = useTranslation();
     const [open, setOpen] = useState(false);
     const [name, setName] = useState("");
+    const [labelsJson, setLabelsJson] = useState("");
     const [error, setError] = useState<string | null>(null);
 
     const close = (): void => {
         setOpen(false);
         setName("");
+        setLabelsJson("");
         setError(null);
     };
 
@@ -69,9 +94,19 @@ export const AddLanguageForm = ({ existingCodes, unlocked, onCreate }: AddLangua
             setError(t("settings.languagePane.addIncomplete"));
             return;
         }
+        const trimmedJson = labelsJson.trim();
+        let strings = { ...EN_STRINGS };
+        if (trimmedJson) {
+            const parsed = parseLabelsJson(trimmedJson);
+            if (!parsed) {
+                setError(t("settings.languagePane.addInvalidJson"));
+                return;
+            }
+            strings = parsed;
+        }
         const base = slugify(trimmedName) || "lang";
         const code = uniqueCode(base, existingCodes);
-        onCreate({ Code: code, Name: trimmedName, Version: 1, Strings: { ...EN_STRINGS } });
+        onCreate({ Code: code, Name: trimmedName, Version: 1, Strings: strings });
         close();
     };
 
@@ -91,6 +126,17 @@ export const AddLanguageForm = ({ existingCodes, unlocked, onCreate }: AddLangua
                             onChange={(event) => setName(event.target.value)}
                             onKeyDown={(event) => event.key === "Enter" && submit()}
                         />
+                    </label>
+                    <label className={styles.addModalField}>
+                        <span>{t("settings.languagePane.addLabelsJson")}</span>
+                        <textarea
+                            className={styles.addTextarea}
+                            value={labelsJson}
+                            onChange={(event) => setLabelsJson(event.target.value)}
+                            placeholder={t("settings.languagePane.addLabelsJsonPlaceholder")}
+                            rows={6}
+                        />
+                        <span className={styles.hint}>{t("settings.languagePane.addLabelsJsonHint")}</span>
                     </label>
                     {error && <span className={styles.bad}>{error}</span>}
                     <button type="button" className={styles.addButton} onClick={submit}>

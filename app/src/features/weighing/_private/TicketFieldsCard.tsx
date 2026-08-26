@@ -6,9 +6,8 @@ import { Field, FieldGrid } from "@components/Field";
 import { SearchableDropdown } from "@components/SearchableDropdown";
 import type { MasterKind } from "@db/types";
 import type { UseMasterCache } from "@db/useMasterCache";
-import { resolveFieldIdLabel } from "@engines/schemaEngine";
+import { resolveFieldLabel } from "@engines/schemaEngine";
 import type { Field as SchemaField } from "@engines/schemaEngine";
-import { resolveLocalized } from "@i18n/types";
 import { useTranslation } from "@i18n/useTranslation";
 
 import styles from "../_styles/WeighingScreen.module.css";
@@ -246,7 +245,7 @@ const buildFixedItems = ({
     // defaultTicketSchema.ts's own comment) — fall back to the shared
     // FieldId → i18n-key convention; only a genuinely custom FieldId with no
     // entry anywhere falls all the way back to its raw FieldId.
-    const label = field.Label ? resolveLocalized(field.Label, lang) : resolveFieldIdLabel(field.FieldId, args.t);
+    const label = resolveFieldLabel(field, lang, args.t);
     const items: { key: string; node: ReactNode }[] = [
         { key: field.FieldId, node: buildFixedControl(field, { ...args, label }) },
     ];
@@ -255,9 +254,7 @@ const buildFixedItems = ({
     // actually declares a "TicketDate" FieldId (defaultTicketSchema.ts) and
     // hasn't hidden it via `Visible: false`, same as any other field.
     if (field.FieldId === "VehicleNo" && ticketDateField && evaluateFieldVisible(ticketDateField)) {
-        const dateLabel = ticketDateField.Label
-            ? resolveLocalized(ticketDateField.Label, lang)
-            : resolveFieldIdLabel("TicketDate", args.t);
+        const dateLabel = resolveFieldLabel(ticketDateField, lang, args.t);
         items.push({
             key: "TicketDate",
             node: (

@@ -1,6 +1,3 @@
-import { useState } from "react";
-
-import { Card } from "@components/Card";
 import { useToast } from "@components/Toast";
 import { useSchema } from "@engines/schemaEngine";
 import type { Schema } from "@engines/schemaEngine";
@@ -9,30 +6,22 @@ import { useTranslation } from "@i18n/useTranslation";
 
 import { useSettings } from "../useSettings";
 import styles from "./_styles/FieldsLanguagePane.module.css";
-import { FieldSchemaCard } from "./FieldSchemaCard";
+import { FieldSchemaCard, PREVIEW_KEY_CODE } from "./FieldSchemaCard";
 import { useFieldSchemaUpload } from "./useFieldSchemaUpload";
 
-// The mock's other card, "Print templates" (a New-template wizard with live
-// preview), isn't ported: the roadmap names the visual template designer as
-// a later item — "designed for, not built" — so it stays out of scope here;
-// the three built-in layouts (A4/Thermal/Matrix) are the only templates this
-// build has. `t`-threaded (mirrors ruleDefs(t) in settingsSchema.ts) since it
-// needs to re-render on language change — no longer a static module
-// constant. Moved here from the old Print & printers pane (task: "we need
-// business and appearance / field and print / language / printer" — the
-// Settings tab bar regrouping this session) — a template governs the same
-// ticket schema this tab's field editor works on, so it reads more naturally
-// alongside Fields than alongside the Printer tab's device/fixture config.
-const templatesCard = (t: (key: string) => string) => (
-    <Card
-            sticky
-            title={<span className="lbl">{t("settings.printTemplates.title")}</span>}>
-        <p className={styles.hint}>{t("settings.printTemplates.hint")}</p>
-    </Card>
-);
-
-// Fields & print pane (demo/BabuScales-demo.html's `data-pane="fields"`,
-// its "Print templates" card folded in from the old Print & printers pane).
+// Fields & print pane (demo/BabuScales-demo.html's `data-pane="fields"`).
+// Its "Print templates" card (a New-template wizard with live preview in the
+// mock — not ported, the roadmap names the visual template designer as a
+// later item, "designed for, not built"; the three built-in layouts
+// A4/Thermal/Matrix are the only templates this build has) moved back to
+// Print, next to DefaultPrinterCard (task: "printer and print should be in
+// same place both dont need admin" — PrintTemplatesCard.tsx).
+// Task: "field is read only can upload or edit hide show others are admin"
+// — refined that: `unlocked` here is the real admin lock again (not
+// hardcoded), but FieldSchemaCard itself now only gates the active-schema
+// picker, preview-language picker, and reset button with it; upload,
+// paste-edit, and the per-field Hide/Show toggle stay open regardless (see
+// FieldSchemaCard.tsx).
 //
 // The field schema itself is real and
 // persisted (each upload its own `config` row, ConfigKind: "Schema", keyed
@@ -58,18 +47,23 @@ export const FieldsLanguagePane = () => {
     const { showToast } = useToast();
 
     // Which pack's strings the field-schema table's Label column resolves
-    // against — starts at the app's own active runtime language, but is its
-    // own selection (not tied to the header language toggle), so an admin
-    // can preview e.g. Tamil field labels here without switching the whole
-    // running app over. A pack-specific `t`, independent of the ambient one
-    // above — the fix for the table always rendering English regardless of
-    // this pick: it used to run every label through the ambient `t`, which
-    // only reflects the header toggle, and there was no way to see a pack's
-    // labels without flipping that global switch.
-    const [previewLang, setPreviewLang] = useState(lang);
+    // against. Used to be its own independent selection (an admin could
+    // preview e.g. Tamil labels without switching the whole running app
+    // over); task "Preview labels in should auto select the language
+    // curreclt used nad should be disabled" removed that — it now always
+    // tracks the app's own active runtime language (`lang`) and the picker
+    // itself can't be changed at all (FieldSchemaCard's PreviewLangSelect is
+    // unconditionally disabled), admin or not.
     const { packs } = useTranslation();
+    // `PREVIEW_KEY_CODE` ("Key" in the picker) shows each row's raw i18n key
+    // untranslated instead of resolving it against any pack — task: "add one
+    // more here ie) key and english". No longer reachable via the picker
+    // (which only ever shows `lang`) but `previewT`/`fieldLabel` still
+    // handle it, so leaving the option wired costs nothing if it comes back.
     const previewT = (key: string): string =>
-        packs.find((pack) => pack.Code === previewLang)?.Strings[key] ?? EN_STRINGS[key] ?? key;
+        lang === PREVIEW_KEY_CODE
+            ? key
+            : packs.find((pack) => pack.Code === lang)?.Strings[key] ?? EN_STRINGS[key] ?? key;
 
     const toggleFieldVisible = (fieldId: string): void => {
         const updated: Schema = {
@@ -89,7 +83,7 @@ export const FieldsLanguagePane = () => {
             <FieldSchemaCard
                 ticketSchema={ticketSchema}
                 schemas={schemas}
-                lang={previewLang}
+                lang={lang}
                 labelT={previewT}
                 previewPacks={packs}
                 unlocked={unlocked}
@@ -100,9 +94,7 @@ export const FieldsLanguagePane = () => {
                 onReset={() => void resetSchema()}
                 onSelectActiveSchema={(schemaId) => void setActiveSchemaId(schemaId)}
                 onToggleFieldVisible={toggleFieldVisible}
-                onSelectPreviewLang={setPreviewLang}
             />
-            {templatesCard(t)}
         </div>
     );
 };

@@ -29,7 +29,6 @@ export const RemoteAccessCard = () => {
 
     return (
         <Card
-            sticky
             title={<span className="lbl">{t("settings.remoteAccess.title")}</span>}
             headerRight={flash ? <span className={styles.applied}>{flash}</span> : null}
         >

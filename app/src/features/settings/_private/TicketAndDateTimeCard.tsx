@@ -22,6 +22,12 @@ export interface TicketAndDateTimeCardProps {
 // one card with a divider between the two field groups instead, since they
 // were always meant to sit together. Replaces the old, now-deleted
 // TicketNumberingCard/DateTimeFormatsCard.
+// Task: "print and template and field are not admin... ticket need admin so
+// we can have it together" — unlike DefaultPrinterCard/FieldSchemaCard/
+// PrintTemplatesCard (all deliberately admin-free), ticket numbering/
+// date-time formatting stays behind the admin lock; the `unlocked` prop is
+// threaded through as normal even though it now sits in the same Print pane
+// as those admin-free cards.
 export const TicketAndDateTimeCard = ({
     settings,
     unlocked,
@@ -52,7 +58,6 @@ export const TicketAndDateTimeCard = ({
 
     return (
         <Card
-            sticky
             title={<span className="lbl">{t("settings.ticketNumbering.title")}</span>}
             headerRight={<span className={styles.applied}>{t("settings.weighingRules.appliedImmediately")}</span>}
         >

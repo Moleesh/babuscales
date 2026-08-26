@@ -29,7 +29,6 @@ export const AmountAndAdminPasswordCard = ({
 
     return (
         <Card
-            sticky
             title={<span className="lbl">{t("settings.amountAdmin.title")}</span>}>
             <div className={styles.body}>
                 <AmountAndAdminPasswordFields

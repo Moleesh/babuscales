@@ -118,34 +118,38 @@ export const DATA_BITS_OPTIONS = [5, 6, 7, 8] as const;
 export const STOP_BITS_OPTIONS = [1, 2] as const;
 export const PARITY_OPTIONS = ["none", "odd", "even"] as const;
 
-// demo/BabuScales-demo.html's PRINTERS fixture, verbatim. The browser print
-// dialog (window.print(), engines/print) always lets the operator pick the
-// real target printer themselves, on both the demo and the desktop build —
-// so this list stays a stated *preference* (which detected printer plays
-// the "A4"/"Mx"/"Th" role), not a live binding, same as the mock. Real
-// driver-level enumeration (@engines/printers, PrintPane.tsx's
-// "Detected printers" card) so an admin can see what's actually plugged in
-// while choosing a preference here — the mock never had that.
-export const PRINTER_KINDS = ["a4", "mx", "th"] as const;
-export type PrinterKind = (typeof PRINTER_KINDS)[number];
-export interface PrinterFixture {
-    name: string;
-    kind: PrinterKind;
-}
-export const PRINTER_FIXTURES: readonly PrinterFixture[] = [
-    { name: "HP LaserJet M1005", kind: "a4" },
-    { name: "Canon LBP2900B", kind: "a4" },
-    { name: "Microsoft Print to PDF", kind: "a4" },
-    { name: "Epson LX-310", kind: "mx" },
-    { name: "TVS MSP 250 Star", kind: "mx" },
-    { name: "TVS RP 3200 Star", kind: "th" },
-    { name: "Everycom 58 mm", kind: "th" },
-];
+// Task: "For printers... list all the printers... We don't want 3 different
+// ones. We'll just use one dropdown to list everything." Replaces the old
+// PRINTER_FIXTURES/PRINTER_KINDS three-way A4/Mx/Th fixture-assignment
+// scheme (one stated *preference* per paper kind, never a live binding —
+// the OS print dialog always let the operator pick for real) with a single
+// stored choice: the one printer name (from @engines/printers' real
+// EnumPrintersW enumeration, DetectedPrintersCard/DefaultPrinterCard) the
+// app treats as the default, or `PRINT_TO_PDF_VALUE` for the synthetic
+// "Print to PDF" entry those cards add alongside the real detected list.
+// Empty string means "no operator choice saved yet — fall back to
+// whichever detected printer Windows itself calls the OS default"
+// (`DetectedPrinter.isDefault`, devices/printers.rs's `GetDefaultPrinterW`).
+export const PRINT_TO_PDF_VALUE = "__print_to_pdf__";
 
 const printersSchema = z.object({
-    A4: z.string(),
-    Mx: z.string(),
-    Th: z.string(),
+    Default: z.string(),
+    // Task: "we need a select option to select the template for the
+    // weighing session" — which saved print template (PrintTemplatesCard,
+    // ConfigKind: "Template") a weighing ticket prints through. "" means "no
+    // operator choice yet" (falls back to the built-in A4 layout,
+    // SlipA4.tsx), same convention as `Default` above for the printer
+    // itself. `.default("")` back-fills existing settings rows that predate
+    // this field, same as any other schema addition here.
+    SelectedPrintTemplateId: z.string().default(""),
+    // Task: "we need other print option like no of paper and print dialog
+    // box these has to go to the printer session" — per-session print
+    // options (how many copies, whether the OS print dialog is shown before
+    // printing) belong with the printer choice itself, not the templates
+    // table. `.default(...)` back-fills existing settings rows the same way
+    // every other field here does.
+    Copies: z.number().int().min(1).default(1),
+    ShowPrintDialog: z.boolean().default(true),
 });
 export type PrintersConfig = z.infer<typeof printersSchema>;
 
@@ -448,11 +452,12 @@ export const DEFAULT_CONNECTIONS: ConnectionsConfig = {
     GsmBaud: 9600,
 };
 
-/** The mock's own `cfg.prn` default, verbatim. */
+/** No saved operator choice yet — DefaultPrinterCard falls back to whichever detected printer Windows itself reports as its own default. */
 export const DEFAULT_PRINTERS: PrintersConfig = {
-    A4: "HP LaserJet M1005",
-    Mx: "Epson LX-310",
-    Th: "TVS RP 3200 Star",
+    Default: "",
+    SelectedPrintTemplateId: "",
+    Copies: 1,
+    ShowPrintDialog: true,
 };
 
 /** Opt-in, off by default. */

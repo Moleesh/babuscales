@@ -30,7 +30,6 @@ export const AppearancePane = () => {
     return (
         <div className={styles.grid}>
             <Card
-            sticky
             title={<span className="lbl">{t("settings.appearance.theme")}</span>}>
                 <div className={styles.themeBody}>
                     <div className={styles.skins} role="group" aria-label={t("settings.appearance.theme")}>

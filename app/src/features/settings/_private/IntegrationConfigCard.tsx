@@ -23,7 +23,6 @@ export const IntegrationConfigCard = () => {
 
     return (
         <Card
-            sticky
             title={<span className="lbl">{t("settings.integrationConfig.title")}</span>}>
             <div className={styles.body}>
                 <WebhookTallyBoardFields

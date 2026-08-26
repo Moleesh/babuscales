@@ -1,11 +1,11 @@
 /* Ported from demo/BabuScales-demo.html's ".grid2"/".checks"/".ck"/".inline"/".tw". */
-/* Three explicit top-level columns (by request): weight indicator / ticket
-   numbering + date & time stacked together / weighing rules. Fixed 3-up
-   instead of `auto-fit`, since the column contents are now assigned by
-   position (see WeighingPane.tsx), not left for the grid to place. */
+/* Task: "make the weighing more spacious" — TicketAndDateTimeCard moved out
+   to the Printer & ticket tab, leaving just 2 columns (weight indicator /
+   weighing rules). A leftover 3-up grid left the third column's width as
+   dead space instead of letting the two remaining cards breathe into it. */
 .grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, 1fr);
     gap: 12px;
     align-items: start;
 }

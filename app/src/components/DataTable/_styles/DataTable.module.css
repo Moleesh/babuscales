@@ -145,4 +145,16 @@
 .emptyPin {
     position: sticky;
     left: 0;
+    /* Task: "on empty let it fill the page" — deliberately its OWN variable,
+       not `--datatable-min-height` (`.wrapper`/`.wrapperOuter` above): that
+       one applies unconditionally, so a caller setting it to fill an empty
+       result also force-pads every *populated* result, including a short-
+       but-nonempty one, past `.pane-area`'s real height — which is exactly
+       what produced the regression report "when toggle the values the
+       scroll stay visible instead of removing" (LanguagePane.module.css's
+       Missing filter, 7 real rows, still forced tall enough to overflow and
+       leave a stray scrollbar/blank gap). This only ever sizes the empty-
+       state message itself, so a populated table is never affected. */
+    display: block;
+    min-height: var(--datatable-empty-min-height, auto);
 }

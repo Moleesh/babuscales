@@ -42,7 +42,6 @@ export const BackupRestoreCard = () => {
 
     return (
         <Card
-            sticky
             title={<span className="lbl">{t("settings.backup.cardTitle")}</span>}>
             <div className={styles.body}>
                 <BackupActionsRow

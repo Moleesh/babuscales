@@ -1,8 +1,32 @@
+/* PrinterPane's own two-column split (task: "print templates should cover
+   first half and other setting the second half") — PrintTemplatesCard takes
+   the left half, `.sessionRow` (the print-preferences card) takes the right
+   half. `minmax(0, 1fr)` on both, not a bare `1fr`, so the templates table
+   (which wants to grow to its full natural width) is still forced to
+   actually stop at the column edge rather than pushing the grid wider than
+   the pane — same reasoning DataTable's own truncating columns need `width`
+   instead of `max-width`. Below `840px` it collapses to one column,
+   template table on top, so neither half gets too cramped on a narrow
+   window. `align-items: start` (not the grid default `stretch`) keeps both
+   columns at their own natural height — task: "fill the page" was tried and
+   reverted ("no need to cover the whole page"), so neither side stretches
+   to match the other any more. */
 .grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     gap: 12px;
     align-items: start;
+}
+@media (max-width: 840px) {
+    .grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+.sessionRow {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
 }
 
 .applied {
@@ -59,4 +83,45 @@
     border: 1px solid var(--line);
     border-radius: 7px;
     background: var(--panel-2);
+}
+
+/* PrintOptionsCard's copies field + "show print dialog" checkbox — same
+   `.ck` checkbox look as WeighingRulesCard's own (WeighingPane.module.css),
+   copied rather than shared to keep this pane's styling self-contained. */
+.copiesRow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 9px;
+    font-size: 0.8125rem;
+}
+
+.copiesInput {
+    width: 64px;
+    padding: 5px 8px;
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    background: var(--panel-2);
+    color: var(--text);
+    font: inherit;
+    font-size: 0.8125rem;
+    text-align: center;
+}
+.copiesInput:focus {
+    outline: none;
+    border-color: var(--led);
+}
+
+.ck {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    font-size: 0.8125rem;
+    cursor: pointer;
+}
+.ck input {
+    accent-color: var(--led);
+    width: 15px;
+    height: 15px;
+    flex: none;
 }

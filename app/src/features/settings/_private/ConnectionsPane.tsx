@@ -31,7 +31,6 @@ export const ConnectionsPane = () => {
         return (
             <div className={styles.grid}>
                 <Card
-            sticky
             title={<span className="lbl">{t("settings.connections.title")}</span>}>
                     <p className={styles.hint}>{t("settings.connections.desktopOnlyHint")}</p>
                 </Card>

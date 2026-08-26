@@ -106,7 +106,7 @@ export const buildKindOptions = (
 // strings by FieldId, kept here instead since only the Masters screen needs
 // these particular keys. Any other column FieldId (a genuinely custom one,
 // or the Godown example schema's own `FullBagWeight`) falls through to the
-// same `weighing.label.<FieldId>` convention schemaEngine's
+// same `weigh.label.<FieldId>` convention schemaEngine's
 // `resolveFieldIdLabel` already applies to ticket fields — no column needs a
 // schema `Label` of its own either now (task: "labels in the json we dont
 // need it ... see if we can remove anything else").

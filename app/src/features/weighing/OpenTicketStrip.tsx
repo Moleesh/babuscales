@@ -82,7 +82,7 @@ export const OpenTicketStrip = ({ tickets, loading, onResume, weightUnit, contai
                         <span>{formatTicketNo(ticket.doc.DocSeq)}</span>
                         <span>{ticket.body.VehicleNo || "—"}</span>
                         <span className={styles.weight}>
-                            {t(ticket.kind === "Tare" ? "weigh.tare" : "weigh.gross")}{" "}
+                            {t(ticket.kind === "Tare" ? "weigh.label.tare" : "weigh.label.gross")}{" "}
                             {formatWeightIn(ticket.weightKg, weightUnit, lang)}
                         </span>
                     </button>

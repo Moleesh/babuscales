@@ -22,7 +22,18 @@
     z-index: 1000;
     display: block;
     width: max-content;
-    max-width: 220px;
+    max-width: 320px;
+    /* Bug: "tooltip issue" — a dotted key string (e.g.
+       "settings.languagePane.addLabelsJsonHint") has no spaces, but the
+       browser's line-breaking rules still treat "." as a break opportunity,
+       so at the old 220px cap it silently wrapped onto 2-3 lines. The extra
+       height then outgrew Tooltip.tsx's `GAP` and pushed the bubble back
+       into the very row (or the row above it) it was supposed to float
+       clear of. `keep-all` only allows breaks at actual whitespace, so a
+       real sentence (a hint/placeholder tooltip) still wraps normally at
+       word boundaries, while a single dotted key renders on one line —
+       wider (320px) to fit most such keys without wrapping at all. */
+    word-break: keep-all;
     padding: 5px 9px;
     border-radius: 7px;
     border: 1px solid var(--led-dim);

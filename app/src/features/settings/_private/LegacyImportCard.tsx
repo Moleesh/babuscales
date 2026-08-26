@@ -49,7 +49,6 @@ export const LegacyImportCard = () => {
 
     return (
         <Card
-            sticky
             title={<span className="lbl">{t("settings.legacyImport.title")}</span>}>
             <div className={styles.body}>
                 <LegacyImportFileRow

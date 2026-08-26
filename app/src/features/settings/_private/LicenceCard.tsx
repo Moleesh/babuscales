@@ -26,7 +26,6 @@ export const LicenceCard = () => {
 
     return (
         <Card
-            sticky
             title={<span className="lbl">{t("settings.licence.title")}</span>}
             headerRight={flash ? <span className={styles.applied}>{flash}</span> : null}
         >

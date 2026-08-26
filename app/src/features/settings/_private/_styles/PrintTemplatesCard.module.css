@@ -1,0 +1,212 @@
+/* Task: "fill the page for print template please" was tried (Card `fill` +
+   a flex-column `.bodyFillInner`) and then reverted — "print template is
+   looking really bad, no need to cover the whole page": the sticky Card
+   title ended up overlapping the hint text right under it. Back to a plain
+   card: DataTable keeps its own default bounded height (65vh) and internal
+   scrollbar, no special vars needed. */
+.body {
+    display: grid;
+    gap: 11px;
+}
+
+.hint {
+    font-size: 0.6875rem;
+    color: var(--dim);
+    margin: 0;
+    line-height: 1.6;
+}
+
+.rowActions {
+    display: flex;
+    gap: 10px;
+}
+
+/* Same look as LanguageTableCard's rename/delete icon buttons, but text
+   labels here (Preview/Edit/Delete) instead of icons — three distinct
+   actions read better spelled out than as three similar glyphs in a row. */
+.rowAction {
+    padding: 0;
+    border: none;
+    background: none;
+    color: var(--dim);
+    font: inherit;
+    font-size: 0.6875rem;
+    cursor: pointer;
+    text-decoration: underline dotted;
+    white-space: nowrap;
+}
+.rowAction:hover:not(:disabled) {
+    color: var(--led);
+}
+.rowAction:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+    text-decoration: none;
+}
+.rowActionDanger:hover:not(:disabled) {
+    color: var(--alert);
+}
+
+/* Wizard steps — same drop-zone/paste-input look as Fields' own
+   SchemaDropZone/SchemaPasteBox (FieldsLanguagePane.module.css), copied
+   rather than shared across panes to keep this card's styling
+   self-contained. */
+.wizardBody {
+    display: grid;
+    gap: 11px;
+}
+
+.drop {
+    display: grid;
+    place-items: center;
+    gap: 6px;
+    padding: 14px;
+    border: 1.5px dashed var(--line);
+    border-radius: 9px;
+    background: var(--panel-2);
+    cursor: pointer;
+    text-align: center;
+    font-size: 0.8125rem;
+}
+.drop:hover {
+    border-color: var(--led);
+    color: var(--text);
+}
+.dropIcon {
+    font-size: 1.125rem;
+    color: var(--led);
+}
+
+.orDivider {
+    margin: 0;
+    font-size: 0.6875rem;
+    color: var(--dim);
+    text-align: center;
+}
+
+.pasteInput {
+    padding: 7px 9px;
+    border: 1px solid var(--line);
+    border-radius: 9px;
+    background: var(--panel-2);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    min-height: 180px;
+    resize: vertical;
+}
+.pasteInput:focus {
+    outline: none;
+    border-color: var(--led);
+}
+
+.wizardActions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+}
+
+.detailsGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 11px;
+}
+
+.previewSection {
+    display: grid;
+    gap: 8px;
+    justify-items: start;
+}
+
+.previewFrameWrap {
+    display: grid;
+    gap: 8px;
+    justify-items: center;
+    width: 100%;
+}
+
+.zoomControls {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.zoomLabel {
+    min-width: 3.2em;
+    text-align: center;
+    font-size: 0.6875rem;
+    font-family: var(--mono);
+    color: var(--dim);
+}
+
+.zoomReset {
+    padding: 3px 9px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: var(--panel-2);
+    color: var(--text);
+    font-size: 0.6875rem;
+    cursor: pointer;
+}
+.zoomReset:hover {
+    border-color: var(--led);
+}
+
+.zoomHandActive {
+    border-color: var(--led);
+    color: var(--led);
+}
+
+/* The sizing/border/background box — fixed pixel size set inline
+   (TemplatePreviewFrame's `style`), ScrollArea inside it fills 100% and does
+   the actual scrolling. Split from `.previewViewport` below because
+   ScrollArea owns two DOM nodes (its own `.area` wrapper, plus the
+   `contentClassName` element that actually scrolls) where this used to be
+   one plain `overflow: auto` div. */
+.previewViewportBox {
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    background: #fff;
+    max-width: 100%;
+    overflow: hidden;
+}
+
+.previewScrollArea {
+    width: 100%;
+    height: 100%;
+}
+
+.previewViewport {
+    width: 100%;
+    height: 100%;
+}
+
+/* Hand-tool mode (TemplatePreviewControls' 🖐 toggle) — the viewport itself
+   still scrolls normally (wheel/scrollbar/trackpad/ScrollArea's own thumb),
+   this just adds click-drag panning on top, cursor telegraphing that like a
+   map/PDF viewer's hand tool would. */
+.previewViewportPan {
+    cursor: grab;
+    touch-action: none;
+}
+.previewViewportPan:active {
+    cursor: grabbing;
+}
+
+.previewFrame {
+    border: none;
+    transform-origin: top left;
+    pointer-events: none;
+}
+
+/* Standalone Preview modal — task: "make better use of the space have some
+   zoom options". The wizard's inline preview keeps `.previewSection`'s
+   `justify-items: start` compact layout; this modifier widens it to fill
+   the modal instead. */
+.previewSectionFull {
+    justify-items: stretch;
+    width: 100%;
+}
+.previewSectionFull .previewFrameWrap {
+    align-items: center;
+}
