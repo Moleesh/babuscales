@@ -680,6 +680,51 @@ on Reports and Dashboard).
     in this environment) — it's a debug build proving the packaging pipeline and every cfg-gate
     above genuinely produce an installable artifact, not just a compiling one.
 
+41. **Real print templates — a managed list, not the mock's three-step wizard.** Item 24's known
+    gap ("Print templates — the mock's three-step template wizard … wasn't ported") is now built,
+    scoped down: `PrintTemplatesCard.tsx` is a table of saved templates (Name, WidthMm × HeightMm)
+    with per-row Select/Preview/Edit/Delete, backed by `usePrintTemplates.ts` (plain
+    `useDataPort().listConfig({ConfigKind: "Template"})` CRUD, same shape as
+    `useFieldSchemaUpload` — no dedicated engine/Provider) and seeded once per app run with
+    `DEFAULT_PRINT_TEMPLATES` (`printTemplateTypes.ts`) if the table is empty. Add/Edit share one
+    `PrintTemplateModal` — a single form (Name/Width/Height/Margin + an HTML upload-or-paste box),
+    not a wizard: "let add template be a single pop no need it as wizard" collapsed what started as
+    a two-step flow. Preview (`PrintTemplatePreviewModal` → `TemplatePreviewFrame`) renders the
+    template's HTML in a sandboxed `<iframe srcDoc>` at its true mm-to-px size, scaled to fit, with
+    click-drag pan (`useTemplatePreviewPan.ts`, native pointer listeners on the `ScrollArea`'s
+    `contentRef`) and zoom controls (`TemplatePreviewControls.tsx`) — none of it, Select or Preview,
+    is admin-gated; only Add/Edit/Delete are, same "Print is going to be like Fields" split as the
+    Fields tab's own picker-vs-upload gating. `Printers.SelectedPrintTemplateId` (an added
+    `settingsSchema.ts` field) names which template the weighing session prints through; a template
+    that's the seeded default or currently selected can't be deleted (blocked with an explanatory
+    modal, not silently refused). This still isn't PLAN §21's visual placeholder-driven designer —
+    a template is one HTML blob with a fixed page size, not authored against structured
+    `{{Placeholders}}` — so the mock's own wizard-with-placeholders feature stays a smaller shape by
+    decision, not a gap that was missed.
+
+    Same item also collapsed item 24's per-class `Printers: {A4, Mx, Th}` fixture (a *named-role*
+    preference, never a live binding) down to one dropdown: `PrintersConfig.Default` (a single
+    printer name string, `PRINT_TO_PDF_VALUE` a synthetic "Print to PDF" option) replaces
+    `PRINTER_FIXTURES`/`PRINTER_KINDS` entirely — "we don't want 3 different ones, we'll just use
+    one dropdown to list everything." `devices/printers.rs` grew `default_printer_name()`
+    (`GetDefaultPrinterW`'s own documented two-call sizing pattern, same shape as `EnumPrintersW`'s
+    own sizing call); `list_printers()` now stamps each `DetectedPrinter.is_default` by
+    string-comparing against it, so the dropdown preselects the OS's own default the same way the
+    OS print dialog would, until an operator picks something else. Fixed a real bug in the same
+    pass: `engines/printers/types.ts`'s `DetectedPrinter` was lowercase `{ name }`, silently
+    `undefined` against the Rust DTO's actual PascalCase `{ Name, IsDefault }` — the printer dropdown
+    was reading `undefined` for every row's value. The old standalone `DetectedPrintersCard`
+    (read-only list + Rescan) was folded into the renamed `PrintOptionsCard` ("Print preferences"),
+    so the tab's right column is one card instead of two stacked ones; the tab itself moved from
+    "Printer" to "Print" to match, and both `PrintOptionsCard` and `PrintTemplatesCard` stayed
+    admin-free — the Print pane's only admin-gated card is `TicketAndDateTimeCard` (ticket numbering
+    stays a shared operational rule, unlike a per-machine printer pick or a template).
+    ✅ Verified: `tsc -b`/`eslint`/`vitest run` (full suite) and `cargo check`/`clippy -D
+    warnings`/`fmt --check` all clean; confirmed in-browser against the live dev server — added,
+    edited, previewed (pan + zoom), and deleted a template; selected it for the session; changed
+    the default printer and Copies/Show-dialog preferences; verified a blocked-delete modal appears
+    for the seeded-default and currently-selected rows.
+
 ## Known gap
 
 **Real serial-port indicator adapter, but not the full PLAN §17 wizard** — item 21 above built the
@@ -748,13 +793,13 @@ a different and bigger feature the mock itself never specifies, so nothing here 
   `.xlsx`/OOXML writer and an RFC-4180 CSV writer, both reusing Reports' own `reportSlipData`). Export
   PDF stays disabled: the OS print dialog's own "Save as PDF", already reachable via the Print button,
   covers that case, so a distinct PDF export path wasn't built.
-- **Print templates** — the mock's three-step template wizard (upload custom HTML with
-  `{{Placeholders}}`, multiple named templates per paper size) wasn't ported: PLAN §21's roadmap
-  table names the visual template designer as a Phase 8 item, deferred by decision, "designed for,
-  not built" — so building it would be scope creep past this app's own "keep going until phase 8"
-  boundary, not just past the mock's decorative features. Item 19 built the three built-in layouts
-  (A4/thermal/dot-matrix); item 24 built per-kind default-printer selection (a config row, not a
-  driver binding); the editor around custom layouts is what stays undone.
+- ~~**Print templates**~~ — now built (item 41): a managed list of saved HTML templates with
+  Select/Preview/Edit/Delete, a single-form Add/Edit (not the mock's three-step wizard), and a
+  sandboxed pan/zoom preview. Still smaller than PLAN §21's visual designer — a template is one
+  HTML blob at a fixed page size, not authored against structured `{{Placeholders}}` — that fuller
+  shape stays a Phase 8 item, deferred by decision. Item 19 built the three built-in layouts
+  (A4/thermal/dot-matrix); item 41 also replaced item 24's per-class `PRINTER_FIXTURES`
+  (A4/Mx/Th) with one printer dropdown (`PrintersConfig.Default`).
 - **Multi-gross** (item 33, PLAN §7.1's "(future)" tag) — the calc card and formula breakdown show
   the honest per-load sum, but the printed slip (`buildSlipData.ts`) has one Gross line, same as
   before this item: a multi-gross ticket's slip shows the aggregate Gross/Net only, with the last

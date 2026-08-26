@@ -76,10 +76,11 @@ all eight kinds, one screen, inline create/edit.
 | DUPLICATE stamping + print count | ✅ | |
 | Charge on the printed slip | ✅ | |
 | QR verification code on A4; URL as text on thermal | ✅ | |
-| Default printer per class (A4 / matrix / thermal) | ✅ | A stated preference — `window.print()` still opens the real OS dialog |
-| Detected-printer list | ✅ | Real `EnumPrintersW` enumeration (Windows) |
+| Default printer, one dropdown | ✅ | Replaces the old per-class A4/Mx/Th fixture list; preselects the OS's own default (`GetDefaultPrinterW`) until an operator picks something else — `window.print()` still opens the real OS dialog |
+| Detected-printer list | ✅ | Real `EnumPrintersW` enumeration (Windows), folded into the Print preferences card |
+| Print templates — managed list (upload/paste HTML, save/select/preview/edit/delete) | ✅ | Single-form add/edit, sandboxed pan/zoom preview; default and currently-selected templates can't be deleted |
 | Windows RAW/ESC-P spooler path (`WritePrinter`, bypassing drivers) | — | `PLAN.md` §15.2's biggest technical risk; not implemented — all printing goes through the OS dialog today |
-| Visual template designer (upload custom HTML, `{{Placeholders}}`) | — | Deferred by decision (Phase 8) |
+| Visual template designer (`{{Placeholders}}`, structured layout authoring) | — | Deferred by decision (Phase 8) — templates today are one HTML blob at a fixed page size |
 | Starter templates (5–8 designs) | — | Not built |
 
 ## 5. Cameras & evidence
@@ -107,7 +108,7 @@ Six panes, admin-password-gated (except Appearance, which is deliberately open).
 | Pane | What's real | What's not |
 |---|---|---|
 | **Fields & language** | Language-pack upload, live-applied, falls back to English per key. Field schema upload — relabels/reorders/indexes the 5 built-in fields, live-translated. `VisibleWhen`/`RequiredWhen`/`ReadOnlyWhen`/`Validate` formulas are evaluated (`schemaFieldValidation.ts`, `buildTicketFormulaContext.ts`) and generic Text/Number/Date/DateTime/Boolean/Select inputs render from schema (`SchemaFieldRow.tsx`) | Weighing's screen text and inner card copy still has some hardcoded-English gaps outside the schema-driven fields themselves |
-| **Print & printers** | Per-class default printer, real detected-printer list | No visual template designer (Phase 8) |
+| **Print** | Single default-printer dropdown (OS-default-aware), Copies/Show-dialog preferences, and a real managed print-template list (add/edit/select/preview/delete) | No visual template designer (Phase 8) |
 | **Appearance** | 6 skins + 4 text sizes, applied globally and instantly, ungated by design. Operator-on-duty name | — |
 | **Weighing** | Stability gate, Tare-first/Strict-tare/Auto-capture/Multi-gross rules, all live | — |
 | **Connections** | Weight indicator (port/baud/pattern) · e-mail SMTP (real send + test) · SMS over serial GSM modem (real send + test) · Cloudflare Tunnel remote access · Integrations toggle list | `useOutboxWorker.ts` polls every 30s and drains `Pending`/backed-off-`Failed` rows for **Email, SMS, Webhook, Tally and Board** — no longer a "drain of one" for Email/SMS only. Cloud backup and accounting-format export beyond the Tally CSV line still have no consumer. **WhatsApp is permanently decorative** — no compliant free delivery path exists |
@@ -134,8 +135,8 @@ Six panes, admin-password-gated (except Appearance, which is deliberately open).
 | Windows installer (MSI + NSIS) | ✅ | ~200MB — WebView2 runtime baked in for offline installs |
 | Vendor signing key | 🟡 | A throwaway dev keypair — must be replaced before any real licence ships |
 | Android debug build (APK/AAB) | 🟡 | Builds and packages for real; not signed for Play Store, not run on a device |
-| CI (typecheck/lint/build/secret-scan gates) | ✅ | Authored and green locally |
-| GitHub Pages demo, CI on push | — | Never run — this repo has a `main` branch and a configured remote but hasn't been pushed |
+| CI (typecheck/lint/build/secret-scan gates) | ✅ | Runs on push to `main`, verified green (`gh run view`) |
+| GitHub Pages demo, CI on push | ✅ | Both workflows run on every push to `main` and pass |
 
 ## 10. Look, feel & accessibility
 

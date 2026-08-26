@@ -62,18 +62,22 @@ Settings is one screen with six tabs. What's real and wired up in each, as of th
 and it applies immediately, alongside English, without a restart. *Field schema* is real too: drop
 a schema `.json` to relabel, reorder, or index Weighing's five built-in fields — the change is
 saved and shows up in the active language immediately, with a Reset-to-default action if needed.
-What it can't do yet: a schema introducing a brand-new field (one Weighing doesn't already have)
-validates and saves, but doesn't add an input to the ticket form — that needs schema-driven field
-rendering, which doesn't exist yet, so Weighing's *layout* (which fields exist, not what they're
-labelled) stays fixed regardless of what's uploaded here.
+A schema introducing a brand-new field (one Weighing doesn't already have) now renders a real
+generic input on the ticket form too — Text/Number/Date/DateTime/Boolean/Select — with its
+`VisibleWhen`/`RequiredWhen`/`ReadOnlyWhen`/`Validate` formulas evaluated against live ticket
+state, not just relabelling/reordering the five built-in fields.
 
-**Print & printers** — *Printers* picks which registered printer each paper size (A4, dot-matrix,
-thermal) prints to; the change applies immediately, no save button. Every ticket print goes through
-the OS's own print dialog (`window.print()`), where the operator picks the physical printer — this
-app never routes output silently. *Detected printers* (below it) reads the actual list Windows has
-installed, straight from the print spooler, so picking a preference above doesn't mean guessing a
-name — "Rescan" refreshes it if a printer was just plugged in or set up. *Print templates* — a
-visual layout designer — isn't built; the three built-in layouts are the only ones available.
+**Print** — *Print preferences* picks one default printer from a single dropdown (preselected on
+whatever Windows currently calls its own default, refreshed with "Rescan" if a printer was just
+plugged in or set up), plus Copies and whether the OS print dialog shows before printing. Every
+ticket print still goes through the OS's own print dialog (`window.print()`), where the operator
+picks the physical printer — this app never routes output silently. *Print templates* — a table of
+saved HTML templates (Select/Preview/Edit/Delete per row, Add opens a single form, not a wizard) —
+is real: upload or paste HTML, set paper width/height/margin, and pick which template a weighing
+session prints through. What it isn't: a visual placeholder-driven designer (PLAN's `{{Placeholder}}`
+authoring) — a template here is one HTML blob at a fixed page size, not structured layout, and the
+default/currently-selected template can't be deleted (a modal explains why instead of silently
+refusing).
 
 **Appearance** — *Operator on duty* is real (see above). *Theme* is real too: pick any of six skins
 (Indicator, Graphite, Night shift, Paper, Daylight, High contrast) or a text size (A− through A++)

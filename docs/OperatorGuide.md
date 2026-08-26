@@ -38,8 +38,9 @@ or `MOTION`), the **Ticket** card (party, material, vehicle, transporter — the
    - `Save & park` — saves what you have so far without closing the ticket, for a vehicle that's
      coming back for its second weighing later. The ticket reappears via **Recall** (a banner at
      the top of Weighing) when you search for that vehicle or party again.
-   - `Print` — finishes the ticket and sends it to the printer registered for its paper size
-     (Settings → Print & printers picks which one; you're never asked to choose here). A ticket
+   - `Print` — finishes the ticket and sends it to the default printer
+     (Settings → Print picks which one; you're never asked to choose here, unless the OS print
+     dialog itself is switched on). A ticket
      with QR verification switched on prints a scannable QR code on an A4 slip, or the same
      verification address as plain text on a thermal roll.
 5. **`Reprint`** brings back the print dialog for the ticket that's currently open, in case the
