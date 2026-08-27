@@ -1,50 +1,25 @@
-import { Field } from "@components/Field";
 import { formatWeightKg } from "@constants/numberFormat";
 import type { IndicatorReading } from "@engines/indicator";
-import { useTranslation } from "@i18n/useTranslation";
 
-import type { ConnectionsConfig, SettingsBody } from "../settingsSchema";
 import styles from "./_styles/ConnectionsPane.module.css";
 
 export interface IndicatorStatusFieldsProps {
-    settings: SettingsBody;
-    conn: ConnectionsConfig;
-    unlocked: boolean;
-    onSave: (next: SettingsBody) => void;
     refreshing: boolean;
     onRescan: () => void;
     error: string | null;
     reading: IndicatorReading;
+    conn: { IndicatorPort: string };
 }
 
 // Split out of IndicatorCard (over the line budget — docs/CodingStandards.md)
-// — the custom-pattern field, Rescan row and live reading, unchanged from
-// the inline version it replaces.
-export const IndicatorStatusFields = ({
-    settings,
-    conn,
-    unlocked,
-    onSave,
-    refreshing,
-    onRescan,
-    error,
-    reading,
-}: IndicatorStatusFieldsProps) => {
-    const { t } = useTranslation();
+// — the Rescan row and live reading, unchanged from the inline version it
+// replaces. Task: "we can also remove Custom pattern (advanced)" — its own
+// field used to live here; `IndicatorPattern` stays in settingsSchema.ts
+// (existing saved settings, and useIndicatorPortMonitor's Listen call, both
+// still reference it) but there's no UI to set it anymore.
+export const IndicatorStatusFields = ({ refreshing, onRescan, error, reading, conn }: IndicatorStatusFieldsProps) => {
     return (
     <>
-        <Field id="connPattern" label={t("settings.indicator.customPattern")}>
-            <input
-                id="connPattern"
-                placeholder="Leave blank to auto-extract the number from each line"
-                value={conn.IndicatorPattern}
-                disabled={!unlocked}
-                autoComplete="off"
-                onChange={(event) =>
-                    onSave({ ...settings, Connections: { ...conn, IndicatorPattern: event.target.value } })
-                }
-            />
-        </Field>
         <div className={styles.statusRow}>
             <button type="button" className={styles.mini} disabled={refreshing} onClick={onRescan}>
                 {refreshing ? "Scanning…" : "Rescan ports"}

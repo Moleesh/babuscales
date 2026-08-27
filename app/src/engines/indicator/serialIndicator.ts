@@ -13,6 +13,22 @@ import { resetLorryTicker, startLoadLorry, stopLorryTicker } from "./_private/lo
 const DEFAULT_SETTLE_TICKS = 5;
 const DEFAULT_CLOSE_ENOUGH_KG = 20;
 
+// Task: "sometime there might be invaid entries that are coming so check 3
+// entries and decide if we need to update the main indiator on all page" —
+// a misconfigured/noisy framing (Settings' own indicator-overflow/stall
+// popup guards the *test* panel against this, but a real connected session
+// can still occasionally mis-parse one garbled line into a wild number) must
+// not flash every page's shared WeightDisplay with a single bad sample. Raw
+// hardware samples are held in a 3-wide window (`rawBuffer`, below) before
+// being trusted; the display only updates once those 3 agree with each
+// other. One-off noise just slides through the window without ever being
+// applied, since it won't agree with its neighbors.
+const SANITY_WINDOW = 3;
+// Same tolerance as `closeEnoughKg`'s own settle band — an outlier gate
+// doesn't need a separate, stricter number than "close enough to be the
+// same weight" already uses.
+const SANITY_SPREAD_KG = DEFAULT_CLOSE_ENOUGH_KG;
+
 // Same demo ranges as simulatedIndicator.ts's defaults — kept in step here
 // rather than exported/shared, since this adapter's "Send to lorry" is a
 // manual test aid layered on top of real hardware, not the primary way this
@@ -34,6 +50,11 @@ interface SerialIndicatorState {
     settleTicks: number;
     closeEnoughKg: number;
     history: number[];
+    // Last `SANITY_WINDOW` raw samples, unfiltered — see `SANITY_WINDOW`'s
+    // own comment. Separate from `history` (which only ever holds samples
+    // that already passed this gate) so a run of noise doesn't get to
+    // "vote" using values the display never actually showed.
+    rawBuffer: number[];
     reading: IndicatorReading;
     connectionError: string | null;
     listeners: Set<IndicatorListener>;
@@ -69,6 +90,20 @@ const pushSample = (state: SerialIndicatorState, weightKg: number): void => {
     // this test aid to begin with).
     if (state.timer !== null) return;
     state.connectionError = null;
+
+    // Sanity gate — see `SANITY_WINDOW`'s own comment. Every raw sample
+    // slides into the window regardless of outcome, so a genuinely settling
+    // weight (which naturally agrees with itself) starts passing again as
+    // soon as `SANITY_WINDOW` real samples have arrived, without needing a
+    // manual reset.
+    state.rawBuffer.push(weightKg);
+    if (state.rawBuffer.length > SANITY_WINDOW) {
+        state.rawBuffer = state.rawBuffer.slice(-SANITY_WINDOW);
+    }
+    if (state.rawBuffer.length < SANITY_WINDOW) return;
+    const spread = Math.max(...state.rawBuffer) - Math.min(...state.rawBuffer);
+    if (spread > SANITY_SPREAD_KG) return;
+
     state.history.push(weightKg);
     if (state.history.length > state.settleTicks) {
         state.history = state.history.slice(-state.settleTicks);
@@ -87,6 +122,7 @@ const connectSerial = async (
     stopLorryTicker(state);
     state.connectionError = null;
     state.history = [];
+    state.rawBuffer = [];
     state.reading = { WeightKg: 0, Stable: true };
     try {
         await invoke("open_indicator_port", {
@@ -121,6 +157,7 @@ const disconnectSerial = async (state: SerialIndicatorState): Promise<void> => {
         state.connectionError = reason instanceof Error ? reason.message : String(reason);
     }
     state.history = [];
+    state.rawBuffer = [];
     state.reading = { WeightKg: 0, Stable: true };
     notifyAll(state);
 };
@@ -130,6 +167,7 @@ export const createSerialIndicator = (): SerialIndicatorSource => {
         settleTicks: DEFAULT_SETTLE_TICKS,
         closeEnoughKg: DEFAULT_CLOSE_ENOUGH_KG,
         history: [],
+        rawBuffer: [],
         reading: { WeightKg: 0, Stable: true },
         connectionError: null,
         listeners: new Set<IndicatorListener>(),

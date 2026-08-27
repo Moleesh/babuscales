@@ -476,7 +476,6 @@ export const TA_PACK: LanguagePack = {
         "settings.fieldSchema.previewEnglish": "ஆங்கிலம்",
 
         "settings.indicator.title": "எடை காட்டி",
-        "settings.indicator.customPattern": "தனிப்பயன் மாதிரி (மேம்பட்டது)",
         "settings.indicator.serialPort": "சீரியல் போர்ட்",
         "settings.indicator.listen": "கேட்க தொடங்கு",
         "settings.indicator.stopListening": "நிறுத்து",
@@ -496,7 +495,7 @@ export const TA_PACK: LanguagePack = {
         "settings.indicator.reverseDigits": "இலக்கங்களை தலைகீழாக்கு",
         "settings.indicator.startChar": "தொடக்க எழுத்து",
         "settings.indicator.endChar": "முடிவு எழுத்து",
-        "settings.indicator.startEndHint": "தனிப்பயன் மாதிரிக்கு எளிய மாற்று — எண்ணைப் படிக்கும் முன் ஒவ்வொரு வரியையும் இந்த இரண்டு எழுத்துகளுக்கு இடையே குறுக்கும். காலியாக விட்டால் முழு வரியும் பயன்படும். தனிப்பயன் மாதிரி அமைந்தால் புறக்கணிக்கப்படும்.",
+        "settings.indicator.startEndHint": "எண்ணைப் படிக்கும் முன் ஒவ்வொரு வரியையும் இந்த இரண்டு எழுத்துகளுக்கு இடையே குறுக்கும். காலியாக விட்டால் முழு வரியும் பயன்படும்.",
         "settings.indicator.defaultSuffix": " (இயல்புநிலை)",
 
         "settings.integrationConfig.title": "வெப்ஹூக் · கணக்கியல் ஏற்றுமதி · காட்சிப் பலகை",

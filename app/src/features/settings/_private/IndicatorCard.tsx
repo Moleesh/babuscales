@@ -64,10 +64,7 @@ export const IndicatorCard = ({
                 />
                 <IndicatorFramingFields settings={settings} conn={conn} unlocked={unlocked} onSave={onSave} />
                 <IndicatorStatusFields
-                    settings={settings}
                     conn={conn}
-                    unlocked={unlocked}
-                    onSave={onSave}
                     refreshing={refreshing}
                     onRescan={onRescan}
                     error={error}

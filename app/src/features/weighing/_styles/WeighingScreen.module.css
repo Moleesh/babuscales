@@ -175,6 +175,15 @@
 .calc-charge-input::placeholder {
     color: var(--faint);
 }
+/* Task: "why is this field allow to higling" — a `readOnly` (locked)
+   Charge box is still a real <input>, so a click-drag could select/
+   highlight its text even though it can't be edited, which reads as
+   half-disabled. It already blocks focus via CalcCard.tsx's own
+   `tabIndex`/`onMouseDown` guard; this closes the same gap for plain
+   text selection. */
+.calc-charge-input:read-only {
+    user-select: none;
+}
 
 /* Settings → Weighing → Rules.ManualEntry — the editable stand-in for a
    not-yet-captured Tare/Gross `.calc-box` (ManualCalcBox.tsx). */
