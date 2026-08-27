@@ -29,8 +29,15 @@ const saveDocImpl = async (state: MemoryState, draft: DocDraft): Promise<DocRow>
     const parsed = docDraftSchema.parse(draft);
     const existing = parsed.DocId ? state.docs.get(parsed.DocId) : undefined;
     const profileId = parsed.ProfileId ?? existing?.ProfileId ?? "default";
+    // Matches src-tauri/src/store/docs.rs's `current_series_epoch` default —
+    // before the first-ever reset there's no entry in `state.seriesEpoch`
+    // yet, and Settings' `Numbering.CurrentEpoch` (settingsSchema.ts)
+    // defaults to 1, not 0. Falling back to 0 here made every doc saved
+    // before a first reset land in a series Reports never treats as
+    // "current" (reported: "All the weight are gettin saved in before
+    // reset, never took a reset, thats the current").
     const epoch =
-        existing?.SeriesEpoch ?? state.seriesEpoch.get(seriesKey(parsed.DocKind, profileId)) ?? 0;
+        existing?.SeriesEpoch ?? state.seriesEpoch.get(seriesKey(parsed.DocKind, profileId)) ?? 1;
 
     const row: DocRow = {
         DocId: existing?.DocId ?? parsed.DocId ?? newId(),

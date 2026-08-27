@@ -233,7 +233,16 @@ fn current_series_epoch(
             |row| row.get(0),
         )
         .optional()?
-        .unwrap_or(0))
+        // Reported: "All the weight are gettin saved in before reset, never
+        // took a reset, thats the current" — before the first-ever reset,
+        // `series_counter` has no row for this (doc_kind, profile_id) yet,
+        // so every doc saved so far was falling back to epoch 0 here. But
+        // Settings' `Numbering.CurrentEpoch` (settingsSchema.ts) defaults to
+        // 1, not 0 — so Reports' `currentEpoch` never matched these docs'
+        // `SeriesEpoch`, and they all showed up under "Before reset" even
+        // though no reset had ever run. Match Settings' own default so a
+        // fresh install's docs land in the same epoch Reports calls current.
+        .unwrap_or(1))
 }
 
 /// Bumps the numbering epoch so the next allocation — and the next brand

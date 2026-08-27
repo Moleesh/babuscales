@@ -175,13 +175,14 @@
 .calc-charge-input::placeholder {
     color: var(--faint);
 }
-/* Task: "why is this field allow to higling" — a `readOnly` (locked)
-   Charge box is still a real <input>, so a click-drag could select/
-   highlight its text even though it can't be edited, which reads as
-   half-disabled. It already blocks focus via CalcCard.tsx's own
-   `tabIndex`/`onMouseDown` guard; this closes the same gap for plain
-   text selection. */
-.calc-charge-input:read-only {
+/* Task: "why is this field allow to higling" — a click-drag inside this
+   box (locked or not — DevTools screenshot showed it still highlighting
+   while editable) shows a text-selection band across the digits/
+   placeholder, which reads like a stray UI glitch on what's meant to be
+   a plain numeric entry. Unconditional (not just `:read-only`): typing
+   still works fine with selection disabled, and there's no legitimate
+   copy/select use case for a single-line amount field. */
+.calc-charge-input {
     user-select: none;
 }
 
