@@ -53,7 +53,8 @@
        + its 12px gap, and this Card's own toolbar + filter-bar rows —
        everything besides `--card-header-h`, which is actually measured. */
     --datatable-empty-min-height: calc(
-        100vh - var(--shell-topbar-h, 0px) - var(--shell-header-h, 0px) - var(--card-header-h, 0px) - 320px
+        100vh - var(--shell-banner-h, 0px) - var(--shell-topbar-h, 0px) - var(--shell-header-h, 0px) -
+            var(--card-header-h, 0px) - 320px
     );
 }
 

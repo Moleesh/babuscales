@@ -218,15 +218,41 @@ export const AppShell = ({
     const { t } = useTranslation();
     const mainRef = useRef<HTMLDivElement>(null);
     const headerStickyRef = useRef<HTMLDivElement>(null);
+    const bannerRef = useRef<HTMLDivElement>(null);
     // Mounted once, app-wide, same as CustomCursor — see useContextMenu.ts,
     // which replaces the native right-click menu in desktop view so the
     // app can offer its own copy/cut/paste instead.
     const { menu, close } = useContextMenu();
     useStickyHeaderHeight(mainRef, headerStickyRef, header);
+    // Same "double scroll bar" bug as `--shell-topbar-h` above, just for the
+    // banner slot (trial-expiry notice, etc.) — screens size themselves off
+    // `100vh` minus the top bar and sticky header, but the banner sits above
+    // both of those too and was never subtracted, so a banner appearing
+    // (e.g. the trial-expired lockout) made every screen come out one
+    // banner-height taller than the room `.main` actually had left.
+    useEffect(() => {
+        const bannerEl = bannerRef.current;
+        if (!bannerEl) {
+            document.documentElement.style.setProperty("--shell-banner-h", "0px");
+            return;
+        }
+        // `entry.contentRect` (unlike `.top`'s own topbar-h observer above)
+        // excludes this element's own padding/border — `.banner` has 14px of
+        // vertical padding plus a 1px border the content box doesn't count,
+        // so reading `contentRect.height` here undercounted the real banner
+        // height by ~15px, leaving that much of a stray second scrollbar
+        // under every screen's own `100vh` ceiling. `offsetHeight` is the
+        // actual rendered box — padding and border included, same as what
+        // `.main` really loses to the banner sitting above it.
+        const observer = new ResizeObserver(() => {
+            document.documentElement.style.setProperty("--shell-banner-h", `${bannerEl.offsetHeight}px`);
+        });
+        observer.observe(bannerEl);
+        return () => observer.disconnect();
+    }, [Boolean(banner)]);
 
     return (
         <div className={styles.app}>
-            {banner && <div className={styles.banner}>{banner}</div>}
             <TopBar
                 siteLabel={siteLabel}
                 tabs={tabs}
@@ -236,6 +262,16 @@ export const AppShell = ({
                 pin={pin}
                 sectionsLabel={t("components.appShell.sections")}
             />
+            {/* Below the top bar, not above it (task: "move it below the top
+                bar") — `data-tauri-drag-region` lives on `.top` itself, so
+                keeping the banner above it would've meant the window's drag
+                handle started a banner-height further down than the actual
+                title bar. */}
+            {banner && (
+                <div ref={bannerRef} className={styles.banner}>
+                    {banner}
+                </div>
+            )}
 
             {/* `.main` passed as both `className` (outer) and `contentClassName`
                 (inner, scrollable) — its `flex: 1; min-height: 0` sizing has

@@ -83,8 +83,33 @@ export const useCustomScrollbar = (contentRef: RefObject<HTMLDivElement | null>)
         // recompute via their own onScroll), and the container's own
         // clientHeight changing from a window resize or a sibling layout
         // shift, which nothing else here observes.
+        //
+        // Bug: "no scroll bar initially, then a scroll bar come and stick"
+        // (Weighing tab, right after WeighingScreen.tsx's own
+        // `useStickyStripHeight` fix) — observing only `el` isn't enough.
+        // `el` is this ScrollArea's own scroll container, sized by flex
+        // (`flex:1; min-height:0`) to whatever room its *ancestors* leave
+        // it; its own border-box only changes on a window resize or a
+        // sibling layout shift, same as the comment above already says.
+        // But `el`'s *content* can grow taller (e.g. `--weigh-strip-h`
+        // landing a frame after mount pushes `.actions-sticky`'s `top`
+        // down, growing the column beneath it) without `el` itself
+        // resizing at all — only its `scrollHeight` changes, invisible to
+        // a ResizeObserver watching `el`'s own box. The thumb stayed
+        // `NO_THUMB` (real `overflow-y: auto` scrolling still worked
+        // underneath, just with no visible affordance) until the user's
+        // own scroll gesture happened to fire `onScroll` (`recompute` from
+        // `ScrollArea.tsx`'s `handleScroll`) — which reads as "no
+        // scrollbar until you scroll to the end", since a single wheel
+        // tick's `onScroll` firing mid-gesture is easy to miss and the
+        // thumb only becomes obviously present once scrolling stops.
+        // Observing the content's own first child (the actual rendered
+        // content whose height IS `el.scrollHeight`) catches that growth
+        // directly, the same way a bare `ResizeObserver` would if it could
+        // watch `scrollHeight` itself.
         const resizeObserver = new ResizeObserver(recompute);
         resizeObserver.observe(el);
+        if (el.firstElementChild) resizeObserver.observe(el.firstElementChild);
         return () => resizeObserver.disconnect();
     }, [contentRef, recompute]);
 

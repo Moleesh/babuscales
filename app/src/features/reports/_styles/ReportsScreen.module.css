@@ -282,8 +282,8 @@
     min-width: 0;
     --reports-chrome-h: 58px;
     --datatable-max-height: calc(
-        100vh - var(--shell-header-h, 0px) - var(--card-header-h, 0px) - var(--reports-filters-h, 0px) - 170px -
-            var(--reports-chrome-h)
+        100vh - var(--shell-banner-h, 0px) - var(--shell-header-h, 0px) - var(--card-header-h, 0px) -
+            var(--reports-filters-h, 0px) - 170px - var(--reports-chrome-h)
     );
     /* User: "revert it all we need to do is add a min height for the table
        there so the bottom stay always at the bottom" — instead of stretching
@@ -330,8 +330,8 @@
 .summary-table {
     min-width: 0;
     --datatable-max-height: calc(
-        100vh - var(--shell-header-h, 0px) - var(--card-header-h, 0px) - var(--reports-filters-h, 0px) - 170px - 58px -
-            var(--summary-group-h, 0px) - 8px
+        100vh - var(--shell-banner-h, 0px) - var(--shell-header-h, 0px) - var(--card-header-h, 0px) -
+            var(--reports-filters-h, 0px) - 170px - 58px - var(--summary-group-h, 0px) - 8px
     );
     --datatable-min-height: var(--datatable-max-height);
 }

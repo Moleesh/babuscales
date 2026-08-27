@@ -59,9 +59,21 @@ const useStickyStripHeight = (
             screenEl.style.setProperty("--weigh-strip-h", "0px");
             return;
         }
-        const observer = new ResizeObserver(([entry]) => {
-            if (!entry) return;
-            screenEl.style.setProperty("--weigh-strip-h", `${entry.contentRect.height}px`);
+        // `entry.contentRect.height` excludes the strip element's own
+        // padding/border (content-box only) — undercounts its real rendered
+        // height the same way AppShell.tsx's banner-height observer did
+        // (task: "all setting page has double scroll bar"). Here that
+        // shows up as a timing/flicker bug rather than a fixed offset: on
+        // first paint `--weigh-strip-h` sits at its `48px` fallback, then
+        // the observer's first callback snaps it to the undercounted real
+        // value a frame later — if the strip has non-zero padding/border,
+        // that's a second, *smaller* jump than the true height, so
+        // `.actions-sticky`'s `top` briefly reserves less room than the
+        // strip actually occupies and a stray scrollbar appears (and
+        // sticks, since the wrong value is now steady-state). Reading
+        // `stripEl.offsetHeight` instead gives the actual rendered box.
+        const observer = new ResizeObserver(() => {
+            screenEl.style.setProperty("--weigh-strip-h", `${stripEl.offsetHeight}px`);
         });
         observer.observe(stripEl);
         return () => observer.disconnect();

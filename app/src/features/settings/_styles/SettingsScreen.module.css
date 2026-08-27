@@ -19,7 +19,9 @@
    out taller than the room actually left made `.main` pick up a second,
    several-dozen-pixel scroll underneath `.pane-area`'s own complete one. */
 .screen {
-    height: calc(100vh - var(--shell-topbar-h, 0px) - var(--shell-header-h, 0px) - 36px);
+    height: calc(
+        100vh - var(--shell-banner-h, 0px) - var(--shell-topbar-h, 0px) - var(--shell-header-h, 0px) - 36px
+    );
     padding: 12px;
     display: flex;
     flex-direction: column;

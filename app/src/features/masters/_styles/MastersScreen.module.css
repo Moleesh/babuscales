@@ -26,7 +26,7 @@
        covers the weight header's own height, which is real (a compact
        ShellWeightHeader renders on every tab, Masters included) rather than
        0 as an earlier pass here assumed. */
-    height: calc(100vh - var(--shell-header-h, 0px) - 88px);
+    height: calc(100vh - var(--shell-banner-h, 0px) - var(--shell-header-h, 0px) - 88px);
     /* Same reasoning as ReportsScreen.module.css's `.screen` — stops the
        list's own wide DataTable from stretching this flex item past
        `.main`'s width. */
