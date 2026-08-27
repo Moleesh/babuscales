@@ -7,7 +7,7 @@
 //! indicator already uses, so a real device and the demo mean the same
 //! thing by "stable". Rust's job stops at "here is a raw sample".
 
-use std::io::{BufRead, BufReader};
+use std::io::{BufRead, BufReader, Read};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::thread::JoinHandle;
@@ -19,6 +19,16 @@ use serialport::{DataBits, Parity, StopBits};
 use tauri::{AppHandle, Emitter};
 
 use crate::error::AppError;
+
+/// Hard cap on how many bytes one `read_until` attempt will consume while
+/// looking for `framing.line_ending` before giving up on that "line" and
+/// trying again — see the reader thread's own comment (`open`, below) for
+/// the hang this guards against. Picked from the operator's own report of
+/// what a stuck Listen panel looked like in production (a garbled block
+/// several hundred characters/~20 terminal rows deep with no valid
+/// reading in it); anywhere in the "clearly not one real line anymore"
+/// range would do.
+const MAX_LINE_BYTES: usize = 400;
 
 /// Everything about the wire framing that "just build the Listen button"
 /// (task: serial-port indicator settings) turned out to still be missing —
@@ -175,6 +185,21 @@ pub struct RawLinePayload {
     pub line: String,
 }
 
+/// Emitted instead of `RawLinePayload`/`RawReading` whenever a "line" runs
+/// past `MAX_LINE_BYTES` without ever hitting `framing.line_ending` — a
+/// misconfigured/no-terminator indicator (production report: a scale
+/// streaming `73850kg-74630kg-...` continuously, no LF anywhere) that would
+/// otherwise make `read_until` below block forever, one endless "line",
+/// with nothing ever reaching the frontend. Settings' Listen panel
+/// (IndicatorPortMonitor.tsx) turns this into a popup pointing the operator
+/// at the Line ending field instead of just sitting on "No data yet"
+/// forever with no explanation.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "PascalCase")]
+pub struct OverflowPayload {
+    pub bytes: usize,
+}
+
 /// Extracts a signed decimal weight from one line of raw indicator output.
 /// `pattern`, if given, is a regex with a capture group around the number —
 /// PLAN §17's "custom-pattern fallback so any indicator works without a
@@ -287,7 +312,19 @@ pub(crate) fn open(
         let mut buf: Vec<u8> = Vec::new();
         while !thread_stop.load(Ordering::Relaxed) {
             buf.clear();
-            match reader.read_until(terminator, &mut buf) {
+            // Bug: a device with no real line terminator (production
+            // report: a scale streaming `73850kg-74630kg-...` forever, no
+            // LF anywhere) made a bare `read_until` block indefinitely —
+            // data kept arriving, so it never timed out either, just grew
+            // `buf` without end and never returned. Wrapping the reader in
+            // a fresh `Take` every iteration caps how many bytes this one
+            // "line" attempt can consume before giving up and trying
+            // again, the same way the 500ms read timeout below already
+            // bounds a single stalled read. `(&mut reader).take(..)`
+            // borrows rather than consumes `reader`, so the *next*
+            // iteration still starts from wherever this one left off.
+            let mut limited = (&mut reader).take(MAX_LINE_BYTES as u64);
+            match limited.read_until(terminator, &mut buf) {
                 Ok(0) => {
                     // A real EOF on a serial port means it went away —
                     // unplugged, or the OS reclaimed it. Not a timeout.
@@ -298,6 +335,18 @@ pub(crate) fn open(
                         },
                     );
                     break;
+                }
+                Ok(_) if buf.last() != Some(&terminator) => {
+                    // Hit the `MAX_LINE_BYTES` cap without ever seeing the
+                    // configured terminator — this is the "no real line
+                    // ending" case, not a normal line. Surface it as its
+                    // own event (not `indicator-error`, which the Listen
+                    // panel already renders as a single inline `⚠ ...`
+                    // line) so the UI can pop something the operator can't
+                    // miss, then keep the connection open and try again —
+                    // reconnecting shouldn't be required just to test a
+                    // different Line ending value.
+                    let _ = thread_app.emit("indicator-overflow", OverflowPayload { bytes: buf.len() });
                 }
                 Ok(_) => {
                     // `from_utf8_lossy` rather than requiring valid UTF-8:

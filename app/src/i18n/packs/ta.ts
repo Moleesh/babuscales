@@ -481,6 +481,10 @@ export const TA_PACK: LanguagePack = {
         "settings.indicator.listen": "கேட்க தொடங்கு",
         "settings.indicator.stopListening": "நிறுத்து",
         "settings.indicator.monitorEmpty": "இன்னும் தரவு இல்லை — Listen ஐ அழுத்தி, காட்டியில் இருந்து ஒரு எடையை அனுப்பவும்.",
+        "settings.indicator.overflowTitle": "வரி முடிவு (line ending) கிடைக்கவில்லை",
+        "settings.indicator.overflowBody":
+            "இந்த காட்டியின் மூல தரவு நீங்கள் அமைத்த Line ending பைட்டை அடையாமல் நீண்ட நேரம் தொடர்ந்தது — இது அந்த புலம் எதிர்பார்க்கும் விதத்தில் ஒரு வரி முடிவைப் பயன்படுத்தாமல் இருக்கலாம். வேறு Line ending மதிப்பை (எடையை உண்மையில் பிரிக்கும் எழுத்து) முயற்சிக்கவும், அல்லது Start/End char மூலம் வாசிப்பை குறுக்கவும்.",
+        "settings.indicator.overflowClose": "சரி",
         "settings.indicator.dataBits": "டேட்டா பிட்கள்",
         "settings.indicator.parity": "பாரிட்டி",
         "settings.indicator.parity.none": "இல்லை",

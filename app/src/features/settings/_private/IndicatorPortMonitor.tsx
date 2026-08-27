@@ -1,3 +1,4 @@
+import { AppModal } from "@components/AppModal";
 import { ScrollArea } from "@components/ScrollArea";
 import { useIndicator } from "@engines/indicator";
 import { useTranslation } from "@i18n/useTranslation";
@@ -26,7 +27,10 @@ export interface IndicatorPortMonitorProps {
 export const IndicatorPortMonitor = ({ conn, unlocked }: IndicatorPortMonitorProps) => {
     const { t } = useTranslation();
     const indicator = useIndicator();
-    const { listening, lines, error, logRef, toggle } = useIndicatorPortMonitor(conn, indicator);
+    const { listening, lines, error, overflow, dismissOverflow, logRef, toggle } = useIndicatorPortMonitor(
+        conn,
+        indicator,
+    );
 
     return (
         <div className={styles.monitor}>
@@ -41,6 +45,21 @@ export const IndicatorPortMonitor = ({ conn, unlocked }: IndicatorPortMonitorPro
                 </button>
                 {error && <span className={styles.statusBad}>⚠ {error}</span>}
             </div>
+            {/* Task: "make the listen open a pop when it reads like 100-500
+                char or 19-20 rows" — the operator's own words for what a
+                misconfigured/no-terminator indicator's raw output looked
+                like on production hardware, driven by
+                useIndicatorPortMonitor.ts's `overflow` state (set from
+                either the Rust-side `indicator-overflow` cap or the
+                20-line-with-zero-readings backstop). */}
+            <AppModal
+                open={overflow}
+                title={t("settings.indicator.overflowTitle")}
+                onClose={dismissOverflow}
+                closeLabel={t("settings.indicator.overflowClose")}
+            >
+                <p>{t("settings.indicator.overflowBody")}</p>
+            </AppModal>
             {/* Bug: "in settings we have page pretty much all tab has the
                 wrong [scroll bar]" — this used to be a plain `overflow-y:
                 auto` div using the native OS/browser scrollbar. Now rendered

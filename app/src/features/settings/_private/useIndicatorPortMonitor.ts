@@ -13,10 +13,28 @@ interface RawLineEvent {
 interface IndicatorErrorEvent {
     Message: string;
 }
+interface OverflowEvent {
+    Bytes: number;
+}
+interface ReadingEvent {
+    WeightKg: number;
+}
 
 // Most recent lines kept on screen — enough to see a few frames go by
 // without the box growing unbounded while Listen is left running.
 const MAX_LINES = 40;
+
+// Task: "make the listen open a pop when it reads like 100-500 char or
+// 19-20 rows" — the operator's own description of what a misconfigured/
+// no-terminator indicator looked like in production (devices/indicator.rs's
+// own `MAX_LINE_BYTES` cap uses the same reasoning). Backstop for the case
+// `indicator-overflow` (below) doesn't catch: a device that does send
+// *some* byte matching the configured terminator, just never near a valid
+// weight, so line after line comes through parsed as noise and nothing
+// ever reads. `MAX_LINES` (40) already exists for the log's own display
+// budget; this fires well before that, once it's clear nothing usable is
+// coming through.
+const STALL_LINE_COUNT = 20;
 
 // Hands the one shared serial connection back to the app's real indicator
 // engine — same "Applied immediately" reopen App.tsx's own
@@ -83,6 +101,14 @@ export const useIndicatorPortMonitor = (conn: ConnectionsConfig, indicator: Indi
     const [listening, setListening] = useState(false);
     const [lines, setLines] = useState<string[]>([]);
     const [error, setError] = useState<string | null>(null);
+    // Set once per Listen session, on the first sign this indicator's
+    // output doesn't fit the configured framing (either the Rust-side
+    // overflow cap or the "lots of lines, zero readings" backstop below) —
+    // read by IndicatorPortMonitor.tsx to drive the warning popup. Not
+    // reset until `start()` runs again, so it stays up until the operator
+    // dismisses it or tries Listen again with different settings.
+    const [overflow, setOverflow] = useState(false);
+    const readingsSeenRef = useRef(0);
     const logRef = useRef<HTMLDivElement>(null);
 
     // Kept current on every render so both `stop()` and the unmount cleanup
@@ -105,13 +131,37 @@ export const useIndicatorPortMonitor = (conn: ConnectionsConfig, indicator: Indi
     useEffect(() => {
         if (!listening) return;
         const unlistenLine = listen<RawLineEvent>("indicator-raw-line", (event) => {
-            setLines((previous) => [...previous.slice(-(MAX_LINES - 1)), event.payload.Line]);
+            setLines((previous) => {
+                const next = [...previous.slice(-(MAX_LINES - 1)), event.payload.Line];
+                // Backstop overflow check — see `STALL_LINE_COUNT`'s own
+                // comment. `readingsSeenRef` (bumped by the
+                // `indicator-reading` listener below) is read here rather
+                // than depended on directly so this callback doesn't need
+                // to be recreated (and re-subscribed) on every reading.
+                if (next.length >= STALL_LINE_COUNT && readingsSeenRef.current === 0) {
+                    setOverflow(true);
+                }
+                return next;
+            });
+        });
+        const unlistenReading = listen<ReadingEvent>("indicator-reading", () => {
+            readingsSeenRef.current += 1;
+        });
+        // Rust-side cap (devices/indicator.rs's `MAX_LINE_BYTES`) — a
+        // single "line" ran hundreds of bytes past the configured Line
+        // ending without ever finding it. Distinct from `indicator-error`
+        // (a real port failure) so it can drive its own popup instead of
+        // just the small inline `⚠ ...` status line.
+        const unlistenOverflow = listen<OverflowEvent>("indicator-overflow", () => {
+            setOverflow(true);
         });
         const unlistenError = listen<IndicatorErrorEvent>("indicator-error", (event) => {
             setError(event.payload.Message);
         });
         return () => {
             void unlistenLine.then((off) => off());
+            void unlistenReading.then((off) => off());
+            void unlistenOverflow.then((off) => off());
             void unlistenError.then((off) => off());
         };
     }, [listening]);
@@ -139,6 +189,8 @@ export const useIndicatorPortMonitor = (conn: ConnectionsConfig, indicator: Indi
     const start = async () => {
         setError(null);
         setLines([]);
+        setOverflow(false);
+        readingsSeenRef.current = 0;
         try {
             await openIndicatorPort(conn);
             setListening(true);
@@ -162,5 +214,13 @@ export const useIndicatorPortMonitor = (conn: ConnectionsConfig, indicator: Indi
         }
     };
 
-    return { listening, lines, error, logRef, toggle: () => void (listening ? stop() : start()) };
+    return {
+        listening,
+        lines,
+        error,
+        overflow,
+        dismissOverflow: () => setOverflow(false),
+        logRef,
+        toggle: () => void (listening ? stop() : start()),
+    };
 };

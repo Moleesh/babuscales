@@ -498,6 +498,10 @@ export const EN_STRINGS: Record<string, string> = {
     "settings.indicator.listen": "Listen",
     "settings.indicator.stopListening": "Stop",
     "settings.indicator.monitorEmpty": "No data yet — press Listen, then send a weight from the indicator.",
+    "settings.indicator.overflowTitle": "No line ending found",
+    "settings.indicator.overflowBody":
+        "This indicator's raw output ran on for a while without ever hitting the Line ending byte you've set — it may not use a line terminator the way that field expects. Try a different Line ending value (e.g. the character that actually separates its readings), or narrow the reading with Start/End char.",
+    "settings.indicator.overflowClose": "Got it",
     "settings.indicator.dataBits": "Data bits",
     "settings.indicator.parity": "Parity",
     "settings.indicator.parity.none": "None",
