@@ -35,6 +35,9 @@
         "category": "Business",
         "shortDescription": "Weighbridge management software.",
         "longDescription": "BabuScales — weighbridge management software that a quarry can actually run. Ticketing, masters, reports, printing and hardware integration, offline-first with no cloud dependency.",
+        "resources": {
+            "../../resources/schemas/*.json": "resources/schemas/"
+        },
         "icon": [
             "icons/32x32.png",
             "icons/128x128.png",
