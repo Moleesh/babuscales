@@ -16,7 +16,7 @@
     gap: 12px;
 }
 .head.compact .digits,
-.head.compact .ghost span {
+.head.compact .ghost-prefix {
     font-size: 1.75rem;
 }
 .head.compact .cap,
@@ -98,29 +98,21 @@
     gap: 10px;
     min-width: 0;
 }
-/* The ghost stays in normal flow (not absolutely positioned over the whole
-   `.readout` row) so it — not a guessed padding value accounting for the
-   unit label's width — is what sizes this box. `.digits` is then laid
-   directly on top of it via `inset: 0`, right-aligned the same way, so the
-   live reading always overlaps the ghost's own digit positions exactly
-   instead of drifting off them once the unit label enters the mix. */
+/* splitGhostDigits.ts's own doc comment has the full story: this used to
+   be two independently-grouped strings (a hidden-but-width-setting `.ghost`
+   in normal flow, `.digits` absolutely positioned on top of it) stacked via
+   CSS overlay, which broke whenever their digit counts/grouping commas
+   didn't line up. Now `.ghostPrefix`/`.digits` are two plain sibling spans
+   in normal flow, both pieces of ONE already-correctly-grouped string
+   (WeightDisplay.tsx's `splitGhostDigits` call) — no overlay, no
+   positioning trick needed; `.readout`'s own `justify-content: flex-end`
+   is what keeps the pair right-aligned against the unit label. */
 .digitsWrap {
-    position: relative;
     display: inline-flex;
     align-items: baseline;
 }
-.ghost {
-    display: flex;
-    align-items: baseline;
-    pointer-events: none;
-    color: var(--led-ghost);
-    visibility: hidden;
-}
-.ghost span {
-    visibility: visible;
-}
 .digits,
-.ghost span {
+.ghostPrefix {
     font-family: var(--mono);
     font-variant-numeric: tabular-nums;
     font-size: clamp(2.25rem, 6vw, 3.75rem);
@@ -129,12 +121,10 @@
     line-height: 1;
     transition: font-size 0.16s ease;
 }
+.ghostPrefix {
+    color: var(--led-ghost);
+}
 .digits {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    align-items: baseline;
-    justify-content: flex-end;
     color: var(--led);
     text-shadow: 0 0 26px var(--led-ghost);
 }
@@ -178,7 +168,7 @@
         gap: 10px;
     }
     .head .digits,
-    .head .ghost span {
+    .head .ghost-prefix {
         font-size: clamp(1.5rem, 8vw, 2.25rem);
     }
     .head .cap,

@@ -1,6 +1,6 @@
-import { formatWeightIn } from "@constants/numberFormat";
 import type { DateFmt, WeightUnit } from "@constants/numberFormat";
 
+import { splitGhostDigits } from "./_private/splitGhostDigits";
 import { useClock } from "./_private/useClock";
 import styles from "./_styles/WeightDisplay.module.css";
 
@@ -59,14 +59,21 @@ export const WeightDisplay = ({
     motion,
     mode = "full",
     labels = DEFAULT_LABELS,
-    ghostPattern = "888,888",
+    ghostPattern = "888888",
     lang = "en",
     timeFmt = "24",
     dateFmt,
-    weightUnit = "kg",
+    // `weightUnit` deliberately not destructured — no kg→t conversion ever
+    // happened here (formatWeightIn's own doc comment), so it was already a
+    // no-op by the time it reached this component; still declared on
+    // WeightDisplayProps above so a caller passing Settings'
+    // Formats.WeightUnit through keeps compiling unchanged.
+    ...rest
 }: WeightDisplayProps) => {
+    void rest;
     const { time, day } = useClock(lang, timeFmt, dateFmt);
     const fillPct = Math.min(100, Math.round((weightKg / capacityKg) * 100));
+    const { prefix, live } = splitGhostDigits(weightKg, ghostPattern);
 
     return (
         <section
@@ -89,18 +96,20 @@ export const WeightDisplay = ({
 
             <div className={styles.readout}>
                 <div className={styles.digitsWrap}>
-                    <div className={styles.ghost} aria-hidden="true">
-                        <span>{ghostPattern}</span>
-                    </div>
-                    {/* Settings' "Weight display unit" — the indicator hardware always
-                        reports kg (weightKg stays kg everywhere upstream); formatWeightIn
-                        only swaps the unit text, same as every other display figure
-                        (CalcCard, Dashboard, Reports). It appends " kg"/" t" itself —
-                        stripped here since `labels.unit` below is this component's own
-                        unit label. */}
-                    <span className={`${styles.digits} num`}>
-                        {formatWeightIn(weightKg, weightUnit, lang).replace(/\s\S+$/, "")}
-                    </span>
+                    {/* Bug: "the bg value should be 888,888 now its 88,
+                        8888" — the ghost and the live reading used to be
+                        two independently-grouped strings stacked via CSS
+                        overlay, which broke whenever their digit counts
+                        differed (splitGhostDigits.ts's own comment has the
+                        full story). Now a single combined, correctly-grouped
+                        string, split back into a dim placeholder prefix and
+                        the real live text — never two overlapping layers. */}
+                    {prefix && (
+                        <span className={`${styles.ghostPrefix} num`} aria-hidden="true">
+                            {prefix}
+                        </span>
+                    )}
+                    <span className={`${styles.digits} num`}>{live}</span>
                 </div>
                 <span className={styles.unit}>{labels.unit}</span>
             </div>
