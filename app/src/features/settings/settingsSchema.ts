@@ -504,7 +504,13 @@ export const DEFAULT_INTEGRATIONS: IntegrationsConfig = {
     email: true,
     backup: true,
     webhook: false,
-    qr: true,
+    // Was `true` — every doc comment on this feature (net/mod.rs's own
+    // module doc, App.tsx's VerificationServerSync) says the LAN QR-
+    // verification server is opt-in/off by default, but this flag defaulting
+    // on made it auto-start (binding 0.0.0.0) on every fresh install,
+    // triggering an unexpected Windows Defender Firewall prompt on first
+    // launch before the operator ever touched Settings.
+    qr: false,
     tally: false,
     board: false,
 };
