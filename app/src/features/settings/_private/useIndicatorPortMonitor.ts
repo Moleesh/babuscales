@@ -97,7 +97,11 @@ const openIndicatorPort = (conn: ConnectionsConfig): Promise<void> =>
 // Split out of IndicatorPortMonitor.tsx (over the line budget —
 // docs/CodingStandards.md) — the open/listen/close plumbing behind its
 // Listen button, unchanged from the inline version it replaces.
-export const useIndicatorPortMonitor = (conn: ConnectionsConfig, indicator: IndicatorSource) => {
+export const useIndicatorPortMonitor = (
+    conn: ConnectionsConfig,
+    indicator: IndicatorSource,
+    unlocked: boolean,
+) => {
     const [listening, setListening] = useState(false);
     const [lines, setLines] = useState<string[]>([]);
     const [error, setError] = useState<string | null>(null);
@@ -139,7 +143,7 @@ export const useIndicatorPortMonitor = (conn: ConnectionsConfig, indicator: Indi
                 // than depended on directly so this callback doesn't need
                 // to be recreated (and re-subscribed) on every reading.
                 if (next.length >= STALL_LINE_COUNT && readingsSeenRef.current === 0) {
-                    setOverflow(true);
+                    flagOverflow();
                 }
                 return next;
             });
@@ -150,10 +154,10 @@ export const useIndicatorPortMonitor = (conn: ConnectionsConfig, indicator: Indi
         // Rust-side cap (devices/indicator.rs's `MAX_LINE_BYTES`) — a
         // single "line" ran hundreds of bytes past the configured Line
         // ending without ever finding it. Distinct from `indicator-error`
-        // (a real port failure) so it can drive its own popup instead of
-        // just the small inline `⚠ ...` status line.
+        // (a real port failure) so it can drive its own quiet auto-stop
+        // instead of just the small inline `⚠ ...` status line.
         const unlistenOverflow = listen<OverflowEvent>("indicator-overflow", () => {
-            setOverflow(true);
+            flagOverflow();
         });
         const unlistenError = listen<IndicatorErrorEvent>("indicator-error", (event) => {
             setError(event.payload.Message);
@@ -186,6 +190,21 @@ export const useIndicatorPortMonitor = (conn: ConnectionsConfig, indicator: Indi
         };
     }, []);
 
+    // Task: "this keeps looping, we need a start stop button (will always
+    // start automatically, fail silently in case)" — the old `setOverflow`
+    // calls above left `listening` on, so the raw-line listener kept firing,
+    // kept seeing >= STALL_LINE_COUNT with zero readings, and kept popping
+    // the modal back open right after it was dismissed. Stopping here (not
+    // just flagging) actually closes the port and drops this effect's
+    // subscriptions, so a bad framing now fails once and goes quiet instead
+    // of nagging on every subsequent line. Guarded on `listeningRef` so a
+    // race between the two overflow events (line-count backstop and the
+    // Rust-side byte cap) can't call `stop()` twice.
+    const flagOverflow = () => {
+        setOverflow(true);
+        if (listeningRef.current) void stop();
+    };
+
     const start = async () => {
         setError(null);
         setLines([]);
@@ -213,6 +232,28 @@ export const useIndicatorPortMonitor = (conn: ConnectionsConfig, indicator: Indi
             reconnectRealIndicator(indicatorRef.current, connRef.current);
         }
     };
+
+    // "will always start automatically" — Listen used to need a manual
+    // click every time the operator opened this pane; now it starts on its
+    // own the moment a port is configured, same as the app's own live
+    // indicator connection does (App.tsx's SerialConnectionSync). Still a
+    // real Stop/Listen toggle below for the operator to pause it — this
+    // only covers the initial "walked in, port's already set" case. `[]`
+    // deps: fires once per mount, not on every `conn` edit (typing a new
+    // port value mid-edit shouldn't yank the connection open underneath
+    // the operator).
+    // Same lock gate as the manual button (`disabled={!unlocked || ...}`) —
+    // without it this would seize the one shared serial port out from under
+    // the app's real indicator connection the moment the pane mounted, even
+    // while Connections is still locked/read-only.
+    const autoStarted = useRef(false);
+    useEffect(() => {
+        if (autoStarted.current) return;
+        if (!unlocked || !conn.IndicatorPort) return;
+        autoStarted.current = true;
+        void start();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [unlocked]);
 
     return {
         listening,

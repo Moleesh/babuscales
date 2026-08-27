@@ -1,4 +1,3 @@
-import { AppModal } from "@components/AppModal";
 import { ScrollArea } from "@components/ScrollArea";
 import { useIndicator } from "@engines/indicator";
 import { useTranslation } from "@i18n/useTranslation";
@@ -27,9 +26,10 @@ export interface IndicatorPortMonitorProps {
 export const IndicatorPortMonitor = ({ conn, unlocked }: IndicatorPortMonitorProps) => {
     const { t } = useTranslation();
     const indicator = useIndicator();
-    const { listening, lines, error, overflow, dismissOverflow, logRef, toggle } = useIndicatorPortMonitor(
+    const { listening, lines, error, overflow, logRef, toggle } = useIndicatorPortMonitor(
         conn,
         indicator,
+        unlocked,
     );
 
     return (
@@ -44,22 +44,17 @@ export const IndicatorPortMonitor = ({ conn, unlocked }: IndicatorPortMonitorPro
                     {listening ? t("settings.indicator.stopListening") : t("settings.indicator.listen")}
                 </button>
                 {error && <span className={styles.statusBad}>⚠ {error}</span>}
+                {/* Task: "this keeps looping, we need a start stop button
+                    (will always start automatically, fail silently in
+                    case)" — this used to be a blocking AppModal that kept
+                    reopening itself (see useIndicatorPortMonitor.ts's
+                    `flagOverflow` comment for why it looped). Listen has
+                    already auto-stopped by the time this shows, so it's now
+                    just a quiet inline note next to the button the operator
+                    can use to try again, same tier as the `error` status
+                    above it — not a blocking dialog. */}
+                {overflow && <span className={styles.statusBad}>⚠ {t("settings.indicator.overflowTitle")}</span>}
             </div>
-            {/* Task: "make the listen open a pop when it reads like 100-500
-                char or 19-20 rows" — the operator's own words for what a
-                misconfigured/no-terminator indicator's raw output looked
-                like on production hardware, driven by
-                useIndicatorPortMonitor.ts's `overflow` state (set from
-                either the Rust-side `indicator-overflow` cap or the
-                20-line-with-zero-readings backstop). */}
-            <AppModal
-                open={overflow}
-                title={t("settings.indicator.overflowTitle")}
-                onClose={dismissOverflow}
-                closeLabel={t("settings.indicator.overflowClose")}
-            >
-                <p>{t("settings.indicator.overflowBody")}</p>
-            </AppModal>
             {/* Bug: "in settings we have page pretty much all tab has the
                 wrong [scroll bar]" — this used to be a plain `overflow-y:
                 auto` div using the native OS/browser scrollbar. Now rendered
