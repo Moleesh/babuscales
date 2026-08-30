@@ -19,7 +19,7 @@ const configRow = (body: SettingsBody, version: number): ConfigRow => ({
 
 describe("useSettingsPersist: persist", () => {
     it("writes version+1 off the current version prop, and applies setSettings/setVersion from the result", async () => {
-        const saveConfig = vi.fn(async (draft: ConfigDraft) => configRow(draft.Body as SettingsBody, draft.Version ?? 0));
+        const saveConfig = vi.fn((draft: ConfigDraft) => Promise.resolve(configRow(draft.Body as SettingsBody, draft.Version ?? 0)));
         const db = { saveConfig } as unknown as DataPort;
         let settings: SettingsBody | null = null;
         let version = 0;
@@ -49,7 +49,7 @@ describe("useSettingsPersist: persist", () => {
     });
 
     it("always uses the freshest version prop (via the internal ref), not a stale closed-over one", async () => {
-        const saveConfig = vi.fn(async (draft: ConfigDraft) => configRow(draft.Body as SettingsBody, draft.Version ?? 0));
+        const saveConfig = vi.fn((draft: ConfigDraft) => Promise.resolve(configRow(draft.Body as SettingsBody, draft.Version ?? 0)));
         const db = { saveConfig } as unknown as DataPort;
         const { result, rerender } = renderHook(
             ({ v }) => useSettingsPersist(db, v, () => undefined, () => undefined),
@@ -64,8 +64,8 @@ describe("useSettingsPersist: persist", () => {
 describe("useSettingsPersist: persistPatch", () => {
     it("re-reads the row fresh, applies mutator, writes currentVersion+1", async () => {
         const freshBody = { ...SYNC_DEFAULT_BODY, OperatorName: "FreshFromDb" };
-        const getConfig = vi.fn(async () => configRow(freshBody, 9));
-        const saveConfig = vi.fn(async (draft: ConfigDraft) => configRow(draft.Body as SettingsBody, draft.Version ?? 0));
+        const getConfig = vi.fn(() => Promise.resolve(configRow(freshBody, 9)));
+        const saveConfig = vi.fn((draft: ConfigDraft) => Promise.resolve(configRow(draft.Body as SettingsBody, draft.Version ?? 0)));
         const db = { getConfig, saveConfig } as unknown as DataPort;
         const box: { settings: SettingsBody | null; version: number } = { settings: null, version: 0 };
         const { result } = renderHook(() =>
@@ -90,7 +90,7 @@ describe("useSettingsPersist: persistPatch", () => {
     });
 
     it("skips the write entirely when mutator returns the same object (no-op)", async () => {
-        const getConfig = vi.fn(async () => configRow(SYNC_DEFAULT_BODY, 3));
+        const getConfig = vi.fn(() => Promise.resolve(configRow(SYNC_DEFAULT_BODY, 3)));
         const saveConfig = vi.fn();
         const db = { getConfig, saveConfig } as unknown as DataPort;
         const { result } = renderHook(() => useSettingsPersist(db, 0, () => undefined, () => undefined));

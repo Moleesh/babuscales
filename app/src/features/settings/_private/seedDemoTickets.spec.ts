@@ -10,12 +10,13 @@ describe("seedDemoTickets", () => {
         const saved: DocDraft[] = [];
         const allocated: string[] = [];
         const db = {
-            saveDoc: vi.fn(async (draft: DocDraft) => {
+            saveDoc: vi.fn((draft: DocDraft) => {
                 saved.push(draft);
-                return { DocId: `id-${saved.length}`, ...draft } as unknown as DocRow;
+                return Promise.resolve({ DocId: `id-${saved.length}`, ...draft } as unknown as DocRow);
             }),
-            allocateDocSeq: vi.fn(async (docId: string) => {
+            allocateDocSeq: vi.fn((docId: string) => {
                 allocated.push(docId);
+                return Promise.resolve(undefined);
             }),
         } as unknown as DataPort;
 
@@ -29,11 +30,11 @@ describe("seedDemoTickets", () => {
     it("produces the right mix of cancelled vs not, and open tickets carry only one capture", async () => {
         const saved: DocDraft[] = [];
         const db = {
-            saveDoc: vi.fn(async (draft: DocDraft) => {
+            saveDoc: vi.fn((draft: DocDraft) => {
                 saved.push(draft);
-                return { DocId: `id-${saved.length}`, ...draft } as unknown as DocRow;
+                return Promise.resolve({ DocId: `id-${saved.length}`, ...draft } as unknown as DocRow);
             }),
-            allocateDocSeq: vi.fn(async () => undefined),
+            allocateDocSeq: vi.fn(() => Promise.resolve(undefined)),
         } as unknown as DataPort;
 
         await seedDemoTickets(db);

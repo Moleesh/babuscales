@@ -18,9 +18,9 @@ const serialSource = (): SerialIndicatorSource & { emitError: (msg: string | nul
             listeners.add(listener);
             return () => listeners.delete(listener);
         },
-        listPorts: async () => [],
-        connect: async () => undefined,
-        disconnect: async () => undefined,
+        listPorts: () => Promise.resolve([]),
+        connect: () => Promise.resolve(undefined),
+        disconnect: () => Promise.resolve(undefined),
         getConnectionError: () => error,
         updateOptions: () => undefined,
         emitError: (msg) => {

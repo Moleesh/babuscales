@@ -31,10 +31,10 @@ const docRow = (importRef?: string): DocRow => ({
 describe("loadExistingState", () => {
     it("builds a trimmed/lowercased name set per master kind and a legacy-id set from tickets", async () => {
         const db = {
-            listMasters: vi.fn(async ({ MasterKind }: { MasterKind: string }) =>
-                MasterKind === "Party" ? [masterRow("  Acme Co  ")] : [],
+            listMasters: vi.fn(({ MasterKind }: { MasterKind: string }) =>
+                Promise.resolve(MasterKind === "Party" ? [masterRow("  Acme Co  ")] : []),
             ),
-            listDocs: vi.fn(async () => [docRow("LEG-1"), docRow(undefined), docRow("LEG-2")]),
+            listDocs: vi.fn(() => Promise.resolve([docRow("LEG-1"), docRow(undefined), docRow("LEG-2")])),
         } as unknown as DataPort;
 
         const state = await loadExistingState(db);
@@ -44,8 +44,8 @@ describe("loadExistingState", () => {
 
     it("ignores a non-string ImportRef rather than including it", async () => {
         const db = {
-            listMasters: vi.fn(async () => []),
-            listDocs: vi.fn(async () => [{ ...docRow(), Body: { ImportRef: 123 } }]),
+            listMasters: vi.fn(() => Promise.resolve([])),
+            listDocs: vi.fn(() => Promise.resolve([{ ...docRow(), Body: { ImportRef: 123 } }])),
         } as unknown as DataPort;
         const state = await loadExistingState(db);
         expect(state.ticketLegacyIds.size).toBe(0);
@@ -57,8 +57,8 @@ describe("commitLegacyImport", () => {
         ({ masterDrafts, ticketDrafts, skipped: [] }) as unknown as LegacyImportPlan;
 
     it("commits all masters then all tickets, counting each success", async () => {
-        const saveMaster = vi.fn(async (d: MasterDraft) => masterRow(d.Name));
-        const saveDoc = vi.fn(async () => docRow());
+        const saveMaster = vi.fn((d: MasterDraft) => Promise.resolve(masterRow(d.Name)));
+        const saveDoc = vi.fn(() => Promise.resolve(docRow()));
         const db = { saveMaster, saveDoc } as unknown as DataPort;
 
         const result = await commitLegacyImport(
@@ -104,7 +104,7 @@ describe("commitLegacyImport", () => {
 
     it("stringifies a non-Error rejection rather than throwing", async () => {
         const saveMaster = vi.fn().mockRejectedValueOnce("boom");
-        const saveDoc = vi.fn(async () => docRow());
+        const saveDoc = vi.fn(() => Promise.resolve(docRow()));
         const db = { saveMaster, saveDoc } as unknown as DataPort;
         const result = await commitLegacyImport(
             db,

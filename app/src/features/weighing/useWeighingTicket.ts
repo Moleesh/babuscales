@@ -532,6 +532,9 @@ interface PrintTicketDeps {
     customFields: Record<string, CustomFieldValue>;
     printCount: number;
     decimalsAllowed: boolean;
+    /** See the `effectiveDecimalsAllowed` comment below — the fix for
+     * merged_bug_001. */
+    isLocked: boolean;
     db: ReturnType<typeof useDataPort>;
     dispatch: Dispatch<TicketAction>;
 }
@@ -547,10 +550,27 @@ const printTicket = async ({
     customFields,
     printCount,
     decimalsAllowed,
+    isLocked,
     db,
     dispatch,
 }: PrintTicketDeps): Promise<void> => {
     const nextCount = printCount + 1;
+    // merged_bug_001: print/reprint re-derives the whole Body — including
+    // Charge — from the in-memory form fields via buildTicketBody, gated by
+    // the *current* Settings.DecimalsAllowed. That's correct for a still-open
+    // (unlocked) ticket, where the Charge box stays editable and a fresh
+    // edit genuinely needs re-validating against the live setting. But once
+    // a ticket is locked (already fully saved — the Print button's own
+    // `disabled` allows re-printing an already-locked doc), the Charge field
+    // is read-only and cannot have changed since the save that produced the
+    // currently-stored value. Re-running the DecimalsAllowed gate here
+    // regardless used to silently wipe an already-accepted fractional Charge
+    // from the DB on the very next reprint whenever an admin toggled
+    // DecimalsAllowed off in between — permanent data loss with no edit and
+    // no warning. Locked reprints bypass the gate (decimalsAllowed forced
+    // true) so an already-valid stored Charge survives; an actually open,
+    // still-editable ticket keeps being validated against the live setting.
+    const effectiveDecimalsAllowed = isLocked || decimalsAllowed;
     // Dispatched only after the save actually succeeds — this used
     // to run before the `await`, so a failed `db.saveDoc` (licence
     // gate, disk full, corrupt body) still left the in-memory
@@ -562,7 +582,7 @@ const printTicket = async ({
         DocId: docId,
         DocKind: "Ticket",
         Body: {
-            ...buildTicketBody(fields, captures, printCount, customFields, decimalsAllowed),
+            ...buildTicketBody(fields, captures, printCount, customFields, effectiveDecimalsAllowed),
             PrintCount: nextCount,
         },
     });
@@ -641,12 +661,22 @@ const useTicketPersistenceActions = ({
         printingRef.current = true;
         dispatch({ type: "SetSaving", saving: true });
         try {
-            await printTicket({ docId, captures, fields, customFields, printCount, decimalsAllowed, db, dispatch });
+            await printTicket({
+                docId,
+                captures,
+                fields,
+                customFields,
+                printCount,
+                decimalsAllowed,
+                isLocked,
+                db,
+                dispatch,
+            });
         } finally {
             printingRef.current = false;
             dispatch({ type: "SetSaving", saving: false });
         }
-    }, [captures, customFields, db, docId, fields, printCount, decimalsAllowed, dispatch]);
+    }, [captures, customFields, db, docId, fields, isLocked, printCount, decimalsAllowed, dispatch]);
 
     return { save, print };
 };

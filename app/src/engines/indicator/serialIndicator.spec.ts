@@ -120,7 +120,7 @@ describe("createSerialIndicator / pushSample (via indicator-reading events)", ()
 
     it("malformed indicator-reading payload is rejected without throwing", () => {
         const source = createSerialIndicator();
-        expect(() => emitReading("not-a-number" as unknown as number)).not.toThrow();
+        expect(() => emitReading("not-a-number")).not.toThrow();
         expect(source.getReading()).toEqual({ WeightKg: 0, Stable: true });
     });
 });

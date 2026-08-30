@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 
 import { Card } from "@components/Card";
 import { Tooltip } from "@components/Tooltip";
-import { formatDateTimeInFmt, formatPlainNumber, formatWeightIn } from "@constants/numberFormat";
+import { formatPlainNumber, formatWeightIn } from "@constants/numberFormat";
 import type { WeightUnit } from "@constants/numberFormat";
 import type { Capture, CaptureType } from "@db/ticketBody";
 import type { DerivedWeights } from "@db/ticketBody";
@@ -17,6 +17,7 @@ import { getCalcItemsForFields } from "./calcSegments";
 import { prettifyFormula } from "./formulaBreakdown";
 import { ManualCalcBox } from "./ManualCalcBox";
 import { evaluateFieldVisible } from "./schemaFieldValidation";
+import { formatStamp } from "./formatStamp";
 import { resolveFieldLabel } from "./ticketFieldIds";
 import styles from "../_styles/WeighingScreen.module.css";
 
@@ -33,13 +34,6 @@ const isBoxVisible = (fields: Field[], fieldId: string): boolean => {
     const field = fields.find((candidate) => candidate.FieldId === fieldId);
     return !!field && evaluateFieldVisible(field);
 };
-
-const formatStamp = (
-    iso: string | undefined,
-    lang: string,
-    dateFmt: string,
-    timeFmt: "24" | "12",
-): string => (iso ? formatDateTimeInFmt(iso, lang, dateFmt, timeFmt) : "—");
 
 interface CalcBoxProps {
     label: string;

@@ -1,6 +1,6 @@
 import { evaluateFormula } from "@engines/formulaEngine";
 import type { FormulaContext, FormulaValue } from "@engines/formulaEngine";
-import { fromInt, fromString, toNumber } from "@engines/formulaEngine/Decimal";
+import { fromString, toNumber } from "@engines/formulaEngine/Decimal";
 import type { Decimal } from "@engines/formulaEngine/Decimal";
 
 // Ported from the mock's own live calc (demo/BabuScales-demo.html's
@@ -20,14 +20,16 @@ const asDecimal = (v: FormulaValue): Decimal => {
     throw new Error(`computeValue: formula "${VALUE_FORMULA}" did not evaluate to a number`);
 };
 
-// `rate` is a decimal string (a material's Rate, `db/materialBody.ts`'s
-// `getMaterialRate`) — parsed with `Decimal.fromString`, never `fromInt`.
-// `fromInt` does `BigInt(Math.trunc(n))`, which silently truncated any
-// fractional rate (12.50 became 12) — the concrete money-precision bug this
-// migration exists to fix.
+// Both `Net` and `Rate` go through `Decimal.fromString`, never `fromInt`.
+// `fromInt` does `BigInt(Math.trunc(n))`, which silently truncates any
+// fractional operand (12.50 became 12; 1500.5kg became 1500kg) — the
+// concrete money-precision bug this migration exists to fix. `netKg` is a
+// plain JS number (weight arithmetic isn't Decimal-backed, see
+// deriveWeights), so it's stringified first — `String(1500.5)` round-trips
+// through `fromString` exactly, unlike truncating through `fromInt`.
 const buildContext = (netKg: number, rate: Decimal): FormulaContext => ({
     getVariable: (name: string): FormulaValue => {
-        if (name === "Net") return fromInt(netKg);
+        if (name === "Net") return fromString(String(netKg));
         if (name === "Rate") return rate;
         throw new Error(`computeValue: unknown variable "${name}"`);
     },

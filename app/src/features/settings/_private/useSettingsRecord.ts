@@ -4,6 +4,7 @@ import type { DataPort } from "@db/DataPort";
 import { setTicketNumberFormat } from "@features/weighing";
 
 import type { SettingsBody } from "../settingsSchema";
+import { migrateLegacyDecimalFields } from "./legacyDecimalMigration";
 import { loadSettingsRow, SYNC_DEFAULT_BODY } from "./loadSettingsRow";
 import { useSettingsPersist } from "./useSettingsPersist";
 
@@ -46,6 +47,18 @@ export const useSettingsRecord = (db: DataPort): UseSettingsRecord => {
         return () => {
             cancelled = true;
         };
+    }, [db]);
+
+    // Fire-and-forget, not gated on `loading`/`settings` — a legacy-numeric
+    // Material.Rate/Ticket.Charge silently repairs itself in the background
+    // the first time Settings loads each session, well before Reports/
+    // Weighing/Masters would otherwise hit the throwing/silently-null read
+    // paths those fields now have. See legacyDecimalMigration.ts's own doc
+    // comment for the full backward-compat story.
+    useEffect(() => {
+        void migrateLegacyDecimalFields(db).catch((err: unknown) => {
+            console.error("Legacy decimal-field migration failed", err);
+        });
     }, [db]);
 
     // Pushed to the module-level formatter every time the numbering changes

@@ -13,7 +13,7 @@ const col = (overrides: Partial<MasterColumn>): MasterColumn => ({
 
 // Echoes the key back, matching the real I18nContextValue.t fallback
 // contract that resolveFieldIdLabel relies on to detect "no translation".
-const echoT: Translate = ((key: string) => key) as Translate;
+const echoT: Translate = ((key: string) => key);
 
 describe("visibleMasterKinds", () => {
     it("only includes kinds the schema's Masters block declares, in MASTER_KIND_ORDER order", () => {
@@ -68,7 +68,7 @@ describe("masterColumnLabel", () => {
     });
 
     it("a built-in ticket FieldId (not a Masters-only one) resolves via the weigh.label chain", () => {
-        const t: Translate = ((key: string) => (key === "weigh.label.vehicleNo" ? "Vehicle No" : key)) as Translate;
+        const t: Translate = ((key: string) => (key === "weigh.label.vehicleNo" ? "Vehicle No" : key));
         expect(masterColumnLabel(col({ FieldId: "VehicleNo" }), "en", t)).toBe("Vehicle No");
     });
 });

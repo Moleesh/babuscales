@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-vi.mock("@tauri-apps/api/core", () => ({ invoke: vi.fn(async () => undefined) }));
+vi.mock("@tauri-apps/api/core", () => ({ invoke: vi.fn(() => Promise.resolve(undefined)) }));
 
 import { invoke } from "@tauri-apps/api/core";
 
@@ -17,9 +17,9 @@ const simulatedIndicator = (): IndicatorSource => ({
 const serialIndicator = (): SerialIndicatorSource & { connect: ReturnType<typeof vi.fn>; disconnect: ReturnType<typeof vi.fn> } => ({
     getReading: () => ({ WeightKg: 0, Stable: false }),
     subscribe: () => () => undefined,
-    listPorts: async () => [],
-    connect: vi.fn(async () => undefined),
-    disconnect: vi.fn(async () => undefined),
+    listPorts: () => Promise.resolve([]),
+    connect: vi.fn(() => Promise.resolve(undefined)),
+    disconnect: vi.fn(() => Promise.resolve(undefined)),
     getConnectionError: () => null,
     updateOptions: () => undefined,
 });

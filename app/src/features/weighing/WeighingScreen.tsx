@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { RefObject } from "react";
 
-import { formatDateTimeInFmt } from "@constants/numberFormat";
 import type { DocRow } from "@db/types";
 import { useIndicator, useIndicatorReading } from "@engines/indicator";
 import { getAllFields, getCalculatedFieldIds, useSchema } from "@engines/schemaEngine";
@@ -18,6 +17,7 @@ import { useComputedCalcFields } from "./_private/useComputedCalcFields";
 import { useDeliveryChannels } from "./_private/useDeliveryChannels";
 import { useWeighingScreenDerived } from "./_private/useWeighingScreenDerived";
 import { useWeighingScreenTickets } from "./_private/useWeighingScreenTickets";
+import { formatStamp } from "./_private/formatStamp";
 import { WeighingBody } from "./_private/WeighingBody";
 import styles from "./_styles/WeighingScreen.module.css";
 import { OpenTicketStrip } from "./OpenTicketStrip";
@@ -79,13 +79,6 @@ const useStickyStripHeight = (
         return () => observer.disconnect();
     }, [screenRef, stripRef, hasStrip]);
 };
-
-const formatStamp = (
-    iso: string | undefined,
-    lang: string,
-    dateFmt: string,
-    timeFmt: "24" | "12",
-): string => (iso ? formatDateTimeInFmt(iso, lang, dateFmt, timeFmt) : "—");
 
 // Split out of WeighingScreen (over the 60-line function budget —
 // docs/CodingStandards.md) — the same visible/Validate/Block check

@@ -1,4 +1,4 @@
-import { formatDateTimeInFmt, formatWeightIn } from "@constants/numberFormat";
+import { formatWeightIn } from "@constants/numberFormat";
 import type { WeightUnit } from "@constants/numberFormat";
 import { isStoredTareBody, isStoredTareStale, storedTareAgeDays } from "@db/storedTare";
 import type { DocRow } from "@db/types";
@@ -8,13 +8,7 @@ import { findLatestTicketForVehicle, findOpenTicketForVehicle } from "../recall"
 import type { RecallOffer } from "../RecallBanner";
 import { formatTicketNo } from "../ticketNumber";
 import type { TicketFormFields, UseWeighingTicket } from "../useWeighingTicket";
-
-const formatStamp = (
-    iso: string | undefined,
-    lang: string,
-    dateFmt: string,
-    timeFmt: "24" | "12",
-): string => (iso ? formatDateTimeInFmt(iso, lang, dateFmt, timeFmt) : "—");
+import { formatStamp } from "./formatStamp";
 
 export interface BuildRecallOffersArgs {
     ticket: UseWeighingTicket;

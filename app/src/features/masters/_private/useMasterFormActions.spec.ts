@@ -42,8 +42,8 @@ const setup = (opts: {
     const harness: Harness = {
         form: opts.initialForm ?? emptyForm(),
         selected: opts.initialSelected ?? null,
-        save: vi.fn(opts.saveImpl ?? (async (draft: MasterDraft) => masterRow({ ...draft, MasterId: draft.MasterId ?? "new" }))),
-        remove: vi.fn(opts.removeImpl ?? (async () => undefined)),
+        save: vi.fn(opts.saveImpl ?? ((draft: MasterDraft) => Promise.resolve(masterRow({ ...draft, MasterId: draft.MasterId ?? "new" })))),
+        remove: vi.fn(opts.removeImpl ?? (() => Promise.resolve(undefined))),
     };
 
     const { result, rerender } = renderHook(() =>
