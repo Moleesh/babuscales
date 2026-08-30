@@ -66,7 +66,7 @@ describe("planLegacyImport: masters", () => {
             bundle({ Materials: [{ Name: "Sand", Rate: 55 }] }),
             emptyExistingState(),
         );
-        expect(plan.masterDrafts[0]!.draft.Body).toEqual({ Notes: undefined, Rate: 55 });
+        expect(plan.masterDrafts[0]!.draft.Body).toEqual({ Notes: undefined, Rate: "55" });
     });
 
 });
@@ -133,7 +133,11 @@ describe("planLegacyImport: tickets", () => {
 
     it("builds a ticket draft with both Tare and Gross captures, in that order", () => {
         const plan = planLegacyImport(
-            bundle({ Tickets: [{ LegacyId: "L1", TareKg: 1000, GrossKg: 2500 }] }),
+            bundle({
+                Tickets: [
+                    { LegacyId: "L1", TareKg: 1000, TareAt: "2026-01-01", GrossKg: 2500, GrossAt: "2026-01-02" },
+                ],
+            }),
             emptyExistingState(),
         );
         const body = plan.ticketDrafts[0]!.draft.Body as { Captures: { Type: string }[] };
@@ -142,7 +146,7 @@ describe("planLegacyImport: tickets", () => {
 
     it("defaults Operator to 'Legacy import' when absent/blank", () => {
         const plan = planLegacyImport(
-            bundle({ Tickets: [{ LegacyId: "L1", TareKg: 1000, Operator: "  " }] }),
+            bundle({ Tickets: [{ LegacyId: "L1", TareKg: 1000, TareAt: "2026-01-01", Operator: "  " }] }),
             emptyExistingState(),
         );
         const body = plan.ticketDrafts[0]!.draft.Body as { Captures: { Operator: string }[] };
@@ -151,7 +155,11 @@ describe("planLegacyImport: tickets", () => {
 
     it("every generated capture has Source: Manual", () => {
         const plan = planLegacyImport(
-            bundle({ Tickets: [{ LegacyId: "L1", TareKg: 1000, GrossKg: 2000 }] }),
+            bundle({
+                Tickets: [
+                    { LegacyId: "L1", TareKg: 1000, TareAt: "2026-01-01", GrossKg: 2000, GrossAt: "2026-01-02" },
+                ],
+            }),
             emptyExistingState(),
         );
         const body = plan.ticketDrafts[0]!.draft.Body as { Captures: { Source: string }[] };
@@ -163,7 +171,7 @@ describe("planLegacyImport: tickets", () => {
 describe("planLegacyImport: tickets (idempotency + edge cases)", () => {
     it("stamps ImportRef with the LegacyId for later idempotency", () => {
         const plan = planLegacyImport(
-            bundle({ Tickets: [{ LegacyId: "L42", TareKg: 1000 }] }),
+            bundle({ Tickets: [{ LegacyId: "L42", TareKg: 1000, TareAt: "2026-01-01" }] }),
             emptyExistingState(),
         );
         const body = plan.ticketDrafts[0]!.draft.Body as { ImportRef: string };
@@ -181,7 +189,10 @@ describe("planLegacyImport: tickets (idempotency + edge cases)", () => {
             masterNamesByKind: {},
             ticketLegacyIds: new Set(["L1"]),
         };
-        const plan = planLegacyImport(bundle({ Tickets: [{ LegacyId: "L1", TareKg: 1000 }] }), existing);
+        const plan = planLegacyImport(
+            bundle({ Tickets: [{ LegacyId: "L1", TareKg: 1000, TareAt: "2026-01-01" }] }),
+            existing,
+        );
         expect(plan.ticketDrafts).toEqual([]);
         expect(plan.skipped).toEqual([
             { Kind: "Ticket", Name: "L1", Reason: "Already imported (matched by legacy id)" },
@@ -192,8 +203,8 @@ describe("planLegacyImport: tickets (idempotency + edge cases)", () => {
         const plan = planLegacyImport(
             bundle({
                 Tickets: [
-                    { LegacyId: "L1", TareKg: 1000 },
-                    { LegacyId: "L1", TareKg: 2000 },
+                    { LegacyId: "L1", TareKg: 1000, TareAt: "2026-01-01" },
+                    { LegacyId: "L1", TareKg: 2000, TareAt: "2026-01-01" },
                 ],
             }),
             emptyExistingState(),
@@ -202,9 +213,20 @@ describe("planLegacyImport: tickets (idempotency + edge cases)", () => {
         expect(plan.skipped).toHaveLength(1);
     });
 
+    it("skips a ticket whose capture timestamp is missing or unparseable", () => {
+        const plan = planLegacyImport(
+            bundle({ Tickets: [{ LegacyId: "L1", TareKg: 1000 }] }),
+            emptyExistingState(),
+        );
+        expect(plan.ticketDrafts).toEqual([]);
+        expect(plan.skipped).toEqual([
+            { Kind: "Ticket", Name: "L1", Reason: "Missing or unparseable capture timestamp" },
+        ]);
+    });
+
     it("a ticket with only GrossKg (no Tare) still imports, with a single Gross capture", () => {
         const plan = planLegacyImport(
-            bundle({ Tickets: [{ LegacyId: "L1", GrossKg: 3000 }] }),
+            bundle({ Tickets: [{ LegacyId: "L1", GrossKg: 3000, GrossAt: "2026-01-01" }] }),
             emptyExistingState(),
         );
         const body = plan.ticketDrafts[0]!.draft.Body as { Captures: { Type: string }[] };

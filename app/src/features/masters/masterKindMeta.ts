@@ -4,7 +4,7 @@ import type { MasterKind } from "@db/types";
 import type { MasterColumn, Schema } from "@engines/schemaEngine";
 import { resolveFieldIdLabel } from "@engines/schemaEngine";
 import { resolveLocalized } from "@i18n/types";
-import type { Localized } from "@i18n/types";
+import type { Localized, Translate } from "@i18n/types";
 
 export interface MasterKindMeta {
     Kind: MasterKind;
@@ -84,9 +84,6 @@ export const MASTER_KIND_META: Record<MasterKind, MasterKindMeta> = {
 // docs/CodingStandards.md) — the MASTER_KIND_ORDER -> SegmentedOption[]
 // mapping for the kind switcher. Now uses the t() function to resolve
 // labels at runtime from the active language pack.
-/** Same shape as useTranslation()'s `t` — threaded in as a param since this is a plain helper, not a component. */
-type Translate = (key: string) => string;
-
 export const buildKindOptions = (
     _lang: string,
     t: Translate,

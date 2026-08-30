@@ -21,9 +21,9 @@ export interface FieldProps {
      */
     label: string | Localized;
     /** Present on search fields — shows the ⌕ glass with this as its tooltip. Same string-vs-Localized split as `label`. */
-    searchTitle?: string | Localized;
+    searchTitle?: string | Localized | undefined;
     /** True when this value came back from a recalled ticket rather than fresh entry. */
-    recalled?: boolean;
+    recalled?: boolean | undefined;
     children: ReactNode;
 }
 

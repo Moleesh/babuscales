@@ -8,6 +8,7 @@ use rusqlite::{params, Connection, OptionalExtension, Row};
 use super::dto::{DocDraft, DocQuery, DocRow, SeriesEpoch};
 use super::hash::hash_body;
 use super::ids::new_id;
+use super::query::QueryBuilder;
 use super::time::now_iso;
 use crate::error::AppError;
 
@@ -37,58 +38,48 @@ pub fn get_doc(conn: &Connection, doc_id: &str) -> Result<Option<DocRow>, AppErr
 }
 
 pub fn list_docs(conn: &Connection, query: &DocQuery) -> Result<Vec<DocRow>, AppError> {
+    let mut qb = QueryBuilder::new();
+    qb.push_opt(&query.doc_kind, "doc_kind = :doc_kind", ":doc_kind", |v| v.clone());
+    qb.push_opt(&query.profile_id, "profile_id = :profile_id", ":profile_id", |v| v.clone());
+    qb.push_opt(
+        &query.is_cancelled,
+        "is_cancelled = :is_cancelled",
+        ":is_cancelled",
+        |v| *v as i64,
+    );
+    qb.push_opt(
+        &query.created_from,
+        "created_at >= :created_from",
+        ":created_from",
+        |v| v.clone(),
+    );
+    qb.push_opt(&query.created_to, "created_at <= :created_to", ":created_to", |v| {
+        v.clone()
+    });
+    // Keyset pagination: "the next rows after the one the caller last saw",
+    // in the same `created_at DESC, doc_id DESC` order the query returns.
+    // Spelled out long-hand (rather than a row-value comparison) to match
+    // `list_masters`'s own cursor clause and stay obviously correct.
+    if let Some(after) = &query.after {
+        qb.push_clause(
+            "(created_at < :after_created_at \
+              OR (created_at = :after_created_at AND doc_id < :after_doc_id))",
+        );
+        qb.push_param(":after_created_at", after.created_at.clone());
+        qb.push_param(":after_doc_id", after.doc_id.clone());
+    }
+
     let mut sql = SELECT_DOC.to_string();
-    let mut clauses = Vec::new();
-    if query.doc_kind.is_some() {
-        clauses.push("doc_kind = :doc_kind");
-    }
-    if query.profile_id.is_some() {
-        clauses.push("profile_id = :profile_id");
-    }
-    if query.is_cancelled.is_some() {
-        clauses.push("is_cancelled = :is_cancelled");
-    }
-    if query.created_from.is_some() {
-        clauses.push("created_at >= :created_from");
-    }
-    if query.created_to.is_some() {
-        clauses.push("created_at <= :created_to");
-    }
-    if !clauses.is_empty() {
-        sql.push_str(" WHERE ");
-        sql.push_str(&clauses.join(" AND "));
-    }
-    sql.push_str(" ORDER BY created_at DESC");
-    if query.limit.is_some() {
-        sql.push_str(" LIMIT :limit OFFSET :offset");
+    sql.push_str(&qb.where_sql());
+    sql.push_str(" ORDER BY created_at DESC, doc_id DESC");
+    if let Some(limit) = &query.limit {
+        sql.push_str(" LIMIT :limit");
+        qb.push_param(":limit", *limit);
     }
 
     let mut statement = conn.prepare(&sql)?;
-    let mut named = Vec::<(&str, &dyn rusqlite::ToSql)>::new();
-    if let Some(v) = &query.doc_kind {
-        named.push((":doc_kind", v));
-    }
-    if let Some(v) = &query.profile_id {
-        named.push((":profile_id", v));
-    }
-    let is_cancelled_int = query.is_cancelled.map(|b| b as i64);
-    if let Some(v) = &is_cancelled_int {
-        named.push((":is_cancelled", v));
-    }
-    if let Some(v) = &query.created_from {
-        named.push((":created_from", v));
-    }
-    if let Some(v) = &query.created_to {
-        named.push((":created_to", v));
-    }
-    let offset = query.offset.unwrap_or(0);
-    if let Some(limit) = &query.limit {
-        named.push((":limit", limit));
-        named.push((":offset", &offset));
-    }
-
     let rows = statement
-        .query_map(named.as_slice(), row_to_doc)?
+        .query_map(qb.bindings().as_slice(), row_to_doc)?
         .collect::<Result<Vec<_>, _>>()?;
     Ok(rows)
 }

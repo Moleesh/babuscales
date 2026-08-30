@@ -1,5 +1,6 @@
-use tauri::{Manager, State};
+use tauri::State;
 
+use crate::commands::run_blocking;
 use crate::error::AppError;
 use crate::state::{lock, AppState};
 use crate::store;
@@ -18,13 +19,10 @@ pub async fn get_master(
     app: tauri::AppHandle,
     master_id: String,
 ) -> Result<Option<MasterRow>, AppError> {
-    tauri::async_runtime::spawn_blocking(move || {
-        let state = app.state::<AppState>();
-        let conn = lock(&state)?;
-        store::get_master(&conn, &master_id)
+    run_blocking(&app, "get_master", move |conn| {
+        store::get_master(conn, &master_id)
     })
     .await
-    .map_err(|err| AppError::Message(format!("get_master task panicked: {err}")))?
 }
 
 #[tauri::command]
@@ -32,13 +30,10 @@ pub async fn list_masters(
     app: tauri::AppHandle,
     query: Option<MasterQuery>,
 ) -> Result<Vec<MasterRow>, AppError> {
-    tauri::async_runtime::spawn_blocking(move || {
-        let state = app.state::<AppState>();
-        let conn = lock(&state)?;
-        store::list_masters(&conn, &query.unwrap_or_default())
+    run_blocking(&app, "list_masters", move |conn| {
+        store::list_masters(conn, &query.unwrap_or_default())
     })
     .await
-    .map_err(|err| AppError::Message(format!("list_masters task panicked: {err}")))?
 }
 
 #[tauri::command]

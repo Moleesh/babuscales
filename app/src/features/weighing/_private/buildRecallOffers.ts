@@ -60,15 +60,16 @@ const buildResumeOffer = (args: BuildRecallOffersArgs): RecallOffer | null => {
 const buildStoredTareOffer = (args: BuildRecallOffersArgs): RecallOffer | null => {
     const { ticket, storedTareCache, strictTare, t, weightUnit, lang } = args;
     if (strictTare || ticket.captures.some((c) => c.Type === "Tare")) return null;
+    const now = Date.now();
     const storedTare = storedTareCache
         .search(ticket.fields.vehicleNo)
-        .find((row) => isStoredTareBody(row.Body) && !isStoredTareStale(row.Body.CapturedAt));
+        .find((row) => isStoredTareBody(row.Body) && !isStoredTareStale(row.Body.CapturedAt, now));
     if (!storedTare || !isStoredTareBody(storedTare.Body)) return null;
     const body = storedTare.Body;
     return {
         key: "storedTare",
         label: `${t("weigh.recall.useStoredTare")} ${formatWeightIn(body.WeightKg, weightUnit, lang)}`,
-        hint: `${t("weigh.recall.takenAgo")} ${storedTareAgeDays(body.CapturedAt)} ${t("weigh.recall.daysAgo")}`,
+        hint: `${t("weigh.recall.takenAgo")} ${storedTareAgeDays(body.CapturedAt, now)} ${t("weigh.recall.daysAgo")}`,
         onAccept: () => ticket.useStoredTare(body.WeightKg, body.CapturedAt),
     };
 };
@@ -80,9 +81,9 @@ const buildFillOffer = (args: BuildRecallOffersArgs): RecallOffer | null => {
     const latest = findLatestTicketForVehicle(allTicketDocs, ticket.fields.vehicleNo, ticket.docId ?? undefined);
     if (!latest || !(latest.body.Party || latest.body.Material || latest.body.Transporter)) return null;
     const fill: Partial<Pick<TicketFormFields, "party" | "material" | "transporter">> = {
-        party: latest.body.Party,
-        material: latest.body.Material,
-        transporter: latest.body.Transporter,
+        ...(latest.body.Party !== undefined ? { party: latest.body.Party } : {}),
+        ...(latest.body.Material !== undefined ? { material: latest.body.Material } : {}),
+        ...(latest.body.Transporter !== undefined ? { transporter: latest.body.Transporter } : {}),
     };
     return {
         key: "fill",

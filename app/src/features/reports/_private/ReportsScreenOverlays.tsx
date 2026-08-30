@@ -1,3 +1,5 @@
+import { useEffect } from "react";
+
 import type { ReportSlipData } from "@engines/print";
 
 import { ReportBuilderModal } from "./ReportBuilderModal";
@@ -106,6 +108,18 @@ export const ReportsScreenOverlays = ({
     const editingDef = editingReportId
         ? savedReportActions.savedReports.find((def) => def.Id === editingReportId)
         : undefined;
+    // The saved report being edited can be deleted elsewhere (another tab,
+    // or the Delete action on SavedReportsRow) while this modal is still
+    // open — `editingDef` then can't be found even though `editingReportId`
+    // is still set. Left alone, the modal would keep showing "Edit report"
+    // and fall back to the screen's live filters, and Save would call
+    // `onUpdateReport` against an id that no longer exists. Close the
+    // modal (which also clears `editingReportId` — see closeBuilder) instead
+    // of silently proceeding as an edit.
+    const staleEdit = editingReportId !== null && editingDef === undefined;
+    useEffect(() => {
+        if (staleEdit) onBuilderOpenChange(false);
+    }, [staleEdit, onBuilderOpenChange]);
     return (
     <>
         <ReportsBottomBar
@@ -122,7 +136,7 @@ export const ReportsScreenOverlays = ({
             data={reportSlipData}
         />
         <ReportBuilderModal
-            open={builderOpen}
+            open={builderOpen && !staleEdit}
             onClose={() => onBuilderOpenChange(false)}
             editingId={editingReportId}
             // Editing a saved view seeds the whole draft from *that*

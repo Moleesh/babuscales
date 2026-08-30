@@ -4,11 +4,9 @@ import type { WeightUnit } from "@constants/numberFormat";
 import { isStoredTareBody, isStoredTareStale, storedTareAgeDays } from "@db/storedTare";
 import type { MasterKind, MasterRow } from "@db/types";
 import type { MasterColumn } from "@engines/schemaEngine";
+import type { Translate } from "@i18n/types";
 
 import { masterColumnLabel } from "../masterKindMeta";
-
-/** Same shape as useTranslation()'s `t` — threaded in as a param since this is a plain helper, not a component. */
-type Translate = (key: string) => string;
 
 const storedTareColumns = (
     styles: CSSModuleClasses,
@@ -29,8 +27,9 @@ const storedTareColumns = (
         numeric: true,
         render: (row) => {
             if (!isStoredTareBody(row.Body)) return "—";
-            const days = storedTareAgeDays(row.Body.CapturedAt);
-            const stale = isStoredTareStale(row.Body.CapturedAt);
+            const now = Date.now();
+            const days = storedTareAgeDays(row.Body.CapturedAt, now);
+            const stale = isStoredTareStale(row.Body.CapturedAt, now);
             return (
                 <span className={stale ? styles.stale : undefined}>
                     {days}d{stale ? " ⚠" : ""}

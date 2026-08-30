@@ -39,6 +39,8 @@ export interface StabilityOptions {
     settleTicks?: number;
     /** "within ± kg of each other" — Settings' Stability gate (`BandKg`). */
     closeEnoughKg?: number;
+    /** Active `Schema.DecimalsAllowed ?? false` (schemaEngine/types.ts) — off (default) makes a raw sample's non-integer-kg rejection unconditional (see serialIndicator.ts's `pushSample`); on relaxes it to the same <=2-fractional-digit cap `Decimal.withinDecimalsAllowed` enforces everywhere else. Threaded via `updateOptions` (same App.tsx sync component pattern as `settleTicks`/`closeEnoughKg`) rather than a constructor arg, since the indicator source is created before the ticket schema finishes loading. */
+    decimalsAllowed?: boolean;
 }
 
 /** "none" | "odd" | "even" — mirrors src-tauri/src/devices/indicator.rs's `IndicatorFraming.parity`. */

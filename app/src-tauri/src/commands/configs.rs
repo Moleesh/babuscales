@@ -1,5 +1,6 @@
-use tauri::{Manager, State};
+use tauri::State;
 
+use crate::commands::run_blocking;
 use crate::error::AppError;
 use crate::state::{lock, AppState};
 use crate::store;
@@ -13,13 +14,10 @@ pub async fn get_config(
     app: tauri::AppHandle,
     config_id: String,
 ) -> Result<Option<ConfigRow>, AppError> {
-    tauri::async_runtime::spawn_blocking(move || {
-        let state = app.state::<AppState>();
-        let conn = lock(&state)?;
-        store::get_config(&conn, &config_id)
+    run_blocking(&app, "get_config", move |conn| {
+        store::get_config(conn, &config_id)
     })
     .await
-    .map_err(|err| AppError::Message(format!("get_config task panicked: {err}")))?
 }
 
 #[tauri::command]
@@ -27,13 +25,10 @@ pub async fn list_config(
     app: tauri::AppHandle,
     query: Option<ConfigQuery>,
 ) -> Result<Vec<ConfigRow>, AppError> {
-    tauri::async_runtime::spawn_blocking(move || {
-        let state = app.state::<AppState>();
-        let conn = lock(&state)?;
-        store::list_config(&conn, &query.unwrap_or_default())
+    run_blocking(&app, "list_config", move |conn| {
+        store::list_config(conn, &query.unwrap_or_default())
     })
     .await
-    .map_err(|err| AppError::Message(format!("list_config task panicked: {err}")))?
 }
 
 #[tauri::command]

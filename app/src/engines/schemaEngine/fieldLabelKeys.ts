@@ -69,7 +69,7 @@ export const resolveFieldIdLabel = (
  * falls through to the pack the same as a field with no inline Label at all.
  */
 export const resolveFieldLabel = (
-    field: { FieldId: string; Label?: Record<string, string> },
+    field: { FieldId: string; Label?: Record<string, string> | undefined },
     lang: string,
     t: (key: string) => string,
 ): string => {

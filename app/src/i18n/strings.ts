@@ -160,10 +160,13 @@ export const EN_STRINGS: Record<string, string> = {
     "masters.action.refresh": "Refresh",
     "masters.loading": "Loading…",
     "masters.loadMore": "Load more",
-    "masters.emptyPrefix": "No",
-    "masters.emptySuffix": "yet",
-    "masters.searchEmptyPrefix": "No",
-    "masters.searchEmptySuffix": "match your search",
+    // `{title}` is replaced with the master kind's lowercase title (e.g.
+    // "vehicles") — see ConfirmDeleteModal's `{name}` for the same
+    // replace-in-place convention. A single key per message (rather than the
+    // prefix/suffix pair this replaced) so translations aren't forced into
+    // English word order by string concatenation.
+    "masters.emptyMessage": "No {title} yet",
+    "masters.searchEmptyMessage": "No {title} match your search",
     "masters.editPrefix": "Edit —",
     "masters.error.invalidWeight": "Enter a valid number for weight, or leave it blank.",
     "masters.error.invalidNumber": "One of the fields needs a valid number.",
@@ -481,6 +484,9 @@ export const EN_STRINGS: Record<string, string> = {
     "settings.fieldSchema.resetToDefault": "Reset to default",
     "settings.fieldSchema.empty": "No fields in this schema",
     "settings.fieldSchema.activeLabel": "Active schema",
+    "settings.fieldSchema.decimalsAllowed.label": "Allow decimal amounts and weights",
+    "settings.fieldSchema.decimalsAllowed.note":
+        "Off (default): Charge, Money fields, and captured weights must be whole numbers. On: up to 2 decimal digits are allowed.",
     "settings.fieldSchema.previewLangLabel": "Preview labels in",
     "settings.fieldSchema.previewKey": "Key",
     "settings.fieldSchema.previewEnglish": "English",
@@ -628,6 +634,12 @@ export const EN_STRINGS: Record<string, string> = {
     "settings.sms.serialPort": "Modem serial port",
     "settings.sms.hint":
         "Read at print time when Integrations → SMS gateway is on: a ticket's party needs a Phone saved in Masters (Settings → Masters → Parties) to receive a text. Talks to the modem over plain AT commands (AT+CMGF, AT+CMGS) — any GSM modem or phone that exposes a serial/USB AT interface works, no cloud SMS-gateway account needed.",
+
+    // Shared by ConfirmDeleteModal — appended after the caller's own lead-in
+    // `message`. `{name}` is replaced with the record's name; kept as a
+    // translatable string (not JSX-literal punctuation) so the quote style
+    // can vary per locale.
+    "confirmDeleteModal.nameSuffix": '"{name}"?',
 
     "settings.ticketNumbering.title": "Ticket numbering",
 };

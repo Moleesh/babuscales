@@ -7,12 +7,12 @@ import styles from "./_styles/ScrollArea.module.css";
 export interface ScrollAreaProps {
     /** Class for the outer positioning wrapper — rarely needed, most callers
      * only care about `contentClassName`. */
-    className?: string;
+    className?: string | undefined;
     /** Class for the actual scrollable element — pass whatever class the
      * native-scrollbar version of this container used (e.g. DataTable's
      * `.wrapper`, AppShell's `.main`); everything about that layout carries
      * over unchanged, only the scrollbar itself is now ours. */
-    contentClassName?: string;
+    contentClassName?: string | undefined;
     /** The scrollable element's ref — callers that read `scrollTop`/
      * `clientHeight` off it directly (DataTable's virtualisation) pass their
      * own `useRef` through here instead of this component owning one

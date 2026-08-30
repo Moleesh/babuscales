@@ -29,14 +29,15 @@ export const nextBackoffDelayMs = (attempts: number): number | null => {
     return BACKOFF_STEPS_MS[attempts] ?? null;
 };
 
-/** The one thing every "drain of one" call site (sendTicketEmail/sendTicketSms/DailySummarySync) and useOutboxWorker.ts all do once a send settles — never throws, so this takes the same `{ Ok: boolean }` shape every `*Source.send` result already carries. `attemptsBefore` is the row's `Attempts` value going into this attempt. */
+/** The one thing every "drain of one" call site (sendTicketEmail/sendTicketSms/DailySummarySync) and useOutboxWorker.ts all do once a send settles — never throws, so this takes the same `{ Ok: boolean }` shape every `*Source.send` result already carries. `attemptsBefore` is the row's `Attempts` value going into this attempt. `now` is the caller's `Date.now()` — injected rather than read here (docs/CodingStandards.md §2), so the backoff schedule stays testable without mocking global time. */
 export const reconcileOutboxOutcome = (
     result: { Ok: boolean },
     attemptsBefore: number,
+    now: number,
 ): OutboxPatch => {
     const attempts = attemptsBefore + 1;
     if (result.Ok) return { State: "Sent", Attempts: attempts, NextTryAt: null };
     const delayMs = attemptsBefore < MAX_OUTBOX_ATTEMPTS ? nextBackoffDelayMs(attemptsBefore) : null;
-    const nextTryAt = delayMs === null ? null : new Date(Date.now() + delayMs).toISOString();
+    const nextTryAt = delayMs === null ? null : new Date(now + delayMs).toISOString();
     return { State: "Failed", Attempts: attempts, NextTryAt: nextTryAt };
 };

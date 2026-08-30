@@ -24,13 +24,13 @@ import { FIXED_FIELD_IDS } from "./ticketFieldIds";
 interface MasterDropdownFieldProps {
     id: string;
     label: string;
-    searchTitle?: string;
-    recalled?: boolean;
+    searchTitle?: string | undefined;
+    recalled?: boolean | undefined;
     value: string;
     onChange: (value: string) => void;
     cache: UseMasterCache;
     readOnly: boolean;
-    spellCheck?: boolean;
+    spellCheck?: boolean | undefined;
 }
 
 // The four ⌕ fields (Vehicle, Party, Material, Transporter) are all the same
@@ -103,7 +103,7 @@ interface FixedFieldAccessor {
     setValue: (ticket: UseWeighingTicket, value: string) => void;
     searchTitleKey?: string;
     recalledKey?: "party" | "material" | "transporter";
-    spellCheck?: boolean;
+    spellCheck?: boolean | undefined;
 }
 
 const FIXED_FIELD_ACCESSORS: Record<string, FixedFieldAccessor> = {

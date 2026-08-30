@@ -177,13 +177,19 @@ describe("parseTicketBody", () => {
         ).toThrow();
     });
 
-    it("throws when WeightKg is not an integer", () => {
+    // WeightKg used to be `z.number().int()` — a static Zod schema can't see
+    // the active `Schema.DecimalsAllowed` flag (schemaEngine/types.ts), so
+    // the integer-only rule moved to the entry points that build a Capture
+    // instead (useWeighingTicket.ts's `pushCapture`, serialIndicator.ts's
+    // `pushSample`), which do check DecimalsAllowed. This Zod schema now
+    // just requires a finite number.
+    it("accepts a fractional WeightKg (integer-only rule enforced at the entry point, not here)", () => {
         expect(() =>
             parseTicketBody({
                 BodyVersion: 1,
                 Captures: [{ ...capture({}), WeightKg: 12.5 }],
             }),
-        ).toThrow();
+        ).not.toThrow();
     });
 
     it("passthrough preserves unknown top-level keys (e.g. ImportRef)", () => {

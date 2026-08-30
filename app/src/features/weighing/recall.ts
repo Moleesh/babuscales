@@ -25,29 +25,39 @@ export interface OpenTicketSummary {
 }
 
 /** The open-ticket strip: every ticket parked with exactly one weight, in
- * the active numbering series. Task: "We dont want all series as a defult
- * for all these case it should be only on the current series, do it all
- * the places" — a ticket "backed" by a prior "Reset the counter now" no
- * longer shows up here to be (mistakenly) resumed against the current
- * shift's numbering. `currentEpoch` is optional, defaulting to "every
- * series", only so `findLatestTicketForVehicle` below (fill-from-history,
- * a deliberately unscoped lookup) doesn't need its own copy of this
- * filter. */
+ * the active numbering series. A ticket from before a prior "Reset the
+ * counter now" doesn't show up here, so it can't be mistakenly resumed
+ * against the current shift's numbering. `currentEpoch` is optional,
+ * defaulting to "every series", only so `findLatestTicketForVehicle`
+ * below (fill-from-history, a deliberately unscoped lookup) doesn't need
+ * its own copy of this filter. */
 export const listOpenTickets = (docs: DocRow[], currentEpoch?: number): OpenTicketSummary[] =>
     docs
         .filter((doc) => !doc.IsCancelled)
         .filter((doc) => currentEpoch === undefined || doc.SeriesEpoch === currentEpoch)
         .map((doc) => ({ doc, body: parseTicketBody(doc.Body) }))
         .filter(({ doc, body }) => isOpenTicket(doc.IsCancelled, body.Captures))
-        .map(({ doc, body }) => {
+        .flatMap(({ doc, body }) => {
+            // `isOpenTicket` guarantees at least one capture exists here, and
+            // `parseTicketBody`'s zod schema guarantees a valid WeightKg on
+            // any capture that survived parsing. If that invariant is ever
+            // violated (corrupt row, future schema drift), don't paper over
+            // it with a fake 0kg — drop the ticket from the strip so a
+            // broken row can't be mistaken for a real open ticket.
             const capture = body.Captures[0];
-            return {
-                doc,
-                body,
-                weightKg: capture?.WeightKg ?? 0,
-                kind: capture?.Type ?? "Tare",
-                capturedAt: capture?.At ?? doc.UpdatedAt,
-            };
+            if (!capture || !Number.isFinite(capture.WeightKg)) {
+                console.warn(`recall: open ticket ${doc.DocId} has no usable capture weight; skipping`);
+                return [];
+            }
+            return [
+                {
+                    doc,
+                    body,
+                    weightKg: capture.WeightKg,
+                    kind: capture.Type,
+                    capturedAt: capture.At ?? doc.UpdatedAt,
+                },
+            ];
         })
         .sort(byMostRecentlyUpdated);
 

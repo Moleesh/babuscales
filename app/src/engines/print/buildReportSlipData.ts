@@ -15,6 +15,8 @@ export interface ReportSlipInput {
     dateFmt: string;
     /** Settings' `Formats.TimeFmt`. */
     timeFmt: "24" | "12";
+    /** The "printed at" reference instant — injected rather than read via `new Date()` here (docs/CodingStandards.md §2), so this stays testable without mocking global time. */
+    now: Date;
 }
 
 const dateRangeOf = (timestamps: string[], lang: string, dateFmt: string): string => {
@@ -37,5 +39,5 @@ export const buildReportSlipData = (input: ReportSlipInput): ReportSlipData => (
     DateRange: dateRangeOf(input.rowTimestamps, input.lang, input.dateFmt),
     Head: input.head,
     Rows: input.rows,
-    PrintedAt: formatDateTimeInFmt(new Date(), input.lang, input.dateFmt, input.timeFmt),
+    PrintedAt: formatDateTimeInFmt(input.now, input.lang, input.dateFmt, input.timeFmt),
 });

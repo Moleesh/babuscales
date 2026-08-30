@@ -42,7 +42,7 @@ interface DashboardLoadedProps {
     weightUnit: WeightUnit;
     dateFmt: string;
     timeFmt: "24" | "12";
-    onNavigateToReports?: () => void;
+    onNavigateToReports?: (() => void) | undefined;
 }
 
 // Split out of DashboardScreen (over the line/complexity budget —

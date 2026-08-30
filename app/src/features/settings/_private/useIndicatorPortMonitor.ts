@@ -1,11 +1,12 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { useEffect, useRef, useState } from "react";
+import type { RefObject } from "react";
 
-import { isSerialIndicatorSource } from "@engines/indicator";
 import type { IndicatorSource } from "@engines/indicator";
 
 import type { ConnectionsConfig } from "../settingsSchema";
+import { openIndicatorPort, reconnectRealIndicator } from "./indicatorPortMonitorHelpers";
 
 interface RawLineEvent {
     Line: string;
@@ -36,63 +37,16 @@ const MAX_LINES = 40;
 // coming through.
 const STALL_LINE_COUNT = 20;
 
-// Hands the one shared serial connection back to the app's real indicator
-// engine — same "Applied immediately" reopen App.tsx's own
-// SerialConnectionSync does on a Connections change, deliberately duplicated
-// here (rather than imported) since App.tsx's version is a component effect,
-// not a plain callable. Without this, Listen taking over the port leaves the
-// live weight readout disconnected until the operator resaves Connections or
-// relaunches the app. Plain function (no hooks) so it doesn't count against
-// useIndicatorPortMonitor's own line budget.
-const reconnectRealIndicator = (indicator: IndicatorSource, conn: ConnectionsConfig): void => {
-    if (!isSerialIndicatorSource(indicator)) return;
-    if (!conn.IndicatorPort) {
-        void indicator.disconnect();
-        return;
-    }
-    void indicator.connect({
-        port: conn.IndicatorPort,
-        baud: conn.IndicatorBaud,
-        pattern: conn.IndicatorPattern,
-        framing: {
-            dataBits: conn.IndicatorDataBits,
-            parity: conn.IndicatorParity,
-            stopBits: conn.IndicatorStopBits,
-            lineEndingByte: conn.IndicatorLineEndingByte,
-            reverseDigits: conn.IndicatorReverseDigits,
-            startChar: conn.IndicatorStartChar,
-            endChar: conn.IndicatorEndChar,
-        },
-    });
-};
-
-// The Listen button's `open_indicator_port` call, pulled out purely to keep
-// useIndicatorPortMonitor under its own line budget — unchanged from the
-// inline version it replaces.
-const openIndicatorPort = (conn: ConnectionsConfig): Promise<void> =>
-    invoke("open_indicator_port", {
-        port: conn.IndicatorPort,
-        baud: conn.IndicatorBaud,
-        pattern: null,
-        // Data bits/parity/stop bits/line ending come from the fields above
-        // it (Listen is how the operator confirms those are actually right
-        // — garbled text here means try a different value).
-        // ReverseDigits/StartChar/EndChar don't matter for what's shown:
-        // they only affect the parsed `indicator-reading` event's
-        // extraction, and Listen only ever displays the raw
-        // `indicator-raw-line` one verbatim — passed through anyway so
-        // `open_indicator_port` sees a consistent framing object, not a
-        // half-filled one.
-        framing: {
-            DataBits: conn.IndicatorDataBits,
-            Parity: conn.IndicatorParity,
-            StopBits: conn.IndicatorStopBits,
-            LineEnding: conn.IndicatorLineEndingByte,
-            ReverseDigits: false,
-            StartChar: conn.IndicatorStartChar,
-            EndChar: conn.IndicatorEndChar,
-        },
-    });
+/** What `useIndicatorPortMonitor` hands back to `IndicatorPortMonitor.tsx` — the Listen session's live state plus its start/stop toggle. */
+export interface UseIndicatorPortMonitorResult {
+    listening: boolean;
+    lines: string[];
+    error: string | null;
+    overflow: boolean;
+    dismissOverflow: () => void;
+    logRef: RefObject<HTMLDivElement | null>;
+    toggle: () => void;
+}
 
 // Split out of IndicatorPortMonitor.tsx (over the line budget —
 // docs/CodingStandards.md) — the open/listen/close plumbing behind its
@@ -101,7 +55,7 @@ export const useIndicatorPortMonitor = (
     conn: ConnectionsConfig,
     indicator: IndicatorSource,
     unlocked: boolean,
-) => {
+): UseIndicatorPortMonitorResult => {
     const [listening, setListening] = useState(false);
     const [lines, setLines] = useState<string[]>([]);
     const [error, setError] = useState<string | null>(null);
@@ -200,12 +154,12 @@ export const useIndicatorPortMonitor = (
     // of nagging on every subsequent line. Guarded on `listeningRef` so a
     // race between the two overflow events (line-count backstop and the
     // Rust-side byte cap) can't call `stop()` twice.
-    const flagOverflow = () => {
+    const flagOverflow = (): void => {
         setOverflow(true);
         if (listeningRef.current) void stop();
     };
 
-    const start = async () => {
+    const start = async (): Promise<void> => {
         setError(null);
         setLines([]);
         setOverflow(false);
@@ -218,7 +172,7 @@ export const useIndicatorPortMonitor = (
         }
     };
 
-    const stop = async () => {
+    const stop = async (): Promise<void> => {
         setListening(false);
         try {
             await invoke("close_indicator_port");

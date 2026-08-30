@@ -35,13 +35,19 @@ export interface AddLanguageFormProps {
 // existing pack's code) get a numeric suffix instead of an error, so typing
 // a duplicate-sounding name still produces a usable pack rather than a dead
 // end.
+// `[^a-z0-9]+` used to strip anything outside ASCII — fine for "Hindi" ->
+// "hindi", but a name typed in its own script (e.g. Tamil தமிழ்) had every
+// character stripped, collapsing to "" and silently falling through to the
+// "lang" fallback below for every non-Latin language added. `\p{L}`/`\p{N}`
+// (with the `u` flag) keep any Unicode letter or digit instead of only
+// `[a-z0-9]`, so a non-Latin name still slugifies to itself.
 const slugify = (value: string): string =>
     value
         .trim()
         .toLowerCase()
         .normalize("NFKD")
         .replace(/[̀-ͯ]/g, "")
-        .replace(/[^a-z0-9]+/g, "")
+        .replace(/[^\p{L}\p{N}]+/gu, "")
         .slice(0, 12);
 
 const uniqueCode = (base: string, existingCodes: string[]): string => {

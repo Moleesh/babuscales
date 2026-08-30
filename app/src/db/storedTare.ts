@@ -17,11 +17,13 @@ export interface StoredTareBody extends JsonRecord {
 export const isStoredTareBody = (body: JsonRecord): body is StoredTareBody =>
     typeof body.WeightKg === "number" && typeof body.CapturedAt === "string";
 
-export const storedTareAgeDays = (capturedAt: string): number => {
+/** `now` is the caller's `Date.now()` — injected rather than read here (docs/CodingStandards.md §2) so this stays testable without mocking global time. */
+export const storedTareAgeDays = (capturedAt: string, now: number): number => {
     const capturedMs = new Date(capturedAt).getTime();
     if (Number.isNaN(capturedMs)) return 0;
-    return Math.max(0, Math.floor((Date.now() - capturedMs) / (1000 * 60 * 60 * 24)));
+    return Math.max(0, Math.floor((now - capturedMs) / (1000 * 60 * 60 * 24)));
 };
 
-export const isStoredTareStale = (capturedAt: string): boolean =>
-    storedTareAgeDays(capturedAt) > STORED_TARE_STALE_AFTER_DAYS;
+/** `now` is the caller's `Date.now()` — see `storedTareAgeDays`. */
+export const isStoredTareStale = (capturedAt: string, now: number): boolean =>
+    storedTareAgeDays(capturedAt, now) > STORED_TARE_STALE_AFTER_DAYS;

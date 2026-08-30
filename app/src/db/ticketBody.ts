@@ -1,6 +1,23 @@
 import { z } from "zod";
 
+import { fromString } from "@engines/formulaEngine/Decimal";
+
 import type { JsonRecord } from "./types";
+
+// Same "plain decimal literal" check `Decimal.fromString` throws on —
+// reused via a `.refine()` below rather than duplicating its regex, so
+// there's exactly one definition of "valid decimal string" in the codebase.
+// Exported so callers outside this file (e.g. ticketBilling.ts's charge
+// display/aggregation) share this one definition instead of re-implementing
+// the same try/fromString/catch check.
+export const isDecimalLiteral = (text: string): boolean => {
+    try {
+        fromString(text);
+        return true;
+    } catch {
+        return false;
+    }
+};
 
 // The Ticket body shape: "A ticket does not have gross and
 // tare columns — it has an ordered list of captures." This is the thin
@@ -16,6 +33,7 @@ export type CaptureSource = (typeof CAPTURE_SOURCES)[number];
 export interface Capture {
     CaptureId: string;
     Type: CaptureType;
+    /** Integer kg unless the active `Schema.DecimalsAllowed` is on (schemaEngine/types.ts) — that gate is enforced at the entry points that build a `Capture` (useWeighingTicket.ts's `pushCapture`, serialIndicator.ts's `pushSample`), not here: a static Zod schema can't read a runtime schema flag, so this stays a plain (non-`.int()`) finite number able to represent either case. */
     WeightKg: number;
     At: string;
     Operator: string;
@@ -26,7 +44,7 @@ export interface Capture {
 export const captureSchema: z.ZodType<Capture> = z.object({
     CaptureId: z.string().min(1),
     Type: z.enum(CAPTURE_TYPES),
-    WeightKg: z.number().int(),
+    WeightKg: z.number(),
     At: z.string().min(1),
     Operator: z.string().min(1),
     Source: z.enum(CAPTURE_SOURCES),
@@ -35,18 +53,18 @@ export const captureSchema: z.ZodType<Capture> = z.object({
 
 export interface TicketBody extends JsonRecord {
     BodyVersion: number;
-    VehicleNo?: string;
-    Party?: string;
-    Material?: string;
-    Transporter?: string;
-    ChallanNo?: string;
-    /** Operator-entered amount, same as any other manual ticket field — there is no auto-calc behind it; plain editable field, no formula. Undefined until the operator types one in. */
-    Charge?: number;
+    VehicleNo?: string | undefined;
+    Party?: string | undefined;
+    Material?: string | undefined;
+    Transporter?: string | undefined;
+    ChallanNo?: string | undefined;
+    /** Operator-entered amount, same as any other manual ticket field — there is no auto-calc behind it; plain editable field, no formula. Undefined until the operator types one in. A decimal string ("18780", "-42.50"), parsed/formatted through `@engines/formulaEngine/Decimal` — never a bare JS float. */
+    Charge?: string | undefined;
     Captures: Capture[];
     /** "Printing is not a status either... a ticket carries a print count." */
-    PrintCount?: number;
+    PrintCount?: number | undefined;
     /** Values for any Field in the active Schema whose FieldId isn't one of the 5 fixed ticket fields above — schema-driven custom fields. Keyed by FieldId. Absent/undefined is exactly equivalent to "no custom fields on this ticket" — fully backward compatible with every ticket saved before this existed. */
-    CustomFields?: Record<string, string | number | boolean | null>;
+    CustomFields?: Record<string, string | number | boolean | null> | undefined;
 }
 
 const ticketBodyShape = z.object({
@@ -56,7 +74,7 @@ const ticketBodyShape = z.object({
     Material: z.string().optional(),
     Transporter: z.string().optional(),
     ChallanNo: z.string().optional(),
-    Charge: z.number().optional(),
+    Charge: z.string().refine(isDecimalLiteral, { message: "Charge must be a plain decimal literal" }).optional(),
     Captures: z.array(captureSchema),
     PrintCount: z.number().int().nonnegative().optional(),
     CustomFields: z.record(z.string(), z.union([z.string(), z.number(), z.boolean(), z.null()])).optional(),

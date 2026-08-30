@@ -40,7 +40,9 @@ export const PrintTemplateModal = ({ open, editing, onClose, onSave }: PrintTemp
 
     const handleSave = (): void => {
         setSaving(true);
-        void onSave({ ...draft, Id: editing?.Id }).finally(() => setSaving(false));
+        void onSave({ ...draft, ...(editing?.Id !== undefined ? { Id: editing.Id } : {}) }).finally(() =>
+            setSaving(false),
+        );
     };
 
     return (

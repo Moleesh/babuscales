@@ -43,7 +43,19 @@ const readStringLiteral = (source: string, i: number): ReadResult => {
 const readNumber = (source: string, i: number): ReadResult => {
     if (!/[0-9]/.test(source[i] ?? "")) return null;
     let next = i;
-    while (next < source.length && /[0-9.]/.test(source[next] ?? "")) next += 1;
+    let sawDot = false;
+    while (next < source.length && /[0-9.]/.test(source[next] ?? "")) {
+        if (source[next] === ".") {
+            // A second decimal point ("1.2.3") is a malformed literal, not
+            // two separate tokens — stop scanning here so the caller sees
+            // the whole malformed run and can report it, rather than
+            // silently truncating to "1.2" and leaving ".3" to be
+            // (mis)tokenized as its own number.
+            if (sawDot) throw new Error(`Malformed number literal "${source.slice(i, next + 1)}" at ${i}`);
+            sawDot = true;
+        }
+        next += 1;
+    }
     return { token: { kind: "Number", text: source.slice(i, next), pos: i }, next };
 };
 

@@ -172,7 +172,17 @@ export interface DocQuery {
     CreatedFrom?: string;
     CreatedTo?: string;
     Limit?: number;
-    Offset?: number;
+    /**
+     * Keyset cursor for the page after the last row a previous call
+     * returned — composite because `CreatedAt` alone isn't unique. Pass the
+     * `CreatedAt`/`DocId` of the last row in the previous page to get the
+     * next `Limit` rows in `created_at DESC, doc_id DESC` order. Omit for
+     * page 1. Matches `MasterQuery.After`'s pattern: cursoring off the last
+     * row's own sort key avoids the classic OFFSET bug where a concurrent
+     * insert shifts every later row by one and a page boundary skips or
+     * repeats a row.
+     */
+    After?: { CreatedAt: string; DocId: string };
 }
 
 export interface MasterQuery {

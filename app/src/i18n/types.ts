@@ -22,3 +22,9 @@ export interface LanguagePack extends JsonRecord {
 
 /** `value[lang]` if the pack carries it, else the English form. Never undefined. */
 export const resolveLocalized = (value: Localized, lang: string): string => value[lang] ?? value.en;
+
+/** Same shape as `useTranslation()`'s `t` (I18nContextValue, ./_private/I18nContext.ts) — the
+ * single shared alias for threading `t` into a plain helper/component prop that isn't itself a
+ * hook. Previously redefined independently in several call sites; import this instead of
+ * re-declaring it. */
+export type Translate = (key: string) => string;

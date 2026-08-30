@@ -6,7 +6,8 @@ import { useTranslation } from "@i18n/useTranslation";
 
 import { useSettings } from "../useSettings";
 import styles from "./_styles/FieldsLanguagePane.module.css";
-import { FieldSchemaCard, PREVIEW_KEY_CODE } from "./FieldSchemaCard";
+import { FieldSchemaCard } from "./FieldSchemaCard";
+import { PREVIEW_KEY_CODE } from "./FieldSchemaTable";
 import { useFieldSchemaUpload } from "./useFieldSchemaUpload";
 
 // Fields & print pane (demo/BabuScales-demo.html's `data-pane="fields"`).
@@ -78,6 +79,15 @@ export const FieldsLanguagePane = () => {
         void setTicketSchema(updated).then(() => showToast(t("components.toast.saved")));
     };
 
+    // Single flag, one toggle, same save path as toggleFieldVisible above —
+    // see `Schema.DecimalsAllowed`'s own doc comment (schemaEngine/types.ts)
+    // for what it gates (Charge, Money columns, Capture.WeightKg, StoredTare
+    // weight, the indicator's raw-sample check).
+    const toggleDecimalsAllowed = (): void => {
+        const updated: Schema = { ...ticketSchema, DecimalsAllowed: !(ticketSchema.DecimalsAllowed ?? false) };
+        void setTicketSchema(updated).then(() => showToast(t("components.toast.saved")));
+    };
+
     return (
         <div className={styles.grid}>
             <FieldSchemaCard
@@ -94,6 +104,7 @@ export const FieldsLanguagePane = () => {
                 onReset={() => void resetSchema()}
                 onSelectActiveSchema={(schemaId) => void setActiveSchemaId(schemaId)}
                 onToggleFieldVisible={toggleFieldVisible}
+                onToggleDecimalsAllowed={toggleDecimalsAllowed}
             />
         </div>
     );

@@ -1,12 +1,27 @@
+import { chargeToNumber } from "@engines/billing";
 import type { TicketRow } from "@features/reports";
+import { toLocalDateOnly } from "@features/reports/localDate";
 
 // A weighbridge's business day, not a calendar one — no site-hours Setting
 // exists yet (app/README.md known gap), so "day" buckets fix a reasonable
 // window rather than showing 24 mostly-empty hours.
 const OPERATING_HOURS = { start: 6, end: 20 } as const;
 
+// Bug fix: this used to compare `iso.slice(0, 10) === referenceIso.slice(0,
+// 10)` — a UTC-calendar-day comparison, since both `iso` values here are UTC
+// ISO strings (Capture.At, `new Date().toISOString()`). That silently
+// contradicts this function's own documented contract elsewhere
+// (dailySummaryEmail.ts: "a business day is whatever the clock on this
+// machine says it is, same as ... dashboardData.ts's own isSameDay") and its
+// own callers' local-getter siblings (`isInPeriod`'s week/month/year
+// branches, `hourlyTicketCounts`'s `getHours()`): for any positive UTC
+// offset (e.g. IST, UTC+5:30) the "day" boundary silently sits at UTC
+// midnight — 05:30 local — not local midnight, so tickets weighed in the
+// first ~5.5 hours after local midnight get attributed to the wrong day.
+// Now compares local calendar dates, matching every other "today" check in
+// this app.
 export const isSameDay = (iso: string, referenceIso: string): boolean =>
-    iso.slice(0, 10) === referenceIso.slice(0, 10);
+    toLocalDateOnly(new Date(iso)) === toLocalDateOnly(new Date(referenceIso));
 
 // "Can we have a drop down to specify if its per day, month,
 // week, year, all... change all the column based on that also... this also
@@ -200,7 +215,7 @@ export const computeDashboardKpis = (
         avgNetKgPerTicket: completedToday.length
             ? (netTonnesToday * 1000) / completedToday.length
             : 0,
-        chargeToday: completedToday.reduce((sum, row) => sum + (row.charge ?? 0), 0),
+        chargeToday: completedToday.reduce((sum, row) => sum + chargeToNumber(row.charge), 0),
     };
 };
 

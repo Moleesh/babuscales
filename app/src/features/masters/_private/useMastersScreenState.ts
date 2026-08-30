@@ -14,7 +14,12 @@ import { useMasterListPage } from "./useMasterListPage";
 // visible list) — plus the form-action handlers, into one object
 // so the screen component itself stays under the line budget
 // (docs/CodingStandards.md).
-export const useMastersScreenState = (activeKind: MasterKind, columns: MasterColumn[], query: string) => {
+export const useMastersScreenState = (
+    activeKind: MasterKind,
+    columns: MasterColumn[],
+    query: string,
+    decimalsAllowed: boolean,
+) => {
     const db = useDataPort();
     const { rows, save, remove, reload, reloadToken } = useMasterCache(activeKind);
     // The selected row is stored directly — from whatever the user actually
@@ -42,6 +47,7 @@ export const useMastersScreenState = (activeKind: MasterKind, columns: MasterCol
         save,
         remove,
         cacheRows: rows,
+        decimalsAllowed,
     });
     // `reloadToken` bumps on every cache save/remove/reload — passed through
     // as this page's own refresh dependency so the visible (paginated) list

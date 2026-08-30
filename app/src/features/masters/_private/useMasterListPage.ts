@@ -65,7 +65,7 @@ export const useMasterListPage = (
         kindQueryRef.current = { kind, query };
         const limit = isNewScope ? PAGE_SIZE : Math.max(PAGE_SIZE, rawCountRef.current);
         setLoading(true);
-        void db.listMasters({ MasterKind: kind, Search: query || undefined, Limit: limit }).then((page) => {
+        void db.listMasters({ MasterKind: kind, Limit: limit, ...(query ? { Search: query } : {}) }).then((page) => {
             if (requestId.current !== id) return;
             setRows(visibleRows(page));
             cursorRef.current = page[page.length - 1] ?? null;
@@ -83,9 +83,9 @@ export const useMasterListPage = (
         void db
             .listMasters({
                 MasterKind: kind,
-                Search: query || undefined,
                 Limit: PAGE_SIZE,
                 After: { Name: last.Name, MasterId: last.MasterId },
+                ...(query ? { Search: query } : {}),
             })
             .then((page) => {
                 if (requestId.current !== id) return;

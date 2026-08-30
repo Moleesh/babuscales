@@ -86,12 +86,21 @@ export const createDocMethods = (state: MemoryState): DocMethods => {
         getDoc: (docId) => Promise.resolve(state.docs.get(docId) ?? null),
 
         listDocs: (query = {}) => {
-            const rows = Array.from(state.docs.values())
+            const sorted = Array.from(state.docs.values())
                 .filter((doc) => matches(doc, query))
-                .sort((a, b) => b.CreatedAt.localeCompare(a.CreatedAt));
-            const offset = query.Offset ?? 0;
-            const end = query.Limit !== undefined ? offset + query.Limit : undefined;
-            return Promise.resolve(rows.slice(offset, end));
+                // Matches docs.rs's `ORDER BY created_at DESC, doc_id DESC` —
+                // the tiebreaker is what makes the cursor below unique.
+                .sort((a, b) => b.CreatedAt.localeCompare(a.CreatedAt) || b.DocId.localeCompare(a.DocId));
+            const after = query.After;
+            const rows = after
+                ? sorted.filter(
+                      (doc) =>
+                          doc.CreatedAt < after.CreatedAt ||
+                          (doc.CreatedAt === after.CreatedAt && doc.DocId < after.DocId),
+                  )
+                : sorted;
+            const end = query.Limit !== undefined ? query.Limit : undefined;
+            return Promise.resolve(rows.slice(0, end));
         },
 
         saveDoc,

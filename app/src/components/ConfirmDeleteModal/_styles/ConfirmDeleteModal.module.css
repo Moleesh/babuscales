@@ -1,0 +1,10 @@
+.body {
+    display: grid;
+    gap: 13px;
+}
+
+.actions {
+    display: flex;
+    gap: 9px;
+    justify-content: flex-end;
+}

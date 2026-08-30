@@ -79,9 +79,9 @@ export const MastersListCard = ({
                         // message once `query` is non-empty makes clear it's
                         // the search that came up empty, not the master list
                         // itself.
-                        `${t("masters.searchEmptyPrefix")} ${title.toLowerCase()} ${t("masters.searchEmptySuffix")}`
+                        t("masters.searchEmptyMessage").replace("{title}", title.toLowerCase())
                     ) : (
-                        `${t("masters.emptyPrefix")} ${title.toLowerCase()} ${t("masters.emptySuffix")}`
+                        t("masters.emptyMessage").replace("{title}", title.toLowerCase())
                     )
                 }
             />

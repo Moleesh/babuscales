@@ -7,7 +7,7 @@ import type { UseReportsScreenController } from "./useReportsScreenController";
 import styles from "../_styles/ReportsScreen.module.css";
 
 export interface ReportsScreenCardProps {
-    s: UseReportsScreenController;
+    screen: UseReportsScreenController;
     /** True until the ticket docs behind every view/table below have loaded once — see ReportsScreen's own useReportDocs() call. */
     loading: boolean;
 }
@@ -41,64 +41,64 @@ const ReportsCardTitle = ({ scopedCount, matchingCount }: { scopedCount: number;
 // docs/CodingStandards.md) — the Card itself (header actions + body),
 // taking the whole controller return value the same way ReportsCardBody's
 // props already mirror it, just one level up.
-export const ReportsScreenCard = ({ s, loading }: ReportsScreenCardProps) => {
+export const ReportsScreenCard = ({ screen, loading }: ReportsScreenCardProps) => {
     return (
         <Card
             sticky
             title={
                 <ReportsCardTitle
-                    scopedCount={s.scopedCount}
-                    matchingCount={s.view === "tickets" ? s.visibleRows.length : null}
+                    scopedCount={screen.scopedCount}
+                    matchingCount={screen.view === "tickets" ? screen.visibleRows.length : null}
                 />
             }
             headerRight={
                 <ReportsHeaderActions
-                    view={s.view}
-                    onViewChange={s.setView}
-                    waitingCount={s.waitingCount}
-                    onShowWaiting={s.showWaiting}
+                    view={screen.view}
+                    onViewChange={screen.setView}
+                    waitingCount={screen.waitingCount}
+                    onShowWaiting={screen.showWaiting}
                     // `setEditingReportId(null)` — a fresh "Build report"
                     // open must not inherit whatever saved view was last
                     // edited via SavedReportsRow's pencil (openReportForEdit),
                     // or Save here would silently overwrite that view instead
                     // of adding a new one.
                     onOpenBuilder={() => {
-                        s.setEditingReportId(null);
-                        s.setBuilderOpen(true);
+                        screen.setEditingReportId(null);
+                        screen.setBuilderOpen(true);
                     }}
                 />
             }
         >
             <ReportsCardBody
                 loading={loading}
-                reportApplied={s.reportApplied}
-                savedReportActions={s.savedReportActions}
-                onEditSavedReport={s.openReportForEdit}
-                view={s.view}
-                query={s.query}
-                onQueryChange={s.setQuery}
-                filter={s.filter}
-                onFilterChange={s.setFilter}
-                sortKey={s.sortKey}
-                onSortKeyChange={s.setSortKey}
-                sortDir={s.sortDir}
-                onSortDirChange={s.setSortDir}
-                dateFrom={s.dateFrom}
-                onDateFromChange={s.setDateFrom}
-                dateTo={s.dateTo}
-                onDateToChange={s.setDateTo}
-                seriesEpoch={s.seriesEpoch}
-                onSeriesEpochChange={s.setSeriesEpoch}
-                seriesEpochOptions={s.seriesEpochOptions}
-                showSeriesEpoch={s.showSeriesEpoch}
-                dateFmt={s.dateFmt}
-                filterCounts={s.filterCounts}
-                groupBy={s.groupBy}
-                onGroupByChange={s.setGroupBy}
-                ticketColumns={s.ticketColumns}
-                pagedRows={s.pagedRows}
-                summaryColumns={s.summaryColumns}
-                summaryRows={s.summaryRows}
+                reportApplied={screen.reportApplied}
+                savedReportActions={screen.savedReportActions}
+                onEditSavedReport={screen.openReportForEdit}
+                view={screen.view}
+                query={screen.query}
+                onQueryChange={screen.setQuery}
+                filter={screen.filter}
+                onFilterChange={screen.setFilter}
+                sortKey={screen.sortKey}
+                onSortKeyChange={screen.setSortKey}
+                sortDir={screen.sortDir}
+                onSortDirChange={screen.setSortDir}
+                dateFrom={screen.dateFrom}
+                onDateFromChange={screen.setDateFrom}
+                dateTo={screen.dateTo}
+                onDateToChange={screen.setDateTo}
+                seriesEpoch={screen.seriesEpoch}
+                onSeriesEpochChange={screen.setSeriesEpoch}
+                seriesEpochOptions={screen.seriesEpochOptions}
+                showSeriesEpoch={screen.showSeriesEpoch}
+                dateFmt={screen.dateFmt}
+                filterCounts={screen.filterCounts}
+                groupBy={screen.groupBy}
+                onGroupByChange={screen.setGroupBy}
+                ticketColumns={screen.ticketColumns}
+                pagedRows={screen.pagedRows}
+                summaryColumns={screen.summaryColumns}
+                summaryRows={screen.summaryRows}
             />
         </Card>
     );

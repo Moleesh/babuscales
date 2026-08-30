@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 
 import {
     filterOptions,
+    filterRowsByDateRange,
     filterRowsBySeries,
+    filterTicketRows,
     groupLabel,
     groupOptions,
     listSeriesEpochOptions,
@@ -80,6 +82,47 @@ describe("filterRowsBySeries", () => {
 
     it("returns an empty array when nothing matches the given epoch", () => {
         expect(filterRowsBySeries(rows, 99)).toEqual([]);
+    });
+});
+
+describe("filterTicketRows", () => {
+    const rowAt = (overrides: Partial<TicketRow>): TicketRow =>
+        ({
+            docSeq: null,
+            vehicleNo: "",
+            party: "",
+            material: "",
+            challanNo: "",
+            isOpen: false,
+            netKg: null,
+            ...overrides,
+        }) as TicketRow;
+
+    it("finds a ticket numbered 0 by its own number", () => {
+        const rows = [rowAt({ docSeq: 0 }), rowAt({ docSeq: 5 })];
+        expect(filterTicketRows(rows, "0", "all")).toEqual([rowAt({ docSeq: 0 })]);
+    });
+
+    it("still excludes rows with no matching field when searching", () => {
+        const rows = [rowAt({ docSeq: 1 }), rowAt({ docSeq: 5 })];
+        expect(filterTicketRows(rows, "5", "all")).toEqual([rowAt({ docSeq: 5 })]);
+    });
+});
+
+describe("filterRowsByDateRange", () => {
+    const rowAt = (at: string): TicketRow => ({ at }) as TicketRow;
+    const rows = [rowAt("2024-01-05T00:00:00Z"), rowAt("2024-01-15T00:00:00Z")];
+
+    it("returns rows unchanged when no bounds are set", () => {
+        expect(filterRowsByDateRange(rows, "", "")).toEqual(rows);
+    });
+
+    it("filters to the inclusive range when from <= to", () => {
+        expect(filterRowsByDateRange(rows, "2024-01-01", "2024-01-10")).toEqual([rows[0]]);
+    });
+
+    it("treats an inverted range (from > to) as no date filter", () => {
+        expect(filterRowsByDateRange(rows, "2024-01-15", "2024-01-05")).toEqual(rows);
     });
 });
 

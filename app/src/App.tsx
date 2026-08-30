@@ -26,7 +26,7 @@ import { createLicensingSource } from "@engines/licensing/createLicensingSource"
 import { reconcileOutboxOutcome } from "@engines/outbox";
 import type { SchedulerSource } from "@engines/scheduler";
 import { createSchedulerSource } from "@engines/scheduler/createSchedulerSource";
-import { DEFAULT_TICKET_SCHEMA, SchemaProvider } from "@engines/schemaEngine";
+import { DEFAULT_TICKET_SCHEMA, SchemaProvider, useSchema } from "@engines/schemaEngine";
 import type { Schema } from "@engines/schemaEngine";
 import { TunnelProvider } from "@engines/tunnel";
 import type { TunnelSource } from "@engines/tunnel";
@@ -607,7 +607,12 @@ const Shell = ({ onAddLanguagePack, onDeleteLanguagePack, windowPin }: ShellProp
     const { settings, loading: settingsLoading } = useSettings();
     const license = useLicense();
     useRemoveInitialSplash(!settingsLoading);
-    const ticket = useWeighingTicket(settings.OperatorName, settings.Rules.SameTicketNo);
+    const { ticketSchema } = useSchema();
+    const ticket = useWeighingTicket(
+        settings.OperatorName,
+        settings.Rules.SameTicketNo,
+        ticketSchema.DecimalsAllowed ?? false,
+    );
     // Bug: "when another language is selected it to change the top language
     // also" — used to always be "whichever non-`en` pack happens to be
     // first", ignoring whatever Settings → Language's own picker
@@ -668,17 +673,30 @@ interface IndicatorSyncProps {
 // IndicatorProvider/useIndicator's generic surface.
 const StabilityGateSync = ({ indicator }: IndicatorSyncProps) => {
     const { settings } = useSettings();
+    // `decimalsAllowed` rides along on the same "Applied immediately" bridge
+    // — it's a schema-level flag (schemaEngine/types.ts's
+    // `Schema.DecimalsAllowed`), not a Settings one, but serialIndicator.ts's
+    // `pushSample` gate is only reachable via this same `updateOptions` call
+    // (see StabilityOptions.decimalsAllowed's own comment for why it isn't a
+    // constructor arg instead).
+    const { ticketSchema } = useSchema();
+    const decimalsAllowed = ticketSchema.DecimalsAllowed ?? false;
     useEffect(() => {
         if (!("updateOptions" in indicator)) return;
         (
             indicator as IndicatorSource & {
-                updateOptions: (options: { settleTicks?: number; closeEnoughKg?: number }) => void;
+                updateOptions: (options: {
+                    settleTicks?: number;
+                    closeEnoughKg?: number;
+                    decimalsAllowed?: boolean;
+                }) => void;
             }
         ).updateOptions({
             settleTicks: settings.Stability.ReadingsInRow,
             closeEnoughKg: settings.Stability.BandKg,
+            decimalsAllowed,
         });
-    }, [indicator, settings.Stability.ReadingsInRow, settings.Stability.BandKg]);
+    }, [indicator, settings.Stability.ReadingsInRow, settings.Stability.BandKg, decimalsAllowed]);
     return null;
 };
 
@@ -829,7 +847,7 @@ const sendDailySummary = async ({
         subject,
         body,
     });
-    await db.updateOutbox(outboxRow.OutboxId, reconcileOutboxOutcome(result, outboxRow.Attempts));
+    await db.updateOutbox(outboxRow.OutboxId, reconcileOutboxOutcome(result, outboxRow.Attempts, Date.now()));
     await recordDailySummarySent(today);
 };
 
@@ -964,7 +982,7 @@ const HeadlessDailySummarySync = ({ scheduler }: { scheduler: SchedulerSource })
                 });
                 await db.updateOutbox(
                     outboxRow.OutboxId,
-                    reconcileOutboxOutcome(result, outboxRow.Attempts),
+                    reconcileOutboxOutcome(result, outboxRow.Attempts, Date.now()),
                 );
                 await recordDailySummarySent(today);
             }

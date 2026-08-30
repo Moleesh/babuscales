@@ -40,9 +40,9 @@ export interface ReportDefinition {
      * pre-existing saved defs (View/GroupBy/Filter only) still round-trip
      * through `loadReportDefs` unchanged — an absent value just means
      * "no date range" / "all columns" on recall. */
-    DateFrom?: string;
-    DateTo?: string;
-    Columns?: string;
+    DateFrom?: string | undefined;
+    DateTo?: string | undefined;
+    Columns?: string | undefined;
     /** The numbering-series scope this report was saved against — `"all"`
      * (every series, no scoping at all), `"current"` (whatever series is
      * active at recall time), a specific epoch number (that one series
@@ -55,7 +55,7 @@ export interface ReportDefinition {
      * report-builder wizard's own save can persist whichever choice the
      * operator actually made in its Series dropdown, the same as
      * `DateFrom`/`DateTo`. */
-    SeriesEpoch?: number | "current" | "all";
+    SeriesEpoch?: number | "current" | "all" | undefined;
 }
 
 const reportDefinitionSchema: z.ZodType<ReportDefinition> = z.object({

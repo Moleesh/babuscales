@@ -10,7 +10,7 @@ export interface DashboardKpisProps {
     amountDp: 0 | 2;
     /** Settings' Amount rounding pane — "in india we use kg instead of ton" — defaults to kg. */
     weightUnit: WeightUnit;
-    onNavigateToReports?: () => void;
+    onNavigateToReports?: (() => void) | undefined;
 }
 
 // Split out of DashboardScreen (over the line budget — docs/CodingStandards.md)

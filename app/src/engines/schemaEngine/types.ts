@@ -33,15 +33,15 @@ export interface ValidationRule {
 export interface FieldBase {
     FieldId: string;
     /** Optional — the built-in fields (VehicleNo/Party/Material/Transporter/ChallanNo/Gross/Tare/Net/Charge) have no Label here at all and resolve their display text from this app's own i18n strings by FieldId instead (see `ticketFieldIds.ts`'s `resolveFieldLabel`); only a genuinely custom field an admin adds needs to supply one. */
-    Label?: Localized;
-    Help?: Localized;
+    Label?: Localized | undefined;
+    Help?: Localized | undefined;
     /** Defaults to visible when omitted. */
-    Visible?: boolean;
+    Visible?: boolean | undefined;
     /** Defaults to not-required when omitted. */
-    Required?: boolean;
+    Required?: boolean | undefined;
     /** Defaults to editable when omitted. */
-    ReadOnly?: boolean;
-    Validate?: ValidationRule[];
+    ReadOnly?: boolean | undefined;
+    Validate?: ValidationRule[] | undefined;
     /**
      * @deprecated Unused — a field's own `FieldSegment.Kind` is authoritative
      * now (task: "we dont need Calculated: true, Kind: Calculated in
@@ -51,11 +51,11 @@ export interface FieldBase {
      * `schemaJson.ts` so an older saved schema round-trips without erroring,
      * but no longer read anywhere (see `getCalculatedFieldIds` below).
      */
-    Calculated?: boolean;
+    Calculated?: boolean | undefined;
     /** Only meaningful for a field inside a `"Calculated"` segment that mirrors one of CalcCard's two physical-capture boxes rather than a derived one (e.g. Net's Formula) — which capture type it stands for. */
-    Captured?: "Gross" | "Tare";
+    Captured?: "Gross" | "Tare" | undefined;
     /** Only meaningful on a `Captured` field (Gross/Tare) — lets this specific box accept a typed weight instead of only a physical/indicator capture, independent of the app-wide Settings → Weighing → Rules.ManualEntry toggle (task: "for manual, we will add a manual flag 'Manual': true, this will work for manual entry"). Either the global setting or this flag being on is enough to show the typed-entry box. */
-    Manual?: boolean;
+    Manual?: boolean | undefined;
     /**
      * @deprecated Unused since `FieldSegment.Kind` — a `Formula` field's own
      * `FieldSegment` (e.g. a Godown schema's "Weighment Calculations" vs.
@@ -64,13 +64,13 @@ export interface FieldBase {
      * Still accepted by `schemaJson.ts` so an older saved schema round-trips
      * without erroring, but no longer read by CalcCard.
      */
-    Group?: "Intermediate" | "Final";
+    Group?: "Intermediate" | "Final" | undefined;
 }
 
 export interface TextField extends FieldBase {
     Kind: "Text";
-    Upper?: boolean;
-    MaxLength?: number;
+    Upper?: boolean | undefined;
+    MaxLength?: number | undefined;
 }
 export interface NumberField extends FieldBase {
     Kind: "Number";
@@ -121,7 +121,7 @@ export interface SearchField extends FieldBase {
      * second"). Can list more than one target (e.g. Material selection
      * autofilling both a Rate and a per-bag weight).
      */
-    Autofills?: AutofillLink[];
+    Autofills?: AutofillLink[] | undefined;
 }
 export interface SelectOption {
     Value: string;
@@ -177,12 +177,12 @@ export type MasterColumnKind = "Text" | "Number" | "Money" | "Boolean" | "Select
 export interface MasterColumn {
     FieldId: string;
     /** Optional, same fallback as `FieldBase.Label` — falls back to `masterColumnLabelKeys.ts`'s per-FieldId i18n key, then the raw FieldId. */
-    Label?: Localized;
+    Label?: Localized | undefined;
     Kind: MasterColumnKind;
     /** Defaults to not-required when omitted. */
-    Required?: boolean;
+    Required?: boolean | undefined;
     /** Only meaningful when `Kind` is `"Select"`. */
-    Options?: SelectOption[];
+    Options?: SelectOption[] | undefined;
 }
 
 export interface MasterSchema {
@@ -203,7 +203,7 @@ export interface MasterSchema {
      * row the first time a value is used, it doesn't "save" anything that
      * already exists; "Add" is what actually happens.
      */
-    AutoAddOnUse?: boolean;
+    AutoAddOnUse?: boolean | undefined;
     /**
      * Only meaningful when `AutoAddOnUse` isn't `false`. When on, a
      * ticket-save-triggered auto-add is marked (`MasterRow.Body.AutoAdded`)
@@ -218,7 +218,7 @@ export interface MasterSchema {
      * Named `HideAutoAddedFromList`, not `HideAutoSavedFromList` — same
      * rename reasoning as `AutoAddOnUse` above.
      */
-    HideAutoAddedFromList?: boolean;
+    HideAutoAddedFromList?: boolean | undefined;
 }
 
 // One named group of fields — WeighingLeftColumn.tsx renders one card per
@@ -236,9 +236,9 @@ export interface MasterSchema {
 // Label just displays its raw Segment string as the card title.
 export interface FieldSegment {
     Segment: string;
-    Label?: Localized;
+    Label?: Localized | undefined;
     /** Defaults to inferred from `Fields` (see above) when omitted. */
-    Kind?: "Enterable" | "Calculated";
+    Kind?: "Enterable" | "Calculated" | undefined;
     Fields: Field[];
 }
 
@@ -250,7 +250,22 @@ export interface Schema extends JsonRecord {
     SchemaId: string;
     Segments: FieldSegment[];
     /** Which extra columns each MasterKind's records carry. Optional — a schema with no `Masters` block means every kind has just its built-in Name, same as before this existed. */
-    Masters?: MasterSchema[];
+    Masters?: MasterSchema[] | undefined;
+    /**
+     * Whether a fractional value is accepted anywhere this schema governs a
+     * decimal-string quantity: a ticket's `Charge`, any `Money`-kind
+     * `MasterColumn`, a ticket `Capture.WeightKg`, and a `StoredTare`
+     * master's `WeightKg` — one flag for both money and weight, since most
+     * sites are consistently integer-only (or consistently not) across both.
+     * Omitted/`false` (the common case) means every one of those rejects a
+     * non-integer value at entry; `true` lets a plain decimal literal
+     * through unchanged. Purely an input-validation gate — `computeValue`,
+     * `getMaterialRate`, `buildMasterBody` and weight-derivation never branch
+     * on this, they already handle either scale correctly. Lives on the
+     * schema (not app Settings) because it's schema-editing surface
+     * (FieldSchemaCard.tsx), same as `Masters` above.
+     */
+    DecimalsAllowed?: boolean | undefined;
 }
 
 /** Every field across every segment, flattened back into schema order — the shape almost every consumer beyond the schema editor itself actually wants (TicketFieldsCard's field loop, CalcCard's calc-chain, validation, master upload's field count). */

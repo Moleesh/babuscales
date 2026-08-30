@@ -4,24 +4,22 @@ import type { MasterSchema } from "@engines/schemaEngine";
 
 import type { WeighingCaches } from "./useWeighingScreenTickets";
 
-// Task: the ⌕ fields' inline "＋ Add" row is gone (TicketFieldsCard.tsx) —
-// an operator who types a Vehicle/Party/Material/Transporter that isn't in
-// the Masters table yet is no longer forced to click an explicit add
-// button first. Instead, on save, whatever they actually typed is
-// reconciled into the Masters table here: a value with no matching row
-// (case/whitespace-insensitive, same as the dropdown's own match check)
-// gets a new master created for it, so it's searchable/recallable from the
-// very next ticket. A value that already matches an existing row is left
-// alone — this only ever adds masters, it never edits one that already
-// exists under that name.
+// An operator who types a Vehicle/Party/Material/Transporter that isn't in
+// the Masters table yet isn't forced to click an explicit add button first.
+// Instead, on save, whatever they actually typed is reconciled into the
+// Masters table here: a value with no matching row (case/whitespace-
+// insensitive, same as the dropdown's own match check) gets a new master
+// created for it, so it's searchable/recallable from the very next ticket.
+// A value that already matches an existing row is left alone — this only
+// ever adds masters, it never edits one that already exists under that
+// name.
 //
-// Both are now gated per-Master (schemaEngine's `MasterSchema.AutoAddOnUse`/
-// `HideAutoAddedFromList` — task: "this should be part of master not
-// fields"). `masterSchema` is the active ticket schema's own config entry
-// for this kind, or `undefined` for a kind the schema doesn't declare at all
-// (masterKindMeta.ts's `visibleMasterKinds`) — either way, an absent config
-// or an absent flag on it means "keep doing what this always did", so a
-// schema saved before this feature existed behaves identically.
+// Gated per-Master (schemaEngine's `MasterSchema.AutoAddOnUse`/
+// `HideAutoAddedFromList`). `masterSchema` is the active ticket schema's own
+// config entry for this kind, or `undefined` for a kind the schema doesn't
+// declare at all (masterKindMeta.ts's `visibleMasterKinds`) — either way, an
+// absent config or an absent flag on it means "keep doing what this always
+// did", so a schema saved before this feature existed behaves identically.
 const upsertOne = async (
     cache: UseMasterCache,
     kind: FieldCacheEntry["kind"],
@@ -31,6 +29,13 @@ const upsertOne = async (
     if (masterSchema?.AutoAddOnUse === false) return;
     const trimmed = value.trim();
     if (!trimmed) return;
+    // KNOWN RACE: this check-then-insert isn't atomic. Two saves for the
+    // same new name landing close together (e.g. two tickets typed in quick
+    // succession before either save's `reloadToken` bump has repopulated
+    // `cache.rows`) can both see `exists === false` and each create their
+    // own master row for the same name. Fixing this properly needs a
+    // DB-level case-insensitive unique constraint on (MasterKind, Name) —
+    // out of scope here; this comment just documents the gap.
     const exists = cache.rows.some((row) => row.Name.trim().toLowerCase() === trimmed.toLowerCase());
     if (exists) return;
     // `AutoAdded` only ever gets set here, never read back by this cache —

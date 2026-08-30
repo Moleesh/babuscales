@@ -72,7 +72,7 @@ const sendTicketEmail = async ({ ticket, email, settings, partyCache, verifyUrl,
             .filter(Boolean)
             .join("\n"),
     });
-    await db.updateOutbox(outboxRow.OutboxId, reconcileOutboxOutcome(result, outboxRow.Attempts));
+    await db.updateOutbox(outboxRow.OutboxId, reconcileOutboxOutcome(result, outboxRow.Attempts, Date.now()));
 };
 
 interface SmsDeps {
@@ -107,7 +107,7 @@ const sendTicketSms = async ({ ticket, sms, settings, partyCache, db }: SmsDeps)
             .filter(Boolean)
             .join(" "),
     });
-    await db.updateOutbox(outboxRow.OutboxId, reconcileOutboxOutcome(result, outboxRow.Attempts));
+    await db.updateOutbox(outboxRow.OutboxId, reconcileOutboxOutcome(result, outboxRow.Attempts, Date.now()));
 };
 
 interface WebhookDeps {

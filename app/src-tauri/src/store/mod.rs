@@ -19,6 +19,7 @@ mod ids;
 mod masters;
 mod outbox;
 mod patches;
+mod query;
 mod time;
 
 pub use assets::{get_asset_bytes, get_asset_meta, list_asset_meta, put_asset};

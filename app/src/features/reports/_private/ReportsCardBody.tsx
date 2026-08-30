@@ -220,7 +220,7 @@ export const ReportsCardBody = ({
     filterCounts,
     savedReportActions,
     onEditSavedReport,
-    ...view
+    ...screenState
 }: ReportsCardBodyProps) => {
     const bodyRef = useRef<HTMLDivElement>(null);
     const filtersRef = useRef<HTMLDivElement>(null);
@@ -248,23 +248,23 @@ export const ReportsCardBody = ({
                 dateFmt={dateFmt}
                 savedReportActions={savedReportActions}
                 onEditSavedReport={onEditSavedReport}
-                reportApplied={view.reportApplied}
+                reportApplied={screenState.reportApplied}
             />
-            {view.view === "tickets" && (
+            {screenState.view === "tickets" && (
                 <TicketsFilterRow
-                    query={view.query}
-                    onQueryChange={view.onQueryChange}
-                    filter={view.filter}
-                    onFilterChange={view.onFilterChange}
-                    sortKey={view.sortKey}
-                    onSortKeyChange={view.onSortKeyChange}
-                    sortDir={view.sortDir}
-                    onSortDirChange={view.onSortDirChange}
+                    query={screenState.query}
+                    onQueryChange={screenState.onQueryChange}
+                    filter={screenState.filter}
+                    onFilterChange={screenState.onFilterChange}
+                    sortKey={screenState.sortKey}
+                    onSortKeyChange={screenState.onSortKeyChange}
+                    sortDir={screenState.sortDir}
+                    onSortDirChange={screenState.onSortDirChange}
                     filterCounts={filterCounts}
                 />
             )}
         </div>
-        <ReportsActiveView {...view} />
+        <ReportsActiveView {...screenState} />
         </div>
     );
 };

@@ -1,5 +1,6 @@
-use tauri::{Manager, State};
+use tauri::State;
 
+use crate::commands::run_blocking;
 use crate::error::AppError;
 use crate::state::{lock, AppState};
 use crate::store;
@@ -23,13 +24,10 @@ pub async fn list_outbox(
     app: tauri::AppHandle,
     query: Option<OutboxQuery>,
 ) -> Result<Vec<OutboxRow>, AppError> {
-    tauri::async_runtime::spawn_blocking(move || {
-        let state = app.state::<AppState>();
-        let conn = lock(&state)?;
-        store::list_outbox(&conn, &query.unwrap_or_default())
+    run_blocking(&app, "list_outbox", move |conn| {
+        store::list_outbox(conn, &query.unwrap_or_default())
     })
     .await
-    .map_err(|err| AppError::Message(format!("list_outbox task panicked: {err}")))?
 }
 
 #[tauri::command]

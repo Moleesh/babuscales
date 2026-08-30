@@ -1,5 +1,6 @@
-use tauri::{Manager, State};
+use tauri::State;
 
+use crate::commands::run_blocking;
 use crate::error::AppError;
 use crate::licensing;
 use crate::state::{lock, AppState};
@@ -18,20 +19,14 @@ use crate::store::dto::{DocDraft, DocQuery, DocRow, SeriesEpoch};
 // one of its async-runtime worker threads for the whole query; routing the
 // blocking SQLite work through `spawn_blocking` explicitly frees that
 // worker immediately and lets this resolve like any other async IPC call
-// instead of monopolising runtime capacity every navigation. Takes an
-// `AppHandle` instead of `State` so the query can move into the blocking
-// closure — `State`'s borrow doesn't outlive this function's own stack
-// frame, `AppHandle::state()` re-derives the same managed `AppState`
-// inside the closure instead.
+// instead of monopolising runtime capacity every navigation. Delegates to
+// `commands::run_blocking`, which takes an `AppHandle` instead of `State` so
+// the query can move into the blocking closure — `State`'s borrow doesn't
+// outlive this function's own stack frame, `AppHandle::state()` re-derives
+// the same managed `AppState` inside the closure instead.
 #[tauri::command]
 pub async fn get_doc(app: tauri::AppHandle, doc_id: String) -> Result<Option<DocRow>, AppError> {
-    tauri::async_runtime::spawn_blocking(move || {
-        let state = app.state::<AppState>();
-        let conn = lock(&state)?;
-        store::get_doc(&conn, &doc_id)
-    })
-    .await
-    .map_err(|err| AppError::Message(format!("get_doc task panicked: {err}")))?
+    run_blocking(&app, "get_doc", move |conn| store::get_doc(conn, &doc_id)).await
 }
 
 #[tauri::command]
@@ -39,13 +34,10 @@ pub async fn list_docs(
     app: tauri::AppHandle,
     query: Option<DocQuery>,
 ) -> Result<Vec<DocRow>, AppError> {
-    tauri::async_runtime::spawn_blocking(move || {
-        let state = app.state::<AppState>();
-        let conn = lock(&state)?;
-        store::list_docs(&conn, &query.unwrap_or_default())
+    run_blocking(&app, "list_docs", move |conn| {
+        store::list_docs(conn, &query.unwrap_or_default())
     })
     .await
-    .map_err(|err| AppError::Message(format!("list_docs task panicked: {err}")))?
 }
 
 #[tauri::command]

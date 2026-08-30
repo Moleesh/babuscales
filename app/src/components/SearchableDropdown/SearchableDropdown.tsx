@@ -5,12 +5,15 @@ import type { SearchableDropdownOption, SearchableDropdownProps } from "./Search
 export type { SearchableDropdownOption, SearchableDropdownProps } from "./SearchableDropdown.types";
 
 interface DropdownResultsProps {
-    heading?: string;
+    // `heading`/`onAddNew` are genuine optional passthroughs of
+    // `SearchableDropdownProps`' own optional props — widened rather than
+    // conditionally omitted at the call site.
+    heading?: string | undefined;
     results: SearchableDropdownOption[];
     onPick: (option: SearchableDropdownOption) => void;
     query: string;
-    onAddNew?: (query: string) => void;
-    addNewLabel?: (query: string) => string;
+    onAddNew?: ((query: string) => void) | undefined;
+    addNewLabel?: ((query: string) => string) | undefined;
     showAddNew: boolean | undefined;
     highlightedIndex: number;
 }

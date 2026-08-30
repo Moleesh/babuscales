@@ -1,1 +1,1 @@
-export { computeValue } from "./value";
+export { chargeToNumber, computeValue } from "./value";

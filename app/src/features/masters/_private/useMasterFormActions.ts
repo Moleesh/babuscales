@@ -19,6 +19,8 @@ export interface UseMasterFormActionsArgs {
     remove: (masterId: string) => Promise<void>;
     /** `useMasterCache`'s own `rows` for this kind — used only for the client-side duplicate-name check before creating a *new* master. */
     cacheRows: MasterRow[];
+    /** `Schema.DecimalsAllowed ?? false` — gates whether a Money column/StoredTare weight may carry a fraction (see masterFormBody.ts). */
+    decimalsAllowed: boolean;
 }
 
 export interface UseMasterFormActions {
@@ -84,6 +86,7 @@ interface BuildHandleSaveArgs {
     selected: MasterRow | null;
     form: MasterFormState;
     cacheRows: MasterRow[];
+    decimalsAllowed: boolean;
     save: (draft: MasterDraft) => Promise<MasterRow>;
     startNew: () => void;
     setSaving: (saving: boolean) => void;
@@ -96,6 +99,7 @@ const buildHandleSave = ({
     selected,
     form,
     cacheRows,
+    decimalsAllowed,
     save,
     startNew,
     setSaving,
@@ -104,7 +108,7 @@ const buildHandleSave = ({
     return async () => {
         const name = form.name.trim();
         if (!name) return;
-        const numberError = validateMasterFormNumbers(activeKind, form, columns);
+        const numberError = validateMasterFormNumbers(activeKind, form, columns, decimalsAllowed);
         if (numberError) {
             setError(numberError);
             return;
@@ -117,11 +121,11 @@ const buildHandleSave = ({
         setSaving(true);
         try {
             await save({
-                MasterId: selected?.MasterId,
+                ...(selected?.MasterId !== undefined ? { MasterId: selected.MasterId } : {}),
                 MasterKind: activeKind,
                 Name: name,
                 Body: buildMasterBody(activeKind, form, columns),
-                IsActive: selected?.IsActive,
+                ...(selected?.IsActive !== undefined ? { IsActive: selected.IsActive } : {}),
             });
             // Task: "on save on the master go to new row, do not keep in
             // edit" — reset to a blank form instead of re-selecting the
@@ -146,6 +150,7 @@ export const useMasterFormActions = ({
     save,
     remove,
     cacheRows,
+    decimalsAllowed,
 }: UseMasterFormActionsArgs): UseMasterFormActions => {
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -168,6 +173,7 @@ export const useMasterFormActions = ({
         selected,
         form,
         cacheRows,
+        decimalsAllowed,
         save,
         startNew,
         setSaving,

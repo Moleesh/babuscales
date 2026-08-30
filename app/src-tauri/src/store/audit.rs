@@ -9,6 +9,7 @@ use rusqlite::{params, Connection, OptionalExtension, Row};
 use super::dto::{AuditDraft, AuditQuery, AuditRow, ChainVerification};
 use super::hash::hash_audit_row;
 use super::ids::new_id;
+use super::query::QueryBuilder;
 use super::time::now_iso;
 use crate::error::AppError;
 
@@ -134,44 +135,23 @@ pub fn verify_chain(conn: &Connection) -> Result<ChainVerification, AppError> {
 }
 
 pub fn list_audit(conn: &Connection, query: &AuditQuery) -> Result<Vec<AuditRow>, AppError> {
+    let mut qb = QueryBuilder::new();
+    qb.push_opt(&query.target, "target = :target", ":target", |v| v.clone());
+    qb.push_opt(&query.from, "at >= :from", ":from", |v| v.clone());
+    qb.push_opt(&query.to, "at <= :to", ":to", |v| v.clone());
+
     let mut sql = SELECT_AUDIT.to_string();
-    let mut clauses = Vec::new();
-    if query.target.is_some() {
-        clauses.push("target = :target");
-    }
-    if query.from.is_some() {
-        clauses.push("at >= :from");
-    }
-    if query.to.is_some() {
-        clauses.push("at <= :to");
-    }
-    if !clauses.is_empty() {
-        sql.push_str(" WHERE ");
-        sql.push_str(&clauses.join(" AND "));
-    }
+    sql.push_str(&qb.where_sql());
     // Newest first — matches the memory adapter's `.slice().reverse()`.
     sql.push_str(" ORDER BY rowid DESC");
-    if query.limit.is_some() {
+    if let Some(limit) = &query.limit {
         sql.push_str(" LIMIT :limit");
+        qb.push_param(":limit", *limit);
     }
 
     let mut statement = conn.prepare(&sql)?;
-    let mut named = Vec::<(&str, &dyn rusqlite::ToSql)>::new();
-    if let Some(v) = &query.target {
-        named.push((":target", v));
-    }
-    if let Some(v) = &query.from {
-        named.push((":from", v));
-    }
-    if let Some(v) = &query.to {
-        named.push((":to", v));
-    }
-    if let Some(limit) = &query.limit {
-        named.push((":limit", limit));
-    }
-
     let rows = statement
-        .query_map(named.as_slice(), row_to_audit)?
+        .query_map(qb.bindings().as_slice(), row_to_audit)?
         .collect::<Result<Vec<_>, _>>()?;
     Ok(rows)
 }

@@ -23,10 +23,12 @@ export interface LorryTickerState {
     settleCount: number;
     timer: ReturnType<typeof setInterval> | null;
     listeners: Set<IndicatorListener>;
+    /** Injected randomness source (docs/CodingStandards.md §2 — engines don't call `Math.random()` directly). Production callers pass `Math.random` itself when building this state. */
+    rng: () => number;
 }
 
-const randomInRange = ([lo, hi]: readonly [number, number]): number =>
-    lo + Math.random() * (hi - lo);
+const randomInRange = ([lo, hi]: readonly [number, number], rng: () => number): number =>
+    lo + rng() * (hi - lo);
 
 const notifyAll = (state: LorryTickerState): void => {
     for (const listener of state.listeners) listener(state.reading);
@@ -42,13 +44,13 @@ const tickLorry = (state: LorryTickerState): void => {
     const delta = state.target - state.reading.WeightKg;
     if (Math.abs(delta) > state.closeEnoughKg) {
         state.reading = {
-            WeightKg: state.reading.WeightKg + delta * 0.14 + (Math.random() - 0.5) * 260,
+            WeightKg: state.reading.WeightKg + delta * 0.14 + (state.rng() - 0.5) * 260,
             Stable: false,
         };
         state.settleCount = 0;
     } else if (state.settleCount < state.settleTicks) {
         state.reading = {
-            WeightKg: state.target + (Math.random() - 0.5) * (30 - state.settleCount * 2),
+            WeightKg: state.target + (state.rng() - 0.5) * (30 - state.settleCount * 2),
             Stable: false,
         };
         state.settleCount += 1;
@@ -64,7 +66,7 @@ export const startLoadLorry = (
     kind: CaptureType,
     { tareRangeKg, grossRangeKg }: LorryTickerOptions,
 ): void => {
-    state.target = Math.round(randomInRange(kind === "Tare" ? tareRangeKg : grossRangeKg));
+    state.target = Math.round(randomInRange(kind === "Tare" ? tareRangeKg : grossRangeKg, state.rng));
     state.settleCount = 0;
     state.reading = { ...state.reading, Stable: false };
     stopLorryTicker(state);

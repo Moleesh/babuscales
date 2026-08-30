@@ -4,6 +4,7 @@ import { formatDateTimeInFmt, formatMoney, formatWeightIn } from "@constants/num
 import type { WeightUnit } from "@constants/numberFormat";
 import { parseTicketBody } from "@db/ticketBody";
 import type { DocRow } from "@db/types";
+import { chargeToNumber } from "@engines/billing";
 import { FIELD_LABEL_KEYS, getAllFields, resolveFieldIdLabel } from "@engines/schemaEngine";
 import type { FieldBase, Schema } from "@engines/schemaEngine";
 import { formatTicketNo } from "@features/weighing";
@@ -143,7 +144,7 @@ const buildAllTicketColumns = ({
         key: "charge",
         header: t("reports.col.charge"),
         numeric: true,
-        render: (row) => (row.charge === null ? "—" : formatMoney(row.charge, amountDp)),
+        render: (row) => (row.charge === null ? "—" : formatMoney(chargeToNumber(row.charge), amountDp)),
     },
     {
         key: "at",

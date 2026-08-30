@@ -4,6 +4,7 @@ use rusqlite::{params, Connection, OptionalExtension, Row};
 
 use super::dto::{ConfigDraft, ConfigQuery, ConfigRow};
 use super::ids::new_id;
+use super::query::QueryBuilder;
 use super::time::now_iso;
 use crate::error::AppError;
 
@@ -28,17 +29,17 @@ pub fn get_config(conn: &Connection, config_id: &str) -> Result<Option<ConfigRow
 }
 
 pub fn list_config(conn: &Connection, query: &ConfigQuery) -> Result<Vec<ConfigRow>, AppError> {
+    let mut qb = QueryBuilder::new();
+    qb.push_opt(&query.config_kind, "config_kind = :config_kind", ":config_kind", |v| {
+        v.clone()
+    });
+
     let mut sql = SELECT_CONFIG.to_string();
-    if query.config_kind.is_some() {
-        sql.push_str(" WHERE config_kind = :config_kind");
-    }
+    sql.push_str(&qb.where_sql());
+
     let mut statement = conn.prepare(&sql)?;
-    let mut named = Vec::<(&str, &dyn rusqlite::ToSql)>::new();
-    if let Some(v) = &query.config_kind {
-        named.push((":config_kind", v));
-    }
     let rows = statement
-        .query_map(named.as_slice(), row_to_config)?
+        .query_map(qb.bindings().as_slice(), row_to_config)?
         .collect::<Result<Vec<_>, _>>()?;
     Ok(rows)
 }

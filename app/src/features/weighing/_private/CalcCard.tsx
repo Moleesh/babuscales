@@ -50,7 +50,7 @@ interface CalcBoxProps {
     /** The field's own raw formula (task: "move the formula inside") —
      * rendered inside this same box, under the stamp, instead of as a
      * sibling element below it. */
-    formula?: string | null;
+    formula?: string | null | undefined;
 }
 
 // The mock's own `.calc` box, repeated four times (Tare/Gross/Net/Charge)
@@ -78,7 +78,7 @@ const CalcBox = ({ label, value, lead, pending, stamp, formula }: CalcBoxProps) 
 // nothing. Themed Tooltip (components/Tooltip) rather than a native `title`
 // attribute for the full text on hover — task: "truncate should follow the
 // tooltip that we implement not the generic one".
-const FormulaLine = ({ formula }: { formula?: string | null }) =>
+const FormulaLine = ({ formula }: { formula?: string | null | undefined }) =>
     formula ? (
         // Tooltip's own wrapper is `inline-block` (sized to its content) by
         // default — forced block + `minWidth: 0` here so it still spans the

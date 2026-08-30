@@ -11,11 +11,17 @@ export interface DateTimeFormatFieldsProps {
     onSave: (next: SettingsBody) => void;
 }
 
+// The example year in each preview used to be a hardcoded "2026" — correct
+// today, but a stale-looking lie the moment the calendar turns over. Deriving
+// it from the current date keeps the preview honest without changing what
+// it's demonstrating (day/month stay the same illustrative "09 Aug").
+const exampleYear = new Date().getFullYear();
+
 const DATE_FMT_OPTIONS: { value: DateFmt; label: string }[] = [
-    { value: "dd MMM yyyy", label: "dd MMM yyyy — 09 Aug 2026" },
-    { value: "dd-MM-yyyy", label: "dd-MM-yyyy — 09-08-2026" },
-    { value: "dd/MM/yy", label: "dd/MM/yy — 09/08/26" },
-    { value: "yyyy-MM-dd", label: "yyyy-MM-dd — 2026-08-09" },
+    { value: "dd MMM yyyy", label: `dd MMM yyyy — 09 Aug ${exampleYear}` },
+    { value: "dd-MM-yyyy", label: `dd-MM-yyyy — 09-08-${exampleYear}` },
+    { value: "dd/MM/yy", label: `dd/MM/yy — 09/08/${String(exampleYear).slice(-2)}` },
+    { value: "yyyy-MM-dd", label: `yyyy-MM-dd — ${exampleYear}-08-09` },
 ];
 
 const TIME_FMT_OPTIONS: { value: "24" | "12"; label: string }[] = [

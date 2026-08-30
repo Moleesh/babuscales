@@ -16,6 +16,7 @@
         "jsx": "react-jsx",
 
         "strict": true,
+        "exactOptionalPropertyTypes": true,
         "noUncheckedIndexedAccess": true,
         "noImplicitOverride": true,
         "noUnusedLocals": true,

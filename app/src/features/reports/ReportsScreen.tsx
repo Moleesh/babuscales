@@ -58,7 +58,7 @@ export const ReportsScreen = ({ onOpenTicket, reportsIntent = null }: ReportsScr
     // hooks below don't have access to on their own — see their own comments
     // on why `schemaFields` is threaded in as a plain arg instead).
     const schemaFields = useMemo(() => reportableSchemaFields(ticketSchema), [ticketSchema]);
-    const s = useReportsScreenController({
+    const screen = useReportsScreenController({
         db,
         docs,
         onOpenTicket,
@@ -76,27 +76,27 @@ export const ReportsScreen = ({ onOpenTicket, reportsIntent = null }: ReportsScr
     });
     return (
         <div className={styles.screen}>
-            <ReportsScreenCard s={s} loading={loading} />
+            <ReportsScreenCard screen={screen} loading={loading} />
             <ReportsScreenOverlays
-                reportSlipData={s.reportSlipData}
-                printOpen={s.printOpen}
-                onPrintOpenChange={s.setPrintOpen}
-                builderOpen={s.builderOpen}
-                onBuilderOpenChange={s.closeBuilder}
-                editingReportId={s.editingReportId}
-                view={s.view}
-                groupBy={s.groupBy}
-                filter={s.filter}
-                dateFrom={s.dateFrom}
-                dateTo={s.dateTo}
-                seriesEpoch={s.seriesEpoch}
-                seriesEpochOptions={s.seriesEpochOptions}
-                showSeriesEpoch={s.showSeriesEpoch}
-                visibleColumnKeys={s.visibleColumnKeys}
-                savedReportActions={s.savedReportActions}
-                pageIndex={s.pageIndex}
-                pageCount={s.pageCount}
-                onPageIndexChange={s.setPageIndex}
+                reportSlipData={screen.reportSlipData}
+                printOpen={screen.printOpen}
+                onPrintOpenChange={screen.setPrintOpen}
+                builderOpen={screen.builderOpen}
+                onBuilderOpenChange={screen.closeBuilder}
+                editingReportId={screen.editingReportId}
+                view={screen.view}
+                groupBy={screen.groupBy}
+                filter={screen.filter}
+                dateFrom={screen.dateFrom}
+                dateTo={screen.dateTo}
+                seriesEpoch={screen.seriesEpoch}
+                seriesEpochOptions={screen.seriesEpochOptions}
+                showSeriesEpoch={screen.showSeriesEpoch}
+                visibleColumnKeys={screen.visibleColumnKeys}
+                savedReportActions={screen.savedReportActions}
+                pageIndex={screen.pageIndex}
+                pageCount={screen.pageCount}
+                onPageIndexChange={screen.setPageIndex}
             />
         </div>
     );

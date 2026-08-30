@@ -2,6 +2,8 @@ import { AppModal } from "@components/AppModal";
 import { Button } from "@components/Button";
 import { useTranslation } from "@i18n/useTranslation";
 
+import styles from "./_styles/ConfirmDeleteModal.module.css";
+
 export interface ConfirmDeleteModalProps {
     open: boolean;
     title: string;
@@ -26,11 +28,17 @@ export const ConfirmDeleteModal = ({ open, title, message, name, confirmLabel, o
     const { t } = useTranslation();
     return (
         <AppModal open={open} title={title} onClose={onCancel} size="small">
-            <div style={{ display: "grid", gap: 13 }}>
+            <div className={styles.body}>
                 <p>
-                    {message} "{name}"?
+                    {/* A function replacer, not a string one — `name` is
+                        arbitrary user-entered record text, and String.replace
+                        interprets `$`-patterns (`$&`, `$$`, ...) in a string
+                        replacement argument even against a plain-string
+                        search pattern. A function replacer's return value is
+                        inserted literally. */}
+                    {message} {t("confirmDeleteModal.nameSuffix").replace("{name}", () => name)}
                 </p>
-                <div style={{ display: "flex", gap: 9, justifyContent: "flex-end" }}>
+                <div className={styles.actions}>
                     <Button onClick={onCancel}>{t("weigh.cancel")}</Button>
                     <Button variant="danger" onClick={onConfirm}>
                         {confirmLabel}

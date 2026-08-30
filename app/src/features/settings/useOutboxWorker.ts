@@ -199,7 +199,7 @@ export const useOutboxWorker = (): void => {
                             sms,
                             channels,
                         });
-                        await db.updateOutbox(row.OutboxId, reconcileOutboxOutcome(result, row.Attempts));
+                        await db.updateOutbox(row.OutboxId, reconcileOutboxOutcome(result, row.Attempts, Date.now()));
                     } catch (err) {
                         // Named so the `{ Ok: false; Error }` shape is
                         // constructed once, matching ChannelSendResult
@@ -211,7 +211,7 @@ export const useOutboxWorker = (): void => {
                             Ok: false,
                             Error: err instanceof Error ? err.message : String(err),
                         };
-                        await db.updateOutbox(row.OutboxId, reconcileOutboxOutcome(failure, row.Attempts));
+                        await db.updateOutbox(row.OutboxId, reconcileOutboxOutcome(failure, row.Attempts, Date.now()));
                     }
                 }
             } finally {

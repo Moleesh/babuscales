@@ -46,7 +46,8 @@ export const parseLangFile = (text: string): { pack: LanguagePack } | { error: s
 
         const bare = BARE_LINE.exec(line);
         if (bare && METADATA_KEYS.includes(bare[1] as MetadataKey)) {
-            metadata[bare[1] as MetadataKey] = bare[2]?.trim();
+            const value = bare[2]?.trim();
+            if (value !== undefined) metadata[bare[1] as MetadataKey] = value;
             continue;
         }
 

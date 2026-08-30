@@ -1,6 +1,6 @@
-import type { ReactNode } from "react";
+import type { ReactElement, ReactNode } from "react";
 
-import { TunnelContext } from "./_private/TunnelContext";
+import { TunnelContextProvider } from "./_private/TunnelContext";
 import type { TunnelSource } from "./types";
 
 export interface TunnelProviderProps {
@@ -9,6 +9,6 @@ export interface TunnelProviderProps {
 }
 
 // One instance for the whole app — same shape as VerificationServerProvider/IndicatorProvider.
-export const TunnelProvider = ({ source, children }: TunnelProviderProps) => (
-    <TunnelContext.Provider value={source}>{children}</TunnelContext.Provider>
+export const TunnelProvider = ({ source, children }: TunnelProviderProps): ReactElement => (
+    <TunnelContextProvider source={source}>{children}</TunnelContextProvider>
 );

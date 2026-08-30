@@ -129,16 +129,24 @@ const buildStoredTareDrafts = (
     return drafts;
 };
 
+// A missing or unparseable capture timestamp used to silently fall back to
+// epoch-0 (`new Date(0)`), which produces a plausible-looking but wrong
+// 1970 date instead of surfacing the problem. Now the row is skipped (with
+// a reason in `skipped`) rather than imported with a fabricated timestamp —
+// see the check in buildTicketDrafts before this is called.
+const isValidTimestamp = (at: string | undefined): at is string =>
+    at !== undefined && !Number.isNaN(Date.parse(at));
+
 const buildCapture = (
     type: Capture["Type"],
     weightKg: number,
-    at: string | undefined,
+    at: string,
     operator: string,
 ): Capture => ({
     CaptureId: newId(),
     Type: type,
     WeightKg: weightKg,
-    At: at ?? new Date(0).toISOString(),
+    At: at,
     Operator: operator,
     // "Manual" is the honest source — this weight came from the old
     // system's own record, not this machine's indicator or a stored tare
@@ -168,14 +176,24 @@ const buildTicketDrafts = (
             skipped.push({ Kind: "Ticket", Name: entry.LegacyId, Reason: "No weight on either side" });
             continue;
         }
+        const tareAtOk = entry.TareKg === undefined || isValidTimestamp(entry.TareAt);
+        const grossAtOk = entry.GrossKg === undefined || isValidTimestamp(entry.GrossAt);
+        if (!tareAtOk || !grossAtOk) {
+            skipped.push({
+                Kind: "Ticket",
+                Name: entry.LegacyId,
+                Reason: "Missing or unparseable capture timestamp",
+            });
+            continue;
+        }
         seen.add(entry.LegacyId);
         const operator = entry.Operator?.trim() || "Legacy import";
         const captures: Capture[] = [
             ...(entry.TareKg !== undefined
-                ? [buildCapture("Tare", entry.TareKg, entry.TareAt, operator)]
+                ? [buildCapture("Tare", entry.TareKg, entry.TareAt as string, operator)]
                 : []),
             ...(entry.GrossKg !== undefined
-                ? [buildCapture("Gross", entry.GrossKg, entry.GrossAt, operator)]
+                ? [buildCapture("Gross", entry.GrossKg, entry.GrossAt as string, operator)]
                 : []),
         ];
         drafts.push({
@@ -231,7 +249,15 @@ export const planLegacyImport = (
             entries: bundle.Materials,
             existingNames: existing.masterNamesByKind.Material,
             skipped,
-            buildBody: (entry) => ({ Notes: entry.Notes?.trim() || undefined, Rate: entry.Rate }),
+            // `Rate` is a Money-kind column now stored as a decimal string
+            // (masterFormBody.ts's `buildMasterBody`), same as every other
+            // Money field — the legacy bundle itself still carries it as a
+            // plain JSON number (VaultBill's own float rate), so convert
+            // once here rather than changing the bundle's wire format.
+            buildBody: (entry) => ({
+                Notes: entry.Notes?.trim() || undefined,
+                Rate: entry.Rate !== undefined ? String(entry.Rate) : undefined,
+            }),
         }),
         ...SIMPLE_KINDS.flatMap(({ bundleKey, kind }) =>
             buildMasterDrafts<LegacyNameEntry>({

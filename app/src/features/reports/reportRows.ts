@@ -1,5 +1,9 @@
 import { deriveWeights, isOpenTicket, parseTicketBody } from "@db/ticketBody";
 import type { DocRow } from "@db/types";
+import { chargeToNumber } from "@engines/billing";
+import type { Translate } from "@i18n/types";
+
+export type { Translate };
 
 // "There is no Tickets tab... a ticket list is a report that
 // has not been grouped yet." This is the one place `doc` rows become the
@@ -22,7 +26,8 @@ export interface TicketRow {
     tareKg: number | null;
     grossKg: number | null;
     netKg: number | null;
-    charge: number | null;
+    /** `TicketBody.Charge` — a decimal string, or null for "not entered". Never a JS number — see `@engines/formulaEngine/Decimal`'s own "never round-trip through toNumber" rule; use `chargeToNumber` (@engines/billing) at any display/aggregation site that needs one. */
+    charge: string | null;
     isCancelled: boolean;
     /** Parked with exactly one weight. */
     isOpen: boolean;
@@ -59,8 +64,6 @@ export const buildTicketRows = (docs: DocRow[]): TicketRow[] =>
 
 export type ReportView = "tickets" | "summary";
 
-export type Translate = (key: string) => string;
-
 export const viewOptions = (t: Translate): { value: ReportView; label: string }[] => [
     { value: "tickets", label: t("reports.view.tickets") },
     { value: "summary", label: t("reports.view.summary") },
@@ -82,7 +85,7 @@ export const filterTicketRows = (
         if (filter === "both" && row.netKg === null) return false;
         if (!q) return true;
         const haystack = [row.docSeq, row.vehicleNo, row.party, row.material, row.challanNo]
-            .filter(Boolean)
+            .filter((value) => value != null && value !== "")
             .join(" ")
             .toLowerCase();
         return haystack.includes(q);
@@ -113,10 +116,14 @@ export const toLocalDateOnly = (iso: string): string => {
  * `<input type="date">`). Both bounds inclusive; an empty bound means "no
  * limit on that side". Empty `from` and empty `to` together is a true
  * no-op — returns `rows` unchanged — so existing behavior with no date
- * filter set is completely unaffected.
+ * filter set is completely unaffected. If both bounds are set but inverted
+ * (`from > to`), that's treated the same as no date filter rather than
+ * silently returning zero rows — an operator who swapped the two fields
+ * should see everything, not an empty table with no explanation.
  */
 export const filterRowsByDateRange = (rows: TicketRow[], from: string, to: string): TicketRow[] => {
     if (!from && !to) return rows;
+    if (from && to && from > to) return rows;
     return rows.filter((row) => {
         const date = toLocalDateOnly(row.at);
         if (from && date < from) return false;
@@ -256,6 +263,12 @@ const compareTicketRows = (
     if (bv === null) return -1;
     const dir = sortDir === "asc" ? 1 : -1;
     if (typeof av === "number" && typeof bv === "number") return (av - bv) * dir;
+    // `charge` is a decimal string, not a number — a plain localeCompare
+    // would sort "9" after "10" (see every other numeric-looking string
+    // column, none of which exist here otherwise). chargeToNumber is the
+    // same "display only" conversion used everywhere else this column is
+    // read for arithmetic.
+    if (sortKey === "charge") return (chargeToNumber(av as string) - chargeToNumber(bv as string)) * dir;
     return String(av).localeCompare(String(bv)) * dir;
 };
 
@@ -374,7 +387,7 @@ export const summarizeTicketRows = (rows: TicketRow[], groupBy: GroupKey): Summa
         const existing = totals.get(key) ?? { key, ticketCount: 0, netTonnes: 0, charge: 0 };
         existing.ticketCount += 1;
         existing.netTonnes += row.netKg / 1000;
-        existing.charge += row.charge ?? 0;
+        existing.charge += chargeToNumber(row.charge);
         totals.set(key, existing);
     }
     return Array.from(totals.values()).sort((a, b) => b.netTonnes - a.netTonnes);

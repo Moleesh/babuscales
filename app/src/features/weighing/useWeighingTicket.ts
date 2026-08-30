@@ -12,6 +12,7 @@ import {
 import type { Capture, CaptureType, DerivedWeights, TicketBody } from "@db/ticketBody";
 import type { DocRow } from "@db/types";
 import { useDataPort } from "@db/useDataPort";
+import { fromString, withinDecimalsAllowed } from "@engines/formulaEngine/Decimal";
 import { useIndicator } from "@engines/indicator";
 
 export interface TicketFormFields {
@@ -68,9 +69,8 @@ export interface UseWeighingTicket {
     isLocked: boolean;
     printCount: number;
     saving: boolean;
-    /** Task: "resume on opening ticket should disable save and print, save
-     * will be disabled until we capture the second weight" — see the
-     * reducer-level field of the same name for the full reasoning. */
+    /** See the reducer-level field of the same name for the full
+     * reasoning. */
     justResumed: boolean;
     capture: (weightKg: number) => void;
     /** Settings → Weighing → Rules.ManualEntry (CalcCard's typed inputs) — same `pushCapture` pipeline as `capture`, just `Source: "Manual"` instead of `"Indicator"`. Takes an explicit `CaptureType` so both the Tare and Gross boxes can submit independently, regardless of the awaitingSave gate that blocks `capture`. */
@@ -78,9 +78,8 @@ export interface UseWeighingTicket {
     useStoredTare: (weightKg: number, capturedAtIso: string) => void;
     save: () => Promise<void>;
     startNew: () => void;
-    /** Task: "Always coming to weighing tab has to reset to new weight
-     * except for coming from resume in report" — App.tsx's nav-tab click
-     * handler calls this directly on entry into Weighing from elsewhere. */
+    /** Resets to a fresh ticket. App.tsx's nav-tab click handler calls this
+     * directly on entry into Weighing from elsewhere. */
     resetToNew: () => void;
     resume: (doc: DocRow) => void;
     print: () => Promise<void>;
@@ -113,9 +112,8 @@ interface TicketState {
     isLocked: boolean;
     printCount: number;
     saving: boolean;
-    /** Task: "resume on opening ticket should disable save and print, save
-     * will be disabled until we capture the second weight" — true right
-     * after resuming a single-weight (not yet complete) parked ticket, so
+    /** True right after resuming a single-weight (not yet complete) parked
+     * ticket, so
      * Save/Print don't read as immediately actionable before the operator
      * has actually captured anything *this* sitting. Cleared the moment a
      * new capture lands (`AddCapture`) — from then on the normal
@@ -130,14 +128,31 @@ const fieldsFromBody = (body: TicketBody): TicketFormFields => ({
     material: body.Material ?? "",
     transporter: body.Transporter ?? "",
     challanNo: body.ChallanNo ?? "",
-    charge: body.Charge !== undefined ? String(body.Charge) : "",
+    charge: body.Charge ?? "",
 });
+
+// A decimal string, or `undefined` ("no charge entered") — same "silently
+// treated as absent, not thrown/blocked" convention the old Number(...)
+// path used for empty/garbled input. `decimalsAllowed` mirrors
+// `Schema.DecimalsAllowed` (schemaEngine/types.ts): off (default) also
+// treats a fractional charge as absent, same as a malformed one.
+const chargeToStore = (raw: string, decimalsAllowed: boolean): string | undefined => {
+    const trimmed = raw.trim();
+    if (!trimmed) return undefined;
+    try {
+        if (!withinDecimalsAllowed(fromString(trimmed), decimalsAllowed)) return undefined;
+        return trimmed;
+    } catch {
+        return undefined;
+    }
+};
 
 const buildTicketBody = (
     fields: TicketFormFields,
     captures: Capture[],
     printCount: number,
     customFields: Record<string, CustomFieldValue>,
+    decimalsAllowed: boolean,
 ): TicketBody => ({
     ...emptyTicketBody(),
     VehicleNo: fields.vehicleNo.trim() || undefined,
@@ -145,10 +160,7 @@ const buildTicketBody = (
     Material: fields.material.trim() || undefined,
     Transporter: fields.transporter.trim() || undefined,
     ChallanNo: fields.challanNo.trim() || undefined,
-    // Empty or non-numeric input saves as "no charge entered" rather than 0
-    // — an operator who hasn't typed one yet shouldn't have their ticket
-    // silently priced at zero.
-    Charge: fields.charge.trim() && !Number.isNaN(Number(fields.charge)) ? Number(fields.charge) : undefined,
+    Charge: chargeToStore(fields.charge, decimalsAllowed),
     Captures: captures,
     PrintCount: printCount,
     // Omit the key entirely when there are no custom fields, so a ticket
@@ -221,8 +233,7 @@ const resumedState = (doc: DocRow): TicketState => {
         isLocked: body.Captures.length >= 2,
         printCount: body.PrintCount ?? 0,
         saving: false,
-        // Task: "resume on opening ticket should disable save and print" —
-        // only the single-weight, not-yet-complete case has anything to
+        // Only the single-weight, not-yet-complete case has anything to
         // wait on; a resumed complete/locked ticket (Reprint's own resume
         // path) has nothing left to capture, so Save/Print keep their
         // normal (already-locked) behaviour instead.
@@ -274,11 +285,10 @@ export const ticketReducer = (state: TicketState, action: TicketAction): TicketS
         case "SetSaving":
             return { ...state, saving: action.saving };
         case "Saved":
-            // Task: "TicketDate works like this: as soon as you click Save,
-            // whatever is the date and time, it will go to TicketDate" — the
-            // moment of the most recent successful save, not the first
-            // capture's timestamp and not a live clock. Every save (single-
-            // weight or completing) restamps it.
+            // `TicketDate` is stamped with the moment of the most recent
+            // successful save, not the first capture's timestamp and not a
+            // live clock. Every save (single-weight or completing)
+            // restamps it.
             return {
                 ...state,
                 docId: action.docId,
@@ -339,6 +349,8 @@ interface TicketCaptureDeps {
     dispatch: Dispatch<TicketAction>;
     indicator: ReturnType<typeof useIndicator>;
     operatorName: string;
+    /** `Schema.DecimalsAllowed ?? false` — off (default) rejects a fractional weight the same way a duplicate/locked capture is already silently rejected below, instead of rounding it away. */
+    decimalsAllowed: boolean;
 }
 
 const useTicketCaptureActions = ({
@@ -346,20 +358,54 @@ const useTicketCaptureActions = ({
     dispatch,
     indicator,
     operatorName,
+    decimalsAllowed,
 }: TicketCaptureDeps) => {
     const { kind, isLocked, captures } = state;
 
+    // Same reasoning as save()/print()'s savingRef/printingRef below: `captures`/
+    // `isLocked` here are only as fresh as the last render, so two capture
+    // events fired in quick succession (e.g. a flaky indicator or a
+    // double-tapped manual-entry button) can both read the same stale
+    // `captures` and both pass the `hasCapture` guard before either
+    // dispatch's result has re-rendered — landing two captures of the same
+    // kind on one ticket. Reset once `captures` actually changes (below),
+    // not right after dispatch, so the window stays closed until the state
+    // update this dispatch caused has actually landed.
+    const captureLockRef = useRef(false);
+    useEffect(() => {
+        captureLockRef.current = false;
+    }, [captures]);
+
     const pushCapture = useCallback(
         (weightKg: number, source: Capture["Source"], captureKind: CaptureType | null, capturedAtIso?: string) => {
-            if (!captureKind || isLocked) return;
+            if (!captureKind || isLocked || captureLockRef.current) return;
             // Exactly one Tare and one Gross per ticket — once a kind has
             // been captured, it cannot be recaptured until Save.
             const blocked = hasCapture(captures, captureKind);
             if (blocked) return;
+            // `decimalsAllowed` off (default): a fractional reading (a
+            // manual typed entry, or an indicator reading that somehow slid
+            // past serialIndicator.ts's own gate) is rejected outright here
+            // rather than silently rounded — same "reject, don't coerce"
+            // policy this migration applies to Charge/Money. On: still
+            // capped at 2 fractional digits (Decimal.MAX_DECIMALS_ALLOWED_SCALE)
+            // — `weightKg` is a plain JS number here (weight arithmetic isn't
+            // Decimal-backed, see deriveWeights), so the cap is checked via
+            // `* 100` rather than `Decimal.withinDecimalsAllowed`, which needs
+            // an actual `Decimal`. Snapped to the nearest allowed grid (whole
+            // kg, or hundredths of a kg) with a small epsilon first — ordinary
+            // floating-point noise (e.g. an indicator/unit-conversion reading
+            // landing on 1200.0000000001 instead of a clean 1200) must still
+            // be accepted, same as the old unconditional `Math.round` did;
+            // only a reading that's actually off the grid gets rejected.
+            const grid = decimalsAllowed ? 100 : 1;
+            const snapped = Math.round(weightKg * grid) / grid;
+            if (Math.abs(weightKg - snapped) > 1e-6) return;
+            captureLockRef.current = true;
             const capture: Capture = {
                 CaptureId: newId(),
                 Type: captureKind,
-                WeightKg: Math.round(weightKg),
+                WeightKg: snapped,
                 At: capturedAtIso ?? new Date().toISOString(),
                 Operator: operatorName,
                 Source: source,
@@ -368,7 +414,7 @@ const useTicketCaptureActions = ({
             dispatch({ type: "AddCapture", capture });
             if (source === "Indicator") indicator.reset?.();
         },
-        [captures, indicator, isLocked, operatorName, dispatch],
+        [captures, indicator, isLocked, operatorName, decimalsAllowed, dispatch],
     );
 
     return {
@@ -404,6 +450,8 @@ interface TicketPersistenceDeps {
     isLocked: boolean;
     /** Settings' `Rules.SameTicketNo` (default true — today's only behaviour). Off, and this ticket already carries a number from an earlier single-weight save, means the completing weight is saved as a brand-new doc/number of its own rather than reusing that one — see the `save` comment below. */
     sameTicketNo: boolean;
+    /** `Schema.DecimalsAllowed ?? false` — threaded into `buildTicketBody`'s Charge parsing (see `chargeToStore`). */
+    decimalsAllowed: boolean;
     db: ReturnType<typeof useDataPort>;
     dispatch: Dispatch<TicketAction>;
     indicator: ReturnType<typeof useIndicator>;
@@ -420,50 +468,54 @@ const saveTicket = async ({
     customFields,
     printCount,
     sameTicketNo,
+    decimalsAllowed,
     db,
     dispatch,
     indicator,
 }: TicketPersistenceDeps): Promise<void> => {
-    // Task: `docId` only exists here already if an earlier save
-    // persisted this same ticket with fewer captures in it (a
-    // parked/resumed single-weight ticket). With SameTicketNo off,
-    // the weight that completes the pair is deliberately NOT folded
-    // into that earlier doc — it's saved as a fresh doc (DocId
-    // undefined) with its own new number, and the original
-    // single-weight doc is left exactly as it already was in the
-    // DB: a standalone, permanent record under its own number. Both
-    // weights being captured before the very first save (docId
-    // still null) has nothing to split from, so it always behaves
-    // like SameTicketNo on regardless of the setting.
+    // `docId` only exists here already if an earlier save persisted this
+    // same ticket with fewer captures in it (a parked/resumed single-weight
+    // ticket). With SameTicketNo off, the weight that completes the pair is
+    // NOT folded into that earlier doc — it's saved as a fresh doc (DocId
+    // undefined) with its own new number, and the original single-weight
+    // doc is left exactly as it already was in the DB: a standalone,
+    // permanent record under its own number. Both weights being captured
+    // before the very first save (docId still null) has nothing to split
+    // from, so it always behaves like SameTicketNo on regardless of the
+    // setting.
     const splitIntoNewDoc = !sameTicketNo && docId !== null && captures.length >= 2;
-    // Task: "as soon as you click Save, whatever is the date and time, it
-    // will go to TicketDate" — computed once here so the exact same instant
-    // both persists (in the saved Body) and lands in the on-screen reducer
-    // state (the "Saved" dispatch below).
+    // Computed once here so the exact same instant both persists (in the
+    // saved Body) and lands in the on-screen reducer state (the "Saved"
+    // dispatch below).
     const ticketDateIso = new Date().toISOString();
     // One atomic call (was `saveDoc` then a conditional `allocateDocSeq`
     // as two separate IPC round trips) — a crash between the two used
     // to be able to leave a doc with both captures in but no number,
     // with nothing left to retry the allocation. See
     // `save_doc_and_allocate_seq`'s own doc comment in docs.rs.
+    const resolvedDocId = splitIntoNewDoc ? undefined : (docId ?? undefined);
     const row = await db.saveDocAndAllocateSeq({
-        DocId: splitIntoNewDoc ? undefined : (docId ?? undefined),
+        ...(resolvedDocId !== undefined ? { DocId: resolvedDocId } : {}),
         DocKind: "Ticket",
-        Body: buildTicketBody(fields, captures, printCount, { ...customFields, TicketDate: ticketDateIso }),
+        Body: buildTicketBody(
+            fields,
+            captures,
+            printCount,
+            { ...customFields, TicketDate: ticketDateIso },
+            decimalsAllowed,
+        ),
     });
     dispatch({ type: "Saved", docId: row.DocId, docSeq: row.DocSeq, ticketDateIso });
-    // Task: "click save capture & save and all fields in the screen is
-    // disabled and enables print" — every save locks the screen now, not
-    // just the one that lands the second capture. A single-weight save
-    // (e.g. Tare only) leaves the ticket printable but no longer editable
-    // or re-capturable from this same sitting; the operator reopens it via
-    // the open-ticket strip's "resume" later for the return weighing
-    // ("Resumed" unlocks it again exactly when `Captures.length < 2`, see
-    // that reducer branch). Same indicator-reset bug-fix as before applies
-    // unconditionally now too — "New ticket" can reach this branch (see
-    // startNew's save() call) while a "Send to lorry" animation for the
-    // last capture is still mid-flight, and that ticker was never told to
-    // stop.
+    // Every save locks the screen, not just the one that lands the second
+    // capture. A single-weight save (e.g. Tare only) leaves the ticket
+    // printable but no longer editable or re-capturable from this same
+    // sitting; the operator reopens it via the open-ticket strip's
+    // "resume" later for the return weighing ("Resumed" unlocks it again
+    // exactly when `Captures.length < 2`, see that reducer branch). The
+    // indicator reset below applies unconditionally too — "New ticket" can
+    // reach this branch (see startNew's save() call) while a "Send to
+    // lorry" animation for the last capture is still mid-flight, and that
+    // ticker needs to be told to stop.
     dispatch({ type: "Lock" });
     indicator.reset?.();
     // A single-weight save used to always resetToNew() here — parking the
@@ -479,6 +531,7 @@ interface PrintTicketDeps {
     fields: TicketFormFields;
     customFields: Record<string, CustomFieldValue>;
     printCount: number;
+    decimalsAllowed: boolean;
     db: ReturnType<typeof useDataPort>;
     dispatch: Dispatch<TicketAction>;
 }
@@ -487,7 +540,16 @@ interface PrintTicketDeps {
 // useTicketPersistenceActions purely to stay under the file's own line
 // budget; behaviour (including the bug-fix comment it carries) is
 // unchanged, just no longer inlined in the `useCallback` body.
-const printTicket = async ({ docId, captures, fields, customFields, printCount, db, dispatch }: PrintTicketDeps): Promise<void> => {
+const printTicket = async ({
+    docId,
+    captures,
+    fields,
+    customFields,
+    printCount,
+    decimalsAllowed,
+    db,
+    dispatch,
+}: PrintTicketDeps): Promise<void> => {
     const nextCount = printCount + 1;
     // Dispatched only after the save actually succeeds — this used
     // to run before the `await`, so a failed `db.saveDoc` (licence
@@ -500,7 +562,7 @@ const printTicket = async ({ docId, captures, fields, customFields, printCount, 
         DocId: docId,
         DocKind: "Ticket",
         Body: {
-            ...buildTicketBody(fields, captures, printCount, customFields),
+            ...buildTicketBody(fields, captures, printCount, customFields, decimalsAllowed),
             PrintCount: nextCount,
         },
     });
@@ -515,6 +577,7 @@ const useTicketPersistenceActions = ({
     printCount,
     isLocked,
     sameTicketNo,
+    decimalsAllowed,
     db,
     dispatch,
     indicator,
@@ -545,6 +608,7 @@ const useTicketPersistenceActions = ({
                 printCount,
                 isLocked,
                 sameTicketNo,
+                decimalsAllowed,
                 db,
                 dispatch,
                 indicator,
@@ -563,6 +627,7 @@ const useTicketPersistenceActions = ({
         isLocked,
         printCount,
         sameTicketNo,
+        decimalsAllowed,
         dispatch,
     ]);
 
@@ -576,12 +641,12 @@ const useTicketPersistenceActions = ({
         printingRef.current = true;
         dispatch({ type: "SetSaving", saving: true });
         try {
-            await printTicket({ docId, captures, fields, customFields, printCount, db, dispatch });
+            await printTicket({ docId, captures, fields, customFields, printCount, decimalsAllowed, db, dispatch });
         } finally {
             printingRef.current = false;
             dispatch({ type: "SetSaving", saving: false });
         }
-    }, [captures, customFields, db, docId, fields, printCount, dispatch]);
+    }, [captures, customFields, db, docId, fields, printCount, decimalsAllowed, dispatch]);
 
     return { save, print };
 };
@@ -631,6 +696,10 @@ const useTicketLifecycleActions = ({
     );
 
     // Reprint's own lock — see UseWeighingTicket.lock's own doc comment.
+    // Side effect: the "Lock" reducer case also clears `justResumed` (see
+    // its own comment on that case) — intentional there for the Reprint
+    // 1-capture case, but worth knowing about since `lock()` is called
+    // directly, not just reached via save().
     const lock = useCallback(() => dispatch({ type: "Lock" }), [dispatch]);
 
     return { startNew, resume, lock };
@@ -730,9 +799,13 @@ const assembleTicket = ({
 // every capture; it can change mid-shift, so it's read fresh at capture
 // time rather than closed over once. `sameTicketNo` (Settings → Weighing →
 // Rules, default on) only affects `save` — see its own comment there.
+// `decimalsAllowed` is the active `Schema.DecimalsAllowed ?? false`
+// (schemaEngine/types.ts) — gates whether Charge/a Capture's WeightKg may
+// carry a (<=2-digit) fraction; see `chargeToStore`/`pushCapture` above.
 export const useWeighingTicket = (
     operatorName: string,
     sameTicketNo = true,
+    decimalsAllowed = false,
 ): UseWeighingTicket => {
     const db = useDataPort();
     const indicator = useIndicator();
@@ -744,6 +817,7 @@ export const useWeighingTicket = (
         dispatch,
         indicator,
         operatorName,
+        decimalsAllowed,
     });
     const persistenceActions = useTicketPersistenceActions({
         docId: state.docId,
@@ -753,6 +827,7 @@ export const useWeighingTicket = (
         printCount: state.printCount,
         isLocked: state.isLocked,
         sameTicketNo,
+        decimalsAllowed,
         db,
         dispatch,
         indicator,

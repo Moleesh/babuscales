@@ -27,6 +27,31 @@
     line-height: 1.6;
 }
 
+/* The single "DecimalsAllowed" checkbox row — same shape as WeighingPane.
+   module.css's `.ck` (checkbox + label + note), just not shared cross-module
+   since this pane's own body already has its own gap-based grid. */
+.decimalsAllowedRow {
+    display: flex;
+    align-items: flex-start;
+    gap: 9px;
+    font-size: 0.8125rem;
+    cursor: pointer;
+    line-height: 1.35;
+}
+.decimalsAllowedRow input {
+    margin: 2px 0 0;
+    accent-color: var(--led);
+    width: 15px;
+    height: 15px;
+    flex: none;
+}
+.decimalsAllowedRow small {
+    display: block;
+    font-size: 0.625rem;
+    color: var(--dim);
+    margin-top: 2px;
+}
+
 /* A Formula field's own expression, shown under its label in the field-schema
    table's Label column. Truncated with an ellipsis rather than wrapping/
    overflowing the row (task: "if the formula is big truncate it") — the full

@@ -99,10 +99,34 @@ const fieldSegmentSchema = z.object({
     Fields: z.array(fieldSchema).min(1),
 });
 
-export const ticketSchemaSchema = z.object({
-    SchemaId: z.string().min(1),
-    Segments: z.array(fieldSegmentSchema).min(1),
-    Masters: z.array(masterSchemaSchema).optional(),
-});
+export const ticketSchemaSchema = z
+    .object({
+        SchemaId: z.string().min(1),
+        Segments: z.array(fieldSegmentSchema).min(1),
+        Masters: z.array(masterSchemaSchema).optional(),
+        DecimalsAllowed: z.boolean().optional(),
+    })
+    // Every reader that looks a field up by FieldId (formula evaluation,
+    // autofill links, the Weighing screen's field map) treats it as a
+    // unique key across the whole schema, not just within its own segment —
+    // a duplicate would make one of those lookups silently resolve to
+    // whichever field happened to be indexed last. Checked once here, at
+    // parse time, rather than trusting every caller to notice.
+    .superRefine((schema, ctx) => {
+        const seen = new Set<string>();
+        for (const [segmentIndex, segment] of schema.Segments.entries()) {
+            for (const [fieldIndex, field] of segment.Fields.entries()) {
+                if (seen.has(field.FieldId)) {
+                    ctx.addIssue({
+                        code: z.ZodIssueCode.custom,
+                        message: `Duplicate FieldId "${field.FieldId}" — FieldId must be unique across the whole schema`,
+                        path: ["Segments", segmentIndex, "Fields", fieldIndex, "FieldId"],
+                    });
+                    continue;
+                }
+                seen.add(field.FieldId);
+            }
+        }
+    });
 
 export const parseTicketSchema = (raw: unknown): Schema => ticketSchemaSchema.parse(raw);

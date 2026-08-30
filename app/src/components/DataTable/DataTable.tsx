@@ -41,7 +41,7 @@ export interface DataTableProps<Row> {
      * space, so it fills the container exactly with no gap either side.
      * Every other caller (Masters, Reports, …) leaves this unset and keeps
      * the default auto layout. */
-    tableClassName?: string;
+    tableClassName?: string | undefined;
 }
 
 // Estimated row height (px) used to compute which rows are in view before
@@ -112,10 +112,13 @@ const useVirtualizedRowRange = (rowCount: number) => {
 };
 
 interface DataTableRowProps<Row> {
+    // `onRowClick` passthrough from `DataTableProps` is a genuine "no
+    // handler" `undefined`, not a leftover computed-optional — widened
+    // rather than conditionally omitted at the call site.
     row: Row;
     columns: DataTableColumn<Row>[];
     getRowId: (row: Row) => string;
-    onRowClick?: (row: Row) => void;
+    onRowClick?: ((row: Row) => void) | undefined;
 }
 
 // The column-header `<tr>` — identical in both the empty and populated
@@ -210,7 +213,11 @@ export const DataTable = <Row,>({
             // `contentRef`/`contentClassName={styles.wrapper}` pairing as
             // the populated branch — `wrapperRef` is safe to reuse here too,
             // nothing reads it while `rows.length === 0`.
-            <ScrollArea contentRef={wrapperRef} className={styles.wrapperOuter} contentClassName={styles.wrapper}>
+            <ScrollArea
+                contentRef={wrapperRef}
+                {...(styles.wrapperOuter !== undefined ? { className: styles.wrapperOuter } : {})}
+                {...(styles.wrapper !== undefined ? { contentClassName: styles.wrapper } : {})}
+            >
                 <table className={tableClassName ? `${styles.table} ${tableClassName}` : styles.table}>
                     <DataTableHeaderRow columns={columns} />
                 </table>
@@ -252,7 +259,12 @@ export const DataTable = <Row,>({
     // `--datatable-max-height` vh calc instead of relying on the flex chain
     // at all.
     return (
-        <ScrollArea contentRef={wrapperRef} className={styles.wrapperOuter} contentClassName={styles.wrapper} onScroll={recompute}>
+        <ScrollArea
+            contentRef={wrapperRef}
+            {...(styles.wrapperOuter !== undefined ? { className: styles.wrapperOuter } : {})}
+            {...(styles.wrapper !== undefined ? { contentClassName: styles.wrapper } : {})}
+            onScroll={recompute}
+        >
             <table className={tableClassName ? `${styles.table} ${tableClassName}` : styles.table}>
                 <DataTableHeaderRow columns={columns} />
                 <tbody>

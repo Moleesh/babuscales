@@ -44,6 +44,7 @@ export const buildReportsScreenSlipData = ({
     timeFmt,
     reportApplied,
 }: BuildReportsScreenSlipDataArgs): ReportSlipData => {
+    const now = new Date();
     if (view === "summary") {
         const { head, rows: printRows } = buildSummaryPrintRows(summaryRows, amountDp);
         const timestamps = (reportApplied ? rows : [])
@@ -57,6 +58,7 @@ export const buildReportsScreenSlipData = ({
             lang,
             dateFmt,
             timeFmt,
+            now,
         });
     }
     const { head, rows: printRows } = buildTicketPrintRows(visibleRows, weightUnit);
@@ -68,5 +70,6 @@ export const buildReportsScreenSlipData = ({
         lang,
         dateFmt,
         timeFmt,
+        now,
     });
 };

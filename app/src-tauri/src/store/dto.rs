@@ -47,6 +47,14 @@ pub struct DocDraft {
     pub body: Json,
 }
 
+/// Keyset cursor for `list_docs` — see `DocQuery::after`.
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "PascalCase")]
+pub struct DocAfter {
+    pub created_at: String,
+    pub doc_id: String,
+}
+
 #[derive(Debug, Clone, Default, Deserialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct DocQuery {
@@ -56,7 +64,9 @@ pub struct DocQuery {
     pub created_from: Option<String>,
     pub created_to: Option<String>,
     pub limit: Option<i64>,
-    pub offset: Option<i64>,
+    /// The last row's `created_at`/`doc_id` from a previous page, in
+    /// `created_at DESC, doc_id DESC` order. `None` asks for page 1.
+    pub after: Option<DocAfter>,
 }
 
 #[derive(Debug, Clone, Serialize)]

@@ -83,7 +83,12 @@ export const MastersScreen = () => {
     const [query, setQuery] = useState("");
     const { activeKind, setActiveKind, kinds, masterColumns, kindLower, columns, kindOptions } =
         useMastersScreenSetup(ticketSchema, settings, lang, t);
-    const { totalCount, list, form } = useMastersScreenState(activeKind, masterColumns, query);
+    const { totalCount, list, form } = useMastersScreenState(
+        activeKind,
+        masterColumns,
+        query,
+        ticketSchema.DecimalsAllowed ?? false,
+    );
     const formCardRef = useRef<HTMLDivElement | null>(null);
 
     useEffect(() => {

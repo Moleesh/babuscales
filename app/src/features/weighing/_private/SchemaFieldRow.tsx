@@ -27,7 +27,7 @@ export interface SchemaFieldRowProps {
     /** Only the master kinds already cached on this screen (Vehicle/Party/Material/Transporter) — see TicketFieldsCard's own comment on why this doesn't grow a new `useMasterCache` call per custom field. */
     masterCaches: Partial<Record<MasterKind, UseMasterCache>>;
     /** Fires with the newly-picked master row the instant a `Search` field's value changes — TicketFieldsCard wires this to `applyAutofill.ts` so a Search field's own `Autofills` list can copy values into other ticket fields. Optional: only `Search`-kind fields ever call it. */
-    onAutofill?: (row: MasterRow) => void;
+    onAutofill?: ((row: MasterRow) => void) | undefined;
 }
 
 interface KindInputProps {
@@ -160,7 +160,7 @@ const SearchInput = ({
 }: KindInputProps & {
     field: Extract<SchemaField, { Kind: "Search" }>;
     masterCaches: Partial<Record<MasterKind, UseMasterCache>>;
-    onAutofill?: (row: MasterRow) => void;
+    onAutofill?: ((row: MasterRow) => void) | undefined;
 }) => {
     const cache = masterCaches[field.Master];
     // Defensive: shouldn't happen given TicketFieldsCard only wires the
@@ -224,7 +224,7 @@ interface FieldInputProps {
     masterCaches: Partial<Record<MasterKind, UseMasterCache>>;
     lang: string;
     t: (key: string) => string;
-    onAutofill?: (row: MasterRow) => void;
+    onAutofill?: ((row: MasterRow) => void) | undefined;
 }
 
 // Dispatches on `field.Kind` to the right native control, delegating each

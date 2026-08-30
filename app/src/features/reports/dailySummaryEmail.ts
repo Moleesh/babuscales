@@ -1,5 +1,6 @@
 import { formatMoney } from "@constants/numberFormat";
 import type { DocRow } from "@db/types";
+import { chargeToNumber } from "@engines/billing";
 
 import { buildTicketRows, summarizeTicketRows, toLocalDateOnly } from "./reportRows";
 
@@ -72,7 +73,7 @@ export const buildDailySummaryEmail = (
     const active = today.filter((row) => !row.isCancelled);
     const completed = active.filter((row) => row.netKg !== null);
     const netTonnes = completed.reduce((sum, row) => sum + (row.netKg ?? 0), 0) / 1000;
-    const chargeTotal = completed.reduce((sum, row) => sum + (row.charge ?? 0), 0);
+    const chargeTotal = completed.reduce((sum, row) => sum + chargeToNumber(row.charge), 0);
     const byMaterial = summarizeTicketRows(active, "material");
 
     const subject = `BabuScales daily summary — ${dateIso}`;

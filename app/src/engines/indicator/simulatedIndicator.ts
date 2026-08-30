@@ -46,6 +46,7 @@ export const createSimulatedIndicator = (
         settleCount: 0,
         timer: null,
         listeners: new Set<IndicatorListener>(),
+        rng: Math.random,
     };
 
     return {

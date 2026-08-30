@@ -48,6 +48,7 @@ interface MasterCacheLoadArgs {
     setLoading: (loading: boolean) => void;
     cappedRef: MutableRefObject<boolean>;
     searchedRef: MutableRefObject<Set<string>>;
+    requestIdRef: MutableRefObject<number>;
 }
 
 const useMasterCacheLoad = ({
@@ -58,22 +59,24 @@ const useMasterCacheLoad = ({
     setLoading,
     cappedRef,
     searchedRef,
+    requestIdRef,
 }: MasterCacheLoadArgs): void => {
     useEffect(() => {
-        let cancelled = false;
+        // Bumping the shared request id here (not just a local `cancelled`
+        // flag) also invalidates any background `search()` fetch from the
+        // previous kind/reloadToken that's still in flight — see the
+        // matching check in `mergeFound` below.
+        const id = ++requestIdRef.current;
         setLoading(true);
         cappedRef.current = false;
         searchedRef.current = new Set();
         void db.listMasters({ MasterKind: kind, Limit: CACHE_LIMIT }).then((result) => {
-            if (cancelled) return;
+            if (requestIdRef.current !== id) return;
             cappedRef.current = result.length >= CACHE_LIMIT;
             setRows(result);
             setLoading(false);
         });
-        return () => {
-            cancelled = true;
-        };
-    }, [db, kind, reloadToken, setRows, setLoading, cappedRef, searchedRef]);
+    }, [db, kind, reloadToken, setRows, setLoading, cappedRef, searchedRef, requestIdRef]);
 };
 
 export const useMasterCache = (kind: MasterKind): UseMasterCache => {
@@ -86,13 +89,20 @@ export const useMasterCache = (kind: MasterKind): UseMasterCache => {
     // next keystroke" — not worth the extra re-renders that state would add.
     const cappedRef = useRef(false);
     const searchedRef = useRef<Set<string>>(new Set());
+    // Shared with useMasterCacheLoad's own effect — bumped on every fresh
+    // load (kind/reloadToken change) so a background search fetch that was
+    // still in flight for the *previous* kind can tell it's now stale and
+    // skip merging its (now wrong-kind) results in. Same requestId-ref
+    // pattern as useMasterListPage.ts.
+    const requestIdRef = useRef(0);
 
-    useMasterCacheLoad({ db, kind, reloadToken, setRows, setLoading, cappedRef, searchedRef });
+    useMasterCacheLoad({ db, kind, reloadToken, setRows, setLoading, cappedRef, searchedRef, requestIdRef });
 
     // Fire-and-forget merge target for the background search below — kept
     // separate so `search` can stay a plain synchronous function.
-    const mergeFound = useCallback((found: MasterRow[]) => {
+    const mergeFound = useCallback((found: MasterRow[], requestId: number) => {
         if (found.length === 0) return;
+        if (requestIdRef.current !== requestId) return;
         setRows((prev) => {
             const seen = new Set(prev.map((row) => row.MasterId));
             const additions = found.filter((row) => !seen.has(row.MasterId));
@@ -112,9 +122,10 @@ export const useMasterCache = (kind: MasterKind): UseMasterCache => {
             // life of this cache, not once-per-keystroke.
             if (cappedRef.current && q.length >= 2 && !searchedRef.current.has(q)) {
                 searchedRef.current.add(q);
+                const requestId = requestIdRef.current;
                 void db
                     .listMasters({ MasterKind: kind, Search: query.trim(), Limit: SEARCH_LIMIT })
-                    .then(mergeFound);
+                    .then((found) => mergeFound(found, requestId));
             }
             return rows.filter((row) => row.Name.toLowerCase().includes(q));
         },

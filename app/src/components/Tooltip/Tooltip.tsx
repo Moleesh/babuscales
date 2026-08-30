@@ -22,7 +22,7 @@ export interface TooltipProps {
      * leftward instead. */
     align?: "center" | "end";
     /** Extra class for the wrapper span. */
-    className?: string;
+    className?: string | undefined;
     /** Inline layout overrides for the wrapper span — e.g. Dashboard's flex
      * `.bar` items need `flex: 1; height: 100%; display: flex` on the
      * wrapper itself, or the trigger they wrap collapses to its own content

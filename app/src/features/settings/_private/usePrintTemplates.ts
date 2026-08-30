@@ -66,7 +66,7 @@ export const usePrintTemplates = (): UsePrintTemplates => {
 
     const saveTemplate = async (draft: PrintTemplateDraft & { Id?: string }): Promise<void> => {
         await db.saveConfig({
-            ConfigId: draft.Id,
+            ...(draft.Id !== undefined ? { ConfigId: draft.Id } : {}),
             ConfigKind: "Template",
             Body: {
                 Name: draft.Name,

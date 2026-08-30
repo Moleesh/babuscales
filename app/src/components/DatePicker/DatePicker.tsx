@@ -73,10 +73,13 @@ const todayIso = (): string => {
 };
 
 interface DatePickerTriggerProps {
-    id?: string;
+    // `id`/`disabled` are genuine passthroughs of `DatePickerProps`' own
+    // optional `id?`/`disabled?` — widened rather than conditionally
+    // omitted at the call site.
+    id?: string | undefined;
     label: string;
     value: string;
-    disabled?: boolean;
+    disabled?: boolean | undefined;
     open: boolean;
     ariaLabel: string;
     onToggle: () => void;

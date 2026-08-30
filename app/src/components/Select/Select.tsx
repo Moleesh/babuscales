@@ -19,7 +19,7 @@ export interface SelectProps<T extends string> {
      * — task: "make the language dropdown a little bigger, we have longer
      * language names and now two more icons in it". Every other caller
      * leaves this unset and keeps the default width. */
-    className?: string;
+    className?: string | undefined;
 }
 
 // A plain `<select>`'s own dropdown list is drawn by the OS/webview, not

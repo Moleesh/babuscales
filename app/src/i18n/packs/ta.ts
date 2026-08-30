@@ -150,10 +150,8 @@ export const TA_PACK: LanguagePack = {
         "masters.action.refresh": "புதுப்பி",
         "masters.loading": "ஏற்றுகிறது…",
         "masters.loadMore": "மேலும் காட்டு",
-        "masters.emptyPrefix": "இதுவரை",
-        "masters.emptySuffix": "இல்லை",
-        "masters.searchEmptyPrefix": "உங்கள் தேடலுக்கு பொருந்தும்",
-        "masters.searchEmptySuffix": "இல்லை",
+        "masters.emptyMessage": "இதுவரை {title} இல்லை",
+        "masters.searchEmptyMessage": "உங்கள் தேடலுக்கு பொருந்தும் {title} இல்லை",
         "masters.editPrefix": "திருத்து —",
         "masters.error.invalidWeight": "எடைக்கு சரியான எண்ணை உள்ளிடவும், அல்லது காலியாக விடவும்.",
         "masters.error.invalidNumber": "புலங்களில் ஒன்றுக்கு சரியான எண் தேவை.",
@@ -464,6 +462,9 @@ export const TA_PACK: LanguagePack = {
         "settings.fieldSchema.resetToDefault": "இயல்புநிலைக்கு மீட்டமை",
         "settings.fieldSchema.empty": "இந்தத் திட்டத்தில் புலங்கள் இல்லை",
         "settings.fieldSchema.activeLabel": "செயலில் உள்ள திட்டம்",
+        "settings.fieldSchema.decimalsAllowed.label": "தசம தொகைகள் மற்றும் எடைகளை அனுமதிக்கவும்",
+        "settings.fieldSchema.decimalsAllowed.note":
+            "இயல்பாக (Off): கட்டணம், பணத் தொகை புலங்கள் மற்றும் எடுக்கப்பட்ட எடைகள் முழு எண்களாக இருக்க வேண்டும். On: 2 தசம இலக்கங்கள் வரை அனுமதிக்கப்படும்.",
         "settings.fieldSchema.previewLangLabel": "இதில் லேபிள்களைப் பார்",
         "settings.fieldSchema.show": "காட்டு",
         "settings.fieldSchema.hide": "மறை",
@@ -612,6 +613,8 @@ export const TA_PACK: LanguagePack = {
         "settings.sms.serialPort": "மோடம் சீரியல் போர்ட்",
         "settings.sms.hint":
             "ஒருங்கிணைப்புகள் → SMS நுழைவாயில் ஆன் செய்யப்பட்டிருக்கும்போது அச்சிடும் நேரத்தில் படிக்கப்படுகிறது: ஒரு டிக்கெட்டின் தரப்பினருக்கு ஒரு உரையைப் பெற மாஸ்டர்களில் (அமைப்புகள் → மாஸ்டர்கள் → தரப்பினர்) சேமிக்கப்பட்ட ஃபோன் தேவை. மோடத்துடன் வெற்று AT கட்டளைகள் (AT+CMGF, AT+CMGS) மூலம் பேசுகிறது — சீரியல்/USB AT இடைமுகத்தை வெளிப்படுத்தும் எந்த GSM மோடமும் அல்லது தொலைபேசியும் வேலை செய்யும், மேகக் SMS-நுழைவாயில் கணக்கு தேவையில்லை.",
+
+        "confirmDeleteModal.nameSuffix": '"{name}"?',
 
         "settings.ticketNumbering.title": "டிக்கெட் எண்ணிடல்",
 

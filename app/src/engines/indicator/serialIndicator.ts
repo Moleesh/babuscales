@@ -1,5 +1,8 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
+import { z } from "zod";
+
+import { fromString, withinDecimalsAllowed } from "@engines/formulaEngine/Decimal";
 
 import type {
     IndicatorConnectionConfig,
@@ -36,12 +39,13 @@ const SANITY_SPREAD_KG = DEFAULT_CLOSE_ENOUGH_KG;
 const LORRY_TARE_RANGE_KG: readonly [number, number] = [12340, 13240];
 const LORRY_GROSS_RANGE_KG: readonly [number, number] = [30500, 34000];
 
-interface RawReadingEvent {
-    WeightKg: number;
-}
-interface IndicatorErrorEvent {
-    Message: string;
-}
+// The Tauri event payload is untrusted the same way any IPC boundary is
+// (docs/CodingStandards.md §4) — Rust emits it, but a stale/mismatched
+// build or a future devices/indicator.rs change could still send a shape
+// this side doesn't expect. `safeParse`'d at the `listen()` callback below
+// rather than trusted straight off `event.payload`.
+const rawReadingEventSchema = z.object({ WeightKg: z.number() });
+const indicatorErrorEventSchema = z.object({ Message: z.string() });
 
 // The factory's mutable state, bundled so the connect/disconnect logic below
 // can live as plain functions instead of closures nested inside the
@@ -68,6 +72,10 @@ interface SerialIndicatorState {
     target: number;
     settleCount: number;
     timer: ReturnType<typeof setInterval> | null;
+    /** Injected randomness source for the "Send to lorry" test aid's settle physics (docs/CodingStandards.md §2) — set once in `createSerialIndicator` to `Math.random`. */
+    rng: () => number;
+    /** Active `Schema.DecimalsAllowed ?? false` — see `StabilityOptions.decimalsAllowed`'s own comment. Kept in sync via `updateOptions`, same as `settleTicks`/`closeEnoughKg`, since the schema hasn't loaded yet when this source is constructed. */
+    decimalsAllowed: boolean;
 }
 
 const notifyAll = (state: SerialIndicatorState): void => {
@@ -90,6 +98,31 @@ const pushSample = (state: SerialIndicatorState, weightKg: number): void => {
     // this test aid to begin with).
     if (state.timer !== null) return;
     state.connectionError = null;
+
+    // Weights are integers in kilograms everywhere in this codebase (§6),
+    // unless the active schema's `DecimalsAllowed` is on — in which case a
+    // fraction is fine, capped at the same <=2-digit limit
+    // `Decimal.withinDecimalsAllowed` enforces everywhere else. Either way,
+    // a non-finite sample (a garbled parse on the Rust side, or a future
+    // protocol slipping something malformed through) must never enter the
+    // sanity buffer below: `NaN > SANITY_SPREAD_KG` is always false, so an
+    // un-guarded NaN would sail through the spread check undetected and
+    // poison the stability window. Rejected here, before either buffer sees
+    // it. `String(weightKg)` round-trips fine for any real kg reading (never
+    // exponential notation) — `fromString` is reused here purely so the
+    // <=2-digit cap logic lives in exactly one place (Decimal.ts), not
+    // reimplemented via float arithmetic on this side too.
+    const withinLimit = Number.isFinite(weightKg) && (() => {
+        try {
+            return withinDecimalsAllowed(fromString(String(weightKg)), state.decimalsAllowed);
+        } catch {
+            return false;
+        }
+    })();
+    if (!withinLimit) {
+        console.warn(`pushSample: rejected out-of-range weight sample ${weightKg}`);
+        return;
+    }
 
     // Sanity gate — see `SANITY_WINDOW`'s own comment. Every raw sample
     // slides into the window regardless of outcome, so a genuinely settling
@@ -174,16 +207,28 @@ export const createSerialIndicator = (): SerialIndicatorSource => {
         target: 0,
         settleCount: 0,
         timer: null,
+        rng: Math.random,
+        decimalsAllowed: false,
     };
 
     // Set up once, for the app's lifetime — same singleton shape as the
     // simulated indicator (created once in App.tsx, never torn down), so
     // there's no unmount path that would need these unlisten functions.
-    void listen<RawReadingEvent>("indicator-reading", (event) => {
-        pushSample(state, event.payload.WeightKg);
+    void listen<unknown>("indicator-reading", (event) => {
+        const parsed = rawReadingEventSchema.safeParse(event.payload);
+        if (!parsed.success) {
+            console.warn("indicator-reading: rejected malformed event payload", parsed.error);
+            return;
+        }
+        pushSample(state, parsed.data.WeightKg);
     });
-    void listen<IndicatorErrorEvent>("indicator-error", (event) => {
-        state.connectionError = event.payload.Message;
+    void listen<unknown>("indicator-error", (event) => {
+        const parsed = indicatorErrorEventSchema.safeParse(event.payload);
+        if (!parsed.success) {
+            console.warn("indicator-error: rejected malformed event payload", parsed.error);
+            return;
+        }
+        state.connectionError = parsed.data.Message;
         notifyAll(state);
     });
 
@@ -211,6 +256,7 @@ export const createSerialIndicator = (): SerialIndicatorSource => {
         updateOptions: (next: StabilityOptions) => {
             if (next.settleTicks !== undefined) state.settleTicks = next.settleTicks;
             if (next.closeEnoughKg !== undefined) state.closeEnoughKg = next.closeEnoughKg;
+            if (next.decimalsAllowed !== undefined) state.decimalsAllowed = next.decimalsAllowed;
         },
     };
 };

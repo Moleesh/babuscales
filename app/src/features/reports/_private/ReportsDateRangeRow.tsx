@@ -49,9 +49,9 @@ export interface ReportsDateRangeRowProps {
      * across series. Omitted by the report-builder modal (ReportBuilderModal.tsx),
      * which only scopes the date range itself, not this screen-level series
      * filter — the dropdown is hidden whenever these are left out. */
-    seriesEpoch?: number | "current" | "all";
-    onSeriesEpochChange?: (epoch: number | "current" | "all") => void;
-    seriesEpochOptions?: SeriesEpochOption[];
+    seriesEpoch?: number | "current" | "all" | undefined;
+    onSeriesEpochChange?: ((epoch: number | "current" | "all") => void) | undefined;
+    seriesEpochOptions?: SeriesEpochOption[] | undefined;
     /** Settings' `Formats.DateFmt` — passed straight through to `DatePicker`
      * so the two trigger buttons read a date in the same pattern as every
      * other date on this screen (reportColumns.tsx's own `formatDateInFmt`
@@ -59,7 +59,7 @@ export interface ReportsDateRangeRowProps {
      * `useReportsScreenController`. Optional, same as `DatePicker`'s own
      * `dateFmt` — falls back to its default when the caller (e.g. the
      * report-builder wizard) doesn't have one handy. */
-    dateFmt?: string;
+    dateFmt?: string | undefined;
 }
 
 // Split out of ReportsCardBody (over the line/complexity budget —
@@ -96,7 +96,7 @@ export const ReportsDateRangeRow = ({
                 <DatePicker
                     value={dateFrom}
                     onChange={onDateFromChange}
-                    dateFmt={dateFmt}
+                    {...(dateFmt !== undefined ? { dateFmt } : {})}
                     aria-label={t("reports.dateFromAriaLabel")}
                 />
             </div>
@@ -105,7 +105,7 @@ export const ReportsDateRangeRow = ({
                 <DatePicker
                     value={dateTo}
                     onChange={onDateToChange}
-                    dateFmt={dateFmt}
+                    {...(dateFmt !== undefined ? { dateFmt } : {})}
                     aria-label={t("reports.dateToAriaLabel")}
                 />
             </div>

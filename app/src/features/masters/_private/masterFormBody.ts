@@ -1,9 +1,37 @@
 import type { MasterKind } from "@db/types";
+import { fromString, withinDecimalsAllowed } from "@engines/formulaEngine/Decimal";
 import type { MasterColumn } from "@engines/schemaEngine";
 
 import type { MasterFormState } from "./masterFormState";
 
 const isValidNumber = (raw: string): boolean => raw.trim() !== "" && Number.isFinite(Number(raw));
+
+// Money columns are stored as decimal strings (see buildMasterBody below),
+// so their validity check is "is this a plain decimal literal"
+// (`Decimal.fromString`), not the generic float-finite check Number columns
+// use. `decimalsAllowed` mirrors `Schema.DecimalsAllowed` (schemaEngine/
+// types.ts) — off (the default) additionally rejects a fraction, so a Money
+// column is integer-only unless the active schema opts in.
+const isValidMoney = (raw: string, decimalsAllowed: boolean): boolean => {
+    if (raw.trim() === "") return false;
+    try {
+        return withinDecimalsAllowed(fromString(raw), decimalsAllowed);
+    } catch {
+        return false;
+    }
+};
+
+// Same three-way `DecimalsAllowed` gate, applied to StoredTare's weight —
+// parsed through `Decimal.fromString` (not just `Number.isInteger`) so the
+// on-case's 2-decimal-digit cap is enforced the same way Money's is.
+const isValidWeight = (raw: string, decimalsAllowed: boolean): boolean => {
+    if (!isValidNumber(raw)) return false;
+    try {
+        return withinDecimalsAllowed(fromString(raw.trim()), decimalsAllowed);
+    } catch {
+        return false;
+    }
+};
 
 // Checked before `buildMasterBody` writes anything — a non-empty value that
 // doesn't parse as a finite number (StoredTare's weight/tare field, or any
@@ -16,9 +44,10 @@ export const validateMasterFormNumbers = (
     activeKind: MasterKind,
     form: MasterFormState,
     columns: MasterColumn[],
+    decimalsAllowed: boolean,
 ): string | null => {
     if (activeKind === "StoredTare") {
-        if (form.weightKg.trim() !== "" && !isValidNumber(form.weightKg)) {
+        if (form.weightKg.trim() !== "" && !isValidWeight(form.weightKg, decimalsAllowed)) {
             return "masters.error.invalidWeight";
         }
         return null;
@@ -26,9 +55,9 @@ export const validateMasterFormNumbers = (
     for (const column of columns) {
         if (column.Kind !== "Number" && column.Kind !== "Money") continue;
         const raw = form.extra[column.FieldId] ?? "";
-        if (raw.trim() !== "" && !isValidNumber(raw)) {
-            return "masters.error.invalidNumber";
-        }
+        if (raw.trim() === "") continue;
+        const valid = column.Kind === "Money" ? isValidMoney(raw, decimalsAllowed) : isValidNumber(raw);
+        if (!valid) return "masters.error.invalidNumber";
     }
     return null;
 };
@@ -60,8 +89,13 @@ export const buildMasterBody = (
     for (const column of columns) {
         const raw = (form.extra[column.FieldId] ?? "").trim();
         if (!raw) continue;
+        // Money columns keep the raw decimal-string text as-is (already
+        // validated by validateMasterFormNumbers above) rather than
+        // widening through `Number(raw)` — that's exactly the lossy float
+        // path this migration removes. Number columns are unaffected: this
+        // migration is money-only.
         body[column.FieldId] =
-            column.Kind === "Number" || column.Kind === "Money" ? Number(raw) : column.Kind === "Boolean" ? raw === "true" : raw;
+            column.Kind === "Money" ? raw : column.Kind === "Number" ? Number(raw) : column.Kind === "Boolean" ? raw === "true" : raw;
     }
     return body;
 };

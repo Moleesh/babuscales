@@ -1,6 +1,6 @@
 import { evaluateFormula } from "@engines/formulaEngine";
 import type { FormulaContext, FormulaValue } from "@engines/formulaEngine";
-import { fromInt, toNumber } from "@engines/formulaEngine/Decimal";
+import { fromInt, fromString, toNumber } from "@engines/formulaEngine/Decimal";
 import type { Decimal } from "@engines/formulaEngine/Decimal";
 
 // Ported from the mock's own live calc (demo/BabuScales-demo.html's
@@ -20,15 +20,39 @@ const asDecimal = (v: FormulaValue): Decimal => {
     throw new Error(`computeValue: formula "${VALUE_FORMULA}" did not evaluate to a number`);
 };
 
-const buildContext = (netKg: number, rate: number): FormulaContext => ({
+// `rate` is a decimal string (a material's Rate, `db/materialBody.ts`'s
+// `getMaterialRate`) — parsed with `Decimal.fromString`, never `fromInt`.
+// `fromInt` does `BigInt(Math.trunc(n))`, which silently truncated any
+// fractional rate (12.50 became 12) — the concrete money-precision bug this
+// migration exists to fix.
+const buildContext = (netKg: number, rate: Decimal): FormulaContext => ({
     getVariable: (name: string): FormulaValue => {
         if (name === "Net") return fromInt(netKg);
-        if (name === "Rate") return fromInt(rate);
+        if (name === "Rate") return rate;
         throw new Error(`computeValue: unknown variable "${name}"`);
     },
 });
 
-export const computeValue = (netKg: number | null, rate: number | null): number | null => {
+// The computed `value` is never persisted (display/print only, recomputed
+// live every render) — `toNumber` here is the legitimate "display" use its
+// own doc comment calls out, not a round-trip through storage.
+export const computeValue = (netKg: number | null, rate: string | null): number | null => {
     if (netKg === null || rate === null) return null;
-    return toNumber(asDecimal(evaluateFormula(VALUE_FORMULA, buildContext(netKg, rate))));
+    return toNumber(asDecimal(evaluateFormula(VALUE_FORMULA, buildContext(netKg, fromString(rate)))));
+};
+
+// `TicketBody.Charge`/`TicketRow.charge` are decimal strings at rest — every
+// display/aggregation site (report totals, dashboard KPIs, outbound
+// integration payloads) needs a plain number for arithmetic or formatting.
+// `toNumber` here is the same legitimate "display only" use as above; none
+// of these call sites round-trip the result back into storage. An
+// unparsable string (should never happen — both come from `Decimal.fromString`-
+// validated input) is treated the same as "no charge" rather than throwing.
+export const chargeToNumber = (charge: string | null): number => {
+    if (charge === null) return 0;
+    try {
+        return toNumber(fromString(charge));
+    } catch {
+        return 0;
+    }
 };

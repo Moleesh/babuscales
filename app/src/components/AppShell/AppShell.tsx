@@ -283,8 +283,7 @@ export const AppShell = ({
                 absolute) as a child. */}
             <ScrollArea
                 contentRef={mainRef}
-                className={styles.main}
-                contentClassName={styles.main}
+                {...(styles.main !== undefined ? { className: styles.main, contentClassName: styles.main } : {})}
                 dataAttrs={{ "data-enter-scope": "" }}
             >
                 {/* Task: "while scrolling any tab the top weight should not

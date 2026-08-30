@@ -94,6 +94,25 @@ export const abs = (d: Decimal): Decimal =>
 export const negate = (d: Decimal): Decimal => ({ mantissa: -d.mantissa, scale: d.scale });
 export const isZero = (d: Decimal): boolean => d.mantissa === 0n;
 
+/** True when `d` has a nonzero fractional part — the "is this actually a whole number" check the `DecimalsAllowed`-gated Money/Weight validators (masterFormBody.ts, ticketBody.ts, useWeighingTicket.ts, serialIndicator.ts) share, instead of each reimplementing it via `Number.isInteger(toNumber(d))` (lossy for a mantissa too large for a JS number). */
+export const hasFraction = (d: Decimal): boolean =>
+    d.scale > 0 && d.mantissa % pow10(d.scale) !== 0n;
+
+/** Max fractional digits allowed once `Schema.DecimalsAllowed` is on — "may have a fraction, but not arbitrary precision" (schemaEngine/types.ts's `DecimalsAllowed` doc comment). */
+export const MAX_DECIMALS_ALLOWED_SCALE = 2;
+
+/**
+ * The full three-way `DecimalsAllowed` gate shared by every Money/Weight
+ * validation site: off means `d` must be a whole integer; on means `d` may
+ * carry a fraction, but at most `MAX_DECIMALS_ALLOWED_SCALE` digits of it
+ * (`fromString`'s `scale` is exactly the number of digits typed after the
+ * point, no trailing-zero stripping, so this is a plain scale comparison —
+ * no separate digit-counting regex needed once a value is already a
+ * `Decimal`).
+ */
+export const withinDecimalsAllowed = (d: Decimal, decimalsAllowed: boolean): boolean =>
+    decimalsAllowed ? d.scale <= MAX_DECIMALS_ALLOWED_SCALE : !hasFraction(d);
+
 /** Rounds toward +infinity to a whole number — `Ceil()` in a formula (§8.1's `Ceil(Net / 1000)`). */
 export const ceilToInt = (d: Decimal): Decimal => {
     if (d.scale === 0) return d;

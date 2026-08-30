@@ -7,8 +7,11 @@ interface UseDropdownStateArgs {
     value: string;
     onChange: (text: string) => void;
     onSearch: (query: string) => SearchableDropdownOption[];
-    onPick?: (option: SearchableDropdownOption) => void;
-    onAddNew?: (query: string) => void;
+    // Both are genuine optional passthroughs of `SearchableDropdownProps`'
+    // own optional props — widened rather than conditionally omitted at
+    // the call site.
+    onPick?: ((option: SearchableDropdownOption) => void) | undefined;
+    onAddNew?: ((query: string) => void) | undefined;
 }
 
 interface KeyDownContext {
@@ -20,7 +23,9 @@ interface KeyDownContext {
     setOpen: (open: boolean) => void;
     moveHighlight: (delta: 1 | -1) => void;
     pick: (option: SearchableDropdownOption) => void;
-    addNew?: (query: string) => void;
+    // Genuine "no add-new handler" passthrough of `onAddNew`'s own optional
+    // arg — widened rather than conditionally omitted at the call site.
+    addNew?: ((query: string) => void) | undefined;
     close: () => void;
 }
 
