@@ -8,12 +8,16 @@ than glossed over.
 
 ## 1. Installing
 
-Two installers come out of every release, `BabuScales_<version>_x64_en-US.msi` and
-`BabuScales_<version>_x64-setup.exe` (NSIS) — either does the same job, pick whichever your site's
-policy prefers. Both run **~200MB**, not the handful of MB a typical Tauri app ships: they carry the
-entire WebView2 Evergreen Runtime baked in, on purpose, so a quarry with no internet connection at
-install time still installs cleanly rather than failing on a runtime download. A USB stick or LAN
-copy handles that size without trouble.
+Every release ships two NSIS installers — pick whichever fits the site:
+
+- **`BabuScales_<version>_x64-setup.exe`** (offline) — **~200MB**, not the handful of MB a
+  typical Tauri app ships: it carries the entire WebView2 Evergreen Runtime baked in, on purpose,
+  so a quarry with no internet connection at install time still installs cleanly rather than
+  failing on a runtime download. A USB stick or LAN copy handles that size without trouble.
+- **`BabuScales_<version>_x64-online-setup.exe`** (online) — a few MB. Its bundled bootstrapper
+  checks whether WebView2 is already on the machine and only downloads it from Microsoft if it's
+  actually missing. Use this when the install machine has internet access and a smaller download
+  matters more than avoiding a runtime fetch.
 
 Installs per-machine (not per-user) and needs no separate download step afterwards — first launch
 just works.

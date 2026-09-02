@@ -132,11 +132,17 @@ this application was built against.
 
 ## 📦 Install
 
-Download the `.msi` or the NSIS `.exe` from [Releases](../../releases) and run it — either does
-the same job. Around 200MB: the entire WebView2 Evergreen Runtime is baked into the installer
-itself so a site with no internet connection at install time still installs cleanly, rather than
-shipping the usual few-MB stub that fetches it separately. No Java, no separate runtime to
-install, no internet needed once the installer file itself is on the machine.
+Two NSIS `.exe` installers are published on [Releases](../../releases) — pick one:
+
+- **`BabuScales_<version>_x64-setup.exe`** (offline, ~200MB) — the entire WebView2 Evergreen
+  Runtime is baked into the installer itself, so a site with no internet connection at install
+  time still installs cleanly. No internet needed once the installer file itself is on the
+  machine — the safe default for quarry sites.
+- **`BabuScales_<version>_x64-online-setup.exe`** (online, a few MB) — checks whether WebView2 is
+  already on the machine and only fetches it from Microsoft if it's actually missing. Much
+  smaller to download, but needs internet access at install time.
+
+No Java, no separate runtime to install either way.
 
 **Requirements:** Windows 10 or 11 · 4GB RAM · a serial or USB weight indicator.
 Cameras, printers and network are all optional.

@@ -132,7 +132,7 @@ Six panes, admin-password-gated (except Appearance, which is deliberately open).
 |---|---|---|
 | Offline Ed25519 activation-code verification | ✅ | No server, no network call, machine-bound |
 | 14-day free trial, gates new captures/Save on expiry | ✅ | Trial length is a placeholder pending real pricing |
-| Windows installer (MSI + NSIS) | ✅ | ~200MB — WebView2 runtime baked in for offline installs |
+| Windows installer (NSIS) | ✅ | Offline (~200MB, WebView2 baked in) and online (few MB, fetches WebView2 only if missing) variants |
 | Vendor signing key | 🟡 | A throwaway dev keypair — must be replaced before any real licence ships |
 | Android debug build (APK/AAB) | 🟡 | Builds and packages for real; not signed for Play Store, not run on a device |
 | CI (typecheck/lint/build/secret-scan gates) | ✅ | Runs on push to `main`, verified green (`gh run view`) |

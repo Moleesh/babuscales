@@ -41,7 +41,12 @@ jobs:
           cargo fmt --manifest-path src-tauri/Cargo.toml -- --check
           cargo clippy --manifest-path src-tauri/Cargo.toml -- -D clippy::correctness -D clippy::suspicious
 
-      - name: Build installers
+      # The offline installer (webviewInstallMode: offlineInstaller, the
+      # `tauri.conf.json` default) — the entire WebView2 Evergreen Runtime
+      # baked in, so a site with no internet at install time still installs
+      # cleanly. This is the one tauri-action creates the (draft) release
+      # from and uploads as `BabuScales_<version>_x64-setup.exe`.
+      - name: Build offline installer
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -50,4 +55,25 @@ jobs:
           tagName: ${{ github.ref_name }}
           releaseName: "BabuScales ${{ github.ref_name }}"
           releaseDraft: true
-          args: --bundles msi,nsis
+          args: --bundles nsis
+
+      # The online installer (webviewInstallMode: downloadBootstrapper, via
+      # tauri.online.conf.json) — a small ~few-MB stub whose embedded WebView2
+      # bootstrapper checks whether the runtime is already present on the
+      # machine before fetching anything, and only downloads it from
+      # Microsoft if it's actually missing. Built as a second pass (frontend
+      # dist from the offline build above is reused, `beforeBuildCommand`
+      # doesn't need to rerun) and renamed so it doesn't collide with the
+      # offline installer's filename, then attached to the same draft
+      # release tauri-action just created.
+      - name: Build online installer
+        run: npx tauri build --bundles nsis --config src-tauri/tauri.online.conf.json
+
+      - name: Rename and upload online installer
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $src = Get-ChildItem -Path "src-tauri/target/release/bundle/nsis" -Filter "*-setup.exe" | Select-Object -First 1
+          $dest = $src.FullName -replace "-setup\.exe$", "-online-setup.exe"
+          Move-Item -Path $src.FullName -Destination $dest -Force
+          gh release upload "${{ github.ref_name }}" $dest --clobber --repo "${{ github.repository }}"

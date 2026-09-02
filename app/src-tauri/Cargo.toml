@@ -1,6 +1,6 @@
 [package]
 name = "babuscales"
-version = "0.1.0"
+version = "1.0.0"
 description = "Weighbridge management software that a quarry can actually run."
 authors = ["Babulens"]
 edition = "2021"

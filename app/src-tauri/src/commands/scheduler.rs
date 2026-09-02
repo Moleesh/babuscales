@@ -10,7 +10,7 @@ const TASK_NAME: &str = "BabuScales DailySummary";
 /// the daily summary only ever checked while the app happened to already be
 /// open (`App.tsx`'s `DailySummarySync`, a `setInterval` that does nothing
 /// once the process exits). Windows-only: `schtasks.exe` doesn't exist
-/// elsewhere, and the installer only ships MSI/NSIS builds for Windows
+/// elsewhere, and the installer only ships an NSIS build for Windows
 /// (`tauri.conf.json`) — a no-op everywhere else rather than an error, so
 /// calling this from Settings on a dev machine running another OS is safe.
 ///
