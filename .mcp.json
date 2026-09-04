@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "babuscales": {
+      "command": "node",
+      "args": ["mcp-server/server.js"]
+    }
+  }
+}
