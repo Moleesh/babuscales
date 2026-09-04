@@ -6,3 +6,6 @@ desktop.ini
 .vscode/*
 !.vscode/extensions.json
 *.swp
+
+# local Claude Code state (dev-server launch config, worktrees) — not shared
+.claude/
